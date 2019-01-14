@@ -125,6 +125,13 @@ TASK_DECL_3(BDD, sylvan_and_project, BDD, BDD, BDDSET);
 TASK_DECL_4(BDD, sylvan_relprev, BDD, BDD, BDDSET, BDDVAR);
 #define sylvan_relprev(a,b,vars) CALL(sylvan_relprev,a,b,vars,0)
 
+
+/**
+  * The "forall" preimage of S under T.
+ */
+TASK_DECL_3(BDD, sylvan_forall_preimage, BDD, BDD, BDDVAR);
+#define sylvan_forall_preimage(S,T) CALL(sylvan_forall_preimage,S,T,0)
+
 /**
  * Compute R(s) = \exists x: A(x) \and B(x,s)
  * with support(result) = s, support(A) = s, support(B) = s+t

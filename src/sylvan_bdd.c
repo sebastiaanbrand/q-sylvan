@@ -1401,6 +1401,79 @@ TASK_IMPL_4(BDD, sylvan_relprev, BDD, a, BDD, b, BDDSET, vars, BDDVAR, prev_leve
 }
 
 /**
+ * Compute result(x,x') = (\forall x': T(x,x') ==> S(x)[x := x'] )
+ * The "forall" preimage of R under T.
+ */
+TASK_IMPL_3(BDD, sylvan_forall_preimage, BDD, S, BDD, T, BDDVAR, prev_level)
+{
+    /* Terminals */
+    if (S == sylvan_false && T == sylvan_true) return sylvan_false;
+    if (S == sylvan_true || T == sylvan_false) return sylvan_true;
+
+    /* Perhaps execute garbage collection */
+    sylvan_gc_test();
+
+    /* Count operation */
+    sylvan_stats_count(BDD_FORALL_PREIMAGE);
+
+    /* Determine top level */
+    bddnode_t nS = sylvan_isconst(S) ? 0 : MTBDD_GETNODE(S);
+    bddnode_t nT = sylvan_isconst(T) ? 0 : MTBDD_GETNODE(T);
+
+    BDDVAR vS = nS ? bddnode_getvariable(nS) : 0xffffffff;
+    BDDVAR vT = nT ? bddnode_getvariable(nT) : 0xffffffff;
+    BDDVAR level = vS < vT ? vS : vT;
+
+    assert (sylvan_isconst(S) || (vS&1) == 0);
+
+    /* Consult cache */
+    int cachenow = granularity < 2 || prev_level == 0 ? 1 : prev_level / granularity != level / granularity;
+    if (cachenow) {
+        BDD result;
+        if (cache_get3(CACHE_BDD_FORALL_PREIMAGE, S, T, 0, &result)) {
+            sylvan_stats_count(BDD_FORALL_PREIMAGE_CACHED);
+            return result;
+        }
+    }
+
+    BDD result, low, high;
+    if (level == vT && (level&1) == 0) {
+        bdd_refs_spawn(SPAWN(sylvan_forall_preimage, S, sylvan_high(T), level));
+        bdd_refs_spawn(SPAWN(sylvan_forall_preimage, S, sylvan_low(T), level));
+
+        low = bdd_refs_sync(SYNC(sylvan_forall_preimage));
+        bdd_refs_push(low);
+        high = bdd_refs_sync(SYNC(sylvan_forall_preimage));
+        bdd_refs_pop(1);
+        result = sylvan_makenode(vT, low, high);
+    } else {
+        // level == vT && level&1 == 1 || level == vS && level&1 == 0
+
+        BDD sLow, sHgh, tLow, tHgh;
+        sLow = (vS == level || vT == vS + 1) ? sylvan_low(S) : S;
+        tLow = (vT == level || vT == vS + 1) ? sylvan_low(T) : T;
+        sHgh = (vS == level || vT == vS + 1) ? sylvan_high(S) : S;
+        tHgh = (vT == level || vT == vS + 1) ? sylvan_high(T) : T;
+
+        bdd_refs_spawn(SPAWN(sylvan_forall_preimage, sHgh, tHgh, level));
+        bdd_refs_spawn(SPAWN(sylvan_forall_preimage, sLow, tLow, level));
+
+        low = bdd_refs_sync(SYNC(sylvan_forall_preimage));
+        bdd_refs_push(low);
+        high = bdd_refs_sync(SYNC(sylvan_forall_preimage));
+        bdd_refs_push(high);
+        result = sylvan_and(low, high);
+        bdd_refs_pop(2);
+    }
+
+    if (cachenow) {
+        if (cache_put3(CACHE_BDD_FORALL_PREIMAGE, S, T, 0, result)) sylvan_stats_count(BDD_FORALL_PREIMAGE_CACHEDPUT);
+    }
+
+    return result;
+}
+
+/**
  * Computes the transitive closure by traversing the BDD recursively.
  * See Y. Matsunaga, P. C. McGeer, R. K. Brayton
  *     On Computing the Transitive Closre of a State Transition Relation
