@@ -133,6 +133,13 @@ TASK_DECL_3(BDD, sylvan_forall_preimage, BDD, BDD, BDDVAR);
 #define sylvan_forall_preimage(S,T) CALL(sylvan_forall_preimage,S,T,0)
 
 /**
+ * Compute \exists x'': R1(x,x')[x' := x''] \rightarrow R2(x,x')[x := x'']
+ * The relational composition of R1 and R2.
+ */
+TASK_DECL_3(BDD, sylvan_relcomp, BDD, BDD, BDDVAR);
+#define sylvan_relcomp(R1,R2) CALL(sylvan_relcomp,R1,R2,0)
+
+/**
  * Compute R(s) = \exists x: A(x) \and B(x,s)
  * with support(result) = s, support(A) = s, support(B) = s+t
  * Assumes s,t are interleaved with s even and t odd (s+1).
