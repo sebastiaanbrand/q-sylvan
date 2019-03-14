@@ -161,15 +161,46 @@ Bdd
 Bdd::operator-(const Bdd& other) const
 {
     LACE_ME;
-    return Bdd(sylvan_and(bdd, sylvan_not(other.bdd)));
+    return Bdd(sylvan_diff(bdd, other.bdd));
 }
 
 Bdd&
 Bdd::operator-=(const Bdd& other)
 {
     LACE_ME;
-    bdd = sylvan_and(bdd, sylvan_not(other.bdd));
+    bdd = sylvan_diff(bdd, other.bdd);
     return *this;
+}
+
+BDD
+add_or_sub(BDD x, BDD y, BDD *cinout, bool sub)
+{
+    LACE_ME;
+    BDD xo   = sylvan_xor(x, y);
+    bdd_refs_push(xo);
+    BDD z  = sylvan_xor(xo, *cinout);
+    bdd_refs_push(z);
+    BDD and1 = sylvan_and(sub ? sylvan_not(x) : x, y);         // half adder carry/borrow
+    bdd_refs_push(and1);
+    BDD and2 = sylvan_and(sub ? sylvan_not(xo) : xo, *cinout);
+    bdd_refs_push(and2);
+    *cinout = sylvan_or(and1,  and2);                 // full adder carry/borrow
+    bdd_refs_pop(4);
+    return z;
+}
+
+Bdd
+Bdd::Add(Bdd &y, Bdd *out, Bdd &carry_in_out) const
+{
+    out->SetBdd(add_or_sub(this->bdd, y.bdd, &carry_in_out.bdd, false));
+    return out;
+}
+
+Bdd
+Bdd::Sub(Bdd &y, Bdd *out, Bdd &carry_in_out) const
+{
+    out->SetBdd(add_or_sub(this->bdd, y.bdd, &carry_in_out.bdd, true));
+    return out;
 }
 
 Bdd
@@ -259,6 +290,13 @@ Bdd::RelPrev(const Bdd& relation, const BddSet& cube) const
 }
 
 Bdd
+Bdd::RelPrevForall(const Bdd& relation) const
+{
+    LACE_ME;
+    return sylvan_forall_preimage(bdd, relation.bdd);
+}
+
+Bdd
 Bdd::RelNext(const Bdd &relation, const BddSet &cube) const
 {
     LACE_ME;
@@ -307,11 +345,11 @@ Bdd::Permute(const std::vector<uint32_t>& from, const std::vector<uint32_t>& to)
     return sylvan_compose(bdd, map.bdd);
 }
 
-Bdd
+BddSet
 Bdd::Support() const
 {
     LACE_ME;
-    return sylvan_support(bdd);
+    return BddSet(sylvan_support(bdd));
 }
 
 BDD
@@ -452,16 +490,19 @@ Bdd::NodeCount() const
     return sylvan_nodecount(bdd);
 }
 
-Bdd
+static const Bdd ONE(sylvan_true);
+static const Bdd ZERO(sylvan_false);
+
+const Bdd
 Bdd::bddOne()
 {
-    return sylvan_true;
+    return ONE;
 }
 
-Bdd
+const Bdd
 Bdd::bddZero()
 {
-    return sylvan_false;
+    return ZERO;
 }
 
 Bdd
@@ -469,6 +510,31 @@ Bdd::bddVar(uint32_t index)
 {
     LACE_ME;
     return sylvan_ithvar(index);
+}
+
+BDD
+bits(BDDSET x, size_t c, int *l, bool leq)
+{
+    LACE_ME;
+    if (sylvan_set_isempty(x)){
+        *l = 0;
+        return sylvan_true;
+    } else {
+        BDD R = bits(sylvan_set_next(x), c, l, leq);
+        if (c & (1 << (*l)++)) {
+            return sylvan_makenode(sylvan_set_first(x), leq ? sylvan_true : sylvan_false, R);
+        } else {
+            return sylvan_makenode(sylvan_set_first(x), R, sylvan_false);
+        }
+    }
+}
+
+
+void
+Bdd::setCube(BddSet x, size_t c)
+{
+    int l;
+    bdd = bits(x.set.bdd, c, &l, false);
 }
 
 Bdd
@@ -539,30 +605,89 @@ BddMap::BddMap(uint32_t key_variable, const Bdd value)
 
 
 BddMap
-BddMap::operator+(const Bdd& other) const
+BddMap::operator&(const Bdd& other) const
 {
     return BddMap(sylvan_map_addall(bdd, other.bdd));
 }
 
 BddMap&
-BddMap::operator+=(const Bdd& other)
+BddMap::operator&=(const Bdd& other)
 {
     bdd = sylvan_map_addall(bdd, other.bdd);
     return *this;
 }
 
 BddMap
-BddMap::operator-(const Bdd& other) const
+BddMap::operator/(const Bdd& other) const
 {
     return BddMap(sylvan_map_removeall(bdd, other.bdd));
 }
 
 BddMap&
-BddMap::operator-=(const Bdd& other)
+BddMap::operator/=(const Bdd& other)
 {
     bdd = sylvan_map_removeall(bdd, other.bdd);
     return *this;
 }
+
+BDDMAP
+AddOrSub(BDD *carry, const BDDMAP &x, const BDDMAP &y, bool sub)
+{
+    if (!sylvan_map_isempty(x)) {
+        assert (!sylvan_map_isempty(y));
+        BDDMAP m = AddOrSub(carry, sylvan_map_next(x), sylvan_map_next(x), sub);
+        assert (sylvan_map_key(x) == sylvan_map_key(y));
+        BDD val_l = sylvan_map_value(x);
+        BDD val_r = sylvan_map_value(y);
+        BDD z = add_or_sub(val_l, val_r, carry, sub);
+        return sylvan_map_add(m, sylvan_map_key(x), z);
+    } else {
+        assert (sylvan_map_isempty(y));
+        *carry = sylvan_false;
+        return sylvan_map_empty();
+    }
+}
+
+BddMap
+BddMap::operator+(const Bdd& other) const
+{
+    BDD carry;
+    bdd_refs_pushptr(&carry);
+    BDDMAP out = AddOrSub(&carry, bdd, other.bdd, false);
+    bdd_refs_pop(1);
+    return BddMap(out);
+}
+
+BddMap&
+BddMap::operator+=(const Bdd& other)
+{
+    BDD carry;
+    bdd_refs_pushptr(&carry);
+    bdd = AddOrSub(&carry, bdd, other.bdd, false);
+    bdd_refs_pop(1);
+    return *this;
+}
+
+BddMap
+BddMap::operator-(const Bdd& other) const
+{
+    BDD carry;
+    bdd_refs_pushptr(&carry);
+    BDDMAP out = AddOrSub(&carry, bdd, other.bdd, true);
+    bdd_refs_pop(1);
+    return BddMap(out);
+}
+
+BddMap &
+BddMap::operator-=(const Bdd& other)
+{
+    BDD carry;
+    bdd_refs_pushptr(&carry);
+    bdd = AddOrSub(&carry, bdd, other.bdd, true);
+    bdd_refs_pop(1);
+    return *this;
+}
+
 
 void
 BddMap::put(uint32_t key, Bdd value)
