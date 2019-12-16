@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <sylvan_qdd_int.h>
 
 static int granularity = 1; // default
 
@@ -237,7 +238,7 @@ qdd_sample(QDD q, BDDVAR vars, bool* str)
     for (;;) {
         mtbddnode_t n_vars = MTBDD_GETNODE(vars);
 
-        a *= QDD_AMP(q);
+        a = Cmul(QDD_AMP(q), a);
         *str = (rand() & 0x2000) == 0;
 
         if (q != ONE) {
