@@ -1,0 +1,124 @@
+/*
+ * Copyright 2011-2016 Formal Methods and Tools, University of Twente
+ * Copyright 2016-2017 Tom van Dijk, Johannes Kepler University Linz
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/* Do not include this file directly. Instead, include sylvan.h */
+
+
+/**
+ *
+A QMDD can represent exponentially-sized vectors and matrices of complex numbers
+including quantum states and gates. For those familiar with the literature on
+decision diagrams, it might be helpful to understand the relation between QMDDDs
+and other DD variants. Perhaps surprisingly, the QMDD data structure is more
+similar to binary DDs (but additionally adorned with edge weights) than to a
+multi-terminal or multi-values DDs, as its name and purpose seems to suggest.
+A multi-terminal DD, aka algebraic DD or ADD, represents a function
+f : B^n --> D, where D,  the domain, is an algebra, e.g., the complex numbers.
+ADDs can therefore immediately be used to encode quantum systems as well,
+though less efficiently [1].
+A multi-valued DD represents functions f : D^n --> B and is typically used to
+encode high-level systems such as programs with multi-valued variables.
+
+Structurally, a QMDD is an Ordered and Reduced BDD (ORBDD) with weighted edges.
+The root node also has a weighted start edge. As a BDD, each node has a
+variable x and two outgoing edges to QMDDs: a low and a high edge representing
+x=0 and x=1. Edge weights are normalized by dividing the weights of the low and
+high edges by that of the low edge (unless it equals zero) and propagating alpha
+upwards through the incoming edge. This normalization achieves additional
+reductions in the structure and should not be confused with the normalization
+of quantum states, i.e., QMDDs are more general than quantum systems.
+
+Formally, a QMDD edge e is a pair (Q,w), where Q is (a pointer to) a QMMD node,
+w in C is a weight representing a normalized amplitude. A QMDD node is either a
+constant 1 or a tuple (x,l,h) where x is a (Boolean) variable and
+l, h QMDD edges such that:
+- x < l.Q.x, r.Q.x,         (similar to the ordering in ORBDDs)
+- (x,l,h) is unique,        (similar to the reduction in ORBDDs)
+- l != h, and               (similar to the deletion rule from ORBDDs)
+- l.w in {0,1}.             (by normalization)
+
+A QMDD (edge) e is thus interpreted as a function [[ e ]] : (X --> B) --> C,
+where X are the variables, and B,C the Boolean / Complex domains.
+Each path to the 1 leaf node represents an assignment A : X --> B to the
+variables x in X of the nodes along the path (x=0 for low and x=1 for high),
+and an amplitude defined by multiplying the weights along the path.
+Formally, the semantics of [[ e ]] for a QMDD edge e is defined as:
+[[ (1,w) ]]      := { {} --> w }
+[[ (Q,w) ]]      := { {Q.x = 0} U A --> w * Q.l.w | (s,A) in [[ Q.l ]]  } U
+                    { {Q.x = 1} U A --> w * Q.r.w | (s,A) in [[ Q.h ]]  }
+For each assignment A in B^X, we may interpret [[ e ]](A) as usual by
+interpreting unassigned variables as `don't cares`, i.e.,
+ [[ e ]](A)      := w such that exists (A',w) in [[ e ]] with A' subseteq A.
+ (Note that by the ordered property, such an (A',w) is unqiue in [[ e ]].)
+Alternative, we might extend the QMDD of e by re-adding all deleted nodes (see
+definition above). This can be done by adding `don't care` nodes (x,(Q,1),(Q,1))
+between edges which skip a variable, i.e., l.x != x+1 or h.x != x+1.
+Formally, we replace each node (x,l,h) with (x, n_x+1, h), where
+- n_i := (i, (1,n_i+1),  (1,n_i+1) )            for i < l.x - 1, and
+- n_i := (i, l, h)                              for i = l.x - 1.
+And analogously for the high edges.
+
+ */
+
+
+#ifndef SYLVAN_QDD_H
+#define SYLVAN_QDD_H
+
+#include <stdbool.h>
+#include <stdint.h>
+
+#include <sylvan_mtbdd.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
+
+/**
+ * low 40 bits          = pointer
+ * high 20/24 bits      = amplitude (normalized)
+ */
+typedef uint64_t QDD;
+static const QDD        ONE = (1ULL << 40) | 1;
+
+
+typedef uint64_t        AMP; // amplitude
+static const AMP        NIL = 0;
+
+
+//TODO: implement unary matrix operations (matrices are defined in qdd_int.c)
+
+
+// TODO: Implement plus and multi-qubit ops
+TASK_DECL_3(QDD, qdd_plus, QDD, QDD, BDDVAR);
+#define qdd_plus(a,b) (CALL(qdd_plus,a,b,0));
+
+
+/**
+ * Sample
+ *
+ * str will contain the state. The amplitude is returned.
+ * str should be an array of length |vars|.
+ */
+extern AMP qdd_sample(QDD bdd, BDDVAR vars, bool* str);
+
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
+
+#endif

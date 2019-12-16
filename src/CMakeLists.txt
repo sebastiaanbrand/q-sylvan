@@ -8,6 +8,8 @@ set(SOURCES
     sylvan_ldd.c
     sylvan_mt.c
     sylvan_mtbdd.c
+    sylvan_qdd.c
+    sylvan_qdd_int.c
     sylvan_obj.cpp
     sylvan_refs.c
     sylvan_sl.c
@@ -29,6 +31,8 @@ set(HEADERS
     sylvan_mt.h
     sylvan_mtbdd.h
     sylvan_mtbdd_int.h
+    sylvan_qdd.h
+    sylvan_qdd_int.h
     sylvan_obj.hpp
     sylvan_stats.h
     sylvan_table.h
@@ -41,6 +45,8 @@ option(BUILD_STATIC_LIBS "Enable/disable creation of static libraries" ON)
 add_library(sylvan ${SOURCES})
 
 find_package(GMP REQUIRED)
+
+include_directories(${GMP_INCLUDE_DIR})
 
 target_link_libraries(sylvan m pthread ${GMP_LIBRARIES})
 
