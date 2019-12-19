@@ -23,8 +23,12 @@ message(STATUS "Compiler: ${CMAKE_CXX_COMPILER_ID}")
 
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/")
 
-set(CMAKE_C_FLAGS "-O2 -Wextra -Wall -Werror -fno-strict-aliasing ${CMAKE_C_FLAGS}")
-set(CMAKE_CXX_FLAGS "-O2 -Wextra -Wall -Werror -fno-strict-aliasing -Wno-deprecated ${CMAKE_CXX_FLAGS}")
+#set(CMAKE_C_FLAGS "-O2 -Wextra -Wall -Werror -fno-strict-aliasing ${CMAKE_C_FLAGS}")
+#set(CMAKE_CXX_FLAGS "-O2 -Wextra -Wall -Werror -fno-strict-aliasing -Wno-deprecated ${CMAKE_CXX_FLAGS}")
+# Disabled warnings as errors during dev 
+set(CMAKE_C_FLAGS "-O2 -Wextra -Wall -fno-strict-aliasing ${CMAKE_C_FLAGS}")
+set(CMAKE_CXX_FLAGS "-O2 -Wextra -Wall -fno-strict-aliasing -Wno-deprecated ${CMAKE_CXX_FLAGS}")
+
 
 option(WITH_COVERAGE "Add generation of test coverage" OFF)
 if(WITH_COVERAGE)
