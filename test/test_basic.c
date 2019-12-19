@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include <pthread.h>
 #include <unistd.h>
 #include <time.h>
@@ -516,6 +517,19 @@ test_ldd()
     return 0;
 }
 
+int test_qdd()
+{
+    // TODO
+    QDD q             = create_all_zero_state(5);
+    printf("root edge: %p\n", q);
+    bool basis_state[] = {0,0,1};
+    AMP amplitude = qdd_get_amplitude(q, basis_state);
+
+    printf("amplitude: %p\n", amplitude);
+
+    return 0;
+}
+
 int runtests()
 {
     // we are not testing garbage collection
@@ -529,6 +543,8 @@ int runtests()
     for (int j=0;j<10;j++) if (test_operators()) return 1;
 
     if (test_ldd()) return 1;
+
+    if (test_qdd()) return 1;
 
     return 0;
 }

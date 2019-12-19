@@ -28,12 +28,16 @@
 static int granularity = 1; // default
 
 
-typedef uint64_t        PTR; // pointer
+// I don't know why this is defined in the source file, and AMP in the header,
+// however moving it to the header file creates issues with IntelliSense (but 
+// not for the actual compiler though).
+//typedef uint64_t        PTR; // pointer
 
 
 static inline AMP __attribute__((unused))
 QDD_AMP(QDD q)
 {
+    // This doesn't yet remove the top 4 bits for the variable
     return q >> 40; // 40 bits
 }
 
@@ -61,7 +65,8 @@ QDD_GETNODE(QDD q)
 static inline QDD __attribute__((unused))
 qdd_getlow(qddnode_t n)
 {
-    return n->b & 0x0fffffffffffffff;
+    // Why does this remove the variable number?
+    return n->a & 0x0fffffffffffffff;
 }
 
 static inline QDD __attribute__((unused))
@@ -73,7 +78,7 @@ qdd_gethigh(qddnode_t n)
 static inline BDDVAR __attribute__((unused))
 qdd_getvar(qddnode_t n)
 {
-    return (BDDVAR) ( (n->b >> 60) | ((n->b >> 56) & 0xf0) );
+    return (BDDVAR) ( (n->a >> 60) | ((n->b >> 56) & 0xf0) );
 }
 
 static inline QDD qdd_make(PTR p, AMP a)
@@ -86,8 +91,9 @@ static inline QDD qdd_make(PTR p, AMP a)
 static inline void qddnode_make(qddnode_t n, BDDVAR var, QDD low, QDD high)
 {
     assert (var <= 0xff);
-    n->b = low   |  (((uint64_t)var) << 60);
-    n->a = high  | ((((uint64_t)var) << 56) & 0xf000000000000000);
+    // changed n->a and n->b arround (maybe better to call qdd_getlow/high)
+    n->a = low   |  (((uint64_t)var) << 60);
+    n->b = high  | ((((uint64_t)var) << 56) & 0xf000000000000000);
 }
 
 
@@ -241,7 +247,7 @@ qdd_sample(QDD q, BDDVAR vars, bool* str)
         a = Cmul(QDD_AMP(q), a);
         *str = (rand() & 0x2000) == 0;
 
-        if (q != ONE) {
+        if (q != QDD_ONE) {
             qddnode_t qn = QDD_GETNODE(q);
             if (qdd_getvar(qn) == mtbddnode_getvariable(n_vars)) {
 
@@ -255,6 +261,60 @@ qdd_sample(QDD q, BDDVAR vars, bool* str)
     }
 
     return 1;
+}
+
+AMP
+qdd_get_amplitude(QDD q, bool* basis_state)
+{
+    if (q == sylvan_false) return 0;
+
+    // AMP in actually an index in a table, so setting a = 1 isn't quite
+    // right is it?
+    AMP a = 1;
+    for (;;) {
+        // multiply `a` with amplitude of current QDD edge
+        //a = Cmul(QDD_AMP(q), a);
+
+        // temp:
+        a = a * QDD_AMP(q);
+        
+        // now we need to choose low or high edge of next node
+        //qddnode_t node = QDD_GETNODE(q);
+        //BDDVAR var     = qdd_getvar(node);
+        qddnode_t node = QDD_GETNODE(q);
+        BDDVAR var     = qdd_getvar(node);
+        // NOTE: looks like var is not stored/retrieved correctly
+        printf("at node with var=%d\n", var);
+
+        // TODO: condition low/high on bosis state vector[var]
+        q = qdd_getlow(node);
+
+
+        // TODO: finish this function
+
+
+        if (QDD_PTR(q) == QDD_PTR(QDD_TERMINAL)) break;
+    }
+
+    return a;
+}
+
+QDD
+create_all_zero_state(int n)
+{
+    assert(n >= 1);
+    
+    // start at terminal, and build backwards
+    QDD q = QDD_TERMINAL;
+    for(int k = n-1; k >= 0; k--){
+        printf("creating node with var=%d\n", k);
+        // NOTE: this is not the right way to deal with amplitudes yet
+        QDD low = qdd_make(QDD_PTR(q), 1);   
+        QDD high = qdd_make(QDD_PTR(QDD_TERMINAL), 0); 
+        q = qdd_makenode2(k, 1, low, high);
+    }
+
+    return q;
 }
 
 

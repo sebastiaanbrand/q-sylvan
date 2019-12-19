@@ -87,16 +87,36 @@ And analogously for the high edges.
 extern "C" {
 #endif /* __cplusplus */
 
+/**
+ * 
+ * QDD : essentially an edge, containing [var, amp, pointer]
+ *  - var: the variable/qubit numer (unclear whether this variable refers to the
+ *         node this edge is an outgoing edge of, or the node this edge is an 
+ *         incomming edge to.)
+ *  - amp: the (index of) the amplitude on this edge.
+ *  - pointer: a number which identifies the node this edge is pointing _to_.
+ * qddnote_t : essentially a node, containing two edges (to its children).
+ */
 
 /**
  * low 40 bits          = pointer
  * high 20/24 bits      = amplitude (normalized)
+ * 0x[0][00000][0000000000]
  */
 typedef uint64_t QDD;
-static const QDD        ONE = (1ULL << 40) | 1;
+typedef uint64_t AMP; // amplitude
+typedef uint64_t PTR; // pointer
 
 
-typedef uint64_t        AMP; // amplitude
+/**
+ * QDD with pointer value 1, and amplitude 1. However we need to be able to 
+ * point to the root with amplitudes other than 1?
+ * NOTE: renamed ONE -> QDD_ONE for now because of conflict with Bdd ONE
+ */
+static const QDD        QDD_ONE = (1ULL << 40) | 1; // 0x[0][00001][0000000001]
+static const QDD        QDD_TERMINAL = 1; // 0x[0][00000][0000000001]
+
+
 static const AMP        NIL = 0;
 
 
@@ -115,6 +135,26 @@ TASK_DECL_3(QDD, qdd_plus, QDD, QDD, BDDVAR);
  * str should be an array of length |vars|.
  */
 extern AMP qdd_sample(QDD bdd, BDDVAR vars, bool* str);
+
+
+/**
+ * Get amplitude of given basis state.
+ * 
+ * @param qdd A QDD encoding some quantum state |\psi>.
+ * @param basis_state A bitstring x of some computational basis state |x>.
+ * 
+ * @return The amplitude <\psi|x>.
+ */
+extern AMP qdd_get_amplitude(QDD qdd, bool* basis_state);
+
+/**
+ * Creates a QDD for an n-qubit state |00...0>.
+ * 
+ * @param n Number of qubits.
+ * 
+ * @return A QDD encoding the n-qubit state |00..0>.
+ */
+extern QDD create_all_zero_state(int n);
 
 
 #ifdef __cplusplus
