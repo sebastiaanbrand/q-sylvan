@@ -103,9 +103,10 @@ extern "C" {
  * high 20/24 bits      = amplitude (normalized)
  * 0x[0][00000][0000000000]
  */
-typedef uint64_t QDD;
-typedef uint64_t AMP; // amplitude
-typedef uint64_t PTR; // pointer
+typedef uint64_t QDD; // QDD edge
+typedef uint64_t AMP; // amplitude index
+typedef uint64_t PTR; // node index (TODO: rename PTR to something else to avoid
+                      // ambiguity with actual pointers)
 
 
 /**
@@ -114,7 +115,8 @@ typedef uint64_t PTR; // pointer
  * NOTE: renamed ONE -> QDD_ONE for now because of conflict with Bdd ONE
  */
 static const QDD        QDD_ONE = (1ULL << 40) | 1; // 0x[0][00001][0000000001]
-static const QDD        QDD_TERMINAL = 1; // 0x[0][00000][0000000001]
+//static const QDD        QDD_TERMINAL = 1; // 0x[0][00000][0000000001]
+static const PTR        QDD_TERMINAL = 1;
 
 
 static const AMP        NIL = 0;
@@ -156,6 +158,7 @@ extern AMP qdd_get_amplitude(QDD qdd, bool* basis_state);
  */
 extern QDD create_all_zero_state(int n);
 
+extern void init_amplitude_table(); // just for testing TODO: remove
 
 #ifdef __cplusplus
 }
