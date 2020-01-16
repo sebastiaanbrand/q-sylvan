@@ -28,20 +28,16 @@
 static int granularity = 1; // default
 
 
-// I don't know why this is defined in the source file, and AMP in the header,
-// however moving it to the header file creates issues with IntelliSense (but 
-// not for the actual compiler though).
-//typedef uint64_t        PTR; // pointer
 
 
-static inline AMP __attribute__((unused))
+static inline AMP
 QDD_AMP(QDD q)
 {
     // Mask out the 4 top bits (var) and shift right
     return (q & 0x0fffff0000000000) >> 40; // 20 bits
 }
 
-static inline PTR __attribute__((unused))
+static inline PTR
 QDD_PTR(QDD q)
 {
     return q & 0x000000ffffffffff; // 40 bits
@@ -49,97 +45,146 @@ QDD_PTR(QDD q)
 
 /**
  * QDD node structure
+ * 
+ * TODO: document 
  *
  */
 typedef struct __attribute__((packed)) qddnode {
-    //QDD a, b;
-    uint64_t low : 40;
-    uint64_t high : 40;
-    uint64_t amp_low : 20;
-    uint64_t amp_high : 20;
-    uint64_t var : 8;
+    QDD a, b; // TODO: rename to low, high
 } *qddnode_t; // 16 bytes
 
+
+static inline BDDVAR
+qdd_getvar(qddnode_t n)
+{
+    // 4 highest bits of `b` followed by the 4 highest bits of `a`.
+    return (BDDVAR) ( (n->a >> 60) | ((n->b >> 56) & 0xf0) ); // 8 bits
+}
+
+/**
+ * Gets the low edge of `n` with the AMP and PTR information, but without the
+ * (halved) variable information.
+ */
+static inline QDD
+qdd_getlow(qddnode_t n)
+{
+    return (QDD) n->a & 0x0fffffffffffffff;
+}
+
+/**
+ * Gets the high edge of `n` with the AMP and PTR information, but without the
+ * (halved) variable information.
+ */
+static inline QDD
+qdd_gethigh(qddnode_t n)
+{
+    return (QDD) n->b & 0x0fffffffffffffff;
+}
+
+/**
+ * Gets only the PTR of the low edge of `n`.
+ */
+static inline PTR
+qdd_getptrlow(qddnode_t n)
+{
+    return (PTR) QDD_PTR(n->a);
+}
+
+/**
+ * Gets only the PTR of the high edge of `n`.
+ */
+static inline PTR
+qdd_getptrhigh(qddnode_t n)
+{
+    return (PTR) QDD_PTR(n->b);
+}
+
+/**
+ * Gets only the AMP of the low edge of `n`.
+ */
+static inline AMP
+qdd_getamplow(qddnode_t n)
+{
+    return (AMP) QDD_AMP(n->a);
+}
+
+/**
+ * Gets only the AMP of the high edge of `n`.
+ */
+static inline AMP
+qdd_getamphigh(qddnode_t n)
+{
+    return (AMP) QDD_AMP(n->b);
+}
+
+/**
+ * Pretty prints the information contained in `n`.
+ */
 static inline void pprint_qddnode(qddnode_t n)
 {
     printf("[var=%d, low=%p, high=%p, a=%p, b=%p]\n", 
-             n->var, n->low, n->high, n->amp_low, n->amp_high);
-}
-
-static inline QDD bundle_edge(PTR p, AMP a)
-{
-    assert (p <= 0x000000fffffffffe);   // avoid clash with sylvan_invalid
-    assert (a <= 0x00000000000fffff);
-    return a << 40 | p;
+             qdd_getvar(n),
+             qdd_getptrlow(n),
+             qdd_getptrhigh(n),
+             qdd_getamplow(n),
+             qdd_getamphigh(n));
 }
 
 static inline qddnode_t
 QDD_GETNODE(QDD q)
 {
+    // TODO: I think it's better if this function takes a PTR as argument,
+    // rather than hiding the QDD_PTR(q) from the outside.
     return (qddnode_t) llmsset_index_to_ptr(nodes, QDD_PTR(q));
 }
 
-//static inline QDD __attribute__((unused))
-//qdd_getlow(qddnode_t n)
-//{
-//    return n->a & 0x0fffffffffffffff;
-//}
-static inline QDD __attribute__((unused))
-qdd_getlow_bundled(qddnode_t n)
+
+static inline QDD
+qdd_bundle_ptr_amp(PTR p, AMP a)
 {
-    return bundle_edge(n->low, n->amp_low);
+    assert (p <= 0x000000fffffffffe);   // avoid clash with sylvan_invalid
+    assert (a <= 0x00000000000fffff);
+    return (a << 40 | p);
 }
 
-//static inline QDD __attribute__((unused))
-//qdd_gethigh(qddnode_t n)
-//{
-//    return n->b & 0x0fffffffffffffff;
-//}
-static inline QDD __attribute__((unused))
-qdd_gethigh_bundled(qddnode_t n)
+
+static inline QDD
+qdd_bundle_low(BDDVAR var, PTR p, AMP a)
 {
-    return bundle_edge(n->high, n->amp_high);
+    // on the low edge we store the bottom 4 bits of the 8 bit var
+    assert (var <= 0xff);
+    QDD q = qdd_bundle_ptr_amp(p, a);
+    q = ((uint64_t)var << 60) | q;
+    return q;
 }
 
-//static inline BDDVAR __attribute__((unused))
-//qdd_getvar(qddnode_t n)
-//{
-//    return (BDDVAR) ( (n->a >> 60) | ((n->b >> 56) & 0xf0) );
-//}
 
-//static inline QDD qdd_make(PTR p, AMP a)
-//{
-//    assert (p <= 0x000000fffffffffe);   // avoid clash with sylvan_invalid
-//    assert (a <= 0x00000000000fffff);
-//    return a << 40 | p;
-//} // replaced with bundle_edge(PTR p, AMP a)
+static inline QDD
+qdd_bundle_high(BDDVAR var, PTR p, AMP a)
+{
+    // on the high edge we store the top 4 bits of the 8 bit var
+    assert (var <= 0xff);
+    QDD q = qdd_bundle_ptr_amp(p, a);
+    return (((uint64_t)var & 0xf0) << 56) | q;
+}
 
-//static inline void qddnode_make(qddnode_t n, BDDVAR var, QDD low, QDD high)
-//{
-//    assert (var <= 0xff);
-//    // changed n->a and n->b arround (maybe better to call qdd_getlow/high)
-//    n->a = low   |  (((uint64_t)var) << 60);
-//    n->b = high  | ((((uint64_t)var) << 56) & 0xf000000000000000);
-//}
+
 static inline void 
 qddnode_make(qddnode_t n, BDDVAR var, PTR low, PTR high, AMP a, AMP b)
 {
-    assert (var <= 0xff);
-    n->low      = low;
-    n->high     = high;
-    n->amp_low  = a;
-    n->amp_high = b;
-    n->var      = var;
+    n->a = qdd_bundle_low(var, low, a);
+    n->b = qdd_bundle_high(var, high, b);
 }
 
 
-/*
+
 static PTR
-_qdd_makenode(BDDVAR var, QDD low, QDD high)
+//_qdd_makenode(BDDVAR var, QDD low, QDD high)
+_qdd_makenode(BDDVAR var, PTR low, PTR high, AMP a, AMP b)
 {
     struct qddnode n;
 
-    qddnode_make(&n, var, low, high);
+    qddnode_make(&n, var, low, high, a, b);
 
     PTR result;
     int created;
@@ -147,8 +192,8 @@ _qdd_makenode(BDDVAR var, QDD low, QDD high)
     if (index == 0) {
         LACE_ME;
 
-        mtbdd_refs_push(low);
-        mtbdd_refs_push(high);
+        mtbdd_refs_push(n.a);//mtbdd_refs_push(low);
+        mtbdd_refs_push(n.b);//mtbdd_refs_push(high);
         sylvan_gc();
         mtbdd_refs_pop(2);
 
@@ -164,57 +209,8 @@ _qdd_makenode(BDDVAR var, QDD low, QDD high)
 
     result = index;
     return result;
-} */
-static PTR
-_qdd_makenode(BDDVAR var, PTR low_node, PTR high_node, AMP a, AMP b)
-{
-    struct qddnode n;
+} 
 
-    qddnode_make(&n, var, low_node, high_node, a, b);
-
-    QDD low_edge;
-    QDD high_edge;
-
-    PTR result;
-    int created;
-    
-    // For the llmsset_lookup function, the pointers to low and high also need
-    // to contain the information about the amplitudes as well for this function
-    // to work correctly.
-    low_edge  = bundle_edge(n.low, n.amp_low);
-    high_edge = bundle_edge(n.high, n.amp_high);
-    PTR index = llmsset_lookup(nodes, low_edge, high_edge, &created);
-    if (index == 0) {
-        LACE_ME;
-
-        low_edge  = bundle_edge(low_node, a);
-        high_edge = bundle_edge(low_node, b);
-        mtbdd_refs_push(low_edge);
-        mtbdd_refs_push(high_edge);
-        sylvan_gc();
-        mtbdd_refs_pop(2);
-
-        low_edge  = bundle_edge(n.low, n.amp_low);
-        high_edge = bundle_edge(n.high, n.amp_high);
-        index = llmsset_lookup(nodes, low_edge, high_edge, &created);
-        if (index == 0) {
-            fprintf(stderr, "BDD Unique table full, %zu of %zu buckets filled!\n", llmsset_count_marked(nodes), llmsset_get_size(nodes));
-            exit(1);
-        }
-    }
-
-    if (created) sylvan_stats_count(BDD_NODES_CREATED);
-    else sylvan_stats_count(BDD_NODES_REUSED);
-
-    result = index;
-    return result;
-}
-
-//static inline PTR qdd_makenode(BDDVAR var, QDD low, QDD high)
-//{
-//    
-//    return low == high ? low : _qdd_makenode(var, low, high);
-//}
 static inline PTR 
 qdd_makenode(BDDVAR var, QDD low_edge, QDD high_edge)
 {
@@ -224,11 +220,6 @@ qdd_makenode(BDDVAR var, QDD low_edge, QDD high_edge)
         return _qdd_makenode(var, QDD_PTR(low_edge), QDD_PTR(high_edge), 
                                   QDD_AMP(low_edge), QDD_AMP(high_edge));
 }
-
-//static inline QDD qdd_makenode2(BDDVAR var, AMP a, QDD low, QDD high)
-//{
-//    return qdd_make(qdd_makenode(var, low,high), a);
-//}
 
 //TODO: implement a normalizing make_node code
 
@@ -257,8 +248,8 @@ TASK_IMPL_3(BDD, qdd_plus, QDD, a, QDD, b, BDDVAR, prev_level)
     qddnode_t node_a = QDD_GETNODE(a);
     qddnode_t node_b = QDD_GETNODE(b);
 
-    BDDVAR va = node_a->var; //BDDVAR va = qdd_getvar(na);
-    BDDVAR vb = node_b->var; //BDDVAR vb = qdd_getvar(nb);
+    BDDVAR va = qdd_getvar(node_a);
+    BDDVAR vb = qdd_getvar(node_b);
     BDDVAR level = va < vb ? va : vb;
 
     int cachenow = granularity < 2 || prev_level == 0 ? 1 : prev_level / granularity != level / granularity;
@@ -274,12 +265,14 @@ TASK_IMPL_3(BDD, qdd_plus, QDD, a, QDD, b, BDDVAR, prev_level)
     QDD aLow = a, aHigh = a;
     QDD bLow = b, bHigh = b;
     if (level == va) {
-        aLow = qdd_getlow_bundled(node_a);
-        aHigh = qdd_gethigh_bundled(node_a);
+        // TODO: fix
+        //aLow = qdd_getlow_bundled(node_a);
+        //aHigh = qdd_gethigh_bundled(node_a);
     }
     if (level == vb) {
-        bLow = qdd_getlow_bundled(node_b);
-        bHigh = qdd_gethigh_bundled(node_b);
+        // TODO: fix
+        //bLow = qdd_getlow_bundled(node_b);
+        //bHigh = qdd_gethigh_bundled(node_b);
     }
 
     // Recursive computation
@@ -340,9 +333,8 @@ qdd_sample(QDD q, BDDVAR vars, bool* str)
 
         if (q != QDD_ONE) {
             qddnode_t qn = QDD_GETNODE(q);
-            if (qn->var == mtbddnode_getvariable(n_vars)) {
-
-                q = *str ? qdd_gethigh_bundled(qn) : qdd_getlow_bundled(qn);
+            if (qdd_getvar(qn) == mtbddnode_getvariable(n_vars)) {
+                q = *str ? qdd_gethigh(qn) : qdd_getlow(qn);
             }
         }
 
@@ -357,35 +349,31 @@ qdd_sample(QDD q, BDDVAR vars, bool* str)
 AMP
 qdd_get_amplitude(QDD q, bool* basis_state)
 {
-    // TODO: actually store amps in a table and use AMP as an index to that
-    //       table (also for create_all_zero_state())
-    // TODO: clean up this function
     if (q == sylvan_false) return 0;
 
-    AMP a = 1;
+    AMP a = C_ONE;
     for (;;) {
-        // multiply `a` with amplitude of current QDD edge
-        //a = Cmul(QDD_AMP(q), a);
+        a = Cmul(a, QDD_AMP(q));
 
-        // temp:
-        printf("amp=%d ", QDD_AMP(q));
-        a = a * QDD_AMP(q);
-        
         // now we need to choose low or high edge of next node
         qddnode_t node = QDD_GETNODE(q);
-        BDDVAR var     = node->var;
-        printf("at node with var=%d\n", var);
+        BDDVAR var     = qdd_getvar(node);
+        pprint_qddnode(node);
 
         // if the current edge is pointing to the terminal, we're done.
-        if (QDD_PTR(q) == QDD_PTR(QDD_TERMINAL)) break;
+        if (QDD_PTR(q) == QDD_TERMINAL) break;
 
-        // Condition low/high on bosis state vector[var]
+        // Condition low/high choice on basis state vector[var]
         if (basis_state[var] == 0)
-            q = qdd_getlow_bundled(node);
+            q = node->a;
         else
-            q = qdd_gethigh_bundled(node);
+            q = node->b;
     }
 
+    printf("amplitude in Ctable:");
+    Cprint(Cvalue(a));
+    printf("\n");
+    // TODO: return complex struct instead of the index.
     return a;
 }
 
@@ -397,24 +385,25 @@ create_all_zero_state(int n_qubits)
     struct qddnode n;
     
     // start at terminal, and build backwards
-    PTR prev_node = QDD_TERMINAL;
+    PTR low_child = QDD_TERMINAL;
     for(int k = n_qubits-1; k >= 0; k--){
         
-        qddnode_make(&n, k, prev_node, QDD_TERMINAL, 1, NIL);
-        // TODO: replace amps with call to amp table
+        qddnode_make(&n, k, low_child, QDD_TERMINAL, C_ONE, C_ZERO);
+        // is it correct to use CONE and CZRO here?
 
         printf("Created the following node:\n");
         pprint_qddnode(&n);
 
-        prev_node = qdd_makenode(k, qdd_getlow_bundled(&n), qdd_gethigh_bundled(&n));
-        printf("With index in the nodetable = %p\n", prev_node);
+        low_child = qdd_makenode(k, n.a, n.b);
+        pprint_qddnode(QDD_GETNODE(low_child));
+        printf("With index in the nodetable = %p\n", low_child);
     }
 
-    QDD root_edge = bundle_edge(prev_node, 1);
+    QDD root_edge = qdd_bundle_ptr_amp(low_child, C_ONE);
     return root_edge;
 }
 
-// just for testing TODO: remove
+// just for testing TODO: do this somewhere better
 void
 init_amplitude_table()
 {

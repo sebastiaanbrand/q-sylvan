@@ -9,7 +9,7 @@ set(SOURCES
     sylvan_mt.c
     sylvan_mtbdd.c
     sylvan_qdd.c
-    sylvan_qdd_int.c
+    sylvan_qdd_int.cpp
     sylvan_obj.cpp
     sylvan_refs.c
     sylvan_sl.c

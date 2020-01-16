@@ -15,6 +15,7 @@ mmiller@cs.uvic.ca
 #include "sylvan_qdd_int.h"
 
 #include <stdio.h>
+#include <map>
 
 /**********************************************
 Compute trig functions for angle factor*Pi/div
@@ -36,13 +37,32 @@ static long double Pi;    // set value of global Pi
 
 
 
-typedef struct complex_s {
-   long double r;   // real
-   long double i;   // imaginary
-   long double m;   // magnitude
-   long double a;   // angle
-} complex_t;
+struct complex_cmp
+{
+    bool operator() ( complex_t x, complex_t y ) const {
+    	return Ccomp(x,y);
+    }
+};
 
+
+std::map<cint, complex_t> Ctable;
+std::map<complex_t, cint, complex_cmp> Ctable2;
+
+bool
+Ccomp(complex_t x, complex_t y)
+{ // TODO: do we need to use x.m and x.a instead?
+    if(fabs((x.r)-(y.r)) < Ctol){ // real parts are "equal"
+        if(fabs(x.i)-(y.i) < Ctol) { // im parts are "equal"
+            return 0;
+        }
+        else{
+            return x.i > y.i;
+        }
+    }
+    else{
+        return x.r > y.r;
+    }
+}
 
 // return complex conjugate
 complex_t
@@ -110,17 +130,48 @@ Clookup (complex_t c)
 {
     cint i = 0;
 
-    // TODO: use a map data structure for representing cint --> complex_t.
+    // TODO: use something better than copy-paste from QMDD code ?
+
+    // First try to look up c
+    std::map<complex_t, cint, complex_cmp>::iterator it;
+    it = Ctable2.find(c);
+    if(it != Ctable2.end()){
+        return it->second;
+    }
+
+    // If not found, add a new entry to the table.
+    if(Ctentries >= 1048576) {
+        printf("ERROR, too many complex numbers\n");
+        exit(-4);
+    }
+
+    Ctentries++;
+    i=Ctentries-1;
+
+    complex_t new_c;
+    new_c.r = c.r;
+    new_c.i = c.i;
+    Ctable[i] = new_c;
+    Ctable2[new_c] = i;
+    
+
+    // what about deleting values?
+
     return i;
     (void) c;
 }
 
-static  complex_t
+complex_t
 Cvalue (cint i)
 {
-    complex_t c = (complex_t) { .r = 0, .i = 0, .a = 0, .m = 0  };
+    //complex_t c = (complex_t) { .r = 0, .i = 0, .m = 0, .a = 0  };
 
-    // TODO: use a map data structure for representing cint --> complex_t.
+    // it might be better to not call this function on CZRO and CONE in the
+    // first place.
+    //if(i == CZRO) return CmakeZero();
+    //if(i == CONE) return CmakeOne();
+    // added Ctable[CZRO] = CmakeZero() and Ctable[CONE] = CmakeOne()
+    complex_t c = Ctable[i];
 
     return c;
     (void) i;
@@ -255,6 +306,9 @@ Cmul (cint ai, cint bi)
     complex_t a, b, r;
     int t;
 
+    // What's best imo is to have these checks as optimization, but have the 
+    // code so that even without treating 0 and 1 as special cases it still
+    // runs correctly.
     if (ai == 1) return bi; // identity cases
     if (bi == 1) return ai;
     if (ai == 0 || bi == 0) return 0;
@@ -348,6 +402,7 @@ typedef complex_t qdd_matrix[2][2];
 qdd_matrix Nm, Vm, VPm, Sm, Rm, Hm, Zm, ZEROm, Qm;
 
 
+
 void
 qdd_complex_init()
 {
@@ -379,5 +434,12 @@ qdd_complex_init()
 
     // TODO: initialize a map data structure for representing cint --> complex_t.
     //       Also map CONE and CZRO in there
+    Ctable[C_ZERO] = CmakeZero();  //Ctable[0] = 0.0 + 0.0i
+    Ctable[C_ONE] = CmakeOne();   //Ctable[1] = 1.0 + 0.0i
+    Ctable2[CmakeZero()] = C_ZERO; //Ctable2[0.0 + 0.0i] = 0
+    Ctable2[CmakeOne()] = C_ONE;  //Ctable2[1.0 + 0.0i] = 1
+    // TODO: Maybe better to deal with 0 and 1 in each function as  a special
+    // case
+    Ctentries = 2;
 }
   

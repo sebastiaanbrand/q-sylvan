@@ -520,18 +520,18 @@ test_ldd()
 int test_qdd()
 {
 
-    //printf(node->a);
-
-    //printf(sizeof(qddnode_t));
-    //init_amplitude_table();
+    init_amplitude_table();
     
-    
-    QDD q             = create_all_zero_state(5);
+    QDD q = create_all_zero_state(5);
     printf("root edge: %p\n", q);
-    bool basis_state[] = {0,0,1,0,0};
-    AMP amplitude = qdd_get_amplitude(q, basis_state);
 
-    printf("amplitude: %d\n", amplitude);
+    bool basis_state[] = {0,0,0,0,0};
+    AMP a = qdd_get_amplitude(q, basis_state);
+    printf("amp index: %p\n", a);
+
+    basis_state[2] = 1;
+    a = qdd_get_amplitude(q, basis_state);
+    printf("amp index: %p\n", a);
 
 
     return 0;
