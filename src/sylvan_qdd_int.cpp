@@ -435,9 +435,9 @@ qdd_complex_init()
     // TODO: initialize a map data structure for representing cint --> complex_t.
     //       Also map CONE and CZRO in there
     Ctable[C_ZERO] = CmakeZero();  //Ctable[0] = 0.0 + 0.0i
-    Ctable[C_ONE] = CmakeOne();   //Ctable[1] = 1.0 + 0.0i
+    Ctable[C_ONE] = CmakeOne();    //Ctable[1] = 1.0 + 0.0i
     Ctable2[CmakeZero()] = C_ZERO; //Ctable2[0.0 + 0.0i] = 0
-    Ctable2[CmakeOne()] = C_ONE;  //Ctable2[1.0 + 0.0i] = 1
+    Ctable2[CmakeOne()] = C_ONE;   //Ctable2[1.0 + 0.0i] = 1
     // TODO: Maybe better to deal with 0 and 1 in each function as  a special
     // case
     Ctentries = 2;

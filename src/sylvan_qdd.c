@@ -28,37 +28,49 @@
 static int granularity = 1; // default
 
 
+/**
+ * QDD node structure (128 bits)
+ * 
+ * 64 bits low:
+ *       4 bits: lower 4 bits of 8 bit variable/qubit number of this node
+ *      20 bits: index of edge weight of low edge in Ctable (AMP)
+ *      40 bits: low edge pointer to next node (PTR)
+ * 64 bits high:
+ *       4 bits: upper 4 bits of 8 bit variable/qubit number of this node
+ *      20 bits: index of edge weight of high edge in Ctable (AMP)
+ *      40 bits: high edge pointer to next node (PTR)
+ */
+typedef struct __attribute__((packed)) qddnode {
+    QDD low, high; // TODO: rename to low, high
+} *qddnode_t; // 16 bytes
 
 
+/**
+ * Gets only the AMP information of a QDD edge `q`.
+ */
 static inline AMP
 QDD_AMP(QDD q)
 {
-    // Mask out the 4 top bits (var) and shift right
     return (q & 0x0fffff0000000000) >> 40; // 20 bits
 }
 
+/**
+ * Gets only the PTR information of a QDD edge `q`.
+ */
 static inline PTR
 QDD_PTR(QDD q)
 {
     return q & 0x000000ffffffffff; // 40 bits
 }
 
+
 /**
- * QDD node structure
- * 
- * TODO: document 
- *
+ * Gets the variable number of a given node `n`.
  */
-typedef struct __attribute__((packed)) qddnode {
-    QDD a, b; // TODO: rename to low, high
-} *qddnode_t; // 16 bytes
-
-
 static inline BDDVAR
 qdd_getvar(qddnode_t n)
 {
-    // 4 highest bits of `b` followed by the 4 highest bits of `a`.
-    return (BDDVAR) ( (n->a >> 60) | ((n->b >> 56) & 0xf0) ); // 8 bits
+    return (BDDVAR) ( (n->low >> 60) | ((n->high >> 56) & 0xf0) ); // 8 bits
 }
 
 /**
@@ -68,7 +80,7 @@ qdd_getvar(qddnode_t n)
 static inline QDD
 qdd_getlow(qddnode_t n)
 {
-    return (QDD) n->a & 0x0fffffffffffffff;
+    return (QDD) n->low & 0x0fffffffffffffff; // 60 bits
 }
 
 /**
@@ -78,7 +90,7 @@ qdd_getlow(qddnode_t n)
 static inline QDD
 qdd_gethigh(qddnode_t n)
 {
-    return (QDD) n->b & 0x0fffffffffffffff;
+    return (QDD) n->high & 0x0fffffffffffffff; // 60 bits
 }
 
 /**
@@ -87,7 +99,7 @@ qdd_gethigh(qddnode_t n)
 static inline PTR
 qdd_getptrlow(qddnode_t n)
 {
-    return (PTR) QDD_PTR(n->a);
+    return (PTR) QDD_PTR(n->low);
 }
 
 /**
@@ -96,7 +108,7 @@ qdd_getptrlow(qddnode_t n)
 static inline PTR
 qdd_getptrhigh(qddnode_t n)
 {
-    return (PTR) QDD_PTR(n->b);
+    return (PTR) QDD_PTR(n->high);
 }
 
 /**
@@ -105,7 +117,7 @@ qdd_getptrhigh(qddnode_t n)
 static inline AMP
 qdd_getamplow(qddnode_t n)
 {
-    return (AMP) QDD_AMP(n->a);
+    return (AMP) QDD_AMP(n->low);
 }
 
 /**
@@ -114,7 +126,7 @@ qdd_getamplow(qddnode_t n)
 static inline AMP
 qdd_getamphigh(qddnode_t n)
 {
-    return (AMP) QDD_AMP(n->b);
+    return (AMP) QDD_AMP(n->high);
 }
 
 /**
@@ -130,12 +142,13 @@ static inline void pprint_qddnode(qddnode_t n)
              qdd_getamphigh(n));
 }
 
+/**
+ * Gets the node `p` is pointing to.
+ */
 static inline qddnode_t
-QDD_GETNODE(QDD q)
+QDD_GETNODE(PTR p)
 {
-    // TODO: I think it's better if this function takes a PTR as argument,
-    // rather than hiding the QDD_PTR(q) from the outside.
-    return (qddnode_t) llmsset_index_to_ptr(nodes, QDD_PTR(q));
+    return (qddnode_t) llmsset_index_to_ptr(nodes, p);
 }
 
 
@@ -172,8 +185,8 @@ qdd_bundle_high(BDDVAR var, PTR p, AMP a)
 static inline void 
 qddnode_make(qddnode_t n, BDDVAR var, PTR low, PTR high, AMP a, AMP b)
 {
-    n->a = qdd_bundle_low(var, low, a);
-    n->b = qdd_bundle_high(var, high, b);
+    n->low  = qdd_bundle_low(var, low, a);
+    n->high = qdd_bundle_high(var, high, b);
 }
 
 
@@ -188,16 +201,16 @@ _qdd_makenode(BDDVAR var, PTR low, PTR high, AMP a, AMP b)
 
     PTR result;
     int created;
-    PTR index = llmsset_lookup(nodes, n.a, n.b, &created);
+    PTR index = llmsset_lookup(nodes, n.low, n.high, &created);
     if (index == 0) {
         LACE_ME;
 
-        mtbdd_refs_push(n.a);//mtbdd_refs_push(low);
-        mtbdd_refs_push(n.b);//mtbdd_refs_push(high);
+        mtbdd_refs_push(n.low);//mtbdd_refs_push(low);
+        mtbdd_refs_push(n.high);//mtbdd_refs_push(high);
         sylvan_gc();
         mtbdd_refs_pop(2);
 
-        index = llmsset_lookup(nodes, n.a, n.b, &created);
+        index = llmsset_lookup(nodes, n.low, n.high, &created);
         if (index == 0) {
             fprintf(stderr, "BDD Unique table full, %zu of %zu buckets filled!\n", llmsset_count_marked(nodes), llmsset_get_size(nodes));
             exit(1);
@@ -245,8 +258,8 @@ TASK_IMPL_3(BDD, qdd_plus, QDD, a, QDD, b, BDDVAR, prev_level)
     sylvan_stats_count(BDD_AND);
 
 
-    qddnode_t node_a = QDD_GETNODE(a);
-    qddnode_t node_b = QDD_GETNODE(b);
+    qddnode_t node_a = QDD_GETNODE(QDD_PTR(a));
+    qddnode_t node_b = QDD_GETNODE(QDD_PTR(b));
 
     BDDVAR va = qdd_getvar(node_a);
     BDDVAR vb = qdd_getvar(node_b);
@@ -265,14 +278,12 @@ TASK_IMPL_3(BDD, qdd_plus, QDD, a, QDD, b, BDDVAR, prev_level)
     QDD aLow = a, aHigh = a;
     QDD bLow = b, bHigh = b;
     if (level == va) {
-        // TODO: fix
-        //aLow = qdd_getlow_bundled(node_a);
-        //aHigh = qdd_gethigh_bundled(node_a);
+        aLow = qdd_getlow(node_a);
+        aHigh = qdd_gethigh(node_b);
     }
     if (level == vb) {
-        // TODO: fix
-        //bLow = qdd_getlow_bundled(node_b);
-        //bHigh = qdd_gethigh_bundled(node_b);
+        bLow = qdd_getlow(node_b);
+        bHigh = qdd_gethigh(node_b);
     }
 
     // Recursive computation
@@ -332,7 +343,7 @@ qdd_sample(QDD q, BDDVAR vars, bool* str)
         *str = (rand() & 0x2000) == 0;
 
         if (q != QDD_ONE) {
-            qddnode_t qn = QDD_GETNODE(q);
+            qddnode_t qn = QDD_GETNODE(QDD_PTR(q));
             if (qdd_getvar(qn) == mtbddnode_getvariable(n_vars)) {
                 q = *str ? qdd_gethigh(qn) : qdd_getlow(qn);
             }
@@ -356,7 +367,7 @@ qdd_get_amplitude(QDD q, bool* basis_state)
         a = Cmul(a, QDD_AMP(q));
 
         // now we need to choose low or high edge of next node
-        qddnode_t node = QDD_GETNODE(q);
+        qddnode_t node = QDD_GETNODE(QDD_PTR(q));
         BDDVAR var     = qdd_getvar(node);
         pprint_qddnode(node);
 
@@ -365,9 +376,9 @@ qdd_get_amplitude(QDD q, bool* basis_state)
 
         // Condition low/high choice on basis state vector[var]
         if (basis_state[var] == 0)
-            q = node->a;
+            q = node->low;
         else
-            q = node->b;
+            q = node->high;
     }
 
     printf("amplitude in Ctable:");
@@ -394,7 +405,7 @@ create_all_zero_state(int n_qubits)
         printf("Created the following node:\n");
         pprint_qddnode(&n);
 
-        low_child = qdd_makenode(k, n.a, n.b);
+        low_child = qdd_makenode(k, n.low, n.high);
         pprint_qddnode(QDD_GETNODE(low_child));
         printf("With index in the nodetable = %p\n", low_child);
     }
