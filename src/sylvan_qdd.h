@@ -123,7 +123,11 @@ static const AMP        NIL = 0;
 
 
 //TODO: implement unary matrix operations (matrices are defined in qdd_int.c)
-
+// single qubit gates for now
+//#define qdd_apply_gate(q,gate,qubit) (CALL(qdd_apply_gate,q,gate,qubit));
+//TASK_DECL_3(QDD, qdd_apply_gate, QDD, uint32_t, BDDVAR);
+// without lace:
+extern QDD qdd_apply_gate(QDD q, uint32_t gate, BDDVAR qubit);
 
 // TODO: Implement plus and multi-qubit ops
 #define qdd_plus(a,b) (CALL(qdd_plus,a,b,0));

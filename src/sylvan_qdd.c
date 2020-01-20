@@ -271,6 +271,48 @@ qdd_makenode(BDDVAR var, QDD low_edge, QDD high_edge)
 }
 
 
+// TODO: also return and deal with normalization parameter
+QDD qdd_apply_gate(QDD q, uint32_t gate, BDDVAR qubit)
+{
+    if(QDD_PTR(q) == QDD_TERMINAL)
+        return q;
+    
+    qddnode_t node = QDD_GETNODE(QDD_PTR(q));
+
+    BDDVAR var = qdd_getvar(node);
+
+    pprint_qddnode(node);
+    
+    // "above" the desired qubit in the QDD
+    if(var < qubit){
+        QDD low  = qdd_apply_gate(node->low,  gate, qubit);
+        QDD high = qdd_apply_gate(node->high, gate, qubit);
+        return qdd_makenode(var, low, high);
+    }
+    // exactly at or passed qubit
+    else {
+        PTR l, h;
+        AMP a, b;
+        if(var == qubit){
+            l = qdd_getptrlow(node);
+            h = qdd_getptrhigh(node);
+            a = qdd_getamplow(node);
+            b = qdd_getamphigh(node);
+        }
+        else {
+            l = QDD_PTR(q);
+            h = QDD_PTR(q);
+            a = C_ONE;
+            b = C_ONE;
+        }
+        // E.g. X gate:
+        AMP a_new = b; // TODO: actual matrix multiplication
+        AMP b_new = a; // TODO: actual matrix multiplication
+        QDD low  = qdd_bundle_ptr_amp(l, a_new);
+        QDD high = qdd_bundle_ptr_amp(h, b_new);
+        return qdd_makenode(var, low, high);
+    }
+}
 
 
 /**

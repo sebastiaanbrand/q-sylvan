@@ -529,6 +529,13 @@ int test_qdd()
     AMP a = qdd_get_amplitude(q, basis_state);
     printf("amp index: %p\n", a);
 
+
+    printf("APPLYING GATE:\n");
+    q = qdd_apply_gate(q, 3, 2);
+    printf("GETTING AMPLITUDE:\n");
+    a = qdd_get_amplitude(q, basis_state);
+    printf("amp index: %p\n", a);
+
     basis_state[2] = 1;
     a = qdd_get_amplitude(q, basis_state);
     printf("amp index: %p\n", a);
