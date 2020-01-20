@@ -224,17 +224,53 @@ _qdd_makenode(BDDVAR var, PTR low, PTR high, AMP a, AMP b)
     return result;
 } 
 
-static inline PTR 
+static inline QDD // (PTR and AMP, but the amp is the norm weight from below)
 qdd_makenode(BDDVAR var, QDD low_edge, QDD high_edge)
-{
-    if(low_edge == high_edge)
-        return QDD_PTR(low_edge);
-    else
-        return _qdd_makenode(var, QDD_PTR(low_edge), QDD_PTR(high_edge), 
-                                  QDD_AMP(low_edge), QDD_AMP(high_edge));
+{ 
+    PTR low_ptr  = QDD_PTR(low_edge);
+    AMP low_amp  = QDD_AMP(low_edge);
+    PTR high_ptr = QDD_PTR(high_edge);
+    AMP high_amp = QDD_AMP(high_edge);
+
+    PTR p;
+    AMP norm;
+
+    // Edges with weight 0 should point straight to terminal.
+    if(low_amp  == C_ZERO) low_ptr  = QDD_TERMINAL;
+    if(high_amp == C_ZERO) high_ptr = QDD_TERMINAL;
+
+    // If both edges are the same, normalize
+    if(low_ptr == high_ptr && low_amp == high_amp) {
+        // Both 0 (1), norm factor is 0 (1)
+        if(low_amp == C_ZERO || low_amp == C_ONE){
+            return qdd_bundle_ptr_amp(low_ptr, low_amp);
+        }
+        else{
+            // Both amps are equal, but not 0 or 1
+            norm = low_amp;
+            p = _qdd_makenode(var, low_ptr, high_ptr, C_ONE, C_ONE);
+            return qdd_bundle_ptr_amp(p, norm);
+        }
+    }
+    else{
+        // If the edges are not the same
+        if(low_amp != C_ZERO){
+            // Normalize using low
+            norm     = low_amp;
+            low_amp  = C_ONE;
+            high_amp = Cdiv(high_amp, norm);
+        }
+        else{
+            // Unless low amp is 0, then norm using high
+            norm     = high_amp;
+            high_amp = C_ONE;
+        }
+        p = _qdd_makenode(var, low_ptr, high_ptr, low_amp, high_amp);
+        return qdd_bundle_ptr_amp(p, norm);
+    }
 }
 
-//TODO: implement a normalizing make_node code
+
 
 
 /**
@@ -320,7 +356,8 @@ TASK_IMPL_3(BDD, qdd_plus, QDD, a, QDD, b, BDDVAR, prev_level)
         bdd_refs_pop(1);
     }
 
-    result = qdd_makenode(level, low, high);
+    //result = qdd_makenode(level, low, high);
+    result = QDD_PTR(qdd_makenode(level, low, high));
 
     if (cachenow) {
         if (cache_put3(CACHE_BDD_AND, a, b, sylvan_false, result)) sylvan_stats_count(BDD_AND_CACHEDPUT);
@@ -405,7 +442,7 @@ create_all_zero_state(int n_qubits)
         printf("Created the following node:\n");
         pprint_qddnode(&n);
 
-        low_child = qdd_makenode(k, n.low, n.high);
+        low_child = QDD_PTR(qdd_makenode(k, n.low, n.high));
         pprint_qddnode(QDD_GETNODE(low_child));
         printf("With index in the nodetable = %p\n", low_child);
     }

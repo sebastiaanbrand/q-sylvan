@@ -126,8 +126,8 @@ static const AMP        NIL = 0;
 
 
 // TODO: Implement plus and multi-qubit ops
-TASK_DECL_3(QDD, qdd_plus, QDD, QDD, BDDVAR);
 #define qdd_plus(a,b) (CALL(qdd_plus,a,b,0));
+TASK_DECL_3(QDD, qdd_plus, QDD, QDD, BDDVAR);
 
 
 /**
