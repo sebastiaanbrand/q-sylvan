@@ -305,13 +305,91 @@ QDD qdd_apply_gate(QDD q, uint32_t gate, BDDVAR qubit)
             a = C_ONE;
             b = C_ONE;
         }
-        // E.g. X gate:
         AMP a_new = b; // TODO: actual matrix multiplication
         AMP b_new = a; // TODO: actual matrix multiplication
-        QDD low  = qdd_bundle_ptr_amp(l, a_new);
-        QDD high = qdd_bundle_ptr_amp(h, b_new);
+        QDD low  = qdd_bundle_ptr_amp(h, a_new);
+        QDD high = qdd_bundle_ptr_amp(l, b_new);
         return qdd_makenode(var, low, high);
     }
+}
+
+// Test version of qdd_plus without lace
+// TODO: use caching
+// TODO: use lace
+QDD qdd_plus_no_lace(QDD a, QDD b)
+{
+    AMP amp_a = QDD_AMP(a);
+    AMP amp_b = QDD_AMP(b);
+    
+    // Optimization base/terminal cases
+    // (are not required for this function to function correctly,
+    // but can save work)
+    if(amp_a == C_ZERO) return b;
+    if(amp_b == C_ZERO) return a;
+
+    // Get info from node (unless terminal)
+    BDDVAR var_a, var_b;
+    QDD a_low, a_high;
+    QDD b_low, b_high;
+    if(QDD_PTR(a) == QDD_TERMINAL){
+        var_a = 9000; // TODO: do this slightly cleaner
+    }
+    else{
+        qddnode_t node_a = QDD_GETNODE(QDD_PTR(a));
+        var_a  = qdd_getvar(node_a);
+        a_low  = qdd_getlow(node_a);
+        a_high = qdd_gethigh(node_a);
+        // Pass edge weight of current edge down to low/high
+        AMP new_amp_low  = Cmul(amp_a, QDD_AMP(a_low));
+        AMP new_amp_high = Cmul(amp_a, QDD_AMP(a_high));
+        a_low  = qdd_bundle_ptr_amp(QDD_PTR(a_low),  new_amp_low);
+        a_high = qdd_bundle_ptr_amp(QDD_PTR(a_high), new_amp_high);
+    }
+    if(QDD_PTR(b) == QDD_TERMINAL){
+        var_b = 9000; // TODO: do this slightly cleaner
+    }
+    else{
+        qddnode_t node_b = QDD_GETNODE(QDD_PTR(b));
+        var_b  = qdd_getvar(node_b);
+        // TODO: pass amp of b to children
+        b_low  = qdd_getlow(node_b);
+        b_high = qdd_gethigh(node_b);
+        // Pass edge weight of current edge down to low/high
+        AMP new_amp_low  = Cmul(amp_b, QDD_AMP(b_low));
+        AMP new_amp_high = Cmul(amp_b, QDD_AMP(b_high));
+        b_low  = qdd_bundle_ptr_amp(QDD_PTR(b_low),  new_amp_low);
+        b_high = qdd_bundle_ptr_amp(QDD_PTR(b_high), new_amp_high);
+    }
+
+
+    // Base/terminal case: same target and same variable
+    if(QDD_PTR(a) == QDD_PTR(b) && var_a == var_b){
+        AMP sum = Cadd(amp_a, amp_b);
+        QDD res = qdd_bundle_ptr_amp(QDD_PTR(a), sum);
+        return res;
+    }
+    
+    // Recursive case
+    // If var_a != var_b, the higher one "skips" the lower variable and 
+    // is effectively a don't-care for that lower variable. In this case
+    // we (effectively) "reinsert" this don't-care.
+    BDDVAR level = var_a;
+    if(var_a > var_b){
+        a_low  = a;
+        a_high = a;
+        level  = var_b;
+    }
+    else if(var_a < var_b){
+        b_low  = b;
+        b_high = b;
+        level  = var_a;
+    }
+
+    QDD res_low  = qdd_plus_no_lace(a_low, b_low);
+    QDD res_high = qdd_plus_no_lace(a_high,b_high);
+    QDD res = qdd_makenode(level, res_low, res_high);
+
+    return res;
 }
 
 
@@ -439,19 +517,18 @@ qdd_sample(QDD q, BDDVAR vars, bool* str)
 AMP
 qdd_get_amplitude(QDD q, bool* basis_state)
 {
-    if (q == sylvan_false) return 0;
 
     AMP a = C_ONE;
     for (;;) {
         a = Cmul(a, QDD_AMP(q));
+        
+        // if the current edge is pointing to the terminal, we're done.
+        if (QDD_PTR(q) == QDD_TERMINAL) break;
 
         // now we need to choose low or high edge of next node
         qddnode_t node = QDD_GETNODE(QDD_PTR(q));
         BDDVAR var     = qdd_getvar(node);
-        pprint_qddnode(node);
-
-        // if the current edge is pointing to the terminal, we're done.
-        if (QDD_PTR(q) == QDD_TERMINAL) break;
+        //pprint_qddnode(node);
 
         // Condition low/high choice on basis state vector[var]
         if (basis_state[var] == 0)
@@ -463,34 +540,79 @@ qdd_get_amplitude(QDD q, bool* basis_state)
     printf("amplitude in Ctable:");
     Cprint(Cvalue(a));
     printf("\n");
-    // TODO: return complex struct instead of the index.
+    // TODO: return complex struct instead of the index?
     return a;
 }
 
 QDD
-create_all_zero_state(int n_qubits)
+create_all_zero_state(int n)
 {
-    assert(n_qubits >= 1);
+    assert(n >= 1);
 
-    struct qddnode n;
-    
+    bool x[n];
+    for(int k=0; k<n; k++) x[k] = 0;
+    return create_basis_state(n, x);
+}
+
+QDD
+create_basis_state(int n, bool* x)
+{
+    assert(n >= 1);
+
+    struct qddnode node;
+    PTR low_child, high_child;
+    AMP low_amp, high_amp;
+
     // start at terminal, and build backwards
-    PTR low_child = QDD_TERMINAL;
-    for(int k = n_qubits-1; k >= 0; k--){
-        
-        qddnode_make(&n, k, low_child, QDD_TERMINAL, C_ONE, C_ZERO);
-        // is it correct to use CONE and CZRO here?
+    PTR prev = QDD_TERMINAL;
+    for(int k = n-1; k >=0; k--){
 
-        printf("Created the following node:\n");
-        pprint_qddnode(&n);
+        if(x[k] == 0){
+            low_child  = prev;
+            low_amp    = C_ONE;
+            high_child = QDD_TERMINAL;
+            high_amp   = C_ZERO;
+        }
+        else if(x[k] == 1){
+            low_child  = QDD_TERMINAL;
+            low_amp    = C_ZERO;
+            high_child = prev;
+            high_amp   = C_ONE;
+        }
 
-        low_child = QDD_PTR(qdd_makenode(k, n.low, n.high));
-        pprint_qddnode(QDD_GETNODE(low_child));
-        printf("With index in the nodetable = %p\n", low_child);
+        // pack info into node (TODO: rename this function)
+        qddnode_make(&node, k, low_child, high_child, low_amp, high_amp);
+
+        printf("Packed+added the following node:\n");
+        pprint_qddnode(&node);
+
+        // actually make the node (i.e. add to nodetable)
+        prev = QDD_PTR(qdd_makenode(k, node.low, node.high));
+        pprint_qddnode(QDD_GETNODE(prev));
     }
 
-    QDD root_edge = qdd_bundle_ptr_amp(low_child, C_ONE);
+    QDD root_edge = qdd_bundle_ptr_amp(prev, C_ONE);
     return root_edge;
+}
+
+void
+_print_qdd(QDD q)
+{
+    if(QDD_PTR(q) != QDD_TERMINAL){
+        qddnode_t node = QDD_GETNODE(QDD_PTR(q));
+        pprint_qddnode(node);
+        _print_qdd(qdd_getlow(node));
+        _print_qdd(qdd_gethigh(node));
+    }
+}
+
+void
+print_qdd(QDD q)
+{
+    printf("root amp:" );
+    Cprint(Cvalue(QDD_AMP(q)));
+    printf("\n");
+    _print_qdd(q);
 }
 
 // just for testing TODO: do this somewhere better

@@ -521,25 +521,51 @@ int test_qdd()
 {
 
     init_amplitude_table();
+    bool x[] = {0,0,0};
+
+    bool x1[] = {0,0,0};
+    QDD q1 = create_basis_state(3, x1);
+    printf("root edge: %p\n", q1);
+
+    AMP a;
+    // TODO: make get_all_amp() function
+    x[2] = 0; x[1] = 0; x[0] = 0; a = qdd_get_amplitude(q1,x);
+    x[2] = 0; x[1] = 0; x[0] = 1; a = qdd_get_amplitude(q1,x);
+    x[2] = 0; x[1] = 1; x[0] = 0; a = qdd_get_amplitude(q1,x);
+    x[2] = 0; x[1] = 1; x[0] = 1; a = qdd_get_amplitude(q1,x);
+    x[2] = 1; x[1] = 0; x[0] = 0; a = qdd_get_amplitude(q1,x);
+    x[2] = 1; x[1] = 0; x[0] = 1; a = qdd_get_amplitude(q1,x);
+    x[2] = 1; x[1] = 1; x[0] = 0; a = qdd_get_amplitude(q1,x);
+    x[2] = 1; x[1] = 1; x[0] = 1; a = qdd_get_amplitude(q1,x);
+
+    bool x2[] = {0, 1, 1};
+    QDD q2 = create_basis_state(3, x2);
+    // TODO: make get_all_amp() function
+    x[2] = 0; x[1] = 0; x[0] = 0; a = qdd_get_amplitude(q2,x);
+    x[2] = 0; x[1] = 0; x[0] = 1; a = qdd_get_amplitude(q2,x);
+    x[2] = 0; x[1] = 1; x[0] = 0; a = qdd_get_amplitude(q2,x);
+    x[2] = 0; x[1] = 1; x[0] = 1; a = qdd_get_amplitude(q2,x);
+    x[2] = 1; x[1] = 0; x[0] = 0; a = qdd_get_amplitude(q2,x);
+    x[2] = 1; x[1] = 0; x[0] = 1; a = qdd_get_amplitude(q2,x);
+    x[2] = 1; x[1] = 1; x[0] = 0; a = qdd_get_amplitude(q2,x);
+    x[2] = 1; x[1] = 1; x[0] = 1; a = qdd_get_amplitude(q2,x);
     
-    QDD q = create_all_zero_state(5);
-    printf("root edge: %p\n", q);
-
-    bool basis_state[] = {0,0,0,0,0};
-    AMP a = qdd_get_amplitude(q, basis_state);
-    printf("amp index: %p\n", a);
 
 
-    printf("APPLYING GATE:\n");
-    q = qdd_apply_gate(q, 3, 2);
-    printf("GETTING AMPLITUDE:\n");
-    a = qdd_get_amplitude(q, basis_state);
-    printf("amp index: %p\n", a);
+    printf("TEST QDD PLUS:\n");
+    QDD q3 = qdd_plus_no_lace(q1, q2);
+    QDD q4 = qdd_plus_no_lace(q3, q3);
+    QDD q5 = qdd_plus_no_lace(q4, q2);
+    x[2] = 0; x[1] = 0; x[0] = 0; a = qdd_get_amplitude(q5,x);
+    x[2] = 0; x[1] = 0; x[0] = 1; a = qdd_get_amplitude(q5,x);
+    x[2] = 0; x[1] = 1; x[0] = 0; a = qdd_get_amplitude(q5,x);
+    x[2] = 0; x[1] = 1; x[0] = 1; a = qdd_get_amplitude(q5,x);
+    x[2] = 1; x[1] = 0; x[0] = 0; a = qdd_get_amplitude(q5,x);
+    x[2] = 1; x[1] = 0; x[0] = 1; a = qdd_get_amplitude(q5,x);
+    x[2] = 1; x[1] = 1; x[0] = 0; a = qdd_get_amplitude(q5,x);
+    x[2] = 1; x[1] = 1; x[0] = 1; a = qdd_get_amplitude(q5,x);
 
-    basis_state[2] = 1;
-    a = qdd_get_amplitude(q, basis_state);
-    printf("amp index: %p\n", a);
-
+    print_qdd(q5);
 
     return 0;
 }

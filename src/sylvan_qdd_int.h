@@ -29,6 +29,9 @@ typedef uint32_t cint;
 static const cint C_ZERO = 0; // not hashed
 static const cint C_ONE  = 1; // not hashed
 
+
+cint gates[10][4]; // 2x2 gates
+
 uint32_t Ctentries;
 
 // basic operations on complex values

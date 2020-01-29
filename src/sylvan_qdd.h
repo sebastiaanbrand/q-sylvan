@@ -129,6 +129,9 @@ static const AMP        NIL = 0;
 // without lace:
 extern QDD qdd_apply_gate(QDD q, uint32_t gate, BDDVAR qubit);
 
+// temp (TODO: remove extern, use lace)
+extern QDD qdd_plus_no_lace(QDD a, QDD b);
+
 // TODO: Implement plus and multi-qubit ops
 #define qdd_plus(a,b) (CALL(qdd_plus,a,b,0));
 TASK_DECL_3(QDD, qdd_plus, QDD, QDD, BDDVAR);
@@ -161,6 +164,19 @@ extern AMP qdd_get_amplitude(QDD qdd, bool* basis_state);
  * @return A QDD encoding the n-qubit state |00..0>.
  */
 extern QDD create_all_zero_state(int n);
+
+/**
+ * Creates a QDD for an n-qubit state |x>.
+ * 
+ * @param n Number of qubits.
+ * @param x A bitstring x \in {0,1}^n. 
+ * 
+ * @return A QDD encoding of the n-qubit state |x>.
+ */
+extern QDD create_basis_state(int n, bool* x);
+
+// debug stuff
+extern void print_qdd(QDD q);
 
 extern void init_amplitude_table(); // just for testing TODO: remove
 

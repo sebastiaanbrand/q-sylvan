@@ -397,9 +397,9 @@ CUnit (cint a)
 
 
 // TODO: put in header
-typedef complex_t qdd_matrix[2][2];
+//typedef complex_t qdd_matrix[2][2];
 
-qdd_matrix Nm, Vm, VPm, Sm, Rm, Hm, Zm, ZEROm, Qm;
+//qdd_matrix Nm, Vm, VPm, Sm, Rm, Hm, Zm, ZEROm, Qm;
 
 
 
@@ -408,7 +408,30 @@ qdd_complex_init()
 {
     complex_t v, vc;
 
+    // TODO: do gate stuff in this file (such that outside this file 
+    // no complex structs need to be used)
+
+    // Set complex(0) and complex(1) to indices 0 and 1 in Ctable
+    Ctable[C_ZERO] = CmakeZero();  //Ctable[0] = 0.0 + 0.0i
+    Ctable[C_ONE]  = CmakeOne();   //Ctable[1] = 1.0 + 0.0i
+    Ctable2[CmakeZero()] = C_ZERO; //Ctable2[0.0 + 0.0i] = 0
+    Ctable2[CmakeOne()]  = C_ONE;  //Ctable2[1.0 + 0.0i] = 1
+    Ctentries = 2;
+
+    // gates[0] = I
+    gates[0][0] = C_ONE;  gates[0][1] = C_ZERO;
+    gates[0][2] = C_ZERO; gates[0][3] = C_ONE;
+
+    // gates[1] = X
+    gates[1][0] = C_ZERO; gates[1][1] = C_ONE;
+    gates[1][2] = C_ONE;  gates[1][3] = C_ZERO;
+
+    // gates[2] = Z
+    //gates[2][0] = C_ONE;  gates[2][1] = C_ZERO;
+    //gates[2][2] = C_ZERO; gates[2][3] = Clookup(Cmake(-1.0, 0.0));
+
     // init binary gate matrices
+    /*
     v = Cmake (Qmake (1, 0, 2), Qmake (1, 0, 2));
     vc = Cmake (Qmake (1, 0, 2), Qmake (-1, 0, 2));
     Nm[0][0] = Nm[1][1] = Cmake (Dzero, Dzero);
@@ -429,17 +452,8 @@ qdd_complex_init()
     ZEROm[0][1] = ZEROm[1][0] = Cmake (Dzero, Dzero);
     Qm[0][0] = Cmake (Qmake (1, 0, 1), Dzero);
     Qm[0][1] = Qm[1][0] = Cmake (Dzero, Dzero);
+    */
 
     Pi = 2.0 * acos(0.0);
-
-    // TODO: initialize a map data structure for representing cint --> complex_t.
-    //       Also map CONE and CZRO in there
-    Ctable[C_ZERO] = CmakeZero();  //Ctable[0] = 0.0 + 0.0i
-    Ctable[C_ONE] = CmakeOne();    //Ctable[1] = 1.0 + 0.0i
-    Ctable2[CmakeZero()] = C_ZERO; //Ctable2[0.0 + 0.0i] = 0
-    Ctable2[CmakeOne()] = C_ONE;   //Ctable2[1.0 + 0.0i] = 1
-    // TODO: Maybe better to deal with 0 and 1 in each function as  a special
-    // case
-    Ctentries = 2;
 }
   
