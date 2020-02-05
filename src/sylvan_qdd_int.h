@@ -29,8 +29,12 @@ typedef uint32_t cint;
 static const cint C_ZERO = 0; // not hashed
 static const cint C_ONE  = 1; // not hashed
 
-
-cint gates[10][4]; // 2x2 gates
+// 2x2 gates, 
+// gates[k][0] = u00 (top left)
+// gates[k][1] = u01 (top right)
+// gates[k][2] = u10 (bottom left)
+// gates[k][3] = u11 (bottom right)
+cint gates[10][4];
 
 uint32_t Ctentries;
 

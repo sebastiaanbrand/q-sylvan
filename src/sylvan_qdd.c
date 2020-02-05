@@ -144,6 +144,7 @@ static inline void pprint_qddnode(qddnode_t n)
 
 /**
  * Gets the node `p` is pointing to.
+ * TODO (?) return special node for when p == QDD_TERMINAL
  */
 static inline qddnode_t
 QDD_GETNODE(PTR p)
@@ -239,18 +240,9 @@ qdd_makenode(BDDVAR var, QDD low_edge, QDD high_edge)
     if(low_amp  == C_ZERO) low_ptr  = QDD_TERMINAL;
     if(high_amp == C_ZERO) high_ptr = QDD_TERMINAL;
 
-    // If both edges are the same, normalize
+    // If both low and high are the same (both PTR and AMP) return low
     if(low_ptr == high_ptr && low_amp == high_amp) {
-        // Both 0 (1), norm factor is 0 (1)
-        if(low_amp == C_ZERO || low_amp == C_ONE){
-            return qdd_bundle_ptr_amp(low_ptr, low_amp);
-        }
-        else{
-            // Both amps are equal, but not 0 or 1
-            norm = low_amp;
-            p = _qdd_makenode(var, low_ptr, high_ptr, C_ONE, C_ONE);
-            return qdd_bundle_ptr_amp(p, norm);
-        }
+        return low_edge;
     }
     else{
         // If the edges are not the same
@@ -271,45 +263,83 @@ qdd_makenode(BDDVAR var, QDD low_edge, QDD high_edge)
 }
 
 
-// TODO: also return and deal with normalization parameter
 QDD qdd_apply_gate(QDD q, uint32_t gate, BDDVAR qubit)
 {
-    if(QDD_PTR(q) == QDD_TERMINAL)
-        return q;
+    if(QDD_PTR(q) == QDD_TERMINAL){
+        // Should do the same as 'passed qubit' (i.e. consider terminal as 
+        // a node with very high var)
+        // (TODO: maybe handle this in QDD_GETNODE)
+        PTR l, h;
+        AMP a, b;
+        l = QDD_PTR(q);
+        h = QDD_PTR(q);
+        a = C_ONE;
+        b = C_ONE;
+
+        AMP a_u00 = Cmul(a, gates[gate][0]);
+        AMP a_u10 = Cmul(a, gates[gate][2]);
+        AMP b_u01 = Cmul(b, gates[gate][1]);
+        AMP b_u11 = Cmul(b, gates[gate][3]);
+
+        QDD qdd1 = qdd_makenode(qubit, qdd_bundle_ptr_amp(l, a_u00), 
+                                       qdd_bundle_ptr_amp(l, a_u10));
+        QDD qdd2 = qdd_makenode(qubit, qdd_bundle_ptr_amp(h, b_u01),
+                                       qdd_bundle_ptr_amp(h, b_u11));
+        
+        QDD sum = qdd_plus_no_lace(qdd1, qdd2);
+        AMP new_root_amp = Cmul(QDD_AMP(q), QDD_AMP(sum));
+        QDD res = qdd_bundle_ptr_amp(QDD_PTR(sum), new_root_amp);
+        return res;
+    }
     
+    // get node info
     qddnode_t node = QDD_GETNODE(QDD_PTR(q));
-
     BDDVAR var = qdd_getvar(node);
-
     pprint_qddnode(node);
     
     // "above" the desired qubit in the QDD
     if(var < qubit){
         QDD low  = qdd_apply_gate(node->low,  gate, qubit);
         QDD high = qdd_apply_gate(node->high, gate, qubit);
-        return qdd_makenode(var, low, high);
+
+        QDD res  = qdd_makenode(var, low, high);
+        AMP new_root_amp = Cmul(QDD_AMP(q), QDD_AMP(res));
+        res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
+        return res;
     }
-    // exactly at or passed qubit
     else {
         PTR l, h;
         AMP a, b;
+        // exactly at qubit
         if(var == qubit){
             l = qdd_getptrlow(node);
             h = qdd_getptrhigh(node);
             a = qdd_getamplow(node);
             b = qdd_getamphigh(node);
         }
+        // passed qubit (node with var == qubit was a don't-care)
         else {
             l = QDD_PTR(q);
             h = QDD_PTR(q);
             a = C_ONE;
             b = C_ONE;
         }
-        AMP a_new = b; // TODO: actual matrix multiplication
-        AMP b_new = a; // TODO: actual matrix multiplication
-        QDD low  = qdd_bundle_ptr_amp(h, a_new);
-        QDD high = qdd_bundle_ptr_amp(l, b_new);
-        return qdd_makenode(var, low, high);
+
+        AMP a_u00 = Cmul(a, gates[gate][0]);
+        AMP a_u10 = Cmul(a, gates[gate][2]);
+        AMP b_u01 = Cmul(b, gates[gate][1]);
+        AMP b_u11 = Cmul(b, gates[gate][3]);
+
+        QDD qdd1 = qdd_makenode(qubit, qdd_bundle_ptr_amp(l, a_u00), 
+                                       qdd_bundle_ptr_amp(l, a_u10));
+        QDD qdd2 = qdd_makenode(qubit, qdd_bundle_ptr_amp(h, b_u01),
+                                       qdd_bundle_ptr_amp(h, b_u11));
+        QDD sum = qdd_plus_no_lace(qdd1, qdd2);
+
+        // multiply root amp of sum with input root amp
+        AMP new_root_amp = Cmul(QDD_AMP(q), QDD_AMP(sum));
+        QDD res = qdd_bundle_ptr_amp(QDD_PTR(sum), new_root_amp);
+        return res;
     }
 }
 
@@ -351,7 +381,6 @@ QDD qdd_plus_no_lace(QDD a, QDD b)
     else{
         qddnode_t node_b = QDD_GETNODE(QDD_PTR(b));
         var_b  = qdd_getvar(node_b);
-        // TODO: pass amp of b to children
         b_low  = qdd_getlow(node_b);
         b_high = qdd_gethigh(node_b);
         // Pass edge weight of current edge down to low/high
@@ -600,6 +629,7 @@ _print_qdd(QDD q)
 {
     if(QDD_PTR(q) != QDD_TERMINAL){
         qddnode_t node = QDD_GETNODE(QDD_PTR(q));
+        printf("%p\t", QDD_PTR(q));
         pprint_qddnode(node);
         _print_qdd(qdd_getlow(node));
         _print_qdd(qdd_gethigh(node));
@@ -609,7 +639,7 @@ _print_qdd(QDD q)
 void
 print_qdd(QDD q)
 {
-    printf("root amp:" );
+    printf("root edge: %p, %p = ",QDD_PTR(q), QDD_AMP(q));
     Cprint(Cvalue(QDD_AMP(q)));
     printf("\n");
     _print_qdd(q);

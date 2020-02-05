@@ -408,9 +408,6 @@ qdd_complex_init()
 {
     complex_t v, vc;
 
-    // TODO: do gate stuff in this file (such that outside this file 
-    // no complex structs need to be used)
-
     // Set complex(0) and complex(1) to indices 0 and 1 in Ctable
     Ctable[C_ZERO] = CmakeZero();  //Ctable[0] = 0.0 + 0.0i
     Ctable[C_ONE]  = CmakeOne();   //Ctable[1] = 1.0 + 0.0i
@@ -418,6 +415,8 @@ qdd_complex_init()
     Ctable2[CmakeOne()]  = C_ONE;  //Ctable2[1.0 + 0.0i] = 1
     Ctentries = 2;
 
+    // TODO: seperate (read only) table for complex entries of gates
+    // TODO: generally handle this gate stuff in a cleaner way
     // gates[0] = I
     gates[0][0] = C_ONE;  gates[0][1] = C_ZERO;
     gates[0][2] = C_ZERO; gates[0][3] = C_ONE;
@@ -427,8 +426,12 @@ qdd_complex_init()
     gates[1][2] = C_ONE;  gates[1][3] = C_ZERO;
 
     // gates[2] = Z
-    //gates[2][0] = C_ONE;  gates[2][1] = C_ZERO;
-    //gates[2][2] = C_ZERO; gates[2][3] = Clookup(Cmake(-1.0, 0.0));
+    gates[2][0] = C_ONE;  gates[2][1] = C_ZERO;
+    gates[2][2] = C_ZERO; gates[2][3] = Clookup(Cmake(-1.0, 0.0));
+
+    // gates[3] = H
+    gates[3][0] = gates[3][1] = gates[3][2] = Clookup(Cmake(Qmake(0,1,2),0));
+    gates[3][3] = Clookup(Cmake(Qmake(0,-1,2),0));
 
     // init binary gate matrices
     /*

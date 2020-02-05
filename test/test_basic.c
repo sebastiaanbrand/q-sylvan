@@ -538,6 +538,7 @@ int test_qdd()
     x[2] = 1; x[1] = 1; x[0] = 0; a = qdd_get_amplitude(q1,x);
     x[2] = 1; x[1] = 1; x[0] = 1; a = qdd_get_amplitude(q1,x);
 
+    /*
     bool x2[] = {0, 1, 1};
     QDD q2 = create_basis_state(3, x2);
     // TODO: make get_all_amp() function
@@ -564,8 +565,26 @@ int test_qdd()
     x[2] = 1; x[1] = 0; x[0] = 1; a = qdd_get_amplitude(q5,x);
     x[2] = 1; x[1] = 1; x[0] = 0; a = qdd_get_amplitude(q5,x);
     x[2] = 1; x[1] = 1; x[0] = 1; a = qdd_get_amplitude(q5,x);
+    print_qdd(q5); */
 
-    print_qdd(q5);
+    printf("TEST APPLY GATE:\n");
+    QDD q6 = qdd_apply_gate(q1, 3, 0);
+    q6 = qdd_apply_gate(q6, 3, 1);
+    q6 = qdd_apply_gate(q6, 3, 2);
+    q6 = qdd_apply_gate(q6, 2, 0);
+
+    printf("<qdd>\n");
+    print_qdd(q6);
+    printf("</qdd>\n");
+    x[2] = 0; x[1] = 0; x[0] = 0; a = qdd_get_amplitude(q6,x);
+    x[2] = 0; x[1] = 0; x[0] = 1; a = qdd_get_amplitude(q6,x);
+    x[2] = 0; x[1] = 1; x[0] = 0; a = qdd_get_amplitude(q6,x);
+    x[2] = 0; x[1] = 1; x[0] = 1; a = qdd_get_amplitude(q6,x);
+    x[2] = 1; x[1] = 0; x[0] = 0; a = qdd_get_amplitude(q6,x);
+    x[2] = 1; x[1] = 0; x[0] = 1; a = qdd_get_amplitude(q6,x);
+    x[2] = 1; x[1] = 1; x[0] = 0; a = qdd_get_amplitude(q6,x);
+    x[2] = 1; x[1] = 1; x[0] = 1; a = qdd_get_amplitude(q6,x);
+
 
     return 0;
 }
