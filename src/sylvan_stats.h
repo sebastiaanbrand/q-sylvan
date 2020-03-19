@@ -87,6 +87,9 @@ typedef enum {
     OPCOUNTER(LDD_RELPROD_UNION),
     OPCOUNTER(LDD_PROJECT_MINUS),
 
+    /* QDD operations */
+    OPCOUNTER(QDD_PLUS),
+
     /* Other counters */
     SYLVAN_GC_COUNT,
     LLMSSET_LOOKUP,

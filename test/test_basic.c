@@ -585,6 +585,18 @@ int test_qdd()
     x[2] = 1; x[1] = 1; x[0] = 0; a = qdd_get_amplitude(q6,x);
     x[2] = 1; x[1] = 1; x[0] = 1; a = qdd_get_amplitude(q6,x);
 
+    printf("TEST SINGLE QUBIT GATE:\n");
+    bool x7[] = {0};
+    QDD q7 = create_basis_state(1, x7);
+    print_qdd(q7);
+    x7[0] = 0; a = qdd_get_amplitude(q7,x7);
+    x7[0] = 1; a = qdd_get_amplitude(q7,x7);
+    q7 = qdd_apply_gate(q7, 3, 0);
+    q7 = qdd_apply_gate(q7, 3, 0);
+    print_qdd(q7);
+    x7[0] = 0; a = qdd_get_amplitude(q7,x7);
+    x7[0] = 1; a = qdd_get_amplitude(q7,x7);
+
 
     return 0;
 }

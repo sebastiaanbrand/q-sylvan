@@ -125,7 +125,7 @@ Qmake (int a, int b, int c)
 // lookup a complex value in the complex value table
 // if not found add it
 // this routine uses linear searching
-static cint
+cint
 Clookup (complex_t c)
 {
     cint i = 0;
@@ -407,6 +407,11 @@ void
 qdd_complex_init()
 {
     complex_t v, vc;
+
+    // Clear any existing content
+    Ctable.clear();
+    Ctable2.clear();
+    Ctentries = 0;
 
     // Set complex(0) and complex(1) to indices 0 and 1 in Ctable
     Ctable[C_ZERO] = CmakeZero();  //Ctable[0] = 0.0 + 0.0i

@@ -43,6 +43,11 @@ uint32_t Ctentries;
 // NOTE arguments are the indices to the values 
 // in the complex value table not the values themselves
 
+// Some of these methods are exposed for unit testing, but don't need to be
+// used in the qdd implementation.
+complex_t Cmake (long double r, long double i);
+cint Clookup (complex_t c);
+
 complex_t Cvalue(cint);
 void Cprint(complex_t);
 
