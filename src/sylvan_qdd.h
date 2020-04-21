@@ -122,20 +122,14 @@ static const PTR        QDD_TERMINAL = 1;
 static const AMP        NIL = 0;
 
 
-//TODO: implement unary matrix operations (matrices are defined in qdd_int.c)
-// single qubit gates for now
-//#define qdd_apply_gate(q,gate,qubit) (CALL(qdd_apply_gate,q,gate,qubit));
-//TASK_DECL_3(QDD, qdd_apply_gate, QDD, uint32_t, BDDVAR);
-// without lace:
-extern QDD qdd_apply_gate(QDD q, uint32_t gate, BDDVAR qubit);
-
-// temp (TODO: remove extern, use lace)
-extern QDD qdd_plus_no_lace(QDD a, QDD b);
-
-// TODO: Implement plus and multi-qubit ops
 #define qdd_plus(a,b) (CALL(qdd_plus,a,b,0));
 TASK_DECL_3(QDD, qdd_plus, QDD, QDD, BDDVAR);
 
+#define qdd_gate(q,gate,qubit) (CALL(qdd_gate,q,gate,qubit));
+TASK_DECL_3(QDD, qdd_gate, QDD, uint32_t, BDDVAR);
+
+#define qdd_cgate(q,gate,c,t) (CALL(qdd_cgate,q,gate,c,t));
+TASK_DECL_4(QDD, qdd_cgate, QDD, uint32_t, BDDVAR, BDDVAR);
 
 /**
  * Sample

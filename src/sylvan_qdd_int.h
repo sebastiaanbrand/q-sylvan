@@ -46,6 +46,7 @@ uint32_t Ctentries;
 // Some of these methods are exposed for unit testing, but don't need to be
 // used in the qdd implementation.
 complex_t Cmake (long double r, long double i);
+long double Qmake (int a, int b, int c);
 cint Clookup (complex_t c);
 
 complex_t Cvalue(cint);
