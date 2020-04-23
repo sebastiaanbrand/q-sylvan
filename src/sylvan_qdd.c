@@ -63,6 +63,20 @@ QDD_PTR(QDD q)
     return q & 0x000000ffffffffff; // 40 bits
 }
 
+/**
+ *  For caching, we need to uniquely identify gates (and which qubit they are 
+ *  applied on)
+ *  Uses owest 40 bits (and should not use more)
+ *  (maybe put this elsewhere?)
+ */
+static inline uint64_t
+GATE_ID(uint32_t gate, BDDVAR qubit)
+{
+    uint64_t res = qubit;  
+    res = res<<32 | gate;
+    return res;
+}
+
 
 /**
  * Gets the variable number of a given node `n`.
@@ -299,8 +313,19 @@ TASK_IMPL_3(QDD, qdd_gate, QDD, q, uint32_t, gate, BDDVAR, qubit)
     
     // "above" the desired qubit in the QDD
     if(var < qubit){
-        QDD res_low, res_high;
 
+        bool cachenow = 1;
+        if (cachenow) {
+            QDD res;
+            // check if this calculation has already been done before for this node/gate
+            if (cache_get3(CACHE_QDD_GATE, GATE_ID(gate, qubit), q, sylvan_false, &res)) {
+                printf("\nlooked something up instead of recomputing for GATE\n\n");
+                sylvan_stats_count(QDD_PLUS_CACHED);
+                return res;
+            }
+        }
+        
+        QDD res_low, res_high;
         bdd_refs_spawn(SPAWN(qdd_gate, node->high, gate, qubit));
         res_low = CALL(qdd_gate, node->low, gate, qubit);
         bdd_refs_push(res_low);
@@ -310,6 +335,12 @@ TASK_IMPL_3(QDD, qdd_gate, QDD, q, uint32_t, gate, BDDVAR, qubit)
         QDD res  = qdd_makenode(var, res_low, res_high);
         AMP new_root_amp = Cmul(QDD_AMP(q), QDD_AMP(res));
         res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
+
+        if (cachenow) {
+            if (cache_put3(CACHE_QDD_GATE, GATE_ID(gate, qubit), q, sylvan_false, res)) sylvan_stats_count(QDD_GATE_CACHEDPUT);
+            printf("\nput the following in cache for GATE:\n");
+            printf("%p , %p , %p, %p\n\n", GATE_ID(gate, qubit), q, sylvan_false, res);
+        }
         return res;
     }
     else {
@@ -360,7 +391,9 @@ TASK_IMPL_4(QDD, qdd_cgate, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t)
         res_low  = qdd_bundle_ptr_amp(QDD_PTR(q), C_ONE);
         res_high = qdd_bundle_ptr_amp(QDD_PTR(q), C_ONE);
         res_high = qdd_gate(res_high, gate, t);
-        QDD res = qdd_makenode(c, res_low, res_high); 
+        QDD res = qdd_makenode(c, res_low, res_high);
+        AMP new_root_amp = Cmul(QDD_AMP(q), QDD_AMP(res));
+        res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
         return res;
     }
 
@@ -369,7 +402,9 @@ TASK_IMPL_4(QDD, qdd_cgate, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t)
     BDDVAR var = qdd_getvar(node);
     pprint_qddnode(node);
 
-    // "above" the desired qubit in the QDD
+    // "above" the desired qubit in the QDD (this is where the recursive stuff
+    // of cgate happens, once the control qubit has been reached, the recursive
+    // search for target qubit continues in qdd_gate function)
     if(var < c){
         QDD res_low, res_high;
 
@@ -468,8 +503,8 @@ TASK_IMPL_3(QDD, qdd_plus, QDD, a, QDD, b, BDDVAR, prev_level)
     bool cachenow = 1;
     if (cachenow) {
         QDD res;
-        if (cache_get3(CACHE_BDD_AND, a, b, sylvan_false, &res)) {
-            printf("looked something up instead of recomputing\n");
+        if (cache_get3(CACHE_QDD_PLUS, sylvan_false, a, b, &res)) {
+            printf("\nlooked something up instead of recomputing for PLUS\n\n");
             sylvan_stats_count(QDD_PLUS_CACHED);
             return res;
         }
@@ -505,7 +540,7 @@ TASK_IMPL_3(QDD, qdd_plus, QDD, a, QDD, b, BDDVAR, prev_level)
     QDD res = qdd_makenode(level, res_low, res_high);
 
     if (cachenow) {
-        if (cache_put3(CACHE_BDD_AND, a, b, sylvan_false, res)) sylvan_stats_count(QDD_PLUS_CACHEDPUT);
+        if (cache_put3(CACHE_QDD_PLUS, sylvan_false, a, b, res)) sylvan_stats_count(QDD_PLUS_CACHEDPUT);
     }
 
     return res;

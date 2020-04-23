@@ -47,6 +47,7 @@ extern llmsset_t nodes;
 
 /**
  * Macros for all operation identifiers for the operation cache
+ * (Shift 40 bits left to avoid clash with (40 bit) BDD pointers when caching)
  */
 
 // BDD operations
@@ -101,6 +102,11 @@ static const uint64_t CACHE_MTBDD_LESS              = (53LL<<40);
 static const uint64_t CACHE_MTBDD_GEQ               = (54LL<<40);
 static const uint64_t CACHE_MTBDD_GREATER           = (55LL<<40);
 static const uint64_t CACHE_MTBDD_EVAL_COMPOSE      = (56LL<<40);
+
+// QDD operations
+static const uint64_t CACHE_QDD_PLUS                = (57LL<<40);
+static const uint64_t CACHE_QDD_GATE                = (58LL<<40);
+static const uint64_t CACHE_QDD_CGATE               = (59LL<<40);
 
 #ifdef __cplusplus
 }

@@ -222,6 +222,8 @@ int test_x_gate()
 
     q0 = qdd_gate(q0, 1, 0); test_assert(q0 == q1);
     q0 = qdd_gate(q0, 1, 0); test_assert(q0 == q2);
+    q0 = qdd_gate(q0, 1, 0); test_assert(q0 == q1);
+    q0 = qdd_gate(q0, 1, 0); test_assert(q0 == q2);
 
     // 3 qubit test
     x3[2] = 0; x3[1] = 0; x3[0] = 0; q3 = create_basis_state(3, x3);
@@ -287,7 +289,39 @@ int test_h_gate()
 
 int test_z_gate()
 {
-    // TODO
+    init_amplitude_table();
+
+    QDD q0;
+    bool x2[] = {0, 0};
+    AMP a;
+
+    LACE_ME;
+
+    // simple 2 qubit test
+    x2[1] = 0; x2[0] = 0; q0 = create_basis_state(2, x2);
+    q0 = qdd_gate(q0, 3, 0);
+    q0 = qdd_gate(q0, 3, 1);
+
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+
+    q0 = qdd_gate(q0, 2, 0);
+
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(-0.5,0)));
+    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(-0.5,0)));
+
+    q0 = qdd_gate(q0, 2, 0);
+    q0 = qdd_gate(q0, 2, 1);
+
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(-0.5,0)));
+    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(-0.5,0)));
+
     return 0;
 }
 
@@ -318,6 +352,38 @@ int test_cx_gate()
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(qBell, x2); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
 
     // TODO: more tests
+
+    return 0;
+}
+
+int test_cz_gate()
+{
+    init_amplitude_table();
+
+    QDD qGraph;
+    bool x2[] = {0, 0};
+    AMP a;
+
+    LACE_ME;
+
+    // 2 qubit graph state
+    x2[1] = 0; x2[0] = 0; qGraph = create_basis_state(2, x2);
+    qGraph = qdd_gate(qGraph, 3, 0);
+    qGraph = qdd_gate(qGraph, 3, 1);
+
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(qGraph, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(qGraph, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(qGraph, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(qGraph, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+
+    qGraph = qdd_cgate(qGraph, 2, 0, 1);
+
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(qGraph, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(qGraph, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(qGraph, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(qGraph, x2); test_assert(a == Clookup(Cmake(-0.5,0)));
+
+    return 0;
 }
 
 
@@ -326,12 +392,13 @@ int runtests()
     // we are not testing garbage collection
     sylvan_gc_disable();
 
-//    if (test_basis_state_creation()) return 1;
-//    if (test_vector_addition()) return 1;
-//    if (test_x_gate()) return 1;
-//    if (test_z_gate()) return 1;
-//    if (test_h_gate()) return 1;
+    if (test_basis_state_creation()) return 1;
+    if (test_vector_addition()) return 1;
+    if (test_x_gate()) return 1;
+    if (test_h_gate()) return 1;
+    if (test_z_gate()) return 1;
     if (test_cx_gate()) return 1;
+    if (test_cz_gate()) return 1;
 
     return 0;
 }
