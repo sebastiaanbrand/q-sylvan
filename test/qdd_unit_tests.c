@@ -211,7 +211,6 @@ int test_x_gate()
     QDD q0, q1, q2, q3, q4, q5;
     bool x[] = {0};
     bool x3[] = {0, 0, 0};
-    AMP a;
 
     LACE_ME;
 
@@ -220,18 +219,18 @@ int test_x_gate()
     x[0] = 1; q1 = create_basis_state(1, x);
     x[0] = 0; q2 = create_basis_state(1, x);
 
-    q0 = qdd_gate(q0, 1, 0); test_assert(q0 == q1);
-    q0 = qdd_gate(q0, 1, 0); test_assert(q0 == q2);
-    q0 = qdd_gate(q0, 1, 0); test_assert(q0 == q1);
-    q0 = qdd_gate(q0, 1, 0); test_assert(q0 == q2);
+    q0 = qdd_gate(q0, GATEID_X, 0); test_assert(q0 == q1);
+    q0 = qdd_gate(q0, GATEID_X, 0); test_assert(q0 == q2);
+    q0 = qdd_gate(q0, GATEID_X, 0); test_assert(q0 == q1);
+    q0 = qdd_gate(q0, GATEID_X, 0); test_assert(q0 == q2);
 
     // 3 qubit test
     x3[2] = 0; x3[1] = 0; x3[0] = 0; q3 = create_basis_state(3, x3);
     x3[2] = 0; x3[1] = 1; x3[0] = 0; q4 = create_basis_state(3, x3);
     x3[2] = 0; x3[1] = 1; x3[0] = 1; q5 = create_basis_state(3, x3);
     
-    q3 = qdd_gate(q3, 1, 1); test_assert(q3 == q4);
-    q3 = qdd_gate(q3, 1, 0); test_assert(q3 == q5);
+    q3 = qdd_gate(q3, GATEID_X, 1); test_assert(q3 == q4);
+    q3 = qdd_gate(q3, GATEID_X, 0); test_assert(q3 == q5);
 
     return 0;
 }
@@ -251,8 +250,8 @@ int test_h_gate()
     x[0] = 0; q0 = create_basis_state(1, x);
     x[0] = 1; q1 = create_basis_state(1, x);
 
-    q0 = qdd_gate(q0, 3, 0);
-    q1 = qdd_gate(q1, 3, 0);
+    q0 = qdd_gate(q0, GATEID_H, 0);
+    q1 = qdd_gate(q1, GATEID_H, 0);
 
     x[0] = 0; a = qdd_get_amplitude(q0, x); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
     x[0] = 1; a = qdd_get_amplitude(q0, x); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
@@ -264,9 +263,9 @@ int test_h_gate()
     x2[1] = 0; x2[0] = 0; q2 = create_basis_state(2, x2);
     x2[1] = 0; x2[0] = 1; q3 = create_basis_state(2, x2);
     x2[1] = 0; x2[0] = 0; q4 = create_basis_state(2, x2);
-    q2 = qdd_gate(q2, 3, 0);
-    q3 = qdd_gate(q3, 3, 0);
-    q4 = qdd_gate(q4, 3, 1);
+    q2 = qdd_gate(q2, GATEID_H, 0);
+    q3 = qdd_gate(q3, GATEID_H, 0);
+    q4 = qdd_gate(q4, GATEID_H, 1);
 
     x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q2, x2); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
     x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q2, x2); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
@@ -287,11 +286,12 @@ int test_h_gate()
     return 0;
 }
 
-int test_z_gate()
+int test_phase_gates()
 {
     init_amplitude_table();
+    // test Z, S, T gates
 
-    QDD q0;
+    QDD q0, qZ, qS, qSS, qT, qTT, qTTTT;
     bool x2[] = {0, 0};
     AMP a;
 
@@ -299,23 +299,55 @@ int test_z_gate()
 
     // simple 2 qubit test
     x2[1] = 0; x2[0] = 0; q0 = create_basis_state(2, x2);
-    q0 = qdd_gate(q0, 3, 0);
-    q0 = qdd_gate(q0, 3, 1);
+    q0 = qdd_gate(q0, GATEID_H, 0);
+    q0 = qdd_gate(q0, GATEID_H, 1);
+
+    qZ    = qdd_gate(q0, GATEID_Z, 0);
+    qS    = qdd_gate(q0, GATEID_S, 0);
+    qSS   = qdd_gate(qS, GATEID_S, 0);
+    qT    = qdd_gate(q0, GATEID_T, 0);
+    qTT   = qdd_gate(qT, GATEID_T, 0);
+    qTTTT = qdd_gate(qTT, GATEID_T, 0);
+    qTTTT = qdd_gate(qTTTT, GATEID_T, 0);
+
+    test_assert(qZ == qSS);
+    test_assert(qS == qTT);
+    test_assert(qZ == qTTTT);
 
     x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
     x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
     x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
 
-    q0 = qdd_gate(q0, 2, 0);
+    q0 = qdd_gate(q0, GATEID_Z, 0);
 
     x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
     x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(-0.5,0)));
     x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(-0.5,0)));
 
-    q0 = qdd_gate(q0, 2, 0);
-    q0 = qdd_gate(q0, 2, 1);
+    q0 = qdd_gate(q0, GATEID_Z, 0);
+    q0 = qdd_gate(q0, GATEID_Z, 1);
+
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(-0.5,0)));
+    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(-0.5,0)));
+
+    q0 = qdd_gate(q0, GATEID_Z, 1);
+    q0 = qdd_gate(q0, GATEID_S, 0);
+    q0 = qdd_gate(q0, GATEID_S, 0);
+
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(-0.5,0)));
+    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(-0.5,0)));
+
+    q0 = qdd_gate(q0, GATEID_Z, 0);
+    q0 = qdd_gate(q0, GATEID_T, 1);
+    q0 = qdd_gate(q0, GATEID_T, 1);
+    q0 = qdd_gate(q0, GATEID_T, 1);
+    q0 = qdd_gate(q0, GATEID_T, 1);
 
     x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
     x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
@@ -337,7 +369,7 @@ int test_cx_gate()
 
     // Test Bell state
     x2[1] = 0; x2[0] = 0; qBell = create_basis_state(2, x2);
-    qBell = qdd_gate(qBell, 3, 0);
+    qBell = qdd_gate(qBell, GATEID_H, 0);
     
     x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(qBell, x2); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
     x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(qBell, x2); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
@@ -345,7 +377,7 @@ int test_cx_gate()
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(qBell, x2); test_assert(a == C_ZERO);
 
 
-    qBell = qdd_cgate(qBell, 1, 0, 1);
+    qBell = qdd_cgate(qBell, GATEID_X, 0, 1);
     x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(qBell, x2); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
     x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(qBell, x2); test_assert(a == C_ZERO);
     x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(qBell, x2); test_assert(a == C_ZERO);
@@ -368,15 +400,15 @@ int test_cz_gate()
 
     // 2 qubit graph state
     x2[1] = 0; x2[0] = 0; qGraph = create_basis_state(2, x2);
-    qGraph = qdd_gate(qGraph, 3, 0);
-    qGraph = qdd_gate(qGraph, 3, 1);
+    qGraph = qdd_gate(qGraph, GATEID_H, 0);
+    qGraph = qdd_gate(qGraph, GATEID_H, 1);
 
     x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(qGraph, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
     x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(qGraph, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
     x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(qGraph, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(qGraph, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
 
-    qGraph = qdd_cgate(qGraph, 2, 0, 1);
+    qGraph = qdd_cgate(qGraph, GATEID_Z, 0, 1);
 
     x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(qGraph, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
     x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(qGraph, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
@@ -396,7 +428,7 @@ int runtests()
     if (test_vector_addition()) return 1;
     if (test_x_gate()) return 1;
     if (test_h_gate()) return 1;
-    if (test_z_gate()) return 1;
+    if (test_phase_gates()) return 1;
     if (test_cx_gate()) return 1;
     if (test_cz_gate()) return 1;
 

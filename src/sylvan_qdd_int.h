@@ -29,12 +29,21 @@ typedef uint32_t cint;
 static const cint C_ZERO = 0; // not hashed
 static const cint C_ONE  = 1; // not hashed
 
-// 2x2 gates, 
+// GATE_ID's (gates are initialized in qdd_complex_init)
+static const uint32_t GATEID_I = 0;
+static const uint32_t GATEID_X = 1;
+static const uint32_t GATEID_Y = 2;
+static const uint32_t GATEID_Z = 3;
+static const uint32_t GATEID_H = 4;
+static const uint32_t GATEID_S = 5;
+static const uint32_t GATEID_T = 6;
+
+// 2x2 gates, k := GATEID_U 
 // gates[k][0] = u00 (top left)
 // gates[k][1] = u01 (top right)
 // gates[k][2] = u10 (bottom left)
 // gates[k][3] = u11 (bottom right)
-cint gates[10][4];
+cint gates[7][4];
 
 uint32_t Ctentries;
 

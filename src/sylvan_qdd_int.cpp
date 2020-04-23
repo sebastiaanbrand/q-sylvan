@@ -406,7 +406,7 @@ CUnit (cint a)
 void
 qdd_complex_init()
 {
-    complex_t v, vc;
+    //complex_t v, vc;
 
     // Clear any existing content
     Ctable.clear();
@@ -420,47 +420,38 @@ qdd_complex_init()
     Ctable2[CmakeOne()]  = C_ONE;  //Ctable2[1.0 + 0.0i] = 1
     Ctentries = 2;
 
-    // TODO: seperate (read only) table for complex entries of gates
-    // TODO: generally handle this gate stuff in a cleaner way
-    // gates[0] = I
-    gates[0][0] = C_ONE;  gates[0][1] = C_ZERO;
-    gates[0][2] = C_ZERO; gates[0][3] = C_ONE;
+    // initialize 2x2 gates (complex values from gates currently stored in 
+    // same table as complex amplitude values)
+    uint32_t k;
 
-    // gates[1] = X
-    gates[1][0] = C_ZERO; gates[1][1] = C_ONE;
-    gates[1][2] = C_ONE;  gates[1][3] = C_ZERO;
+    k = GATEID_I;
+    gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
+    gates[k][2] = C_ZERO; gates[k][3] = C_ONE;
 
-    // gates[2] = Z
-    gates[2][0] = C_ONE;  gates[2][1] = C_ZERO;
-    gates[2][2] = C_ZERO; gates[2][3] = Clookup(Cmake(-1.0, 0.0));
+    k = GATEID_X;
+    gates[k][0] = C_ZERO; gates[k][1] = C_ONE;
+    gates[k][2] = C_ONE;  gates[k][3] = C_ZERO;
 
-    // gates[3] = H
-    gates[3][0] = gates[3][1] = gates[3][2] = Clookup(Cmake(Qmake(0,1,2),0));
-    gates[3][3] = Clookup(Cmake(Qmake(0,-1,2),0));
+    k = GATEID_Y;
+    gates[k][0] = C_ZERO; gates[k][1] = Clookup(Cmake(0.0, -1.0));
+    gates[k][2] = Clookup(Cmake(0.0, 1.0));  gates[k][3] = C_ZERO;
 
-    // init binary gate matrices
-    /*
-    v = Cmake (Qmake (1, 0, 2), Qmake (1, 0, 2));
-    vc = Cmake (Qmake (1, 0, 2), Qmake (-1, 0, 2));
-    Nm[0][0] = Nm[1][1] = Cmake (Dzero, Dzero);
-    Nm[0][1] = Nm[1][0] = Cmake (Qmake (1, 0, 1), Dzero);
-    Vm[0][0] = Vm[1][1] = v;
-    Vm[0][1] = Vm[1][0] = vc;
-    VPm[0][0] = VPm[1][1] = vc;
-    VPm[0][1] = VPm[1][0] = v;
-    Hm[0][0] = Hm[0][1] = Hm[1][0] = Cmake (Qmake (0, 1, 2), Dzero);
-    Hm[1][1] = Cmake (Qmake (0, -1, 2), Dzero);
-    Zm[0][0] = Cmake (Qmake (1, 0, 1), Dzero);
-    Zm[0][1] = Zm[1][0] = Cmake (Dzero, Dzero);
-    Zm[1][1] = Cmake (Qmake (-1, 0, 1), Dzero);
-    Sm[0][0] = Cmake (Qmake (1, 0, 1), Dzero);
-    Sm[0][1] = Sm[1][0] = Cmake (Dzero, Dzero);
-    Sm[1][1] = Cmake (Dzero, Qmake (1, 0, 1));
-    ZEROm[0][0] = ZEROm[1][0] = Cmake (Qmake (1, 0, 1), Dzero);
-    ZEROm[0][1] = ZEROm[1][0] = Cmake (Dzero, Dzero);
-    Qm[0][0] = Cmake (Qmake (1, 0, 1), Dzero);
-    Qm[0][1] = Qm[1][0] = Cmake (Dzero, Dzero);
-    */
+    k = GATEID_Z;
+    gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
+    gates[k][2] = C_ZERO; gates[k][3] = Clookup(Cmake(-1.0, 0.0));
+
+    k = GATEID_H;
+    gates[k][0] = gates[k][1] = gates[k][2] = Clookup(Cmake(Qmake(0,1,2),0));
+    gates[k][3] = Clookup(Cmake(Qmake(0,-1,2),0));
+
+    k = GATEID_S;
+    gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
+    gates[k][2] = C_ZERO; gates[k][3] = Clookup(Cmake(0.0, 1.0));
+
+    k = GATEID_T;
+    gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
+    gates[k][2] = C_ZERO; gates[k][3] = Clookup(Cmake(1.0/sqrt(2.0), 1.0/sqrt(2.0)));
+
 
     Pi = 2.0 * acos(0.0);
 }
