@@ -325,9 +325,9 @@ Cmul (cint ai, cint bi)
     // What's best imo is to have these checks as optimization, but have the 
     // code so that even without treating 0 and 1 as special cases it still
     // runs correctly.
-    if (ai == 1) return bi; // identity cases
-    if (bi == 1) return ai;
-    if (ai == 0 || bi == 0) return 0;
+    if (ai == C_ONE) return bi; // identity cases
+    if (bi == C_ONE) return ai;
+    if (ai == C_ZERO || bi == C_ZERO) return C_ZERO;
 
     // TODO: dynamic programming
     //if (0 <= (t = ctm[ai][bi])) return (t); // look in computation table
@@ -358,9 +358,9 @@ Cdiv (cint ai, cint bi)
     int t;
     long double d;
 
-    if (ai == bi) return (1); // equal case
-    if (ai == 0) return (0); // identity cases
-    if (bi == 1) return (ai);
+    if (ai == bi)     return C_ONE;
+    if (ai == C_ZERO) return C_ZERO;
+    if (bi == C_ONE)  return ai;
 
     // TODO: dynamic programming
     //if (0 <= (t = ctd[ai][bi])) return (t); // check computation table

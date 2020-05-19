@@ -61,16 +61,7 @@ int test_basis_state_creation()
     x[0] = 1; q1 = create_basis_state(1, x);
 
     AMP a;
-    x[0] = 0; a = qdd_get_amplitude(q0, x); 
-    
-    complex_t res;
-    res = Cvalue(a);     printf("%.60Lf\n", res.r);
-    res = Cvalue(C_ONE); printf("%.60Lf\n", res.r);
-    res = Cvalue(a);     printf("%.60Lf\n", res.i);
-    res = Cvalue(C_ONE); printf("%.60Lf\n", res.i);
-    printf("a=%lu, C_ONE=%u\n",a, C_ONE);
-    
-    test_assert(a == C_ONE);
+    x[0] = 0; a = qdd_get_amplitude(q0, x); test_assert(a == C_ONE);
     x[0] = 1; a = qdd_get_amplitude(q0, x); test_assert(a == C_ZERO);
     x[0] = 0; a = qdd_get_amplitude(q1, x); test_assert(a == C_ZERO);
     x[0] = 1; a = qdd_get_amplitude(q1, x); test_assert(a == C_ONE);
@@ -593,7 +584,7 @@ int runtests()
 
     if (test_cmap()) return 1;
     if (test_amp_table()) return 1;
-    //if (test_basis_state_creation()) return 1;
+    if (test_basis_state_creation()) return 1;
     //if (test_vector_addition()) return 1;
     //if (test_x_gate()) return 1;
     //if (test_h_gate()) return 1;

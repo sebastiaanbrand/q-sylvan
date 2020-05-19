@@ -151,12 +151,19 @@ qdd_getamphigh(qddnode_t n)
  */
 static inline void pprint_qddnode(qddnode_t n)
 {
-    printf("[var=%d, low=%p, high=%p, a=%p, b=%p]\n", 
+    AMP amp_low  = qdd_getamplow(n);
+    AMP amp_high = qdd_getamphigh(n);
+    printf("[var=%d, low=%p, high=%p, ", 
              qdd_getvar(n),
              qdd_getptrlow(n),
-             qdd_getptrhigh(n),
-             qdd_getamplow(n),
-             qdd_getamphigh(n));
+             qdd_getptrhigh(n));
+    if(amp_low == C_ZERO)      printf("a=C_ZERO,  ");
+    else if(amp_low == C_ONE)  printf("a=C_ONE,   ");
+    else                       printf("a=%p, ",amp_low);
+    if(amp_high == C_ZERO)     printf("b=C_ZERO ");
+    else if(amp_high == C_ONE) printf("b=C_ONE, ");
+    else                       printf("b=%p", amp_high);
+    printf("]\n");
 }
 
 /**
