@@ -13,9 +13,10 @@ mmiller@cs.uvic.ca
 ****************************************************************/
 
 #include "sylvan_qdd_int.h"
+#include "util/cmap.h"
+
 
 #include <stdio.h>
-#include <map>
 
 /**********************************************
 Compute trig functions for angle factor*Pi/div
@@ -35,18 +36,18 @@ static long double Pi;    // set value of global Pi
 #define Ceq(x,y) ((fabs((x.r)-(y.r))<Ctol)&&(fabs((x.i)-(y.i))<Ctol))
 
 
-
-
+cmap_t * ctable;
+/*
 struct complex_cmp
 {
     bool operator() ( complex_t x, complex_t y ) const {
     	return Ccomp(x,y);
     }
 };
+*/
 
-
-std::map<cint, complex_t> Ctable;
-std::map<complex_t, cint, complex_cmp> Ctable2;
+//std::map<cint, complex_t> Ctable;
+//std::map<complex_t, cint, complex_cmp> Ctable2;
 
 bool
 Ccomp(complex_t x, complex_t y)
@@ -128,6 +129,10 @@ Qmake (int a, int b, int c)
 cint
 Clookup (complex_t c)
 {
+    uint64_t res = 0;
+    cmap_find_or_put(ctable, &c, &res);
+    return (cint) res;
+    /*
     cint i = 0;
 
     // TODO: use something better than copy-paste from QMDD code ?
@@ -159,11 +164,17 @@ Clookup (complex_t c)
 
     return i;
     (void) c;
+    */
 }
 
 complex_t
 Cvalue (cint i)
 {
+    complex_t * res;
+    res = cmap_get(ctable, i);
+    return *res;
+
+    /*
     //complex_t c = (complex_t) { .r = 0, .i = 0, .m = 0, .a = 0  };
 
     // it might be better to not call this function on CZRO and CONE in the
@@ -175,9 +186,11 @@ Cvalue (cint i)
 
     return c;
     (void) i;
+    */
 }
 
 // computes angle for polar coordinate representation of Cvalue(a)
+/*
 long double
 angle (cint a)
 {
@@ -186,8 +199,9 @@ angle (cint a)
     if (ca.i >= 0 - Ctol)
         return (acos (ca.r / ca.m));
     else return (2 * Pi - acos (ca.r / ca.m));
-}
+} */
 
+/*
 cint
 Cgt (cint a, cint b)
 // returns 1 if |a|>|b|
@@ -205,19 +219,20 @@ Cgt (cint a, cint b)
     if (a == 0) return (1);
     if (b == 0) return (0);
 
-    /*int c=a;
-     a=b;
-     b=c;*/
+    //int c=a;
+    // a=b;
+    // b=c;
 
-    /// BETA END */
+    // BETA END 
     if (ca.m > (cb.m + Ctol)) return (1);
     if (cb.m > (ca.m + Ctol)) return (0);
 
     //CHANGED by pN 120831
     return ((ca.a + Ctol) < cb.a);
     return (0);
-}
+} */
 
+/*
 cint
 Cgt_new (cint a, cint b)
 {
@@ -227,8 +242,9 @@ Cgt_new (cint a, cint b)
     cb = Cvalue (b);
     if ((ca.a + Ctol) < cb.a) return (1);
     return (ca.m > (cb.m + Ctol));
-}
+} */
 
+/*
 cint
 Clt (cint a, cint b)
 // analogous to Cgt
@@ -240,7 +256,7 @@ Clt (cint a, cint b)
     if (ca.m < (cb.m + Ctol)) return (1);
     if (cb.m < (ca.m + Ctol)) return (0);
     return ((angle (a) + Ctol) > angle (b));
-}
+} */
 
 
 // basic operations on complex values
@@ -365,6 +381,7 @@ Cdiv (cint ai, cint bi)
 }
 
 /// by PN: returns the absolut value of a complex number
+/*
 cint
 CAbs (cint a)
 {
@@ -380,9 +397,10 @@ CAbs (cint a)
     b = Clookup (r);
     //Cprint(r);   printf("\n");
     return b;
-}
+} */
 
 ///by PN: returns whether a complex number has norm 1
+/*
 cint
 CUnit (cint a)
 {
@@ -393,7 +411,7 @@ CUnit (cint a)
     complex_t ca = Cvalue (a);
 
     return !(ca.m < 1 - Ctol);
-}
+} */
 
 
 // TODO: put in header
@@ -406,20 +424,13 @@ CUnit (cint a)
 void
 qdd_complex_init()
 {
-    //complex_t v, vc;
+    ctable = cmap_create(20);
 
-    // Clear any existing content
-    Ctable.clear();
-    Ctable2.clear();
-    Ctentries = 0;
-
-    // Set complex(0) and complex(1) to indices 0 and 1 in Ctable
-    Ctable[C_ZERO] = CmakeZero();  //Ctable[0] = 0.0 + 0.0i
-    Ctable[C_ONE]  = CmakeOne();   //Ctable[1] = 1.0 + 0.0i
-    Ctable2[CmakeZero()] = C_ZERO; //Ctable2[0.0 + 0.0i] = 0
-    Ctable2[CmakeOne()]  = C_ONE;  //Ctable2[1.0 + 0.0i] = 1
-    Ctentries = 2;
-
+    
+    // TODO: treat 0 and 1 seperately and don't put them in table.
+    C_ONE  = Clookup(CmakeOne());
+    C_ZERO = Clookup(CmakeZero());
+    
     // initialize 2x2 gates (complex values from gates currently stored in 
     // same table as complex amplitude values)
     uint32_t k;
@@ -428,14 +439,17 @@ qdd_complex_init()
     gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
     gates[k][2] = C_ZERO; gates[k][3] = C_ONE;
 
+    
     k = GATEID_X;
     gates[k][0] = C_ZERO; gates[k][1] = C_ONE;
     gates[k][2] = C_ONE;  gates[k][3] = C_ZERO;
 
+    
     k = GATEID_Y;
     gates[k][0] = C_ZERO; gates[k][1] = Clookup(Cmake(0.0, -1.0));
     gates[k][2] = Clookup(Cmake(0.0, 1.0));  gates[k][3] = C_ZERO;
 
+    
     k = GATEID_Z;
     gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
     gates[k][2] = C_ZERO; gates[k][3] = Clookup(Cmake(-1.0, 0.0));

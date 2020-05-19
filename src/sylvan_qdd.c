@@ -23,7 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <sylvan_qdd_int.h>
+#include "sylvan_qdd_int.h"
 
 static int granularity = 1; // default
 
@@ -416,7 +416,7 @@ TASK_IMPL_4(QDD, qdd_cgate, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t)
             QDD res;
             // check if this calculation has already been done before for this node/gate
             if (cache_get3(CACHE_QDD_CGATE, GATE_OPID(gate, c, t), q, sylvan_false, &res)) {
-                printf("\nlooked something up instead of recomputing for CGATE\n\n");
+                //printf("\nlooked something up instead of recomputing for CGATE\n\n");
                 sylvan_stats_count(QDD_CGATE_CACHED);
                 return res;
             }
@@ -434,8 +434,8 @@ TASK_IMPL_4(QDD, qdd_cgate, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t)
 
         if (cachenow) {
             if (cache_put3(CACHE_QDD_CGATE, GATE_OPID(gate, c, t), q, sylvan_false, res)) sylvan_stats_count(QDD_GATE_CACHEDPUT);
-            printf("\nput the following in cache for CGATE:\n");
-            printf("%p , %p , %p, %p\n\n", GATE_OPID(gate, c, t), q, sylvan_false, res);
+            //printf("\nput the following in cache for CGATE:\n");
+            //printf("%p , %p , %p, %p\n\n", GATE_OPID(gate, c, t), q, sylvan_false, res);
         }
         return res;
     }

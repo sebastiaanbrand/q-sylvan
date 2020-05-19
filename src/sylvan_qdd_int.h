@@ -10,24 +10,19 @@
 
 #include <math.h>
 #include <stdint.h>
+#include "util/cmap.h"
 
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef struct complex_s {
-   long double r;   // real
-   long double i;   // imaginary
-   long double m;   // magnitude
-   long double a;   // angle
-} complex_t;
+//typedef struct complex_s {
+//   long double r;   // real
+//   long double i;   // imaginary
+//} complex_t;
 
 
 typedef uint32_t cint;
 
-static const cint C_ZERO = 0; // not hashed
-static const cint C_ONE  = 1; // not hashed
+cint C_ZERO; // TODO: don't hashed
+cint C_ONE; // TODO: don't hashed
 
 // GATE_ID's (gates are initialized in qdd_complex_init)
 static const uint32_t GATEID_I = 0;
@@ -44,6 +39,7 @@ static const uint32_t GATEID_T = 6;
 // gates[k][2] = u10 (bottom left)
 // gates[k][3] = u11 (bottom right)
 cint gates[7][4];
+
 
 uint32_t Ctentries;
 
@@ -67,18 +63,15 @@ cint Csub(cint,cint);
 cint Cmul(cint,cint);
 cint CintMul(cint,cint); // multiply by an integer
 cint Cdiv(cint,cint);
-cint CAbs(cint); /// by PN: returns the absolut value of a complex number
-cint CUnit(cint a); ///by PN: returns whether a complex number has norm 1
+//cint CAbs(cint); /// by PN: returns the absolut value of a complex number
+//cint CUnit(cint a); ///by PN: returns whether a complex number has norm 1
 
-bool Ccomp(complex_t x, complex_t y);
+//bool Ccomp(complex_t x, complex_t y);
 
 
 
 // TODO: call somewhere
 void qdd_complex_init();
 
-#ifdef __cplusplus
-}
-#endif /* __cplusplus */
 
 #endif
