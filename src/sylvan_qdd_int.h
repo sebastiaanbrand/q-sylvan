@@ -19,7 +19,7 @@
 //} complex_t;
 
 
-typedef uint32_t cint;
+typedef uint64_t cint;
 
 cint C_ZERO; // TODO: don't hashed
 cint C_ONE; // TODO: don't hashed
@@ -50,8 +50,8 @@ uint32_t Ctentries;
 
 // Some of these methods are exposed for unit testing, but don't need to be
 // used in the qdd implementation.
-complex_t Cmake (long double r, long double i);
-long double Qmake (int a, int b, int c);
+complex_t Cmake (double r, double i);
+double Qmake (int a, int b, int c);
 cint Clookup (complex_t c);
 
 complex_t Cvalue(cint);
@@ -71,7 +71,7 @@ cint Cdiv(cint,cint);
 
 
 // TODO: call somewhere
-void qdd_complex_init();
+void qdd_complex_init(int logsize);
 
 
 #endif

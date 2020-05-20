@@ -26,7 +26,7 @@
 #include <string.h>
 
 typedef struct complex_s {
-  long double r,i;
+  double r,i;
 } complex_t;
 
 /**

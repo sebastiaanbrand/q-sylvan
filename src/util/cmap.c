@@ -21,7 +21,7 @@
 
 typedef union {
     complex_t       c;
-    uint64_t        d[4];
+    uint64_t        d[2];
 } bucket_t;
 
 
@@ -41,6 +41,13 @@ bool
 cmap_find_or_put (const cmap_t *cmap, const complex_t *v, ref_t *ret)
 {
     // TODO truncate
+
+    //printf("r=%.60f,\ti=%.60f\n",v->r, v->i);
+    
+    // in some cases the following gives random values for some of the 256 bits
+    // DONE: either switch to regular (64 bit) doubles, or identify these bits
+    //bucket_t *b= (bucket_t *) v;
+    //printf("value: %p %p\n", b->d[0], b->d[1]);
     /*
     complex_t trunc;
     trunc.r = v->r;
@@ -79,8 +86,8 @@ cmap_find_or_put (const cmap_t *cmap, const complex_t *v, ref_t *ret)
             if (bucket->d[0] == EMPTY) {
                 if (cas(&bucket->d[0], EMPTY, LOCK)) {
                     *ret = ref;
-                    atomic_write (&bucket->d[3], val->d[3]);
-                    atomic_write (&bucket->d[2], val->d[2]);
+                    //atomic_write (&bucket->d[3], val->d[3]);
+                    //atomic_write (&bucket->d[2], val->d[2]);
                     atomic_write (&bucket->d[1], val->d[1]);
                     atomic_write (&bucket->d[0], val->d[0]);
                     return 0;
@@ -89,9 +96,10 @@ cmap_find_or_put (const cmap_t *cmap, const complex_t *v, ref_t *ret)
             while (atomic_read(&bucket->d[0]) == LOCK) {}
 
             if (    bucket->d[0] == val->d[0] &&
-                    bucket->d[1] == val->d[1] &&
-                    bucket->d[2] == val->d[2] &&
-                    bucket->d[3] == val->d[3]) {
+                    bucket->d[1] == val->d[1] //&&
+                    //bucket->d[2] == val->d[2] &&
+                    //bucket->d[3] == val->d[3]
+                    ) {
                 *ret = ref;
                 return 1;
             }

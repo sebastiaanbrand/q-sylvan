@@ -43,9 +43,16 @@ int test_cmap()
 
 int test_amp_table()
 {
-    init_amplitude_table();
+    init_amplitude_table(20);
 
     // TODO: test functions of sylvan_qdd_int
+    complex_t val  = Cmake(1.0, 0.0);
+    complex_t val2 = Cmake(1.0, 0.0);
+    cint one  = Clookup(val);
+    cint one2 = Clookup(val2);
+    test_assert(one == one2);
+    test_assert(one == C_ONE);
+    
 
     if(VERBOSE) printf("cmap integration:     ok\n");
     return 0;
@@ -53,7 +60,7 @@ int test_amp_table()
 
 int test_basis_state_creation()
 {
-    init_amplitude_table();
+    init_amplitude_table(20);
     bool x[] = {0};
     
     QDD q0, q1;
@@ -97,7 +104,7 @@ int test_basis_state_creation()
 
 int test_vector_addition()
 {
-    init_amplitude_table();
+    init_amplitude_table(20);
     
     QDD q0, q1, q00, q01, q10, q11, q000, q001, q010, q100;
     bool x[] = {0};
@@ -253,7 +260,7 @@ int test_vector_addition()
 
 int test_x_gate()
 {
-    init_amplitude_table();
+    init_amplitude_table(20);
 
     QDD q0, q1, q2, q3, q4, q5;
     bool x[] = {0};
@@ -284,7 +291,7 @@ int test_x_gate()
 
 int test_h_gate()
 {
-    init_amplitude_table();
+    init_amplitude_table(20);
 
     QDD q0, q1, q2, q3, q4;
     bool x[] = {0};
@@ -335,7 +342,7 @@ int test_h_gate()
 
 int test_phase_gates()
 {
-    init_amplitude_table();
+    init_amplitude_table(20);
     // test Z, S, T gates
 
     QDD q0, qZ, qS, qSS, qT, qTT, qTTTT;
@@ -406,7 +413,7 @@ int test_phase_gates()
 
 int test_cx_gate()
 {
-    init_amplitude_table();
+    init_amplitude_table(20);
 
     QDD qBell;
     bool x2[] = {0,0};
@@ -437,7 +444,7 @@ int test_cx_gate()
 
 int test_cz_gate()
 {
-    init_amplitude_table();
+    init_amplitude_table(20);
 
     QDD qGraph;
     bool x2[] = {0, 0};
@@ -467,7 +474,7 @@ int test_cz_gate()
 
 int test_large_circuit()
 {
-    init_amplitude_table();
+    init_amplitude_table(20);
 
     QDD q, qref;
     bool x10[] = {0,0,0,0,0,0,0,0,0,0};
@@ -585,9 +592,9 @@ int runtests()
     if (test_cmap()) return 1;
     if (test_amp_table()) return 1;
     if (test_basis_state_creation()) return 1;
-    //if (test_vector_addition()) return 1;
-    //if (test_x_gate()) return 1;
-    //if (test_h_gate()) return 1;
+    if (test_vector_addition()) return 1;
+    if (test_x_gate()) return 1;
+    if (test_h_gate()) return 1;
     //if (test_phase_gates()) return 1;
     //if (test_cx_gate()) return 1;
     //if (test_cz_gate()) return 1;

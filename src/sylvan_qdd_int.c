@@ -28,7 +28,7 @@ Note use of cosl and sinl for long double computation
 /***********************************************
 Tolerance for testing equality of complex values
 ***********************************************/
-static long double Ctol = 1.0e-10;
+static double Ctol = 1.0e-10;
 static long double Pi;    // set value of global Pi
 
 
@@ -75,7 +75,7 @@ Conj (complex_t c)
 
 // make a complex value
 complex_t
-Cmake (long double r, long double i)
+Cmake (double r, double i)
 {
     complex_t c;
     c.r = r;
@@ -116,7 +116,7 @@ Cprint(complex_t c)
 // returns the complex number equal to (a+b*sqrt(2))/c
 // required to be compatible with quadratic irrational-based
 // complex number package
-long double
+double
 Qmake (int a, int b, int c)
 {
     return (((float) a + ((float) b) * sqrt (2.0)) / (float) (c));
@@ -129,7 +129,7 @@ Qmake (int a, int b, int c)
 cint
 Clookup (complex_t c)
 {
-    uint64_t res = 0;
+    uint64_t res;
     cmap_find_or_put(ctable, &c, &res);
     return (cint) res;
     /*
@@ -356,7 +356,7 @@ Cdiv (cint ai, cint bi)
 {
     complex_t a, b, r;
     int t;
-    long double d;
+    double d;
 
     if (ai == bi)     return C_ONE;
     if (ai == C_ZERO) return C_ZERO;
@@ -422,9 +422,9 @@ CUnit (cint a)
 
 
 void
-qdd_complex_init()
+qdd_complex_init(int logsize)
 {
-    ctable = cmap_create(20);
+    ctable = cmap_create(logsize);
 
     
     // TODO: treat 0 and 1 seperately and don't put them in table.
