@@ -67,7 +67,7 @@ cmap_find_or_put (const cmap_t *cmap, const complex_t *v, ref_t *ret)
     bucket_t *val = (bucket_t *) &rounded;
     assert (val->d[0] != LOCK && val->d[0] != EMPTY);
 
-    for (int c = 0; c < cmap->threshold; c++) {
+    for (unsigned int c = 0; c < cmap->threshold; c++) {
         size_t              ref = hash & cmap->mask;
         size_t              line_end = (ref & CL_MASK) + CACHE_LINE_SIZE;
         for (size_t i = 0; i < CACHE_LINE_SIZE; i++) {
@@ -75,8 +75,6 @@ cmap_find_or_put (const cmap_t *cmap, const complex_t *v, ref_t *ret)
             if (bucket->d[0] == EMPTY) {
                 if (cas(&bucket->d[0], EMPTY, LOCK)) {
                     *ret = ref;
-                    //atomic_write (&bucket->d[3], val->d[3]);
-                    //atomic_write (&bucket->d[2], val->d[2]);
                     atomic_write (&bucket->d[1], val->d[1]);
                     atomic_write (&bucket->d[0], val->d[0]);
                     return 0;
@@ -85,9 +83,7 @@ cmap_find_or_put (const cmap_t *cmap, const complex_t *v, ref_t *ret)
             while (atomic_read(&bucket->d[0]) == LOCK) {}
 
             if (    bucket->d[0] == val->d[0] &&
-                    bucket->d[1] == val->d[1] //&&
-                    //bucket->d[2] == val->d[2] &&
-                    //bucket->d[3] == val->d[3]
+                    bucket->d[1] == val->d[1]
                     ) {
                 *ret = ref;
                 return 1;
@@ -98,6 +94,7 @@ cmap_find_or_put (const cmap_t *cmap, const complex_t *v, ref_t *ret)
         hash += prime << CACHE_LINE;
     }
     assert ("Hash table full" && false);
+    return -1; // (should be) unreachable but deals with compiler warning
 }
 
 complex_t *
@@ -113,7 +110,7 @@ cmap_create (int size)
     cmap->size = 1ull << size;
     cmap->mask = cmap->size - 1;
     cmap->table = calloc (cmap->size, sizeof(bucket_t));
-    for (int c = 0; c < cmap->size; c++) {
+    for (unsigned int c = 0; c < cmap->size; c++) {
         cmap->table[c].d[0] = EMPTY;
     }
     cmap->threshold = cmap->size / 100;

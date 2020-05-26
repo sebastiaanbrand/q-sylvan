@@ -684,11 +684,4 @@ print_qdd(QDD q)
     _print_qdd(q);
 }
 
-// just for testing TODO: do this somewhere better
-void
-init_amplitude_table(int logsize)
-{
-    qdd_complex_init(logsize);
-}
-
 

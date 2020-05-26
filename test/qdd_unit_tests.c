@@ -39,6 +39,7 @@ int test_cmap()
     test_assert(fabs(val3.i - val1.i) < TOLERANCE);
     
     if(VERBOSE) printf("cmap tests:           ok\n");
+    cmap_free(ctable);
     return 0;
 }
 
@@ -72,6 +73,7 @@ int test_amp_table()
     // TODO: test all functions of sylvan_qdd_int
 
     if(VERBOSE) printf("cmap integration:     ok\n");
+    free_amplitude_table();
     return 0;
 }
 
@@ -116,6 +118,7 @@ int test_basis_state_creation()
     // TODO: also test node count
 
     printf("basis state creation: ok\n");
+    free_amplitude_table();
     return 0;
 }
 
@@ -273,6 +276,7 @@ int test_vector_addition()
     assert(q001 == q100);
 
     if(VERBOSE) printf("qdd vector addition:  ok\n");
+    free_amplitude_table();
     return 0;
 }
 
@@ -305,6 +309,7 @@ int test_x_gate()
     q3 = qdd_gate(q3, GATEID_X, 0); test_assert(q3 == q5);
 
     if(VERBOSE) printf("qdd x gates:          ok\n");
+    free_amplitude_table();
     return 0;
 }
 
@@ -368,6 +373,7 @@ int test_h_gate()
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q5, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
 
     if(VERBOSE) printf("qdd h gates:          ok\n");
+    free_amplitude_table();
     return 0;
 }
 
@@ -439,6 +445,7 @@ int test_phase_gates()
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(-0.5,0)));
 
     if(VERBOSE) printf("qdd phase gates:      ok\n");
+    free_amplitude_table();
     return 0;
 }
 
@@ -471,6 +478,7 @@ int test_cx_gate()
     // TODO: more tests
 
     if(VERBOSE) printf("qdd cnot gates:       ok\n");
+    free_amplitude_table();
     return 0;
 }
 
@@ -502,6 +510,7 @@ int test_cz_gate()
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(qGraph, x2); test_assert(a == Clookup(Cmake(-0.5,0)));
 
     if(VERBOSE) printf("qdd CZ gates:         ok\n");
+    free_amplitude_table();
     return 0;
 }
 
@@ -616,6 +625,7 @@ int test_large_circuit()
     test_assert(q == qref);
 
     if(VERBOSE) printf("qdd 20 qubit circuit: ok\n");
+    free_amplitude_table();
     return 0;
 }
 

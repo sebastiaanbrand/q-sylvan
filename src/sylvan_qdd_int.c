@@ -352,7 +352,7 @@ CUnit (cint a)
 
 
 void
-qdd_complex_init(int logsize)
+init_amplitude_table(int logsize)
 {
     ctable = cmap_create(logsize);
 
@@ -399,4 +399,9 @@ qdd_complex_init(int logsize)
 
     Pi = 2.0 * acos(0.0);
 }
-  
+
+void
+free_amplitude_table()
+{
+    cmap_free(ctable);
+}

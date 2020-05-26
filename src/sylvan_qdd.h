@@ -172,7 +172,6 @@ extern QDD create_basis_state(int n, bool* x);
 // debug stuff
 extern void print_qdd(QDD q);
 
-extern void init_amplitude_table(int logsize); // just for testing TODO: remove
 
 #ifdef __cplusplus
 }

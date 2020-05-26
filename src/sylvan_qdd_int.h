@@ -71,10 +71,8 @@ cint Cdiv(cint,cint);
 
 //bool Ccomp(complex_t x, complex_t y);
 
-
-
-// TODO: call somewhere
-void qdd_complex_init(int logsize);
+void init_amplitude_table(int logsize);
+void free_amplitude_table();
 
 
 #endif
