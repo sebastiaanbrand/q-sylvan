@@ -122,8 +122,8 @@ static const PTR        QDD_TERMINAL = 1;
 static const AMP        NIL = 0;
 
 
-#define qdd_plus(a,b) (CALL(qdd_plus,a,b,0));
-TASK_DECL_3(QDD, qdd_plus, QDD, QDD, BDDVAR);
+#define qdd_plus(a,b) (CALL(qdd_plus,a,b));
+TASK_DECL_2(QDD, qdd_plus, QDD, QDD);
 
 #define qdd_gate(q,gate,qubit) (CALL(qdd_gate,q,gate,qubit));
 TASK_DECL_3(QDD, qdd_gate, QDD, uint32_t, BDDVAR);

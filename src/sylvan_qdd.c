@@ -25,7 +25,7 @@
 
 #include "sylvan_qdd_int.h"
 
-static int granularity = 1; // default
+//static int granularity = 1; // default
 
 
 /**
@@ -41,7 +41,7 @@ static int granularity = 1; // default
  *      40 bits: high edge pointer to next node (PTR)
  */
 typedef struct __attribute__((packed)) qddnode {
-    QDD low, high; // TODO: rename to low, high
+    QDD low, high;
 } *qddnode_t; // 16 bytes
 
 
@@ -153,16 +153,16 @@ static inline void pprint_qddnode(qddnode_t n)
 {
     AMP amp_low  = qdd_getamplow(n);
     AMP amp_high = qdd_getamphigh(n);
-    printf("[var=%d, low=%p, high=%p, ", 
+    printf("[var=%d, low=%lx, high=%lx, ", 
              qdd_getvar(n),
              qdd_getptrlow(n),
              qdd_getptrhigh(n));
     if(amp_low == C_ZERO)      printf("a=C_ZERO,  ");
     else if(amp_low == C_ONE)  printf("a=C_ONE,   ");
-    else                       printf("a=%p, ",amp_low);
+    else                       printf("a=%lx, ",amp_low);
     if(amp_high == C_ZERO)     printf("b=C_ZERO ");
     else if(amp_high == C_ONE) printf("b=C_ONE, ");
-    else                       printf("b=%p", amp_high);
+    else                       printf("b=%lx", amp_high);
     printf("]\n");
 }
 
@@ -217,7 +217,6 @@ qddnode_make(qddnode_t n, BDDVAR var, PTR low, PTR high, AMP a, AMP b)
 
 
 static PTR
-//_qdd_makenode(BDDVAR var, QDD low, QDD high)
 _qdd_makenode(BDDVAR var, PTR low, PTR high, AMP a, AMP b)
 {
     struct qddnode n;
@@ -319,7 +318,6 @@ TASK_IMPL_3(QDD, qdd_gate, QDD, q, uint32_t, gate, BDDVAR, qubit)
     // get node info
     qddnode_t node = QDD_GETNODE(QDD_PTR(q));
     BDDVAR var = qdd_getvar(node);
-    //pprint_qddnode(node);
     
     // "above" the desired qubit in the QDD
     if(var < qubit){
@@ -329,7 +327,6 @@ TASK_IMPL_3(QDD, qdd_gate, QDD, q, uint32_t, gate, BDDVAR, qubit)
             QDD res;
             // check if this calculation has already been done before for this node/gate
             if (cache_get3(CACHE_QDD_GATE, GATE_OPID(gate, 0, qubit), q, sylvan_false, &res)) {
-                //printf("\nlooked something up instead of recomputing for GATE\n\n");
                 sylvan_stats_count(QDD_GATE_CACHED);
                 return res;
             }
@@ -348,8 +345,6 @@ TASK_IMPL_3(QDD, qdd_gate, QDD, q, uint32_t, gate, BDDVAR, qubit)
 
         if (cachenow) {
             if (cache_put3(CACHE_QDD_GATE, GATE_OPID(gate, 0, qubit), q, sylvan_false, res)) sylvan_stats_count(QDD_GATE_CACHEDPUT);
-            //printf("\nput the following in cache for GATE:\n");
-            //printf("%p , %p , %p, %p\n\n", GATE_OPID(gate, 0, qubit), q, sylvan_false, res);
         }
         return res;
     }
@@ -410,7 +405,6 @@ TASK_IMPL_4(QDD, qdd_cgate, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t)
     // get node info
     qddnode_t node = QDD_GETNODE(QDD_PTR(q));
     BDDVAR var = qdd_getvar(node);
-    //pprint_qddnode(node);
 
     // "above" the desired qubit in the QDD (this is where the recursive stuff
     // of cgate happens, once the control qubit has been reached, the recursive
@@ -423,7 +417,6 @@ TASK_IMPL_4(QDD, qdd_cgate, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t)
             QDD res;
             // check if this calculation has already been done before for this node/gate
             if (cache_get3(CACHE_QDD_CGATE, GATE_OPID(gate, c, t), q, sylvan_false, &res)) {
-                //printf("\nlooked something up instead of recomputing for CGATE\n\n");
                 sylvan_stats_count(QDD_CGATE_CACHED);
                 return res;
             }
@@ -441,8 +434,6 @@ TASK_IMPL_4(QDD, qdd_cgate, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t)
 
         if (cachenow) {
             if (cache_put3(CACHE_QDD_CGATE, GATE_OPID(gate, c, t), q, sylvan_false, res)) sylvan_stats_count(QDD_GATE_CACHEDPUT);
-            //printf("\nput the following in cache for CGATE:\n");
-            //printf("%p , %p , %p, %p\n\n", GATE_OPID(gate, c, t), q, sylvan_false, res);
         }
         return res;
     }
@@ -470,7 +461,7 @@ TASK_IMPL_4(QDD, qdd_cgate, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t)
     }
 }
 
-TASK_IMPL_3(QDD, qdd_plus, QDD, a, QDD, b, BDDVAR, prev_level)
+TASK_IMPL_2(QDD, qdd_plus, QDD, a, QDD, b)
 {
     AMP amp_a = QDD_AMP(a);
     AMP amp_b = QDD_AMP(b);
@@ -526,7 +517,6 @@ TASK_IMPL_3(QDD, qdd_plus, QDD, a, QDD, b, BDDVAR, prev_level)
 
     sylvan_stats_count(QDD_PLUS);
 
-    // TODO: add QDD operation cache instead of using CACHE_BDD_...
     bool cachenow = 1;
     if (cachenow) {
         QDD res;
@@ -554,14 +544,12 @@ TASK_IMPL_3(QDD, qdd_plus, QDD, a, QDD, b, BDDVAR, prev_level)
     }
 
     QDD res_low, res_high;
-    //res_low  = CALL(qdd_plus, a_low, b_low, level);
-    //res_high = CALL(qdd_plus, a_high, b_high, level);
-                                                            
-    bdd_refs_spawn(SPAWN(qdd_plus, a_high, b_high, level)); 
-    res_low = CALL(qdd_plus, a_low, b_low, level);          
-    bdd_refs_push(res_low);                                 
-    res_high = bdd_refs_sync(SYNC(qdd_plus));               
-    bdd_refs_pop(1);                                        
+
+    bdd_refs_spawn(SPAWN(qdd_plus, a_high, b_high));
+    res_low = CALL(qdd_plus, a_low, b_low);
+    bdd_refs_push(res_low);
+    res_high = bdd_refs_sync(SYNC(qdd_plus));
+    bdd_refs_pop(1);
 
 
     QDD res = qdd_makenode(level, res_low, res_high);
@@ -616,7 +604,6 @@ qdd_get_amplitude(QDD q, bool* basis_state)
         // now we need to choose low or high edge of next node
         qddnode_t node = QDD_GETNODE(QDD_PTR(q));
         BDDVAR var     = qdd_getvar(node);
-        //pprint_qddnode(node);
 
         // Condition low/high choice on basis state vector[var]
         if (basis_state[var] == 0)
@@ -625,9 +612,6 @@ qdd_get_amplitude(QDD q, bool* basis_state)
             q = node->high;
     }
 
-    //printf("amplitude in Ctable:");
-    //Cprint(Cvalue(a));
-    //printf("\n");
     // TODO: return complex struct instead of the index?
     return a;
 }
@@ -671,12 +655,8 @@ create_basis_state(int n, bool* x)
         // pack info into node (TODO: rename this function)
         qddnode_make(&node, k, low_child, high_child, low_amp, high_amp);
 
-        //printf("Packed+added the following node:\n");
-        //pprint_qddnode(&node);
-
         // actually make the node (i.e. add to nodetable)
         prev = QDD_PTR(qdd_makenode(k, node.low, node.high));
-        //pprint_qddnode(QDD_GETNODE(prev));
     }
 
     QDD root_edge = qdd_bundle_ptr_amp(prev, C_ONE);
@@ -688,7 +668,7 @@ _print_qdd(QDD q)
 {
     if(QDD_PTR(q) != QDD_TERMINAL){
         qddnode_t node = QDD_GETNODE(QDD_PTR(q));
-        printf("%p\t", QDD_PTR(q));
+        printf("%lx\t", QDD_PTR(q));
         pprint_qddnode(node);
         _print_qdd(qdd_getlow(node));
         _print_qdd(qdd_gethigh(node));
@@ -698,7 +678,7 @@ _print_qdd(QDD q)
 void
 print_qdd(QDD q)
 {
-    printf("root edge: %p, %p = ",QDD_PTR(q), QDD_AMP(q));
+    printf("root edge: %lx, %lx = ",QDD_PTR(q), QDD_AMP(q));
     Cprint(Cvalue(QDD_AMP(q)));
     printf("\n");
     _print_qdd(q);
