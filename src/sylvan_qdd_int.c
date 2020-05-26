@@ -25,45 +25,12 @@ Note use of cosl and sinl for long double computation
 #define qdd_cos(fac,div) cosl((long double)(fac)*Pi/(long double)(div))
 #define qdd_sin(fac,div) sinl((long double)(fac)*Pi/(long double)(div))
 
-/***********************************************
-Tolerance for testing equality of complex values
-***********************************************/
-static double Ctol = 1.0e-10;
+
 static long double Pi;    // set value of global Pi
 
 
-#define Dzero 0.0
-#define Ceq(x,y) ((fabs((x.r)-(y.r))<Ctol)&&(fabs((x.i)-(y.i))<Ctol))
-
-
 cmap_t * ctable;
-/*
-struct complex_cmp
-{
-    bool operator() ( complex_t x, complex_t y ) const {
-    	return Ccomp(x,y);
-    }
-};
-*/
 
-//std::map<cint, complex_t> Ctable;
-//std::map<complex_t, cint, complex_cmp> Ctable2;
-
-bool
-Ccomp(complex_t x, complex_t y)
-{ // TODO: do we need to use x.m and x.a instead?
-    if(fabs((x.r)-(y.r)) < Ctol){ // real parts are "equal"
-        if(fabs(x.i)-(y.i) < Ctol) { // im parts are "equal"
-            return 0;
-        }
-        else{
-            return x.i > y.i;
-        }
-    }
-    else{
-        return x.r > y.r;
-    }
-}
 
 // return complex conjugate
 complex_t
@@ -106,11 +73,11 @@ Cprint(complex_t c)
 {
     if(c.r >= 0)
         printf(" ");
-    printf("%Lf", c.r);
+    printf("%.60f", c.r);
     if (c.i > 0)
-        printf("+%Lfi", c.i);
+        printf("+%fi", c.i);
     if (c.i < 0)
-        printf("%Lfi", c.i);
+        printf("%fi", c.i);
 }
 
 // returns the complex number equal to (a+b*sqrt(2))/c
@@ -132,39 +99,6 @@ Clookup (complex_t c)
     uint64_t res;
     cmap_find_or_put(ctable, &c, &res);
     return (cint) res;
-    /*
-    cint i = 0;
-
-    // TODO: use something better than copy-paste from QMDD code ?
-
-    // First try to look up c
-    std::map<complex_t, cint, complex_cmp>::iterator it;
-    it = Ctable2.find(c);
-    if(it != Ctable2.end()){
-        return it->second;
-    }
-
-    // If not found, add a new entry to the table.
-    if(Ctentries >= 1048576) {
-        printf("ERROR, too many complex numbers\n");
-        exit(-4);
-    }
-
-    Ctentries++;
-    i=Ctentries-1;
-
-    complex_t new_c;
-    new_c.r = c.r;
-    new_c.i = c.i;
-    Ctable[i] = new_c;
-    Ctable2[new_c] = i;
-    
-
-    // what about deleting values?
-
-    return i;
-    (void) c;
-    */
 }
 
 complex_t
@@ -173,20 +107,6 @@ Cvalue (cint i)
     complex_t * res;
     res = cmap_get(ctable, i);
     return *res;
-
-    /*
-    //complex_t c = (complex_t) { .r = 0, .i = 0, .m = 0, .a = 0  };
-
-    // it might be better to not call this function on CZRO and CONE in the
-    // first place.
-    //if(i == CZRO) return CmakeZero();
-    //if(i == CONE) return CmakeOne();
-    // added Ctable[CZRO] = CmakeZero() and Ctable[CONE] = CmakeOne()
-    complex_t c = Ctable[i];
-
-    return c;
-    (void) i;
-    */
 }
 
 // computes angle for polar coordinate representation of Cvalue(a)
@@ -257,6 +177,16 @@ Clt (cint a, cint b)
     if (cb.m < (ca.m + Ctol)) return (0);
     return ((angle (a) + Ctol) > angle (b));
 } */
+
+bool CexactEqual(complex_t a, complex_t b)
+{
+    return (a.r == b.r && a.i == b.i);
+}
+
+bool CapproxEqual(complex_t a, complex_t b)
+{
+    return ( (fabs(a.r - b.r) < TOLERANCE) && (fabs(a.i - b.i) < TOLERANCE) );
+}
 
 
 // basic operations on complex values

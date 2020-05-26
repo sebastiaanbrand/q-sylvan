@@ -319,7 +319,7 @@ TASK_IMPL_3(QDD, qdd_gate, QDD, q, uint32_t, gate, BDDVAR, qubit)
     // get node info
     qddnode_t node = QDD_GETNODE(QDD_PTR(q));
     BDDVAR var = qdd_getvar(node);
-    pprint_qddnode(node);
+    //pprint_qddnode(node);
     
     // "above" the desired qubit in the QDD
     if(var < qubit){
@@ -329,7 +329,7 @@ TASK_IMPL_3(QDD, qdd_gate, QDD, q, uint32_t, gate, BDDVAR, qubit)
             QDD res;
             // check if this calculation has already been done before for this node/gate
             if (cache_get3(CACHE_QDD_GATE, GATE_OPID(gate, 0, qubit), q, sylvan_false, &res)) {
-                printf("\nlooked something up instead of recomputing for GATE\n\n");
+                //printf("\nlooked something up instead of recomputing for GATE\n\n");
                 sylvan_stats_count(QDD_GATE_CACHED);
                 return res;
             }
@@ -348,8 +348,8 @@ TASK_IMPL_3(QDD, qdd_gate, QDD, q, uint32_t, gate, BDDVAR, qubit)
 
         if (cachenow) {
             if (cache_put3(CACHE_QDD_GATE, GATE_OPID(gate, 0, qubit), q, sylvan_false, res)) sylvan_stats_count(QDD_GATE_CACHEDPUT);
-            printf("\nput the following in cache for GATE:\n");
-            printf("%p , %p , %p, %p\n\n", GATE_OPID(gate, 0, qubit), q, sylvan_false, res);
+            //printf("\nput the following in cache for GATE:\n");
+            //printf("%p , %p , %p, %p\n\n", GATE_OPID(gate, 0, qubit), q, sylvan_false, res);
         }
         return res;
     }
@@ -410,7 +410,7 @@ TASK_IMPL_4(QDD, qdd_cgate, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t)
     // get node info
     qddnode_t node = QDD_GETNODE(QDD_PTR(q));
     BDDVAR var = qdd_getvar(node);
-    pprint_qddnode(node);
+    //pprint_qddnode(node);
 
     // "above" the desired qubit in the QDD (this is where the recursive stuff
     // of cgate happens, once the control qubit has been reached, the recursive
@@ -531,7 +531,7 @@ TASK_IMPL_3(QDD, qdd_plus, QDD, a, QDD, b, BDDVAR, prev_level)
     if (cachenow) {
         QDD res;
         if (cache_get3(CACHE_QDD_PLUS, sylvan_false, a, b, &res)) {
-            printf("\nlooked something up instead of recomputing for PLUS\n\n");
+            //printf("\nlooked something up instead of recomputing for PLUS\n\n");
             sylvan_stats_count(QDD_PLUS_CACHED);
             return res;
         }
@@ -671,12 +671,12 @@ create_basis_state(int n, bool* x)
         // pack info into node (TODO: rename this function)
         qddnode_make(&node, k, low_child, high_child, low_amp, high_amp);
 
-        printf("Packed+added the following node:\n");
-        pprint_qddnode(&node);
+        //printf("Packed+added the following node:\n");
+        //pprint_qddnode(&node);
 
         // actually make the node (i.e. add to nodetable)
         prev = QDD_PTR(qdd_makenode(k, node.low, node.high));
-        pprint_qddnode(QDD_GETNODE(prev));
+        //pprint_qddnode(QDD_GETNODE(prev));
     }
 
     QDD root_edge = qdd_bundle_ptr_amp(prev, C_ONE);

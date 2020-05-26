@@ -35,7 +35,8 @@ int test_cmap()
     test_assert(index1 == index2);
 
     val3 = *cmap_get(ctable, index1);
-    test_assert(val3.r == val1.r && val3.i == val1.i);
+    test_assert(fabs(val3.r - val1.r) < TOLERANCE);
+    test_assert(fabs(val3.i - val1.i) < TOLERANCE);
     
     if(VERBOSE) printf("cmap tests:           ok\n");
     return 0;
@@ -45,14 +46,30 @@ int test_amp_table()
 {
     init_amplitude_table(20);
 
-    // TODO: test functions of sylvan_qdd_int
-    complex_t val  = Cmake(1.0, 0.0);
-    complex_t val2 = Cmake(1.0, 0.0);
-    cint one  = Clookup(val);
-    cint one2 = Clookup(val2);
-    test_assert(one == one2);
-    test_assert(one == C_ONE);
+    complex_t ref1, ref2, ref3, ref4, val1, val2, val3, val4;
+    cint index1, index2, index3, index4;
+
+    // test C_ZERO
+    ref1 = Cmake(0.0, 0.0);         index1 = Clookup(ref1);
+    ref2 = Cmake(0.0, 0.0);         index2 = Clookup(ref2);
+    test_assert(index1 == index2);
+    test_assert(index1 == C_ZERO);
+
+    // test C_ONE
+    ref1 = Cmake(1.0, 0.0);         index1 = Clookup(ref1);
+    ref2 = Cmake(1.0, 0.0);         index2 = Clookup(ref2);
+    test_assert(index1 == index2);
+    test_assert(index1 == C_ONE);
+
+    // test 1/2, 1/sqrt(2)
+    ref1 = Cmake(0.5, 0.0);         index1 = Clookup(ref1);   val1 = Cvalue(index1);
+    ref2 = Cmake(0.5, 0.0);         index2 = Clookup(ref2);   val2 = Cvalue(index2);
+    ref3 = Cmake(Qmake(0,1,2),0);   index3 = Clookup(ref3);   val3 = Cvalue(index3);
+    ref4 = Cmake(Qmake(0,1,2),0);   index4 = Clookup(ref4);   val4 = Cvalue(index4);
+    test_assert(index1 == index2);  test_assert(CexactEqual(val1, val2));
+    test_assert(index3 == index4);  test_assert(CexactEqual(val3, val4));
     
+    // TODO: test all functions of sylvan_qdd_int
 
     if(VERBOSE) printf("cmap integration:     ok\n");
     return 0;
@@ -255,6 +272,7 @@ int test_vector_addition()
     assert(q001 == q010);
     assert(q001 == q100);
 
+    if(VERBOSE) printf("qdd vector addition:  ok\n");
     return 0;
 }
 
@@ -286,6 +304,7 @@ int test_x_gate()
     q3 = qdd_gate(q3, GATEID_X, 1); test_assert(q3 == q4);
     q3 = qdd_gate(q3, GATEID_X, 0); test_assert(q3 == q5);
 
+    if(VERBOSE) printf("qdd x gates:          ok\n");
     return 0;
 }
 
@@ -293,7 +312,7 @@ int test_h_gate()
 {
     init_amplitude_table(20);
 
-    QDD q0, q1, q2, q3, q4;
+    QDD q0, q1, q2, q3, q4, q5;
     bool x[] = {0};
     bool x2[] = {0,0};
     AMP a;
@@ -314,36 +333,47 @@ int test_h_gate()
 
 
     // Two qubit test
-    x2[1] = 0; x2[0] = 0; q2 = create_basis_state(2, x2);
-    x2[1] = 0; x2[0] = 1; q3 = create_basis_state(2, x2);
-    x2[1] = 0; x2[0] = 0; q4 = create_basis_state(2, x2);
-    q2 = qdd_gate(q2, GATEID_H, 0);
-    q3 = qdd_gate(q3, GATEID_H, 0);
-    q4 = qdd_gate(q4, GATEID_H, 1);
+    x2[1] = 0; x2[0] = 0; q2 = create_basis_state(2, x2); // |00>
+    x2[1] = 0; x2[0] = 1; q3 = create_basis_state(2, x2); // |01>
+    x2[1] = 0; x2[0] = 0; q4 = create_basis_state(2, x2); // |00>
+    x2[1] = 0; x2[0] = 0; q5 = create_basis_state(2, x2); // |00>
+    q2 = qdd_gate(q2, GATEID_H, 0); // q2 = |0+>
+    q3 = qdd_gate(q3, GATEID_H, 0); // q3 = |0->
+    q4 = qdd_gate(q4, GATEID_H, 1); // q4 = |+0>
+    q5 = qdd_gate(q5, GATEID_H, 0);
+    q5 = qdd_gate(q5, GATEID_H, 1); // q5 = |++>
 
+    // q2 = |0+>
     x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q2, x2); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
     x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q2, x2); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
     x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q2, x2); test_assert(a == C_ZERO);
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q2, x2); test_assert(a == C_ZERO);
 
+    // q3 = |0->
     x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q3, x2); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
     x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q3, x2); test_assert(a == Clookup(Cmake(Qmake(0,-1,2),0)));
     x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q3, x2); test_assert(a == C_ZERO);
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q3, x2); test_assert(a == C_ZERO);
 
+    // q4 = |+0>
     x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q4, x2); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
     x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q4, x2); test_assert(a == C_ZERO);
     x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q4, x2); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q4, x2); test_assert(a == C_ZERO);
 
+    // q5 = |++>
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q5, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q5, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q5, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q5, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
 
+    if(VERBOSE) printf("qdd h gates:          ok\n");
     return 0;
 }
 
 int test_phase_gates()
 {
     init_amplitude_table(20);
-    // test Z, S, T gates
 
     QDD q0, qZ, qS, qSS, qT, qTT, qTTTT;
     bool x2[] = {0, 0};
@@ -408,6 +438,7 @@ int test_phase_gates()
     x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(-0.5,0)));
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(-0.5,0)));
 
+    if(VERBOSE) printf("qdd phase gates:      ok\n");
     return 0;
 }
 
@@ -439,6 +470,7 @@ int test_cx_gate()
 
     // TODO: more tests
 
+    if(VERBOSE) printf("qdd cnot gates:       ok\n");
     return 0;
 }
 
@@ -469,6 +501,7 @@ int test_cz_gate()
     x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(qGraph, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(qGraph, x2); test_assert(a == Clookup(Cmake(-0.5,0)));
 
+    if(VERBOSE) printf("qdd CZ gates:         ok\n");
     return 0;
 }
 
@@ -520,6 +553,8 @@ int test_large_circuit()
     q = qdd_gate(q, GATEID_H, 0);           q = qdd_cgate(q, GATEID_X, 1, 3);
 
     test_assert(q ==  qref);
+
+    if(VERBOSE) printf("qdd 10 qubit circuit: ok\n");
 
     // 20 qubit state
     qref = create_basis_state(20, x20);
@@ -580,6 +615,7 @@ int test_large_circuit()
 
     test_assert(q == qref);
 
+    if(VERBOSE) printf("qdd 20 qubit circuit: ok\n");
     return 0;
 }
 
@@ -595,10 +631,10 @@ int runtests()
     if (test_vector_addition()) return 1;
     if (test_x_gate()) return 1;
     if (test_h_gate()) return 1;
-    //if (test_phase_gates()) return 1;
-    //if (test_cx_gate()) return 1;
-    //if (test_cz_gate()) return 1;
-    //if (test_large_circuit()) return 1;
+    if (test_phase_gates()) return 1;
+    if (test_cx_gate()) return 1;
+    if (test_cz_gate()) return 1;
+    if (test_large_circuit()) return 1;
 
     return 0;
 }

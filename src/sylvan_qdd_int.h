@@ -57,6 +57,9 @@ cint Clookup (complex_t c);
 complex_t Cvalue(cint);
 void Cprint(complex_t);
 
+bool CexactEqual(complex_t, complex_t);
+bool CapproxEqual(complex_t, complex_t);
+
 cint Cnegative(cint);
 cint Cadd(cint,cint);
 cint Csub(cint,cint);

@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include <math.h>
 
 #include "util/atomics.h"
 #include "util/cmap.h"
@@ -35,47 +36,35 @@ struct cmap_s {
     size_t              threshold;
     int                 seen_0;
     bucket_t  __attribute__(( __aligned__(32)))       *table;
+    // Q: should this 32 change to 16 now that we use doubles instead of
+    // long doubles for the real and imaginary components?
 };
+
+
+void 
+print_bucket_floats(bucket_t *b)
+{
+    printf("%.60f, %.60f\n", b->c.r, b->c.i);
+}
+
+void 
+print_bucket_bits(bucket_t* b)
+{
+    printf("hex = %lx, %lx\n", b->d[0], b->d[1]);
+}
 
 bool
 cmap_find_or_put (const cmap_t *cmap, const complex_t *v, ref_t *ret)
 {
-    // TODO truncate
+    // TODO: round based on number of significant digits rather than
+    // some absolute value
+    complex_t rounded;
+    rounded.r = round(v->r * TOLERANCE)/TOLERANCE;
+    rounded.i = round(v->i * TOLERANCE)/TOLERANCE;
 
-    //printf("r=%.60f,\ti=%.60f\n",v->r, v->i);
-    
-    // in some cases the following gives random values for some of the 256 bits
-    // DONE: either switch to regular (64 bit) doubles, or identify these bits
-    //bucket_t *b= (bucket_t *) v;
-    //printf("value: %p %p\n", b->d[0], b->d[1]);
-    /*
-    complex_t trunc;
-    trunc.r = v->r;
-    trunc.i = v->i;
-
-    bucket_t *buck = (bucket_t *) v;
-
-    buck->d[0] = buck->d[0] & 0x0000000000000000;
-    buck->d[1] = buck->d[1] & 0x0000000000000000;
-    
-    printf("value: \n%p\n%p\n", buck->d[0], buck->d[1]);
-    
-    printf("(%Lf, %Lf)\n",trunc.r, v->i);
-    printf("15: %.15Lf\n",trunc.r, v->i);
-    printf("20: %.20Lf\n",trunc.r, v->i);
-    printf("25: %.25Lf\n",trunc.r, v->i);
-    printf("30: %.30Lf\n",trunc.r, v->i);
-    printf("35: %.35Lf\n",trunc.r, v->i);
-    printf("40: %.40Lf\n",trunc.r, v->i);
-    printf("45: %.45Lf\n",trunc.r, v->i);
-    printf("50: %.50Lf\n",trunc.r, v->i);
-    printf("60: %.60Lf\n",trunc.r, v->i);
-    printf("65: %.65Lf\n",trunc.r, v->i);
-    */
-
-    uint32_t            hash = SuperFastHash(v, sizeof(complex_t), 0);
+    uint32_t            hash = SuperFastHash(&rounded, sizeof(complex_t), 0);
     uint32_t            prime = odd_primes[hash & PRIME_MASK];
-    bucket_t *val = (bucket_t *) v;
+    bucket_t *val = (bucket_t *) &rounded;
     assert (val->d[0] != LOCK && val->d[0] != EMPTY);
 
     for (int c = 0; c < cmap->threshold; c++) {

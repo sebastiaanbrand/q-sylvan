@@ -25,6 +25,8 @@
 #include <stdint.h>
 #include <string.h>
 
+static const double TOLERANCE = 1e10f; // (inverse of) float eq. tolerance
+
 typedef struct complex_s {
   double r,i;
 } complex_t;
