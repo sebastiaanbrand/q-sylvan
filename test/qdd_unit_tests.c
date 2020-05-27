@@ -43,7 +43,7 @@ int test_cmap()
     return 0;
 }
 
-int test_amp_table()
+int test_complex_operations()
 {
     init_amplitude_table(20);
 
@@ -62,17 +62,63 @@ int test_amp_table()
     test_assert(index1 == index2);
     test_assert(index1 == C_ONE);
 
-    // test 1/2, 1/sqrt(2)
+    // Clookup, Cvalue
     ref1 = Cmake(0.5, 0.0);         index1 = Clookup(ref1);   val1 = Cvalue(index1);
     ref2 = Cmake(0.5, 0.0);         index2 = Clookup(ref2);   val2 = Cvalue(index2);
     ref3 = Cmake(Qmake(0,1,2),0);   index3 = Clookup(ref3);   val3 = Cvalue(index3);
     ref4 = Cmake(Qmake(0,1,2),0);   index4 = Clookup(ref4);   val4 = Cvalue(index4);
     test_assert(index1 == index2);  test_assert(CexactEqual(val1, val2));
     test_assert(index3 == index4);  test_assert(CexactEqual(val3, val4));
-    
-    // TODO: test all functions of sylvan_qdd_int
 
-    if(VERBOSE) printf("cmap integration:     ok\n");
+    // Cnegative
+    ref1 = Cmake(0.3, 4.2);         index1 = Clookup(ref1);   val1 = Cvalue(index1);
+    ref2 = Cmake(-0.3, -4.2);       index2 = Clookup(ref2);   val2 = Cvalue(index2);
+    index3 = Cnegative(index1);     val3 = Cvalue(index3);
+    index4 = Cnegative(index2);     val4 = Cvalue(index4);
+    test_assert(index1 == index4);  test_assert(CexactEqual(val1, val4));
+    test_assert(index2 == index3);  test_assert(CexactEqual(val2, val3));
+
+    // Cadd
+    ref1 = Cmake(5.2, 1.0);         index1 = Clookup(ref1);   val1 = Cvalue(index1);
+    ref2 = Cmake(-0.3,7.0);         index2 = Clookup(ref2);   val2 = Cvalue(index2);
+    ref3 = Cmake(4.9, 8.0);         index3 = Clookup(ref3);   val3 = Cvalue(index3);
+    index4 = Cadd(index1, index2);  val4 = Cvalue(index4);
+    test_assert(index3 == index4);  test_assert(CexactEqual(val3, val4));
+
+    // Csub
+    ref1 = Cmake(1/3, 3.5);         index1 = Clookup(ref1);   val1 = Cvalue(index1);
+    ref2 = Cmake(1/3,-1.2);         index2 = Clookup(ref2);   val2 = Cvalue(index2);
+    ref3 = Cmake(0.0, 4.7);         index3 = Clookup(ref3);   val3 = Cvalue(index3);
+    index4 = Csub(index1, index2);  val4 = Cvalue(index4);
+    test_assert(index3 == index4);  test_assert(CexactEqual(val3, val4));
+    
+    // Cmul
+    ref1 = Cmake(3.0, 5.0);         index1 = Clookup(ref1);   val1 = Cvalue(index1);
+    ref2 = Cmake(0.5, 7.0);         index2 = Clookup(ref2);   val2 = Cvalue(index2);
+    ref3 = Cmake(-33.5, 23.5);      index3 = Clookup(ref3);   val3 = Cvalue(index3);
+    index4 = Cmul(index1, index2);  val4 = Cvalue(index4);
+    test_assert(index3 == index4);  test_assert(CexactEqual(val3, val4));
+
+    ref1 = Cmake(Qmake(0,1,2),0);   index1 = Clookup(ref1);   val1 = Cvalue(index1);
+    ref2 = Cmake(Qmake(0,1,2),0);   index2 = Clookup(ref2);   val2 = Cvalue(index2);
+    ref3 = Cmake(0.5, 0.0);         index3 = Clookup(ref3);   val3 = Cvalue(index3);
+    index4 = Cmul(index1, index2);  val4 = Cvalue(index4);
+    test_assert(index3 == index4);  test_assert(CexactEqual(val3, val4));
+
+    // Cdiv
+    ref1 = Cmake(1.3,-0.7);         index1 = Clookup(ref1);   val1 = Cvalue(index1);
+    ref2 = Cmake(1.0, 0.0);         index2 = Clookup(ref2);   val2 = Cvalue(index2);
+    ref3 = Cmake(1.3,-0.7);         index3 = Clookup(ref3);   val3 = Cvalue(index3);
+    index4 = Cdiv(index1, index2);  val4 = Cvalue(index4);
+    test_assert(index3 == index4);  test_assert(CexactEqual(val3, val4));
+
+    ref1 = Cmake(5.0, 9.0);         index1 = Clookup(ref1);   val1 = Cvalue(index1);
+    ref2 = Cmake(-4.0,7.0);         index2 = Clookup(ref2);   val2 = Cvalue(index2);
+    ref3 = Cmake(43./65., -71./65.);index3 = Clookup(ref3);   val3 = Cvalue(index3);
+    index4 = Cdiv(index1, index2);  val4 = Cvalue(index4);
+    test_assert(index3 == index4);  test_assert(CexactEqual(val3, val4));
+
+    if(VERBOSE) printf("complex operations:   ok\n");
     free_amplitude_table();
     return 0;
 }
@@ -514,14 +560,13 @@ int test_cz_gate()
     return 0;
 }
 
-int test_large_circuit()
+int test_10qubit_circuit()
 {
     init_amplitude_table(20);
 
     QDD q, qref;
     bool x10[] = {0,0,0,0,0,0,0,0,0,0};
-    bool x20[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-
+    
     LACE_ME;
 
     // 10 qubit state
@@ -564,6 +609,18 @@ int test_large_circuit()
     test_assert(q ==  qref);
 
     if(VERBOSE) printf("qdd 10 qubit circuit: ok\n");
+    free_amplitude_table();
+    return 0;
+}
+
+int test_20qubit_circuit()
+{
+    init_amplitude_table(20);
+
+    QDD q, qref;
+    bool x20[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+
+    LACE_ME;
 
     // 20 qubit state
     qref = create_basis_state(20, x20);
@@ -636,7 +693,7 @@ int runtests()
     sylvan_gc_disable();
 
     if (test_cmap()) return 1;
-    if (test_amp_table()) return 1;
+    if (test_complex_operations()) return 1;
     if (test_basis_state_creation()) return 1;
     if (test_vector_addition()) return 1;
     if (test_x_gate()) return 1;
@@ -644,7 +701,8 @@ int runtests()
     if (test_phase_gates()) return 1;
     if (test_cx_gate()) return 1;
     if (test_cz_gate()) return 1;
-    if (test_large_circuit()) return 1;
+    if (test_10qubit_circuit()) return 1;
+    if (test_20qubit_circuit()) return 1;
 
     return 0;
 }
