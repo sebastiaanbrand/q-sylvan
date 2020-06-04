@@ -146,7 +146,7 @@ extern AMP qdd_sample(QDD bdd, BDDVAR vars, bool* str);
  * @param qdd A QDD encoding some quantum state |\psi>.
  * @param basis_state A bitstring x of some computational basis state |x>.
  * 
- * @return The amplitude <\psi|x>.
+ * @return The amplitude <x|\psi>.
  */
 extern AMP qdd_get_amplitude(QDD qdd, bool* basis_state);
 
@@ -169,8 +169,26 @@ extern QDD create_all_zero_state(int n);
  */
 extern QDD create_basis_state(int n, bool* x);
 
+
+/**
+ * Checks if the states represented by two QDDs are the same. In principle the
+ * root edges of these QDDs should always be the same if they represent the
+ * same state, so this is mostly a debug/testing function.
+ * 
+ * @param a A QDD representing a quantum state |\psi>
+ * @param b A QDD representing a quantum state |\phi>
+ * @param n Number of qubits
+ * @param exact If true, |\psi> should equal |\phi> exactly (float equal),
+ * otherwise allow for preset float equivalence margine.
+ * 
+ * @returns True iff |\psi> == |\phi>.
+ */
+extern bool equivalent(QDD a, QDD b, int n, bool exact, bool verbose);
+
 // debug stuff
 extern void print_qdd(QDD q);
+bool _next_bitstring(bool *x, int n);
+void _print_bitstring(bool *x, int n);
 
 
 #ifdef __cplusplus

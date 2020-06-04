@@ -663,6 +663,67 @@ create_basis_state(int n, bool* x)
     return root_edge;
 }
 
+bool
+equivalent(QDD a, QDD b, int n, bool exact, bool verbose)
+{
+    bool has_next = true;
+    AMP amp_a, amp_b;
+    bool x[n];
+    for(int k=0; k<n; k++) x[k] = 0;
+    while(has_next){
+        amp_a = qdd_get_amplitude(a, x);
+        amp_b = qdd_get_amplitude(b, x);
+        if(exact){
+            if(!CexactEqual(Cvalue(amp_a), Cvalue(amp_b))){
+                if(verbose){
+                    _print_bitstring(x, n);
+                    printf(", amp a = "); Cprint(Cvalue(amp_a));
+                    printf(" != amp b = "); Cprint(Cvalue(amp_b));
+                    printf("\n");
+                }
+                return false;
+            }
+        }
+        else{
+            if(!CapproxEqual(Cvalue(amp_a), Cvalue(amp_b))){
+                if(verbose){
+                    _print_bitstring(x, n);
+                    printf(", amp a = "); Cprint(Cvalue(amp_a));
+                    printf(" != amp b = "); Cprint(Cvalue(amp_b));
+                    printf("\n");
+                }
+                return false;
+            }
+        }
+        has_next = _next_bitstring(x, n);
+    }
+    return true;
+}
+
+bool
+_next_bitstring(bool *x, int n)
+{
+    // binary add 1
+    bool success = false;
+    for(int k=0; k<n; k++){
+        if(x[k] == 1){
+            x[k] = 0;
+        }
+        else if(x[k] == 0) {
+            x[k] = 1;
+            success = true;
+            break;
+        }
+    }
+    return success;
+}
+
+void
+_print_bitstring(bool *x, int n)
+{
+    for(int k=0; k<n; k++) printf("%d", x[k]);
+}
+
 void
 _print_qdd(QDD q)
 {

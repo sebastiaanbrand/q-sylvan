@@ -606,7 +606,9 @@ int test_10qubit_circuit()
     q = qdd_cgate(q, GATEID_X, 6, 9);       q = qdd_gate(q, GATEID_X, 6);
     q = qdd_gate(q, GATEID_H, 0);           q = qdd_cgate(q, GATEID_X, 1, 3);
 
-    test_assert(q ==  qref);
+    test_assert(equivalent(q, qref, 10, false, VERBOSE)); // check approx equiv
+    test_assert(equivalent(q, qref, 10, true,  VERBOSE)); // check exact equiv
+    test_assert(q == qref);
 
     if(VERBOSE) printf("qdd 10 qubit circuit: ok\n");
     free_amplitude_table();
@@ -679,6 +681,8 @@ int test_20qubit_circuit()
     q = qdd_cgate(q, GATEID_Z, 13, 16);     q = qdd_cgate(q, GATEID_Z, 1, 16);      q = qdd_cgate(q, GATEID_Z, 0, 4);       q = qdd_cgate(q, GATEID_Z, 9, 10);
     q = qdd_gate(q, GATEID_Z, 4);           q = qdd_cgate(q, GATEID_X, 1, 12);      q = qdd_gate(q, GATEID_H, 16);          q = qdd_cgate(q, GATEID_Z, 4, 18);
 
+    test_assert(equivalent(q, qref, 20, false, VERBOSE)); // check approx equiv
+    test_assert(equivalent(q, qref, 20, true,  VERBOSE)); // check exact equiv
     test_assert(q == qref);
 
     if(VERBOSE) printf("qdd 20 qubit circuit: ok\n");
