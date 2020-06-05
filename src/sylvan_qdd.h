@@ -183,7 +183,7 @@ extern QDD create_basis_state(int n, bool* x);
  * 
  * @returns True iff |\psi> == |\phi>.
  */
-extern bool equivalent(QDD a, QDD b, int n, bool exact, bool verbose);
+extern bool qdd_equivalent(QDD a, QDD b, int n, bool exact, bool verbose);
 
 // debug stuff
 extern void print_qdd(QDD q);

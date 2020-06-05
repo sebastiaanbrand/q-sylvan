@@ -664,7 +664,7 @@ create_basis_state(int n, bool* x)
 }
 
 bool
-equivalent(QDD a, QDD b, int n, bool exact, bool verbose)
+qdd_equivalent(QDD a, QDD b, int n, bool exact, bool verbose)
 {
     bool has_next = true;
     AMP amp_a, amp_b;
@@ -677,8 +677,8 @@ equivalent(QDD a, QDD b, int n, bool exact, bool verbose)
             if(!CexactEqual(Cvalue(amp_a), Cvalue(amp_b))){
                 if(verbose){
                     _print_bitstring(x, n);
-                    printf(", amp a = "); Cprint(Cvalue(amp_a));
-                    printf(" != amp b = "); Cprint(Cvalue(amp_b));
+                    printf(", amp a ="); Cprint(Cvalue(amp_a));
+                    printf(" != amp b ="); Cprint(Cvalue(amp_b));
                     printf("\n");
                 }
                 return false;
@@ -687,10 +687,10 @@ equivalent(QDD a, QDD b, int n, bool exact, bool verbose)
         else{
             if(!CapproxEqual(Cvalue(amp_a), Cvalue(amp_b))){
                 if(verbose){
-                    _print_bitstring(x, n);
-                    printf(", amp a = "); Cprint(Cvalue(amp_a));
-                    printf(" != amp b = "); Cprint(Cvalue(amp_b));
-                    printf("\n");
+                _print_bitstring(x, n);
+                printf(", amp a ="); Cprint(Cvalue(amp_a));
+                printf(" !~= amp b ="); Cprint(Cvalue(amp_b));
+                printf("\n");
                 }
                 return false;
             }
@@ -721,7 +721,7 @@ _next_bitstring(bool *x, int n)
 void
 _print_bitstring(bool *x, int n)
 {
-    for(int k=0; k<n; k++) printf("%d", x[k]);
+    for(int k=n-1; k>=0; k--) printf("%d", x[k]);
 }
 
 void

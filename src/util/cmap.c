@@ -59,8 +59,8 @@ cmap_find_or_put (const cmap_t *cmap, const complex_t *v, ref_t *ret)
     // TODO: round based on number of significant digits rather than
     // some absolute value
     complex_t rounded;
-    rounded.r = round(v->r * TOLERANCE)/TOLERANCE;
-    rounded.i = round(v->i * TOLERANCE)/TOLERANCE;
+    rounded.r = round(v->r * INV_TOLERANCE)/INV_TOLERANCE;
+    rounded.i = round(v->i * INV_TOLERANCE)/INV_TOLERANCE;
 
     uint32_t            hash = SuperFastHash(&rounded, sizeof(complex_t), 0);
     uint32_t            prime = odd_primes[hash & PRIME_MASK];
