@@ -45,7 +45,7 @@
  * 64 bits high:
  *       4 bits: upper 4 bits of 8 bit variable/qubit number of this node
  *       1 bit:  (unused)
- *      20 bits: index of edge weight of high edge in Ctable (AMP)
+ *      19 bits: index of edge weight of high edge in Ctable (AMP)
  *      40 bits: high edge pointer to next node (PTR)
  */
 typedef struct __attribute__((packed)) qddnode {
