@@ -556,6 +556,7 @@ int test_cz_gate()
 int test_5qubit_circuit()
 {
     QDD q, qref;
+    uint64_t node_count;
     int n_qubits = 5;
     bool x5[] = {0,0,0,0,0};
     
@@ -574,6 +575,7 @@ int test_5qubit_circuit()
     q = qdd_cgate(q, GATEID_X, 3, 4);       q = qdd_cgate(q, GATEID_Z, 0, 2);       q = qdd_gate(q, GATEID_Z, 3);           q = qdd_cgate(q, GATEID_Z, 1, 3);
     q = qdd_cgate(q, GATEID_X, 0, 3);       q = qdd_cgate(q, GATEID_Z, 0, 4);       q = qdd_cgate(q, GATEID_Z, 0, 4);       q = qdd_gate(q, GATEID_H, 1);
     q = qdd_gate(q, GATEID_H, 3);           q = qdd_gate(q, GATEID_X, 1);           q = qdd_cgate(q, GATEID_Z, 1, 2);       q = qdd_gate(q, GATEID_Z, 1);
+    node_count = qdd_countnodes(q);
     // inverse
     q = qdd_gate(q, GATEID_Z, 1);           q = qdd_cgate(q, GATEID_Z, 1, 2);       q = qdd_gate(q, GATEID_X, 1);           q = qdd_gate(q, GATEID_H, 3);
     q = qdd_gate(q, GATEID_H, 1);           q = qdd_cgate(q, GATEID_Z, 0, 4);       q = qdd_cgate(q, GATEID_Z, 0, 4);       q = qdd_cgate(q, GATEID_X, 0, 3);
@@ -588,13 +590,14 @@ int test_5qubit_circuit()
     test_assert(qdd_equivalent(q, qref, n_qubits, true,  VERBOSE)); // check exact equiv
     test_assert(q == qref);
 
-    if(VERBOSE) printf("qdd 5 qubit circuit:  ok\n");
+    if(VERBOSE) printf("qdd 5 qubit circuit:  ok (%ld nodes)\n", node_count);
     return 0;
 }
 
 int test_10qubit_circuit()
 {
     QDD q, qref;
+    uint64_t node_count;
     bool x10[] = {0,0,0,0,0,0,0,0,0,0};
     
     LACE_ME;
@@ -619,6 +622,7 @@ int test_10qubit_circuit()
     q = qdd_cgate(q, GATEID_Z, 7, 8);       q = qdd_gate(q, GATEID_X, 7);
     q = qdd_gate(q, GATEID_Z, 2);           q = qdd_gate(q, GATEID_Z, 7);
     q = qdd_gate(q, GATEID_X, 6);           q = qdd_gate(q, GATEID_X, 1);
+    node_count = qdd_countnodes(q);
     // inverse
     q = qdd_gate(q, GATEID_X, 1);           q = qdd_gate(q, GATEID_X, 6);
     q = qdd_gate(q, GATEID_Z, 7);           q = qdd_gate(q, GATEID_Z, 2);
@@ -640,13 +644,14 @@ int test_10qubit_circuit()
     test_assert(qdd_equivalent(q, qref, 10, true,  VERBOSE)); // check exact equiv
     test_assert(q == qref);
 
-    if(VERBOSE) printf("qdd 10 qubit circuit: ok\n");
+    if(VERBOSE) printf("qdd 10 qubit circuit: ok (%ld nodes)\n", node_count);
     return 0;
 }
 
 int test_20qubit_circuit()
 {
     QDD q, qref;
+    uint64_t node_count;
     bool x20[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
     LACE_ME;
@@ -681,6 +686,7 @@ int test_20qubit_circuit()
     q = qdd_cgate(q, GATEID_X, 5, 11);      q = qdd_cgate(q, GATEID_X, 9, 17);      q = qdd_gate(q, GATEID_Z, 3);           q = qdd_cgate(q, GATEID_X, 11, 18);
     q = qdd_cgate(q, GATEID_Z, 5, 15);      q = qdd_cgate(q, GATEID_X, 0, 15);      q = qdd_cgate(q, GATEID_X, 1, 6);       q = qdd_cgate(q, GATEID_X, 8, 16);
     q = qdd_cgate(q, GATEID_X, 5, 19);      q = qdd_cgate(q, GATEID_Z, 3, 18);      q = qdd_cgate(q, GATEID_X, 5, 8);       q = qdd_cgate(q, GATEID_Z, 14, 18);
+    node_count = qdd_countnodes(q);
     // inverse
     q = qdd_cgate(q, GATEID_Z, 14, 18);     q = qdd_cgate(q, GATEID_X, 5, 8);       q = qdd_cgate(q, GATEID_Z, 3, 18);      q = qdd_cgate(q, GATEID_X, 5, 19);
     q = qdd_cgate(q, GATEID_X, 8, 16);      q = qdd_cgate(q, GATEID_X, 1, 6);       q = qdd_cgate(q, GATEID_X, 0, 15);      q = qdd_cgate(q, GATEID_Z, 5, 15);
@@ -712,7 +718,7 @@ int test_20qubit_circuit()
     test_assert(qdd_equivalent(q, qref, 20, true,  VERBOSE)); // check exact equiv
     test_assert(q == qref);
 
-    if(VERBOSE) printf("qdd 20 qubit circuit: ok\n");
+    if(VERBOSE) printf("qdd 20 qubit circuit: ok (%ld nodes)\n", node_count);
     return 0;
 }
 
@@ -751,7 +757,7 @@ int main()
     // rely on bdd stuff (like cache)
     sylvan_init_bdd();
     // TODO: make sylvan_init_qdd() function and handle stuff there
-    init_amplitude_table(20);
+    init_amplitude_table(19);
 
     int res = runtests();
 

@@ -185,6 +185,11 @@ extern QDD create_basis_state(int n, bool* x);
  */
 extern bool qdd_equivalent(QDD a, QDD b, int n, bool exact, bool verbose);
 
+
+// counts the nodes by recursively marking them (and unmarks when done)
+extern uint64_t qdd_countnodes(QDD qdd);
+
+
 // debug stuff
 extern void print_qdd(QDD q);
 bool _next_bitstring(bool *x, int n);

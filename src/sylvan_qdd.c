@@ -27,16 +27,24 @@
 
 //static int granularity = 1; // default
 
+// TODO: make a cleaner separation between the code in
+// - sylvan_qdd.h
+// - sylvan_qdd.c
+// - sylvan_qdd_int.h
+// - sylvan_qdd_int.c
+// consistent with for example the equivalent mtbdd files.
 
 /**
  * QDD node structure (128 bits)
  * 
  * 64 bits low:
  *       4 bits: lower 4 bits of 8 bit variable/qubit number of this node
- *      20 bits: index of edge weight of low edge in Ctable (AMP)
+ *       1 bit:  marked/unmarked flag
+ *      19 bits: index of edge weight of low edge in Ctable (AMP)
  *      40 bits: low edge pointer to next node (PTR)
  * 64 bits high:
  *       4 bits: upper 4 bits of 8 bit variable/qubit number of this node
+ *       1 bit:  (unused)
  *      20 bits: index of edge weight of high edge in Ctable (AMP)
  *      40 bits: high edge pointer to next node (PTR)
  */
@@ -51,7 +59,7 @@ typedef struct __attribute__((packed)) qddnode {
 static inline AMP
 QDD_AMP(QDD q)
 {
-    return (q & 0x0fffff0000000000) >> 40; // 20 bits
+    return (q & 0x07ffff0000000000) >> 40; // 19 bits
 }
 
 /**
@@ -97,7 +105,7 @@ qdd_getvar(qddnode_t n)
 static inline QDD
 qdd_getlow(qddnode_t n)
 {
-    return (QDD) n->low & 0x0fffffffffffffff; // 60 bits
+    return (QDD) n->low & 0x07ffffffffffffff; // 59 bits
 }
 
 /**
@@ -107,7 +115,7 @@ qdd_getlow(qddnode_t n)
 static inline QDD
 qdd_gethigh(qddnode_t n)
 {
-    return (QDD) n->high & 0x0fffffffffffffff; // 60 bits
+    return (QDD) n->high & 0x07ffffffffffffff; // 59 bits
 }
 
 /**
@@ -146,10 +154,30 @@ qdd_getamphigh(qddnode_t n)
     return (AMP) QDD_AMP(n->high);
 }
 
+
+/**
+ * Gets the value of the "marked" flag.
+ */
+static inline bool
+qddnode_getmark(qddnode_t n)
+{
+    return n->low & 0x0800000000000000 ? 1 : 0;
+}
+
+/**
+ * Sets the value of the "marked" flag to `mark`.
+ */
+static inline void
+qddnode_setmark(qddnode_t n, bool mark)
+{
+    if (mark) n->low |= 0x0800000000000000; // set 5th bit from left to 1
+    else n->low &= 0xf7ffffffffffffff;      // set 5th bit from left to 0
+}
+
 /**
  * Pretty prints the information contained in `n`.
  */
-static inline void pprint_qddnode(qddnode_t n)
+static void pprint_qddnode(qddnode_t n)
 {
     AMP amp_low  = qdd_getamplow(n);
     AMP amp_high = qdd_getamphigh(n);
@@ -181,7 +209,7 @@ static inline QDD
 qdd_bundle_ptr_amp(PTR p, AMP a)
 {
     assert (p <= 0x000000fffffffffe);   // avoid clash with sylvan_invalid
-    assert (a <= 0x00000000000fffff);
+    assert (a <= 0x000000000007ffff);
     return (a << 40 | p);
 }
 
@@ -283,6 +311,43 @@ qdd_makenode(BDDVAR var, QDD low_edge, QDD high_edge)
         p = _qdd_makenode(var, low_ptr, high_ptr, low_amp, high_amp);
         return qdd_bundle_ptr_amp(p, norm);
     }
+}
+
+
+/**
+ * Helper function for recursive unmarking
+ */
+static void
+qdd_unmark_rec(QDD qdd)
+{
+    if (QDD_PTR(qdd) == QDD_TERMINAL) return;
+    qddnode_t n = QDD_GETNODE(QDD_PTR(qdd));
+    if (!qddnode_getmark(n)) return;
+    qddnode_setmark(n, 0);
+    qdd_unmark_rec(qdd_getlow(n));
+    qdd_unmark_rec(qdd_gethigh(n));
+}
+
+
+/**
+ * Counts nodes in the qdd by marking them.
+ */
+static uint64_t
+qdd_nodecount_mark(QDD qdd)
+{
+    if (QDD_PTR(qdd) == QDD_TERMINAL) return 0; // don't (repeat) count terminal
+    qddnode_t n = QDD_GETNODE(QDD_PTR(qdd));
+    if (qddnode_getmark(n)) return 0;
+    qddnode_setmark(n, 1);
+    return 1 + qdd_nodecount_mark(qdd_getlow(n)) + qdd_nodecount_mark(qdd_gethigh(n));
+}
+
+uint64_t
+qdd_countnodes(QDD qdd)
+{
+    uint64_t res = qdd_nodecount_mark(qdd) + 1; // (+ 1 for terminal "node")
+    qdd_unmark_rec(qdd);
+    return res;
 }
 
 
@@ -687,10 +752,10 @@ qdd_equivalent(QDD a, QDD b, int n, bool exact, bool verbose)
         else{
             if(!CapproxEqual(Cvalue(amp_a), Cvalue(amp_b))){
                 if(verbose){
-                _print_bitstring(x, n);
-                printf(", amp a ="); Cprint(Cvalue(amp_a));
-                printf(" !~= amp b ="); Cprint(Cvalue(amp_b));
-                printf("\n");
+                    _print_bitstring(x, n);
+                    printf(", amp a ="); Cprint(Cvalue(amp_a));
+                    printf(" !~= amp b ="); Cprint(Cvalue(amp_b));
+                    printf("\n");
                 }
                 return false;
             }
