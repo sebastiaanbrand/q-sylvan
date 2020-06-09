@@ -822,6 +822,21 @@ qdd_printnodes(QDD q)
 
 
 static void
+qdd_fprintdot_label(FILE *out, AMP a)
+{
+    fprintf(out, ", label=\"");
+    if (a == C_ONE) {}
+    else if (a == C_ZERO) { fprintf(out, "0"); }
+    else {
+        complex_t val = Cvalue(a);
+        if (val.r != 0.0) fprintf(out, "%.3lf", val.r);
+        if (val.i > 0.0) fprintf(out, "+%.3lfi", val.i);
+        else if (val.i < 0.0) fprintf(out, "-%.3lfi", val.i);
+    }
+    fprintf(out, "\"");
+}
+
+static void
 qdd_fprintdot_rec(FILE *out, QDD qdd)
 {
     // terminal node
@@ -841,10 +856,14 @@ qdd_fprintdot_rec(FILE *out, QDD qdd)
     qdd_fprintdot_rec(out, qddnode_gethigh(n));
 
     // add edge from this node to each child
-    fprintf(out, "%" PRIu64 " -> %" PRIu64 " [style=dashed];\n",
+    fprintf(out, "%" PRIu64 " -> %" PRIu64 " [style=dashed",
                 QDD_PTR(qdd), qddnode_getptrlow(n));
-    fprintf(out, "%" PRIu64 " -> %" PRIu64 " [style=solid];\n",
+    qdd_fprintdot_label(out, qddnode_getamplow(n));
+    fprintf(out, "];\n");
+    fprintf(out, "%" PRIu64 " -> %" PRIu64 " [style=solid",
                 QDD_PTR(qdd), qddnode_getptrhigh(n));
+    qdd_fprintdot_label(out, qddnode_getamphigh(n));
+    fprintf(out, "];\n");
     
     // TODO: edge weights
 }
@@ -854,9 +873,11 @@ qdd_fprintdot(FILE *out, QDD qdd)
 {
     fprintf(out, "digraph \"DD\" {\n");
     fprintf(out, "center = true;\n");
-    fprintf(out, "edge [dir = forward];\n");
+    fprintf(out, "edge [dir=forward];\n");
     fprintf(out, "root [style=invis];\n");
-    fprintf(out, "root -> %" PRIu64 " [style=solid];\n", QDD_PTR(qdd));
+    fprintf(out, "root -> %" PRIu64 " [style=solid", QDD_PTR(qdd));
+    qdd_fprintdot_label(out, QDD_AMP(qdd));
+    fprintf(out, "];\n");
 
     // terminal node
     fprintf(out, "%lu [shape=box, label=\"T\"];\n", QDD_TERMINAL);

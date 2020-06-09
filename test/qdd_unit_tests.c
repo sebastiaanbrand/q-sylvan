@@ -421,6 +421,11 @@ int test_h_gate()
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q3, x2); test_assert(a == C_ZERO);
     test_assert(qdd_countnodes(q3) == 3);
 
+    FILE *fp;
+    fp = fopen("test.dot", "w");
+    qdd_fprintdot(fp, q3);
+    fclose(fp);
+
     // q4 = |+0>
     x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q4, x2); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
     x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q4, x2); test_assert(a == C_ZERO);
@@ -582,6 +587,7 @@ int test_5qubit_circuit()
     uint64_t node_count;
     int n_qubits = 5;
     bool x5[] = {0,0,0,0,0};
+    FILE *fp;
     
     LACE_ME;
 
@@ -612,6 +618,10 @@ int test_5qubit_circuit()
     test_assert(qdd_equivalent(q, qref, n_qubits, false, VERBOSE)); // check approx equiv
     test_assert(qdd_equivalent(q, qref, n_qubits, true,  VERBOSE)); // check exact equiv
     test_assert(q == qref);
+
+    fp = fopen("5_qubit_res.dot", "w");
+    qdd_fprintdot(fp, q);
+    fclose(fp);
 
     if(VERBOSE) printf("qdd 5 qubit circuit:  ok (%ld nodes)\n", node_count);
     return 0;

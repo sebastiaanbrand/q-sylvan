@@ -190,8 +190,7 @@ extern bool qdd_equivalent(QDD a, QDD b, int n, bool exact, bool verbose);
 extern uint64_t qdd_countnodes(QDD qdd);
 
 /**
- * Write a .dot representation of a given MTBDD
- * The callback function is required for custom terminals.
+ * Write a .dot representation of a given QDD
  */
 void qdd_fprintdot(FILE *out, QDD qdd);
 
