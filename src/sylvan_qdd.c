@@ -185,12 +185,18 @@ static void pprint_qddnode(qddnode_t n)
              qdd_getvar(n),
              qdd_getptrlow(n),
              qdd_getptrhigh(n));
-    if(amp_low == C_ZERO)      printf("a=C_ZERO,  ");
-    else if(amp_low == C_ONE)  printf("a=C_ONE,   ");
-    else                       printf("a=%lx, ",amp_low);
+    if(amp_low == C_ZERO)      printf("a=C_ZERO, ");
+    else if(amp_low == C_ONE)  printf("a=C_ONE, ");
+    else {
+        printf("a=%lx, ",amp_low);
+        printf("("); Cprint(Cvalue(amp_high)); printf(")");
+    }                      
     if(amp_high == C_ZERO)     printf("b=C_ZERO ");
     else if(amp_high == C_ONE) printf("b=C_ONE, ");
-    else                       printf("b=%lx", amp_high);
+    else {                     
+        printf("b=%lx", amp_high);
+        printf("("); Cprint(Cvalue(amp_high)); printf(")");
+    }
     printf("]\n");
 }
 
@@ -794,10 +800,13 @@ _print_qdd(QDD q)
 {
     if(QDD_PTR(q) != QDD_TERMINAL){
         qddnode_t node = QDD_GETNODE(QDD_PTR(q));
-        printf("%lx\t", QDD_PTR(q));
-        pprint_qddnode(node);
-        _print_qdd(qdd_getlow(node));
-        _print_qdd(qdd_gethigh(node));
+        if(!qddnode_getmark(node)){
+            qddnode_setmark(node, 1);
+            printf("%lx\t", QDD_PTR(q));
+            pprint_qddnode(node);
+            _print_qdd(qdd_getlow(node));
+            _print_qdd(qdd_gethigh(node));
+        }
     }
 }
 
@@ -808,6 +817,7 @@ print_qdd(QDD q)
     Cprint(Cvalue(QDD_AMP(q)));
     printf("\n");
     _print_qdd(q);
+    qdd_unmark_rec(q);
 }
 
 

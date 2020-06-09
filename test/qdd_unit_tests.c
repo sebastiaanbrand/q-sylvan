@@ -143,6 +143,8 @@ int test_basis_state_creation()
     QDD q0, q1;
     x[0] = 0; q0 = create_basis_state(1, x);
     x[0] = 1; q1 = create_basis_state(1, x);
+    test_assert(qdd_countnodes(q0) == 2);
+    test_assert(qdd_countnodes(q1) == 2);
 
     AMP a;
     x[0] = 0; a = qdd_get_amplitude(q0, x); test_assert(a == C_ONE);
@@ -154,6 +156,8 @@ int test_basis_state_creation()
     bool x3[] = {0, 0, 0};
     x3[2] = 0; x3[1] = 0; x3[0] = 0; q2 = create_basis_state(3, x3);
     x3[2] = 1; x3[1] = 0; x3[0] = 1; q3 = create_basis_state(3, x3);
+    test_assert(qdd_countnodes(q2) == 4);
+    test_assert(qdd_countnodes(q3) == 4);
 
     x3[2] = 0; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q2, x3); test_assert(a == C_ONE);
     x3[2] = 0; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q2, x3); test_assert(a == C_ZERO);
@@ -398,24 +402,28 @@ int test_h_gate()
     q5 = qdd_gate(q5, GATEID_H, 1); // q5 = |++>
 
     // q2 = |0+>
+    test_assert(qdd_countnodes(q2) == 2);
     x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q2, x2); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
     x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q2, x2); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
     x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q2, x2); test_assert(a == C_ZERO);
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q2, x2); test_assert(a == C_ZERO);
 
     // q3 = |0->
+    test_assert(qdd_countnodes(q3) == 3);
     x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q3, x2); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
     x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q3, x2); test_assert(a == Clookup(Cmake(Qmake(0,-1,2),0)));
     x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q3, x2); test_assert(a == C_ZERO);
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q3, x2); test_assert(a == C_ZERO);
 
     // q4 = |+0>
+    test_assert(qdd_countnodes(q4) == 2);
     x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q4, x2); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
     x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q4, x2); test_assert(a == C_ZERO);
     x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q4, x2); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q4, x2); test_assert(a == C_ZERO);
 
     // q5 = |++>
+    test_assert(qdd_countnodes(q5) == 1);
     x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q5, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
     x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q5, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
     x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q5, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
@@ -454,6 +462,7 @@ int test_phase_gates()
     x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
     x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+    test_assert(qdd_countnodes(q0) == 1);
 
     q0 = qdd_gate(q0, GATEID_Z, 0);
 
@@ -461,6 +470,7 @@ int test_phase_gates()
     x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(-0.5,0)));
     x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(-0.5,0)));
+    test_assert(qdd_countnodes(q0) == 2);
 
     q0 = qdd_gate(q0, GATEID_Z, 0);
     q0 = qdd_gate(q0, GATEID_Z, 1);
@@ -469,6 +479,7 @@ int test_phase_gates()
     x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
     x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(-0.5,0)));
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(-0.5,0)));
+    test_assert(qdd_countnodes(q0) == 2);
 
     q0 = qdd_gate(q0, GATEID_Z, 1);
     q0 = qdd_gate(q0, GATEID_S, 0);
@@ -478,6 +489,7 @@ int test_phase_gates()
     x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(-0.5,0)));
     x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(-0.5,0)));
+    test_assert(qdd_countnodes(q0) == 2);
 
     q0 = qdd_gate(q0, GATEID_Z, 0);
     q0 = qdd_gate(q0, GATEID_T, 1);
@@ -489,6 +501,7 @@ int test_phase_gates()
     x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
     x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(-0.5,0)));
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(-0.5,0)));
+    test_assert(qdd_countnodes(q0) == 2);
 
     if(VERBOSE) printf("qdd phase gates:      ok\n");
     return 0;

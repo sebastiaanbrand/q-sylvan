@@ -80,6 +80,12 @@ Cprint(complex_t c)
         printf("%fi", c.i);
 }
 
+void
+Cprint_bitvalues(cint i)
+{
+    print_bitvalues(ctable, i);
+}
+
 // returns the complex number equal to (a+b*sqrt(2))/c
 // required to be compatible with quadratic irrational-based
 // complex number package

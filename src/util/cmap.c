@@ -62,6 +62,10 @@ cmap_find_or_put (const cmap_t *cmap, const complex_t *v, ref_t *ret)
     rounded.r = round(v->r * INV_TOLERANCE)/INV_TOLERANCE;
     rounded.i = round(v->i * INV_TOLERANCE)/INV_TOLERANCE;
 
+    // fix 0 possibly having a sign
+    if(rounded.r == 0.0) rounded.r = 0.0;
+    if(rounded.i == 0.0) rounded.i = 0.0;
+
     uint32_t            hash = SuperFastHash(&rounded, sizeof(complex_t), 0);
     uint32_t            prime = odd_primes[hash & PRIME_MASK];
     bucket_t *val = (bucket_t *) &rounded;
@@ -101,6 +105,13 @@ complex_t *
 cmap_get (const cmap_t *cmap, const ref_t ref)
 {
     return &cmap->table[ref].c;
+}
+
+void
+print_bitvalues(const cmap_t *cmap, const ref_t ref)
+{
+    bucket_t *b = (bucket_t *) cmap_get(cmap, ref);
+    printf("%016lx %016lx", b->d[0], b->d[1]);
 }
 
 cmap_t *

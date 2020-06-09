@@ -41,7 +41,7 @@ static const uint32_t GATEID_T = 6;
 cint gates[7][4];
 
 
-uint32_t Ctentries;
+//uint32_t Ctentries;
 
 // basic operations on complex values
 // meanings are self-evident from the names
@@ -56,6 +56,7 @@ cint Clookup (complex_t c);
 
 complex_t Cvalue(cint);
 void Cprint(complex_t);
+void Cprint_bitvalues(cint);
 
 bool CexactEqual(complex_t, complex_t);
 bool CapproxEqual(complex_t, complex_t);
