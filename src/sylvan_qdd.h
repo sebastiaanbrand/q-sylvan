@@ -189,6 +189,12 @@ extern bool qdd_equivalent(QDD a, QDD b, int n, bool exact, bool verbose);
 // counts the nodes by recursively marking them (and unmarks when done)
 extern uint64_t qdd_countnodes(QDD qdd);
 
+/**
+ * Write a .dot representation of a given MTBDD
+ * The callback function is required for custom terminals.
+ */
+void qdd_fprintdot(FILE *out, QDD qdd);
+
 
 // debug stuff
 extern void qdd_printnodes(QDD q);

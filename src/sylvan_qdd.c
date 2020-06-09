@@ -821,3 +821,51 @@ qdd_printnodes(QDD q)
 }
 
 
+static void
+qdd_fprintdot_rec(FILE *out, QDD qdd)
+{
+    // terminal node
+    if(QDD_PTR(qdd) == QDD_TERMINAL) return;
+
+    qddnode_t n = QDD_GETNODE(QDD_PTR(qdd));
+    if (qddnode_getmark(n)) return;
+    qddnode_setmark(n, 1);
+
+    // add this node
+    fprintf(out, "%" PRIu64 " [label=\"%" PRIu32 "\"];\n",
+            QDD_PTR(qdd), qddnode_getvar(n));
+
+    
+    // children of this node
+    qdd_fprintdot_rec(out, qddnode_getlow(n));
+    qdd_fprintdot_rec(out, qddnode_gethigh(n));
+
+    // add edge from this node to each child
+    fprintf(out, "%" PRIu64 " -> %" PRIu64 " [style=dashed];\n",
+                QDD_PTR(qdd), qddnode_getptrlow(n));
+    fprintf(out, "%" PRIu64 " -> %" PRIu64 " [style=solid];\n",
+                QDD_PTR(qdd), qddnode_getptrhigh(n));
+    
+    // TODO: edge weights
+}
+
+void
+qdd_fprintdot(FILE *out, QDD qdd)
+{
+    fprintf(out, "digraph \"DD\" {\n");
+    fprintf(out, "center = true;\n");
+    fprintf(out, "edge [dir = forward];\n");
+    fprintf(out, "root [style=invis];\n");
+    fprintf(out, "root -> %" PRIu64 " [style=solid];\n", QDD_PTR(qdd));
+
+    // terminal node
+    fprintf(out, "%lu [shape=box, label=\"T\"];\n", QDD_TERMINAL);
+
+    // recursively add nodes
+    qdd_fprintdot_rec(out, qdd);
+    qdd_unmark_rec(qdd);
+
+    fprintf(out, "}\n");
+}
+
+
