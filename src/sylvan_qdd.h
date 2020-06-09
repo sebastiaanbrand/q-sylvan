@@ -191,7 +191,7 @@ extern uint64_t qdd_countnodes(QDD qdd);
 
 
 // debug stuff
-extern void print_qdd(QDD q);
+extern void qdd_printnodes(QDD q);
 bool _next_bitstring(bool *x, int n);
 void _print_bitstring(bool *x, int n);
 

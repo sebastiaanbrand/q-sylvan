@@ -93,7 +93,7 @@ GATE_OPID(uint32_t gateid, BDDVAR control, BDDVAR target)
  * Gets the variable number of a given node `n`.
  */
 static inline BDDVAR
-qdd_getvar(qddnode_t n)
+qddnode_getvar(qddnode_t n)
 {
     return (BDDVAR) ( (n->low >> 60) | ((n->high >> 56) & 0xf0) ); // 8 bits
 }
@@ -103,7 +103,7 @@ qdd_getvar(qddnode_t n)
  * (halved) variable information.
  */
 static inline QDD
-qdd_getlow(qddnode_t n)
+qddnode_getlow(qddnode_t n)
 {
     return (QDD) n->low & 0x07ffffffffffffff; // 59 bits
 }
@@ -113,7 +113,7 @@ qdd_getlow(qddnode_t n)
  * (halved) variable information.
  */
 static inline QDD
-qdd_gethigh(qddnode_t n)
+qddnode_gethigh(qddnode_t n)
 {
     return (QDD) n->high & 0x07ffffffffffffff; // 59 bits
 }
@@ -122,7 +122,7 @@ qdd_gethigh(qddnode_t n)
  * Gets only the PTR of the low edge of `n`.
  */
 static inline PTR
-qdd_getptrlow(qddnode_t n)
+qddnode_getptrlow(qddnode_t n)
 {
     return (PTR) QDD_PTR(n->low);
 }
@@ -131,7 +131,7 @@ qdd_getptrlow(qddnode_t n)
  * Gets only the PTR of the high edge of `n`.
  */
 static inline PTR
-qdd_getptrhigh(qddnode_t n)
+qddnode_getptrhigh(qddnode_t n)
 {
     return (PTR) QDD_PTR(n->high);
 }
@@ -140,7 +140,7 @@ qdd_getptrhigh(qddnode_t n)
  * Gets only the AMP of the low edge of `n`.
  */
 static inline AMP
-qdd_getamplow(qddnode_t n)
+qddnode_getamplow(qddnode_t n)
 {
     return (AMP) QDD_AMP(n->low);
 }
@@ -149,7 +149,7 @@ qdd_getamplow(qddnode_t n)
  * Gets only the AMP of the high edge of `n`.
  */
 static inline AMP
-qdd_getamphigh(qddnode_t n)
+qddnode_getamphigh(qddnode_t n)
 {
     return (AMP) QDD_AMP(n->high);
 }
@@ -177,14 +177,14 @@ qddnode_setmark(qddnode_t n, bool mark)
 /**
  * Pretty prints the information contained in `n`.
  */
-static void pprint_qddnode(qddnode_t n)
+static void qddnode_pprint(qddnode_t n)
 {
-    AMP amp_low  = qdd_getamplow(n);
-    AMP amp_high = qdd_getamphigh(n);
+    AMP amp_low  = qddnode_getamplow(n);
+    AMP amp_high = qddnode_getamphigh(n);
     printf("[var=%d, low=%lx, high=%lx, ", 
-             qdd_getvar(n),
-             qdd_getptrlow(n),
-             qdd_getptrhigh(n));
+             qddnode_getvar(n),
+             qddnode_getptrlow(n),
+             qddnode_getptrhigh(n));
     if(amp_low == C_ZERO)      printf("a=C_ZERO, ");
     else if(amp_low == C_ONE)  printf("a=C_ONE, ");
     else {
@@ -330,8 +330,8 @@ qdd_unmark_rec(QDD qdd)
     qddnode_t n = QDD_GETNODE(QDD_PTR(qdd));
     if (!qddnode_getmark(n)) return;
     qddnode_setmark(n, 0);
-    qdd_unmark_rec(qdd_getlow(n));
-    qdd_unmark_rec(qdd_gethigh(n));
+    qdd_unmark_rec(qddnode_getlow(n));
+    qdd_unmark_rec(qddnode_gethigh(n));
 }
 
 
@@ -345,7 +345,7 @@ qdd_nodecount_mark(QDD qdd)
     qddnode_t n = QDD_GETNODE(QDD_PTR(qdd));
     if (qddnode_getmark(n)) return 0;
     qddnode_setmark(n, 1);
-    return 1 + qdd_nodecount_mark(qdd_getlow(n)) + qdd_nodecount_mark(qdd_gethigh(n));
+    return 1 + qdd_nodecount_mark(qddnode_getlow(n)) + qdd_nodecount_mark(qddnode_gethigh(n));
 }
 
 uint64_t
@@ -388,7 +388,7 @@ TASK_IMPL_3(QDD, qdd_gate, QDD, q, uint32_t, gate, BDDVAR, qubit)
     
     // get node info
     qddnode_t node = QDD_GETNODE(QDD_PTR(q));
-    BDDVAR var = qdd_getvar(node);
+    BDDVAR var = qddnode_getvar(node);
     
     // "above" the desired qubit in the QDD
     if(var < qubit){
@@ -424,10 +424,10 @@ TASK_IMPL_3(QDD, qdd_gate, QDD, q, uint32_t, gate, BDDVAR, qubit)
         AMP a, b;
         // exactly at qubit
         if(var == qubit){
-            l = qdd_getptrlow(node);
-            h = qdd_getptrhigh(node);
-            a = qdd_getamplow(node);
-            b = qdd_getamphigh(node);
+            l = qddnode_getptrlow(node);
+            h = qddnode_getptrhigh(node);
+            a = qddnode_getamplow(node);
+            b = qddnode_getamphigh(node);
         }
         // passed qubit (node with var == qubit was a don't-care)
         else {
@@ -475,7 +475,7 @@ TASK_IMPL_4(QDD, qdd_cgate, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t)
 
     // get node info
     qddnode_t node = QDD_GETNODE(QDD_PTR(q));
-    BDDVAR var = qdd_getvar(node);
+    BDDVAR var = qddnode_getvar(node);
 
     // "above" the desired qubit in the QDD (this is where the recursive stuff
     // of cgate happens, once the control qubit has been reached, the recursive
@@ -552,9 +552,9 @@ TASK_IMPL_2(QDD, qdd_plus, QDD, a, QDD, b)
     }
     else{
         qddnode_t node_a = QDD_GETNODE(QDD_PTR(a));
-        var_a  = qdd_getvar(node_a);
-        a_low  = qdd_getlow(node_a);
-        a_high = qdd_gethigh(node_a);
+        var_a  = qddnode_getvar(node_a);
+        a_low  = qddnode_getlow(node_a);
+        a_high = qddnode_gethigh(node_a);
         // Pass edge weight of current edge down to low/high
         AMP new_amp_low  = Cmul(amp_a, QDD_AMP(a_low));
         AMP new_amp_high = Cmul(amp_a, QDD_AMP(a_high));
@@ -566,9 +566,9 @@ TASK_IMPL_2(QDD, qdd_plus, QDD, a, QDD, b)
     }
     else{
         qddnode_t node_b = QDD_GETNODE(QDD_PTR(b));
-        var_b  = qdd_getvar(node_b);
-        b_low  = qdd_getlow(node_b);
-        b_high = qdd_gethigh(node_b);
+        var_b  = qddnode_getvar(node_b);
+        b_low  = qddnode_getlow(node_b);
+        b_high = qddnode_gethigh(node_b);
         // Pass edge weight of current edge down to low/high
         AMP new_amp_low  = Cmul(amp_b, QDD_AMP(b_low));
         AMP new_amp_high = Cmul(amp_b, QDD_AMP(b_high));
@@ -648,8 +648,8 @@ qdd_sample(QDD q, BDDVAR vars, bool* str)
 
         if (q != QDD_ONE) {
             qddnode_t qn = QDD_GETNODE(QDD_PTR(q));
-            if (qdd_getvar(qn) == mtbddnode_getvariable(n_vars)) {
-                q = *str ? qdd_gethigh(qn) : qdd_getlow(qn);
+            if (qddnode_getvar(qn) == mtbddnode_getvariable(n_vars)) {
+                q = *str ? qddnode_gethigh(qn) : qddnode_getlow(qn);
             }
         }
 
@@ -674,7 +674,7 @@ qdd_get_amplitude(QDD q, bool* basis_state)
 
         // now we need to choose low or high edge of next node
         qddnode_t node = QDD_GETNODE(QDD_PTR(q));
-        BDDVAR var     = qdd_getvar(node);
+        BDDVAR var     = qddnode_getvar(node);
 
         // Condition low/high choice on basis state vector[var]
         if (basis_state[var] == 0)
@@ -803,15 +803,15 @@ _print_qdd(QDD q)
         if(!qddnode_getmark(node)){
             qddnode_setmark(node, 1);
             printf("%lx\t", QDD_PTR(q));
-            pprint_qddnode(node);
-            _print_qdd(qdd_getlow(node));
-            _print_qdd(qdd_gethigh(node));
+            qddnode_pprint(node);
+            _print_qdd(qddnode_getlow(node));
+            _print_qdd(qddnode_gethigh(node));
         }
     }
 }
 
 void
-print_qdd(QDD q)
+qdd_printnodes(QDD q)
 {
     printf("root edge: %lx, %lx = ",QDD_PTR(q), QDD_AMP(q));
     Cprint(Cvalue(QDD_AMP(q)));
