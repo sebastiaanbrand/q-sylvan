@@ -496,7 +496,7 @@ TASK_IMPL_4(QDD, qdd_cgate, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t)
         bdd_refs_spawn(SPAWN(qdd_cgate, node->high, gate, c, t));
         res_low = CALL(qdd_cgate, node->low, gate, c, t);
         bdd_refs_push(res_low);
-        res_high = bdd_refs_sync(SYNC(qdd_gate));
+        res_high = bdd_refs_sync(SYNC(qdd_cgate));
         bdd_refs_pop(1);
 
         QDD res  = qdd_makenode(var, res_low, res_high);

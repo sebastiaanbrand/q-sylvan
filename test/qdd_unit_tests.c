@@ -421,10 +421,10 @@ int test_h_gate()
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q3, x2); test_assert(a == C_ZERO);
     test_assert(qdd_countnodes(q3) == 3);
 
-    FILE *fp;
-    fp = fopen("test.dot", "w");
-    qdd_fprintdot(fp, q3);
-    fclose(fp);
+    //FILE *fp;
+    //fp = fopen("test.dot", "w");
+    //qdd_fprintdot(fp, q3);
+    //fclose(fp);
 
     // q4 = |+0>
     x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q4, x2); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
@@ -779,8 +779,10 @@ int runtests()
 
 int main()
 {
-    // Standard Lace initialization with 1 worker
-    lace_init(1, 0);
+    // Standard Lace initialization
+    int workers = 8;
+    lace_init(workers, 0);
+    printf("%d workers\n", workers);
     lace_startup(0, NULL, NULL);
 
     // Simple Sylvan initialization
