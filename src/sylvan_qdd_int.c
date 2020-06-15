@@ -402,6 +402,9 @@ init_amplitude_table(int logsize)
     gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
     gates[k][2] = C_ZERO; gates[k][3] = Clookup(Cmake(1.0/sqrt(2.0), 1.0/sqrt(2.0)));
 
+    k = GATEID_Tdag;
+    gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
+    gates[k][2] = C_ZERO; gates[k][3] = Clookup(Cmake(1.0/sqrt(2.0), -1.0/sqrt(2.0)));
 
     Pi = 2.0 * acos(0.0);
 }

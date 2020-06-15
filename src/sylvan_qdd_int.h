@@ -32,13 +32,14 @@ static const uint32_t GATEID_Z = 3;
 static const uint32_t GATEID_H = 4;
 static const uint32_t GATEID_S = 5;
 static const uint32_t GATEID_T = 6;
+static const uint32_t GATEID_Tdag= 7;
 
 // 2x2 gates, k := GATEID_U 
 // gates[k][0] = u00 (top left)
 // gates[k][1] = u01 (top right)
 // gates[k][2] = u10 (bottom left)
 // gates[k][3] = u11 (bottom right)
-cint gates[7][4];
+cint gates[8][4];
 
 
 //uint32_t Ctentries;
