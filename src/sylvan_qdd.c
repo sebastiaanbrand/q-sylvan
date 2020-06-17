@@ -632,6 +632,26 @@ TASK_IMPL_2(QDD, qdd_plus, QDD, a, QDD, b)
     return res;
 }
 
+QDD
+qdd_swap_gate(QDD q, BDDVAR qubit1, BDDVAR qubit2)
+{
+    assert (qubit1 < qubit2);
+    
+    LACE_ME; // TODO: make this function a LACE function instead?
+    QDD res;
+
+    // CNOT
+    res = qdd_cgate(q, GATEID_X, qubit1, qubit2);
+    // upside down CNOT (equivalent)
+    res = qdd_gate(res, GATEID_H, qubit1);
+    res = qdd_cgate(res, GATEID_Z, qubit1, qubit2);
+    res = qdd_gate(res, GATEID_H, qubit1);
+    // CNOT
+    res = qdd_cgate(res, GATEID_X, qubit1, qubit2);
+
+    return res;
+}
+
 
 AMP
 qdd_sample(QDD q, BDDVAR vars, bool* str)

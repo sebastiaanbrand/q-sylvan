@@ -131,6 +131,8 @@ TASK_DECL_3(QDD, qdd_gate, QDD, uint32_t, BDDVAR);
 #define qdd_cgate(q,gate,c,t) (CALL(qdd_cgate,q,gate,c,t));
 TASK_DECL_4(QDD, qdd_cgate, QDD, uint32_t, BDDVAR, BDDVAR);
 
+QDD qdd_swap_gate(QDD q, BDDVAR qubit1, BDDVAR qubit2);
+
 /**
  * Sample
  *
