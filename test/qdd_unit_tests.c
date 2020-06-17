@@ -533,6 +533,13 @@ int test_phase_gates()
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == Clookup(Cmake(-0.5,0)));
     test_assert(qdd_countnodes(q0) == 2);
 
+
+    // check R_k gates
+    test_assert(gates[GATEID_Rk(0)][3] == gates[GATEID_I][3]);
+    test_assert(gates[GATEID_Rk(1)][3] == gates[GATEID_Z][3]);
+    test_assert(gates[GATEID_Rk(2)][3] == gates[GATEID_S][3]);
+    test_assert(gates[GATEID_Rk(3)][3] == gates[GATEID_T][3]);
+
     if(VERBOSE) printf("qdd phase gates:      ok\n");
     return 0;
 }

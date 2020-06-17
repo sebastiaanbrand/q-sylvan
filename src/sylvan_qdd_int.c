@@ -51,6 +51,15 @@ Cmake (double r, double i)
 }
 
 complex_t
+CmakeAngle (double theta)
+{
+    complex_t c;
+    c.r = cos(theta);
+    c.i = sin(theta);
+    return c;
+}
+
+complex_t
 CmakeOne (void)
 {
     return Cmake (1.0, 0.0);
@@ -407,6 +416,27 @@ init_amplitude_table(int logsize)
     gates[k][2] = C_ZERO; gates[k][3] = Clookup(Cmake(1.0/sqrt(2.0), -1.0/sqrt(2.0)));
 
     Pi = 2.0 * acos(0.0);
+
+    init_phase_gates(255);
+}
+
+void
+init_phase_gates(int n)
+{
+    // amplitude table needs to be initialized already
+    
+    // add gate R_k to gates table
+    // (note that R_0 = I, R_1 = Z, R_2 = S, R_4 = T)
+    uint32_t gate_id;
+    double angle;
+    complex_t cartesian;
+    for (int k=0; k<=n; k++) {
+        angle = 2*Pi / pow(2.0, (double) k);
+        cartesian = CmakeAngle(angle);
+        gate_id = GATEID_Rk(k);
+        gates[gate_id][0] = C_ONE;  gates[gate_id][1] = C_ZERO;
+        gates[gate_id][2] = C_ZERO; gates[gate_id][3] = Clookup(cartesian);
+    }
 }
 
 void
