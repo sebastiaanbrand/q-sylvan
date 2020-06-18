@@ -633,7 +633,7 @@ TASK_IMPL_2(QDD, qdd_plus, QDD, a, QDD, b)
 }
 
 QDD
-qdd_swap_gate(QDD q, BDDVAR qubit1, BDDVAR qubit2)
+qdd_swap_gate(QDD qdd, BDDVAR qubit1, BDDVAR qubit2)
 {
     assert (qubit1 < qubit2);
     
@@ -641,7 +641,7 @@ qdd_swap_gate(QDD q, BDDVAR qubit1, BDDVAR qubit2)
     QDD res;
 
     // CNOT
-    res = qdd_cgate(q, GATEID_X, qubit1, qubit2);
+    res = qdd_cgate(qdd, GATEID_X, qubit1, qubit2);
     // upside down CNOT (equivalent)
     res = qdd_gate(res, GATEID_H, qubit1);
     res = qdd_cgate(res, GATEID_Z, qubit1, qubit2);
@@ -650,6 +650,33 @@ qdd_swap_gate(QDD q, BDDVAR qubit1, BDDVAR qubit2)
     res = qdd_cgate(res, GATEID_X, qubit1, qubit2);
 
     return res;
+}
+
+QDD
+qdd_QFT(QDD qdd, int n)
+{
+    LACE_ME;
+
+    int k;
+    BDDVAR c;
+    BDDVAR t;
+    for (c = 0; c < n; c++) {
+        
+        // H gate on current qubit
+        qdd = qdd_gate(qdd, GATEID_H, c);
+
+        // Controlled phase gates on all qubits below
+        for (t = c+1; t < n; t++) {
+            k = (t - c) + 1;
+            qdd = qdd_cgate(qdd, GATEID_Rk(k), c, t);
+        }
+    }
+
+    // swap qubit order
+    for (c = 0; c < (int)(n/2); c++) {
+        t = (n - 1) - c;
+        qdd_swap_gate(qdd, c, t);
+    }
 }
 
 

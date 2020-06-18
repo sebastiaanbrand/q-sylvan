@@ -131,7 +131,15 @@ TASK_DECL_3(QDD, qdd_gate, QDD, uint32_t, BDDVAR);
 #define qdd_cgate(q,gate,c,t) (CALL(qdd_cgate,q,gate,c,t));
 TASK_DECL_4(QDD, qdd_cgate, QDD, uint32_t, BDDVAR, BDDVAR);
 
-QDD qdd_swap_gate(QDD q, BDDVAR qubit1, BDDVAR qubit2);
+/**
+ * Applies a swap gate on the given qubits.
+ */
+QDD qdd_swap_gate(QDD qdd, BDDVAR qubit1, BDDVAR qubit2);
+
+/**
+ * Executes the Quantum Fourier Transform circuit on the first n qubits of q.
+ */
+QDD qdd_QFT(QDD qdd, int n);
 
 /**
  * Sample

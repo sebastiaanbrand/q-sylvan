@@ -652,6 +652,23 @@ int test_swap_gate()
     return 0;
 }
 
+int test_QFT()
+{
+    QDD q;
+    bool x5[] = {0,0,0,0,0};
+    bool x6[] = {0,0,0,0,0,0};
+    //AMP a;
+
+    q = create_basis_state(5, x5);
+    qdd_QFT(q, 5);
+
+    q = create_basis_state(6, x6);
+    qdd_QFT(q, 6);
+
+    if(VERBOSE) printf("[TODO: proper QFT test]\n");
+    return 0;
+}
+
 int test_5qubit_circuit()
 {
     QDD q, qref;
@@ -991,6 +1008,7 @@ int runtests()
     if (test_cx_gate()) return 1;
     if (test_cz_gate()) return 1;
     if (test_swap_gate()) return 1;
+    if (test_QFT()) return 1;
     if (test_5qubit_circuit()) return 1;
     if (test_10qubit_circuit()) return 1;
     if (test_20qubit_circuit()) return 1;
