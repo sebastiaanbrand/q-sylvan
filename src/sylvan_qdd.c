@@ -658,25 +658,27 @@ qdd_QFT(QDD qdd, int n)
     LACE_ME;
 
     int k;
+    QDD res = qdd;
     BDDVAR c;
     BDDVAR t;
     for (c = 0; c < n; c++) {
         
         // H gate on current qubit
-        qdd = qdd_gate(qdd, GATEID_H, c);
+        res = qdd_gate(res, GATEID_H, c);
 
         // Controlled phase gates on all qubits below
         for (t = c+1; t < n; t++) {
             k = (t - c) + 1;
-            qdd = qdd_cgate(qdd, GATEID_Rk(k), c, t);
+            res = qdd_cgate(res, GATEID_Rk(k), c, t);
         }
     }
 
     // swap qubit order
     for (c = 0; c < (int)(n/2); c++) {
         t = (n - 1) - c;
-        qdd_swap_gate(qdd, c, t);
+        res = qdd_swap_gate(res, c, t);
     }
+    return res;
 }
 
 

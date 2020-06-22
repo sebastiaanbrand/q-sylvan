@@ -67,6 +67,7 @@ void Cprint_bitvalues(cint);
 
 bool CexactEqual(complex_t, complex_t);
 bool CapproxEqual(complex_t, complex_t);
+bool CepsilonClose(complex_t, complex_t, double);
 
 cint Cnegative(cint);
 cint Cadd(cint,cint);

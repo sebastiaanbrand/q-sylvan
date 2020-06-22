@@ -200,7 +200,12 @@ bool CexactEqual(complex_t a, complex_t b)
 
 bool CapproxEqual(complex_t a, complex_t b)
 {
-    return ( (fabs(a.r - b.r) < TOLERANCE) && (fabs(a.i - b.i) < TOLERANCE) );
+    return CepsilonClose(a, b, TOLERANCE);
+}
+
+bool CepsilonClose(complex_t a, complex_t b, double epsilon)
+{
+    return ( (fabs(a.r - b.r) < epsilon) && (fabs(a.i - b.i) < epsilon) );
 }
 
 

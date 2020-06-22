@@ -39,7 +39,7 @@ int test_cmap()
     test_assert(fabs(val3.r - val1.r) < TOLERANCE);
     test_assert(fabs(val3.i - val1.i) < TOLERANCE);
     
-    if(VERBOSE) printf("cmap tests:           ok\n");
+    if(VERBOSE) printf("cmap tests:               ok\n");
     cmap_free(ctable);
     return 0;
 }
@@ -133,7 +133,7 @@ int test_complex_operations()
     index4 = Cdiv(index1, index2);  val4 = Cvalue(index4);
     test_assert(index3 == index4);  test_assert(CexactEqual(val3, val4));
 
-    if(VERBOSE) printf("complex operations:   ok\n");
+    if(VERBOSE) printf("complex operations:       ok\n");
     return 0;
 }
 
@@ -180,7 +180,7 @@ int test_basis_state_creation()
 
     // TODO: also test node count
 
-    printf("basis state creation: ok\n");
+    printf("basis state creation:     ok\n");
     return 0;
 }
 
@@ -335,7 +335,7 @@ int test_vector_addition()
     assert(q001 == q010);
     assert(q001 == q100);
 
-    if(VERBOSE) printf("qdd vector addition:  ok\n");
+    if(VERBOSE) printf("qdd vector addition:      ok\n");
     return 0;
 }
 
@@ -371,7 +371,7 @@ int test_x_gate()
     test_assert(qdd_countnodes(q4) == 4);
     test_assert(qdd_countnodes(q5) == 4);
 
-    if(VERBOSE) printf("qdd x gates:          ok\n");
+    if(VERBOSE) printf("qdd x gates:              ok\n");
     return 0;
 }
 
@@ -441,7 +441,7 @@ int test_h_gate()
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q5, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
     test_assert(qdd_countnodes(q5) == 1);
 
-    if(VERBOSE) printf("qdd h gates:          ok\n");
+    if(VERBOSE) printf("qdd h gates:              ok\n");
     return 0;
 }
 
@@ -540,7 +540,7 @@ int test_phase_gates()
     test_assert(gates[GATEID_Rk(2)][3] == gates[GATEID_S][3]);
     test_assert(gates[GATEID_Rk(3)][3] == gates[GATEID_T][3]);
 
-    if(VERBOSE) printf("qdd phase gates:      ok\n");
+    if(VERBOSE) printf("qdd phase gates:          ok\n");
     return 0;
 }
 
@@ -572,7 +572,7 @@ int test_cx_gate()
 
     // TODO: more tests
 
-    if(VERBOSE) printf("qdd cnot gates:       ok\n");
+    if(VERBOSE) printf("qdd cnot gates:           ok\n");
     return 0;
 }
 
@@ -603,7 +603,7 @@ int test_cz_gate()
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(qGraph, x2); test_assert(a == Clookup(Cmake(-0.5,0)));
     test_assert(qdd_countnodes(qGraph) == 3);
 
-    if(VERBOSE) printf("qdd CZ gates:         ok\n");
+    if(VERBOSE) printf("qdd CZ gates:             ok\n");
     return 0;
 }
 
@@ -648,24 +648,72 @@ int test_swap_gate()
 
     // TODO: more tests
 
-    if(VERBOSE) printf("qdd swap gates:       ok\n");
+    if(VERBOSE) printf("qdd swap gates:           ok\n");
     return 0;
 }
 
 int test_QFT()
 {
-    QDD q;
-    bool x5[] = {0,0,0,0,0};
-    bool x6[] = {0,0,0,0,0,0};
-    //AMP a;
+    QDD q3, q5;
+    AMP a;
 
-    q = create_basis_state(5, x5);
-    qdd_QFT(q, 5);
+    // 3 qubit QFT
+    bool x3[] = {0,1,1}; // little endian (q0, q1, q2)
+    q3 = create_basis_state(3, x3);
+    q3 = qdd_QFT(q3, 3);
 
-    q = create_basis_state(6, x6);
-    qdd_QFT(q, 6);
+    // check approx equal against output from qiskit
+    x3[2]=0; x3[1]=0; x3[0]=0; a = qdd_get_amplitude(q3, x3); test_assert(CapproxEqual(Cvalue(a),Cmake(3.5355339059327384e-01,-8.6595605623549353e-17)));
+    x3[2]=0; x3[1]=0; x3[0]=1; a = qdd_get_amplitude(q3, x3); test_assert(CapproxEqual(Cvalue(a),Cmake(-3.5355339059327384e-01,8.6595605623549353e-17)));
+    x3[2]=0; x3[1]=1; x3[0]=0; a = qdd_get_amplitude(q3, x3); test_assert(CapproxEqual(Cvalue(a),Cmake(-1.0824450702943669e-16,-3.5355339059327384e-01)));
+    x3[2]=0; x3[1]=1; x3[0]=1; a = qdd_get_amplitude(q3, x3); test_assert(CapproxEqual(Cvalue(a),Cmake(1.0824450702943669e-16,3.5355339059327384e-01)));
+    x3[2]=1; x3[1]=0; x3[0]=0; a = qdd_get_amplitude(q3, x3); test_assert(CapproxEqual(Cvalue(a),Cmake(-2.5000000000000000e-01,2.5000000000000017e-01)));
+    x3[2]=1; x3[1]=0; x3[0]=1; a = qdd_get_amplitude(q3, x3); test_assert(CapproxEqual(Cvalue(a),Cmake(2.5000000000000000e-01,-2.5000000000000017e-01)));
+    x3[2]=1; x3[1]=1; x3[0]=0; a = qdd_get_amplitude(q3, x3); test_assert(CapproxEqual(Cvalue(a),Cmake(2.5000000000000017e-01,2.5000000000000000e-01)));
+    x3[2]=1; x3[1]=1; x3[0]=1; a = qdd_get_amplitude(q3, x3); test_assert(CapproxEqual(Cvalue(a),Cmake(-2.5000000000000017e-01,-2.5000000000000000e-01)));
 
-    if(VERBOSE) printf("[TODO: proper QFT test]\n");
+
+    // 5 qubit QFT
+    bool x5[] = {0,1,1,0,1};
+    q5 = create_basis_state(5, x5);
+    q5 = qdd_QFT(q5, 5);
+
+    // check approx equal against output from qiskit
+    double thres = 1e-9;
+    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(1.7677669529663692e-01,-6.4946704217662027e-17),thres));
+    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(-1.7677669529663692e-01,6.4946704217662027e-17),thres));
+    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(7.5771154920605696e-17,1.7677669529663692e-01),thres));
+    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(-7.5771154920605696e-17,-1.7677669529663692e-01),thres));
+    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(-1.2500000000000011e-01,-1.2499999999999999e-01),thres));
+    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(1.2500000000000011e-01,1.2499999999999999e-01),thres));
+    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(1.2499999999999999e-01,-1.2500000000000011e-01),thres));
+    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(-1.2499999999999999e-01,1.2500000000000011e-01),thres));
+    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(6.7649512518274585e-02,-1.6332037060954713e-01),thres));
+    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(-6.7649512518274585e-02,1.6332037060954713e-01),thres));
+    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(1.6332037060954713e-01,6.7649512518274571e-02),thres));
+    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(-1.6332037060954713e-01,-6.7649512518274571e-02),thres));
+    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(-1.6332037060954710e-01,6.7649512518274696e-02),thres));
+    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(1.6332037060954710e-01,-6.7649512518274696e-02),thres));
+    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(-6.7649512518274710e-02,-1.6332037060954710e-01),thres));
+    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(6.7649512518274710e-02,1.6332037060954710e-01),thres));
+    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(-1.4698445030241986e-01,9.8211869798387877e-02),thres));
+    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(1.4698445030241986e-01,-9.8211869798387877e-02),thres));
+    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(-9.8211869798387877e-02,-1.4698445030241986e-01),thres));
+    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(9.8211869798387877e-02,1.4698445030241986e-01),thres));
+    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(1.7337998066526852e-01,3.4487422410367806e-02),thres));
+    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(-1.7337998066526852e-01,-3.4487422410367806e-02),thres));
+    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(-3.4487422410367799e-02,1.7337998066526852e-01),thres));
+    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(3.4487422410367799e-02,-1.7337998066526852e-01),thres));
+    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(3.4487422410367972e-02,1.7337998066526850e-01),thres));
+    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(-3.4487422410367972e-02,-1.7337998066526850e-01),thres));
+    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(-1.7337998066526850e-01,3.4487422410367986e-02),thres));
+    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(1.7337998066526850e-01,-3.4487422410367986e-02),thres));
+    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(9.8211869798387752e-02,-1.4698445030241994e-01),thres));
+    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(-9.8211869798387752e-02,1.4698445030241994e-01),thres));
+    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(1.4698445030241994e-01,9.8211869798387752e-02),thres));
+    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(-1.4698445030241994e-01,-9.8211869798387752e-02),thres));
+    
+    if(VERBOSE) printf("qdd QFT test (tol=%.0e): ok\n", thres);
     return 0;
 }
 
@@ -711,7 +759,7 @@ int test_5qubit_circuit()
     qdd_fprintdot(fp, q);
     fclose(fp);
 
-    if(VERBOSE) printf("qdd 5 qubit circuit:  ok (%ld nodes)\n", node_count);
+    if(VERBOSE) printf("qdd 5 qubit circuit:      ok (%ld nodes)\n", node_count);
     return 0;
 }
 
@@ -765,7 +813,7 @@ int test_10qubit_circuit()
     test_assert(qdd_equivalent(q, qref, 10, true,  VERBOSE)); // check exact equiv
     test_assert(q == qref);
 
-    if(VERBOSE) printf("qdd 10 qubit circuit: ok (%ld nodes)\n", node_count);
+    if(VERBOSE) printf("qdd 10 qubit circuit:     ok (%ld nodes)\n", node_count);
     return 0;
 }
 
@@ -839,7 +887,7 @@ int test_20qubit_circuit()
     test_assert(qdd_equivalent(q, qref, 20, true,  VERBOSE)); // check exact equiv
     test_assert(q == qref);
 
-    if(VERBOSE) printf("qdd 20 qubit circuit: ok (%ld nodes)\n", node_count);
+    if(VERBOSE) printf("qdd 20 qubit circuit:     ok (%ld nodes)\n", node_count);
     return 0;
 }
 
@@ -988,7 +1036,7 @@ int bench_25qubit_circuit()
 
 
     runtime = (t_end - t_start);
-    if(VERBOSE) printf("qdd 25 qubit circuit: (%ld nodes, %ld sec)\n", node_count, runtime);
+    if(VERBOSE) printf("qdd 25 qubit circuit:     (%ld nodes, %ld sec)\n", node_count, runtime);
     return 0;
 }
 
@@ -1043,7 +1091,7 @@ int main()
     int res = runtests();
     //int res = runbench();
 
-    //free_amplitude_table();
+    free_amplitude_table();
     sylvan_quit();
     lace_exit();
 
