@@ -33,19 +33,25 @@ static const uint32_t GATEID_Z = 3;
 static const uint32_t GATEID_H = 4;
 static const uint32_t GATEID_S = 5;
 static const uint32_t GATEID_T = 6;
-static const uint32_t GATEID_Tdag= 7;
+static const uint32_t GATEID_Tdag = 7;
 // The next 255 gates are reserved for parameterized phase gates, which are
 // initialized below. (these are GATEIDs 8 (0b00001000) through 263 (0b11111000))
-// TODO: maybe do this a better way
+// The reason why these are initialized beforhand instead of on-demand is that 
+// we need a (for example) pi/16 gate always to have the same unique ID 
+// throughout the entire run of the circuit.
+// TODO: maybe find a better way?
 void init_phase_gates(int n);
 static inline uint32_t GATEID_Rk(int k) { return k + 8; };
+// Another 255 parameterized phase gates, but this time with negative angles.
+// (GATEIDs 264 through 519)
+static inline uint32_t GATEID_Rk_dag(int k){ return k + 264; };
 
 // 2x2 gates, k := GATEID_U 
 // gates[k][0] = u00 (top left)
 // gates[k][1] = u01 (top right)
 // gates[k][2] = u10 (bottom left)
 // gates[k][3] = u11 (bottom right)
-cint gates[264][4];
+cint gates[520][4];
 
 
 //uint32_t Ctentries;

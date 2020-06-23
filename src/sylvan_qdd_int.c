@@ -436,9 +436,17 @@ init_phase_gates(int n)
     double angle;
     complex_t cartesian;
     for (int k=0; k<=n; k++) {
+        // forward rotation
         angle = 2*Pi / pow(2.0, (double) k);
         cartesian = CmakeAngle(angle);
         gate_id = GATEID_Rk(k);
+        gates[gate_id][0] = C_ONE;  gates[gate_id][1] = C_ZERO;
+        gates[gate_id][2] = C_ZERO; gates[gate_id][3] = Clookup(cartesian);
+
+        // backward rotation
+        angle = -2*Pi / pow(2.0, (double) k);
+        cartesian = CmakeAngle(angle);
+        gate_id = GATEID_Rk_dag(k);
         gates[gate_id][0] = C_ONE;  gates[gate_id][1] = C_ZERO;
         gates[gate_id][2] = C_ZERO; gates[gate_id][3] = Clookup(cartesian);
     }
