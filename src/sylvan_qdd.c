@@ -681,6 +681,46 @@ qdd_QFT(QDD qdd, int n)
     return res;
 }
 
+QDD
+qdd_QFT_dag(QDD qdd, int n)
+{
+    //printf("QFT^dag on %d qubits\n", n);
+    LACE_ME;
+
+    int k;
+    QDD res = qdd;
+    BDDVAR c;
+    BDDVAR t;
+
+    // swap gates
+    for (c = 0; c < (int)(n/2); c++) {
+    //for (c = (int)(n/2); c-- > 0; ) {
+        t = (n - 1) - c;
+        res = qdd_swap_gate(res, c, t);
+        //printf("swap (%d, %d)\n", c, t);
+    }
+    
+    int counter = 0;
+    // H gates and phase gates (but now backwards)
+    for (c = n; c-- > 0; ) { // weird for loop because BDDVARs are unsigned
+
+        // Controlled phase gates (negative angles this time)
+        for (t = (n-1); t >= (c+1); t--){
+            k = (t - c) + 1;
+            res = qdd_cgate(res, GATEID_Rk_dag(k), c, t);
+            //printf("Rk(%d) (%d, %d)\n",k, c, t);
+
+            if(counter++ > 10) return res;
+        }
+
+        // H on current qubit
+        res = qdd_gate(res, GATEID_H, c);
+        //printf("H on %d\n", c);
+    }
+
+    return res;
+}
+
 
 AMP
 qdd_sample(QDD q, BDDVAR vars, bool* str)

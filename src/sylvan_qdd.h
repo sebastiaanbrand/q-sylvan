@@ -137,9 +137,14 @@ TASK_DECL_4(QDD, qdd_cgate, QDD, uint32_t, BDDVAR, BDDVAR);
 QDD qdd_swap_gate(QDD qdd, BDDVAR qubit1, BDDVAR qubit2);
 
 /**
- * Executes the Quantum Fourier Transform circuit on the first n qubits of q.
+ * Executes the Quantum Fourier Transform circuit on the first n qubits of qdd.
  */
 QDD qdd_QFT(QDD qdd, int n);
+
+/**
+ * Executes the inverse QFT circuit on the first n qubits of qdd.
+ */
+QDD qdd_QFT_dag(QDD qdd, int n);
 
 /**
  * Sample
