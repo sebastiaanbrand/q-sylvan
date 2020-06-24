@@ -161,6 +161,15 @@ QDD qdd_QFT(QDD qdd, int n);
  */
 QDD qdd_QFT_dag(QDD qdd, int n);
 
+
+/**
+ * Exectutes Grover on an n qubit circuit with a single flagged element.
+ * 
+ * @param n Number of qubits.
+ * @param flag Binary representation of some integer in [0, 2^n]
+ */
+QDD qdd_grover(BDDVAR n, bool* flag);
+
 /**
  * Sample
  *
@@ -179,6 +188,8 @@ extern AMP qdd_sample(QDD bdd, BDDVAR vars, bool* str);
  * @return The amplitude <x|\psi>.
  */
 extern AMP qdd_get_amplitude(QDD qdd, bool* basis_state);
+
+double _prob(AMP a);
 
 /**
  * Creates a QDD for an n-qubit state |00...0>.

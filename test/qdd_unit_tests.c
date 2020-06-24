@@ -798,8 +798,31 @@ int test_QFT()
 
 int test_grover()
 {
+    AMP a;
+    QDD grov;
 
-    if(VERBOSE) printf("qdd Grover:               TODO\n");
+    bool x2[] = {0,1}; // "flagged" entry
+    grov = qdd_grover(2, x2);
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(grov, x2); test_assert(a == C_ZERO);
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(grov, x2); test_assert(a == C_ZERO);
+    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(grov, x2); test_assert(a == C_ONE);
+    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(grov, x2); test_assert(a == C_ZERO);
+
+    
+    bool x3[] = {1,1,0}; // "flagged" entry
+    grov = qdd_grover(3, x3);
+    x3[2] = 0; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(grov, x3); test_assert(_prob(a) < 0.008);
+    x3[2] = 0; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(grov, x3); test_assert(_prob(a) < 0.008);
+    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(grov, x3); test_assert(_prob(a) < 0.008);
+    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(grov, x3); test_assert(_prob(a) > 0.94);
+    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(grov, x3); test_assert(_prob(a) < 0.008);
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(grov, x3); test_assert(_prob(a) < 0.008);
+    x3[2] = 1; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(grov, x3); test_assert(_prob(a) < 0.008);
+    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(grov, x3); test_assert(_prob(a) < 0.008);
+
+    // TODO: bigger tests?
+
+    if(VERBOSE) printf("qdd Grover:               ok\n");
     return 0;
 }
 
