@@ -142,8 +142,8 @@ int test_basis_state_creation()
     bool x[] = {0};
     
     QDD q0, q1;
-    x[0] = 0; q0 = create_basis_state(1, x);
-    x[0] = 1; q1 = create_basis_state(1, x);
+    x[0] = 0; q0 = qdd_create_basis_state(1, x);
+    x[0] = 1; q1 = qdd_create_basis_state(1, x);
     test_assert(qdd_countnodes(q0) == 2);
     test_assert(qdd_countnodes(q1) == 2);
 
@@ -155,8 +155,8 @@ int test_basis_state_creation()
 
     QDD q2, q3;
     bool x3[] = {0, 0, 0};
-    x3[2] = 0; x3[1] = 0; x3[0] = 0; q2 = create_basis_state(3, x3);
-    x3[2] = 1; x3[1] = 0; x3[0] = 1; q3 = create_basis_state(3, x3);
+    x3[2] = 0; x3[1] = 0; x3[0] = 0; q2 = qdd_create_basis_state(3, x3);
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; q3 = qdd_create_basis_state(3, x3);
     test_assert(qdd_countnodes(q2) == 4);
     test_assert(qdd_countnodes(q3) == 4);
 
@@ -194,8 +194,8 @@ int test_vector_addition()
     LACE_ME;
 
     // Single qubit test
-    x[0] = 0; q0 = create_basis_state(1, x);
-    x[0] = 1; q1 = create_basis_state(1, x);
+    x[0] = 0; q0 = qdd_create_basis_state(1, x);
+    x[0] = 1; q1 = qdd_create_basis_state(1, x);
     q00 = qdd_plus(q0, q0);
     q01 = qdd_plus(q0, q1);
     q10 = qdd_plus(q1, q0);
@@ -229,8 +229,8 @@ int test_vector_addition()
 
 
     // 4 qubit test
-    x4[3] = 0; x4[2] = 0; x4[1] = 1; x4[0] = 0; q0 = create_basis_state(4, x4);
-    x4[3] = 1; x4[2] = 0; x4[1] = 1; x4[0] = 0; q1 = create_basis_state(4, x4);
+    x4[3] = 0; x4[2] = 0; x4[1] = 1; x4[0] = 0; q0 = qdd_create_basis_state(4, x4);
+    x4[3] = 1; x4[2] = 0; x4[1] = 1; x4[0] = 0; q1 = qdd_create_basis_state(4, x4);
     q00 = qdd_plus(q0, q0);
     q01 = qdd_plus(q0, q1);
     q10 = qdd_plus(q1, q0);
@@ -348,9 +348,9 @@ int test_x_gate()
     LACE_ME;
 
     // Single qubit test
-    x[0] = 0; q0 = create_basis_state(1, x);
-    x[0] = 1; q1 = create_basis_state(1, x);
-    x[0] = 0; q2 = create_basis_state(1, x);
+    x[0] = 0; q0 = qdd_create_basis_state(1, x);
+    x[0] = 1; q1 = qdd_create_basis_state(1, x);
+    x[0] = 0; q2 = qdd_create_basis_state(1, x);
 
     q0 = qdd_gate(q0, GATEID_X, 0); test_assert(q0 == q1);
     q0 = qdd_gate(q0, GATEID_X, 0); test_assert(q0 == q2);
@@ -358,9 +358,9 @@ int test_x_gate()
     q0 = qdd_gate(q0, GATEID_X, 0); test_assert(q0 == q2);
 
     // 3 qubit test
-    x3[2] = 0; x3[1] = 0; x3[0] = 0; q3 = create_basis_state(3, x3);
-    x3[2] = 0; x3[1] = 1; x3[0] = 0; q4 = create_basis_state(3, x3);
-    x3[2] = 0; x3[1] = 1; x3[0] = 1; q5 = create_basis_state(3, x3);
+    x3[2] = 0; x3[1] = 0; x3[0] = 0; q3 = qdd_create_basis_state(3, x3);
+    x3[2] = 0; x3[1] = 1; x3[0] = 0; q4 = qdd_create_basis_state(3, x3);
+    x3[2] = 0; x3[1] = 1; x3[0] = 1; q5 = qdd_create_basis_state(3, x3);
     test_assert(qdd_countnodes(q3) == 4);
     test_assert(qdd_countnodes(q4) == 4);
     test_assert(qdd_countnodes(q5) == 4);
@@ -385,8 +385,8 @@ int test_h_gate()
     LACE_ME;
 
     // Single qubit test
-    x[0] = 0; q0 = create_basis_state(1, x);
-    x[0] = 1; q1 = create_basis_state(1, x);
+    x[0] = 0; q0 = qdd_create_basis_state(1, x);
+    x[0] = 1; q1 = qdd_create_basis_state(1, x);
 
     q0 = qdd_gate(q0, GATEID_H, 0);
     q1 = qdd_gate(q1, GATEID_H, 0);
@@ -398,10 +398,10 @@ int test_h_gate()
 
 
     // Two qubit test
-    x2[1] = 0; x2[0] = 0; q2 = create_basis_state(2, x2); // |00>
-    x2[1] = 0; x2[0] = 1; q3 = create_basis_state(2, x2); // |01>
-    x2[1] = 0; x2[0] = 0; q4 = create_basis_state(2, x2); // |00>
-    x2[1] = 0; x2[0] = 0; q5 = create_basis_state(2, x2); // |00>
+    x2[1] = 0; x2[0] = 0; q2 = qdd_create_basis_state(2, x2); // |00>
+    x2[1] = 0; x2[0] = 1; q3 = qdd_create_basis_state(2, x2); // |01>
+    x2[1] = 0; x2[0] = 0; q4 = qdd_create_basis_state(2, x2); // |00>
+    x2[1] = 0; x2[0] = 0; q5 = qdd_create_basis_state(2, x2); // |00>
     q2 = qdd_gate(q2, GATEID_H, 0); // q2 = |0+>
     q3 = qdd_gate(q3, GATEID_H, 0); // q3 = |0->
     q4 = qdd_gate(q4, GATEID_H, 1); // q4 = |+0>
@@ -454,7 +454,7 @@ int test_phase_gates()
     LACE_ME;
 
     // simple 2 qubit test
-    x2[1] = 0; x2[0] = 0; q0 = create_basis_state(2, x2);
+    x2[1] = 0; x2[0] = 0; q0 = qdd_create_basis_state(2, x2);
     q0 = qdd_gate(q0, GATEID_H, 0);
     q0 = qdd_gate(q0, GATEID_H, 1);
 
@@ -556,7 +556,7 @@ int test_cx_gate()
     LACE_ME;
 
     // Test Bell state
-    x2[1] = 0; x2[0] = 0; qBell = create_basis_state(2, x2);
+    x2[1] = 0; x2[0] = 0; qBell = qdd_create_basis_state(2, x2);
     qBell = qdd_gate(qBell, GATEID_H, 0);
     
     x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(qBell, x2); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
@@ -588,7 +588,7 @@ int test_cz_gate()
     LACE_ME;
 
     // 2 qubit graph state
-    x2[1] = 0; x2[0] = 0; qGraph = create_basis_state(2, x2);
+    x2[1] = 0; x2[0] = 0; qGraph =qdd_create_basis_state(2, x2);
     qGraph = qdd_gate(qGraph, GATEID_H, 0);
     qGraph = qdd_gate(qGraph, GATEID_H, 1);
 
@@ -610,6 +610,36 @@ int test_cz_gate()
     return 0;
 }
 
+int test_ccz_gate()
+{
+    QDD q3;
+    bool x3[] = {0,0,0};
+    AMP a, aRef;
+
+    LACE_ME;
+
+    q3 = qdd_create_basis_state(3, x3);
+    q3 = qdd_gate(q3, GATEID_H, 0);
+    q3 = qdd_gate(q3, GATEID_H, 1);
+    q3 = qdd_gate(q3, GATEID_H, 2);
+    aRef = qdd_get_amplitude(q3, x3);
+
+    x3[2]=1; x3[1]=0; x3[0]=1; q3 = qdd_all_control_phase(q3, 3, x3);
+    x3[2] = 0; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q3, x3); test_assert(a == aRef);
+    x3[2] = 0; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q3, x3); test_assert(a == aRef);
+    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q3, x3); test_assert(a == aRef);
+    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(q3, x3); test_assert(a == aRef);
+    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q3, x3); test_assert(a == aRef);    
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q3, x3); test_assert(a == Cmul(aRef,Clookup(Cmake(-1.0,0.0))));
+    x3[2] = 1; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q3, x3); test_assert(a == aRef);
+    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(q3, x3); test_assert(a == aRef);
+
+    // TODO: few more tests
+
+    if(VERBOSE) printf("qdd all-control z gate:   ok\n");
+    return 0;
+}
+
 int test_swap_gate()
 {
     QDD q;
@@ -618,7 +648,7 @@ int test_swap_gate()
 
     LACE_ME;
 
-    q = create_basis_state(3, x3);
+    q = qdd_create_basis_state(3, x3);
     q = qdd_gate(q, GATEID_X, 2);
     x3[2] = 0; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 0; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
@@ -662,8 +692,8 @@ int test_QFT()
 
     // 3 qubit QFT
     bool x3[] = {0,1,1}; // little endian (q0, q1, q2)
-    q3 = create_basis_state(3, x3);
-    qref3 = create_basis_state(3, x3);
+    q3 = qdd_create_basis_state(3, x3);
+    qref3 = qdd_create_basis_state(3, x3);
     q3 = qdd_QFT(q3, 3);
 
     // check approx equal against output from qiskit
@@ -685,7 +715,7 @@ int test_QFT()
 
     // 5 qubit QFT
     bool x5[] = {0,1,1,0,1};
-    q5 = create_basis_state(5, x5);
+    q5 = qdd_create_basis_state(5, x5);
     q5 = qdd_QFT(q5, 5);
 
     // check approx equal against output from qiskit
@@ -766,6 +796,21 @@ int test_QFT()
     return 0;
 }
 
+int test_grover()
+{
+
+    if(VERBOSE) printf("qdd Grover:               TODO\n");
+    return 0;
+}
+
+int test_shor()
+{
+
+    if(VERBOSE) printf("qdd Shor:                 TODO\n");
+    return 0;
+}
+
+
 int test_5qubit_circuit()
 {
     QDD q, qref;
@@ -777,8 +822,8 @@ int test_5qubit_circuit()
     LACE_ME;
 
     // 5 qubit state
-    qref = create_basis_state(n_qubits, x5);
-    q    = create_basis_state(n_qubits, x5);
+    qref = qdd_create_basis_state(n_qubits, x5);
+    q    = qdd_create_basis_state(n_qubits, x5);
 
     // 32 gates 
     q = qdd_cgate(q, GATEID_Z, 1, 2);       q = qdd_gate(q, GATEID_X, 2);           q = qdd_cgate(q, GATEID_Z, 3, 4);       q = qdd_cgate(q, GATEID_X, 1, 3);
@@ -821,8 +866,8 @@ int test_10qubit_circuit()
     LACE_ME;
 
     // 10 qubit state
-    qref = create_basis_state(10, x10);
-    q    = create_basis_state(10, x10);
+    qref = qdd_create_basis_state(10, x10);
+    q    = qdd_create_basis_state(10, x10);
 
     // 30 random* Clifford gates            *chosen by a fair dice roll
     q = qdd_cgate(q, GATEID_X, 1, 3);       q = qdd_gate(q, GATEID_H, 0);
@@ -875,8 +920,8 @@ int test_20qubit_circuit()
     LACE_ME;
 
     // 20 qubit state
-    qref = create_basis_state(20, x20);
-    q    = create_basis_state(20, x20);
+    qref = qdd_create_basis_state(20, x20);
+    q    = qdd_create_basis_state(20, x20);
 
     // 100 gates
     q = qdd_cgate(q, GATEID_Z, 4, 18);      q = qdd_gate(q, GATEID_H, 16);          q = qdd_cgate(q, GATEID_X, 1, 12);      q = qdd_gate(q, GATEID_Z, 4);
@@ -952,7 +997,7 @@ int bench_25qubit_circuit()
     t_start = time(NULL);
 
     // 25 qubit state
-    q = create_basis_state(25, x25);
+    q = qdd_create_basis_state(25, x25);
 
     // 500 gates
     q = qdd_cgate(q, GATEID_Z, 7, 21);	q = qdd_cgate(q, GATEID_Z, 4, 10);	q = qdd_cgate(q, GATEID_Z, 2, 12);	q = qdd_cgate(q, GATEID_Z, 4, 9);
@@ -1104,8 +1149,11 @@ int runtests()
     if (test_phase_gates()) return 1;
     if (test_cx_gate()) return 1;
     if (test_cz_gate()) return 1;
+    if (test_ccz_gate()) return 1;
     if (test_swap_gate()) return 1;
     if (test_QFT()) return 1;
+    if (test_grover()) return 1;
+    if (test_shor()) return 1;
     if (test_5qubit_circuit()) return 1;
     if (test_10qubit_circuit()) return 1;
     if (test_20qubit_circuit()) return 1;

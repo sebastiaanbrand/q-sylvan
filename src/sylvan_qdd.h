@@ -136,6 +136,21 @@ TASK_DECL_4(QDD, qdd_cgate, QDD, uint32_t, BDDVAR, BDDVAR);
  */
 QDD qdd_swap_gate(QDD qdd, BDDVAR qubit1, BDDVAR qubit2);
 
+
+/**
+ * Applies a phase of -1 to a single basis state |x>.
+ * This is a CZ gate where we control on all qubits and when x_k = 0 we control
+ * qubit k on 0, and where x_k = 1 we control qubit k on 1.
+ * 
+ * @param qdd A QDD encoding some quantum state |\psi>.
+ * @param n Number of qubits.
+ * @param x A bitstring x of some computational basis state |x>.
+ * 
+ * TODO: generalize this to control on some but not all qubits.
+ */
+#define qdd_all_control_phase(qdd, n, x) (CALL(qdd_all_control_phase,qdd,0,n,x));
+TASK_DECL_4(QDD, qdd_all_control_phase, QDD, BDDVAR, BDDVAR, bool*);
+
 /**
  * Executes the Quantum Fourier Transform circuit on the first n qubits of qdd.
  */
@@ -172,7 +187,7 @@ extern AMP qdd_get_amplitude(QDD qdd, bool* basis_state);
  * 
  * @return A QDD encoding the n-qubit state |00..0>.
  */
-extern QDD create_all_zero_state(int n);
+extern QDD qdd_create_all_zero_state(int n);
 
 /**
  * Creates a QDD for an n-qubit state |x>.
@@ -182,7 +197,7 @@ extern QDD create_all_zero_state(int n);
  * 
  * @return A QDD encoding of the n-qubit state |x>.
  */
-extern QDD create_basis_state(int n, bool* x);
+extern QDD qdd_create_basis_state(int n, bool* x);
 
 
 /**

@@ -282,7 +282,7 @@ _qdd_makenode(BDDVAR var, PTR low, PTR high, AMP a, AMP b)
     return result;
 } 
 
-static inline QDD // (PTR and AMP, but the amp is the norm weight from below)
+static QDD // (PTR and AMP, but the amp is the norm weight from below)
 qdd_makenode(BDDVAR var, QDD low_edge, QDD high_edge)
 { 
     PTR low_ptr  = QDD_PTR(low_edge);
@@ -652,6 +652,71 @@ qdd_swap_gate(QDD qdd, BDDVAR qubit1, BDDVAR qubit2)
     return res;
 }
 
+
+TASK_IMPL_4(QDD, qdd_all_control_phase, QDD, qdd, BDDVAR, k, BDDVAR, n, bool*, x)
+{
+    // TODO: remove LACE, no branching in this function
+    assert(k < n);
+    
+    bool skipped_k = false;
+    qddnode_t node;
+    if (QDD_PTR(qdd) == QDD_TERMINAL) {
+        skipped_k = true;
+    }
+    else {
+        node = QDD_GETNODE(QDD_PTR(qdd));
+        BDDVAR var = qddnode_getvar(node);
+        if(var > k) {
+            skipped_k = true;
+        }
+    }
+
+    QDD low, high;
+    if (skipped_k) {
+        // insert skipped node
+        low  = qdd_bundle_ptr_amp(QDD_PTR(qdd), C_ONE);
+        high = qdd_bundle_ptr_amp(QDD_PTR(qdd), C_ONE);
+    }
+    else {
+        // case var == k (var < k shouldn't happen)
+        low  = qddnode_getlow(node);
+        high = qddnode_gethigh(node);
+    }
+
+    // terminal case, apply phase depending on x[k] (control k on 0 or 1)
+    if (k == (n-1)) {
+        if (x[k] == 1) {
+            AMP new_amp = Cmul(QDD_AMP(high), Clookup(Cmake(-1.0, 0.0)));
+            high = qdd_bundle_ptr_amp(QDD_PTR(high), new_amp);
+        }
+        else {
+            AMP new_amp = Cmul(QDD_AMP(low), Clookup(Cmake(-1.0, 0.0)));
+            low = qdd_bundle_ptr_amp(QDD_PTR(low), new_amp);
+        }
+    }
+    // non terminal case, choose low/high depending on x[k] (control k on 0 or 1)
+    else {
+        if (x[k] == 1) {
+            k++; // next level
+            high = CALL(qdd_all_control_phase, high, k, n, x);
+            k--;
+        }
+        else {
+            k++;
+            low = CALL(qdd_all_control_phase, low, k, n, x);
+            k--;
+        }
+    }
+
+    QDD res = qdd_makenode(k, low, high);
+
+    // multiply by existing edge weight on qdd
+    AMP new_root_amp = Cmul(QDD_AMP(qdd), QDD_AMP(res));
+    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
+    return res;
+}
+
+
 QDD
 qdd_QFT(QDD qdd, int n)
 {
@@ -777,17 +842,17 @@ qdd_get_amplitude(QDD q, bool* basis_state)
 }
 
 QDD
-create_all_zero_state(int n)
+qdd_create_all_zero_state(int n)
 {
     assert(n >= 1);
 
     bool x[n];
     for(int k=0; k<n; k++) x[k] = 0;
-    return create_basis_state(n, x);
+    return qdd_create_basis_state(n, x);
 }
 
 QDD
-create_basis_state(int n, bool* x)
+qdd_create_basis_state(int n, bool* x)
 {
     assert(n >= 1);
 
