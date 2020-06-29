@@ -504,7 +504,7 @@ TASK_IMPL_4(QDD, qdd_cgate, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t)
         res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
 
         if (cachenow) {
-            if (cache_put3(CACHE_QDD_CGATE, GATE_OPID(gate, c, t), q, sylvan_false, res)) sylvan_stats_count(QDD_GATE_CACHEDPUT);
+            if (cache_put3(CACHE_QDD_CGATE, GATE_OPID(gate, c, t), q, sylvan_false, res)) sylvan_stats_count(QDD_CGATE_CACHEDPUT);
         }
         return res;
     }
@@ -895,11 +895,27 @@ _qdd_unnormed_prob(QDD qdd)
 {
     if (QDD_PTR(qdd) == QDD_TERMINAL) return _prob(QDD_AMP(qdd));
     
-    // TODO: caching + LACE
+
+    bool cachenow = 1;
+    if (cachenow) {
+        QDD res;
+        // check if this calculation has already been done before for this node/gate
+        if (cache_get3(CACHE_QDD_PROB, 0LL, qdd, 0LL, &res)) {
+            sylvan_stats_count(QDD_GATE_CACHED);
+            return res;
+        }
+    }
+    
+    // TODO: LACE
     qddnode_t node = QDD_GETNODE(QDD_PTR(qdd));
     double p_low   = _qdd_unnormed_prob(qddnode_getlow(node));
     double p_high  = _qdd_unnormed_prob(qddnode_gethigh(node)); 
     double res = (p_low + p_high) * _prob(QDD_AMP(qdd));
+
+    if (cachenow) {
+        if (cache_put3(CACHE_QDD_PROB, 0LL, qdd, 0LL, res)) sylvan_stats_count(QDD_PROB_CACHEDPUT);
+    }
+
     return res;
 }
 

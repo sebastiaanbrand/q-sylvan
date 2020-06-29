@@ -91,6 +91,7 @@ typedef enum {
     OPCOUNTER(QDD_PLUS),
     OPCOUNTER(QDD_GATE),
     OPCOUNTER(QDD_CGATE),
+    OPCOUNTER(QDD_PROB),
 
     /* Other counters */
     SYLVAN_GC_COUNT,
