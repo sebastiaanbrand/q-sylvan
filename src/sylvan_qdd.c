@@ -831,33 +831,78 @@ qdd_grover(BDDVAR n, bool* flag)
 }
 
 
-AMP
-qdd_sample(QDD q, BDDVAR vars, bool* str)
-{
-    if (q == sylvan_false) return 0;
-    if (sylvan_set_isempty(vars)) return 1;
-
-    AMP a = 1;
-    for (;;) {
-        mtbddnode_t n_vars = MTBDD_GETNODE(vars);
-
-        a = Cmul(QDD_AMP(q), a);
-        *str = (rand() & 0x2000) == 0;
-
-        if (q != QDD_ONE) {
-            qddnode_t qn = QDD_GETNODE(QDD_PTR(q));
-            if (qddnode_getvar(qn) == mtbddnode_getvariable(n_vars)) {
-                q = *str ? qddnode_gethigh(qn) : qddnode_getlow(qn);
-            }
+QDD
+qdd_measure_q0(QDD qdd, int *m, double *p)
+{  
+    // get probabilities for q0 = |0> and q0 = |1>
+    qddnode_t node;
+    bool skipped = false;
+    if (QDD_PTR(qdd) == QDD_TERMINAL) {
+        skipped = true;
+    }
+    else {
+        node = QDD_GETNODE(QDD_PTR(qdd));
+        if (qddnode_getvar(node) != 0) {
+            skipped = true;
         }
+    }
+    QDD low, high;
+    if (skipped) {
+        // if skipped q0 is a don't care, treat separately?
+        low  = qdd_bundle_ptr_amp(QDD_PTR(qdd), C_ONE);
+        high = qdd_bundle_ptr_amp(QDD_PTR(qdd), C_ONE);
+    }
+    else {
+        low  = qddnode_getlow(node);
+        high = qddnode_gethigh(node);
+    }
+    double prob_low  = _qdd_unnormed_prob(low);
+    double prob_high = _qdd_unnormed_prob(high);
+    double prob_root = _prob(QDD_AMP(qdd));
+    prob_low  *= prob_root; // printf("p low  = %.60f\n", prob_low);
+    prob_high *= prob_root; // printf("p high = %.60f\n", prob_high);
+    assert(abs(prob_low + prob_high - 1.0) < TOLERANCE);
 
-        vars = node_high(vars, n_vars);
-        if (sylvan_set_isempty(vars)) break;
-        str++;
+    // flip a coin
+    float rnd = ((float)rand())/RAND_MAX;
+    *m = (rnd < prob_low) ? 0 : 1;
+    *p = prob_low;
+
+    // produce post-measurement state
+    AMP norm, normalized;
+    if (*m == 0) {
+        high       = QDD_TERMINAL;
+        norm       = Clookup(Cmake(sqrt(prob_low), 0.0));
+        normalized = Cdiv(QDD_AMP(low), norm);
+        low        = qdd_bundle_ptr_amp(QDD_PTR(low), normalized);
+    }
+    else {
+        low        = QDD_TERMINAL;
+        norm       = Clookup(Cmake(sqrt(prob_high), 0.0));
+        normalized = Cdiv(QDD_AMP(high), norm);
+        high       = qdd_bundle_ptr_amp(QDD_PTR(high), normalized);
     }
 
-    return 1;
+    QDD res = qdd_makenode(0, low, high);
+    AMP new_root_amp = Cmul(QDD_AMP(qdd), QDD_AMP(res));
+    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
+    return res;
 }
+
+
+double
+_qdd_unnormed_prob(QDD qdd)
+{
+    if (QDD_PTR(qdd) == QDD_TERMINAL) return _prob(QDD_AMP(qdd));
+    
+    // TODO: caching + LACE
+    qddnode_t node = QDD_GETNODE(QDD_PTR(qdd));
+    double p_low   = _qdd_unnormed_prob(qddnode_getlow(node));
+    double p_high  = _qdd_unnormed_prob(qddnode_gethigh(node)); 
+    double res = (p_low + p_high) * _prob(QDD_AMP(qdd));
+    return res;
+}
+
 
 AMP
 qdd_get_amplitude(QDD q, bool* basis_state)
@@ -888,6 +933,7 @@ qdd_get_amplitude(QDD q, bool* basis_state)
 double
 _prob(AMP a) 
 {
+    // move to qdd_int file?
     complex_t c = Cvalue(a);
     double abs = sqrt( (c.r*c.r) + (c.i*c.i) );
     return (abs*abs);

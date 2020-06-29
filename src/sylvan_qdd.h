@@ -171,13 +171,19 @@ QDD qdd_QFT_dag(QDD qdd, int n);
 QDD qdd_grover(BDDVAR n, bool* flag);
 
 /**
- * Sample
- *
- * str will contain the state. The amplitude is returned.
- * str should be an array of length |vars|.
+ * Computational basis measurement on qubit q0.
+ * 
+ * @param qdd A QDD encoding of some n qubit state.
+ * @param m Return of measurement outcome (0 or 1)
+ * 
+ * @return QDD of post-measurement state corresponding to measurement outcome.
  */
-extern AMP qdd_sample(QDD bdd, BDDVAR vars, bool* str);
+QDD qdd_measure_q0(QDD qdd, int *m, double *p);
 
+/**
+ * (Recursive) helper function for obtaining probabilities for measurements
+ */
+double _qdd_unnormed_prob(QDD qdd);
 
 /**
  * Get amplitude of given basis state.

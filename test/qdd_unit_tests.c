@@ -685,6 +685,66 @@ int test_swap_gate()
     return 0;
 }
 
+int test_measurement()
+{
+    QDD q, qPM;
+    bool x3[] = {0,0,0};
+    int m;
+    int repeat = 10;
+    double prob;
+
+    LACE_ME;
+
+    for(int i=0; i < repeat; i++) {
+        // |000> 
+        x3[2]=0; x3[1]=0; x3[0]=0;
+        q   = qdd_create_basis_state(3, x3);
+        qPM = qdd_measure_q0(q, &m, &prob);
+        test_assert(m == 0);
+        test_assert(prob == 1.0);
+        test_assert(qdd_equivalent(q, qPM, 3, false, false));
+        test_assert(qdd_equivalent(q, qPM, 3, true, false));
+        test_assert(q == qPM);
+
+        // |010>
+        x3[2]=0; x3[1]=1; x3[0]=0;
+        q   = qdd_create_basis_state(3, x3);
+        qPM = qdd_measure_q0(q, &m, &prob);
+        test_assert(m == 0);
+        test_assert(prob == 1.0);
+        test_assert(qdd_equivalent(q, qPM, 3, false, false));
+        test_assert(qdd_equivalent(q, qPM, 3, true, false));
+        test_assert(q == qPM);
+
+        // |011>
+        x3[2]=0; x3[1]=1; x3[0]=1;
+        q   = qdd_create_basis_state(3, x3);
+        qPM = qdd_measure_q0(q, &m, &prob);
+        test_assert(m == 1);
+        test_assert(prob == 0.0);
+        test_assert(qdd_equivalent(q, qPM, 3, false, false));
+        test_assert(qdd_equivalent(q, qPM, 3, true, false));
+        test_assert(q == qPM);
+
+        // |00+>
+        x3[2]=0; x3[1]=0; x3[0]=0;
+        q   = qdd_create_basis_state(3, x3);
+        q   = qdd_gate(q, GATEID_H, 0);
+        qPM = qdd_measure_q0(q, &m, &prob);
+        test_assert(abs(prob - 0.5) < TOLERANCE);
+        x3[2]=0; x3[1]=0; x3[0]=m;
+        q = qdd_create_basis_state(3, x3);
+        test_assert(qdd_equivalent(q, qPM, 3, false, true));
+        test_assert(qdd_equivalent(q, qPM, 3, true, false));
+        test_assert(q == qPM);
+    }
+    
+    // TODO: more tests
+
+    if(VERBOSE) printf("qdd measurements:         ok\n");
+    return 0;
+}
+
 int test_QFT()
 {
     QDD q3, q5, qref3;
@@ -1174,6 +1234,7 @@ int runtests()
     if (test_cz_gate()) return 1;
     if (test_ccz_gate()) return 1;
     if (test_swap_gate()) return 1;
+    if (test_measurement()) return 1;
     if (test_QFT()) return 1;
     if (test_grover()) return 1;
     if (test_shor()) return 1;
