@@ -183,7 +183,8 @@ QDD qdd_measure_q0(QDD qdd, int *m, double *p);
 /**
  * (Recursive) helper function for obtaining probabilities for measurements
  */
-double _qdd_unnormed_prob(QDD qdd);
+#define _qdd_unnormed_prob(qdd) (CALL(_qdd_unnormed_prob, qdd));
+TASK_DECL_1(QDD, _qdd_unnormed_prob, QDD);
 
 /**
  * Get amplitude of given basis state.
