@@ -895,6 +895,57 @@ qdd_grover(BDDVAR n, bool* flag)
     return qdd;
 }
 
+/*******************************<Shor components>******************************/
+
+QDD 
+qdd_phi_add(QDD qdd, BDDVAR first, BDDVAR last, bool* a) 
+{
+    LACE_ME;
+
+    QDD res = qdd;
+
+    int k;
+    int num_qubits = (last - first) + 1;
+    BDDVAR qubit;
+    for (int i = 0; i < num_qubits; i++) {
+        qubit = first + i;
+        for (int j = i; j <= num_qubits; j++){
+            if (a[j] == 1) {
+                k = (j - i) + 1;
+                res = qdd_gate(res, GATEID_Rk(k), qubit);
+            }
+        }
+    }
+    return res;
+}
+
+QDD 
+qdd_phi_add_inv(QDD qdd, BDDVAR first, BDDVAR last, bool* a) 
+{
+    // These are all phase gates, so they'll all commute, so this is the exact
+    // same function als qdd_phi_add() but with inversed angles.
+    LACE_ME;
+
+    QDD res = qdd;
+
+    int k;
+    int num_qubits = (last - first) + 1;
+    BDDVAR qubit;
+    for (int i = 0; i < num_qubits; i++) {
+        qubit = first + i;
+        for (int j = i; j <= num_qubits; j++){
+            if (a[j] == 1) {
+                k = (j - i) + 1;
+                res = qdd_gate(res, GATEID_Rk_dag(k), qubit);
+            }
+        }
+    }
+    return res;
+}
+
+
+
+/******************************</Shor components>******************************/
 
 QDD
 qdd_measure_q0(QDD qdd, int *m, double *p)

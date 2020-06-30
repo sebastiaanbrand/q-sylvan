@@ -948,7 +948,29 @@ int test_grover()
 }
 
 int test_shor()
-{
+{   
+    QDD q, qref;
+    bool x3[] = {0,0,0};
+    bool as[] = {1,0,1};
+
+    LACE_ME;
+
+    // <Test qdd_phi_add>
+    // |+++> state
+    q = qdd_create_basis_state(3, x3);
+    q = qdd_gate(q, GATEID_H, 0);
+    q = qdd_gate(q, GATEID_H, 1);
+    q = qdd_gate(q, GATEID_H, 2);
+    qref = q;
+
+    q = qdd_phi_add(q, 0, 2, as);
+    q = qdd_phi_add_inv(q, 0, 2, as);
+    test_assert(qdd_equivalent(q, qref, 3, false, false));
+    test_assert(qdd_equivalent(q, qref, 3, true, false));
+    test_assert(q == qref);
+    // </Test qdd_phi_add>
+
+
 
     if(VERBOSE) printf("qdd Shor:                 TODO\n");
     return 0;

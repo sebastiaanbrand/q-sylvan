@@ -176,6 +176,17 @@ QDD qdd_QFT_inv(QDD qdd, BDDVAR first, BDDVAR last);
 QDD qdd_grover(BDDVAR n, bool* flag);
 
 /**
+ * The flollowing functions are a breakdown of the components needed for Shor
+ * as in Beauregard, "Circuit for Shor's algorithm using 2n+ 3 qubits." (2002).
+ */
+QDD qdd_phi_add(QDD qdd, BDDVAR first, BDDVAR last, bool* a);
+QDD qdd_phi_add_inv(QDD qdd, BDDVAR first, BDDVAR last, bool* a);
+QDD qdd_phi_add_mod();
+QDD qdd_cmult();
+QDD qdd_shor();
+
+
+/**
  * Computational basis measurement on qubit q0.
  * 
  * @param qdd A QDD encoding of some n qubit state.
