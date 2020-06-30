@@ -75,16 +75,18 @@ QDD_PTR(QDD q)
  *  For caching, we need to uniquely identify gates (and which qubit they are 
  *  applied on)
  *  Uses lowest 40 bits (and should not use more):
- *  [      24 bits blank     | 8 bit c | 8 bit t |     24 bits gateid     ]
+ *  [    24 bits blank   | 8 bit c | 8 bit t1 | 8 bit t2 |  16 bits gateid    ]
  *  Set control = 0 for single qubit gates
  *  (maybe put this elsewhere?)
  */
 static inline uint64_t
-GATE_OPID(uint32_t gateid, BDDVAR control, BDDVAR target)
+GATE_OPID(uint32_t gateid, BDDVAR c, BDDVAR t1, BDDVAR t2)
 {
-    uint64_t c = control;
-    uint64_t t = target;
-    uint64_t res = c<<32 | t<<24 | gateid;
+    // I don't remember why we're doing this with the inputs
+    uint64_t _c = c;
+    uint64_t _t1 = t1;
+    uint64_t _t2 = t2;
+    uint64_t res = _c<<32 | _t1<<24 | _t2<<16 | gateid;
     return res;
 }
 
@@ -397,7 +399,7 @@ TASK_IMPL_3(QDD, qdd_gate, QDD, q, uint32_t, gate, BDDVAR, qubit)
         if (cachenow) {
             QDD res;
             // check if this calculation has already been done before for this node/gate
-            if (cache_get3(CACHE_QDD_GATE, GATE_OPID(gate, 0, qubit), q, sylvan_false, &res)) {
+            if (cache_get3(CACHE_QDD_GATE, GATE_OPID(gate, 0, qubit, 0), q, sylvan_false, &res)) {
                 sylvan_stats_count(QDD_GATE_CACHED);
                 return res;
             }
@@ -415,7 +417,7 @@ TASK_IMPL_3(QDD, qdd_gate, QDD, q, uint32_t, gate, BDDVAR, qubit)
         res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
 
         if (cachenow) {
-            if (cache_put3(CACHE_QDD_GATE, GATE_OPID(gate, 0, qubit), q, sylvan_false, res)) sylvan_stats_count(QDD_GATE_CACHEDPUT);
+            if (cache_put3(CACHE_QDD_GATE, GATE_OPID(gate, 0, qubit, 0), q, sylvan_false, res)) sylvan_stats_count(QDD_GATE_CACHEDPUT);
         }
         return res;
     }
@@ -487,7 +489,7 @@ TASK_IMPL_4(QDD, qdd_cgate, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t)
         if (cachenow) {
             QDD res;
             // check if this calculation has already been done before for this node/gate
-            if (cache_get3(CACHE_QDD_CGATE, GATE_OPID(gate, c, t), q, sylvan_false, &res)) {
+            if (cache_get3(CACHE_QDD_CGATE, GATE_OPID(gate, c, t, 0), q, sylvan_false, &res)) {
                 sylvan_stats_count(QDD_CGATE_CACHED);
                 return res;
             }
@@ -504,7 +506,7 @@ TASK_IMPL_4(QDD, qdd_cgate, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t)
         res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
 
         if (cachenow) {
-            if (cache_put3(CACHE_QDD_CGATE, GATE_OPID(gate, c, t), q, sylvan_false, res)) sylvan_stats_count(QDD_CGATE_CACHEDPUT);
+            if (cache_put3(CACHE_QDD_CGATE, GATE_OPID(gate, c, t, 0), q, sylvan_false, res)) sylvan_stats_count(QDD_CGATE_CACHEDPUT);
         }
         return res;
     }
@@ -658,6 +660,15 @@ qdd_cswap_gate(QDD qdd, BDDVAR c, BDDVAR t1, BDDVAR t2)
     assert (c  < t1);
     assert (t1 < t2);
 
+    bool cachenow = 1; 
+    if (cachenow) {
+        QDD res;
+        if (cache_get3(CACHE_QDD_CGATE, GATE_OPID(GATEID_swap, c, t1, t2), qdd, 0, &res)) {
+            sylvan_stats_count(QDD_CGATE_CACHED);
+            return res;
+        }
+    }
+
     // similar to normal control gate, TODO: maybe generalize qdd_cgate?
     bool skipped = false;
     if (QDD_PTR(qdd) == QDD_TERMINAL) {
@@ -693,14 +704,18 @@ qdd_cswap_gate(QDD qdd, BDDVAR c, BDDVAR t1, BDDVAR t2)
         high = qdd_swap_gate(high, t1, t2);
     }
     else {
-        // recursive call to both children
+        // recursive call to both children // TODO: LACE
         low  = qdd_cswap_gate(low,  c, t1, t2);
         high = qdd_cswap_gate(high, c, t1, t2);
     }
-
-    // TODO: cache + LACE
-
     QDD res = qdd_makenode(var, low, high); 
+
+    if (cachenow) {
+        if (cache_put3(CACHE_QDD_CGATE, GATE_OPID(GATEID_swap, c, t1, t2), qdd, 0, res))
+            sylvan_stats_count(QDD_CGATE_CACHEDPUT);
+    }
+
+    
     AMP new_root_amp = Cmul(QDD_AMP(qdd), QDD_AMP(res));
     res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     return res;

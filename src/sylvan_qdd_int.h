@@ -25,7 +25,7 @@ cint C_ZERO; // TODO: don't hashed
 cint C_ONE; // TODO: don't hashed
 
 // GATE_ID's (gates are initialized in qdd_complex_init)
-// currently 24 bits available for this number (see GATE_OPID)
+// currently 16 bits available for this number (see GATE_OPID)
 static const uint32_t GATEID_I = 0;
 static const uint32_t GATEID_X = 1;
 static const uint32_t GATEID_Y = 2;
@@ -46,12 +46,13 @@ static inline uint32_t GATEID_Rk(int k) { return k + 8; };
 // (GATEIDs 264 through 519)
 static inline uint32_t GATEID_Rk_dag(int k){ return k + 264; };
 
+static const uint32_t GATEID_swap = 520; // only used as ID for caching 
 // 2x2 gates, k := GATEID_U 
 // gates[k][0] = u00 (top left)
 // gates[k][1] = u01 (top right)
 // gates[k][2] = u10 (bottom left)
 // gates[k][3] = u11 (bottom right)
-cint gates[520][4];
+cint gates[521][4]; // max 2^16 gates atm
 
 
 //uint32_t Ctentries;
