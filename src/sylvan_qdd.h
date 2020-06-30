@@ -139,7 +139,8 @@ QDD qdd_swap_gate(QDD qdd, BDDVAR qubit1, BDDVAR qubit2);
 /**
  * Applies a controlled swap gate, with the given control and targets.
  */
-QDD qdd_cswap_gate(QDD qdd, BDDVAR c, BDDVAR t1, BDDVAR t2);
+#define qdd_cswap_gate(qdd, c, t1, t2) (CALL(qdd_cswap_gate,qdd,c,t1,t2));
+TASK_DECL_4(QDD, qdd_cswap_gate, QDD, BDDVAR, BDDVAR, BDDVAR);
 
 /**
  * Applies a phase of -1 to a single basis state |x>.

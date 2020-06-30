@@ -654,8 +654,7 @@ qdd_swap_gate(QDD qdd, BDDVAR qubit1, BDDVAR qubit2)
     return res;
 }
 
-QDD
-qdd_cswap_gate(QDD qdd, BDDVAR c, BDDVAR t1, BDDVAR t2)
+TASK_IMPL_4(QDD, qdd_cswap_gate, QDD, qdd, BDDVAR, c, BDDVAR, t1, BDDVAR, t2)
 {
     assert (c  < t1);
     assert (t1 < t2);
@@ -704,17 +703,20 @@ qdd_cswap_gate(QDD qdd, BDDVAR c, BDDVAR t1, BDDVAR t2)
         high = qdd_swap_gate(high, t1, t2);
     }
     else {
-        // recursive call to both children // TODO: LACE
-        low  = qdd_cswap_gate(low,  c, t1, t2);
-        high = qdd_cswap_gate(high, c, t1, t2);
+        // recursive call to both children
+        bdd_refs_spawn(SPAWN(qdd_cswap_gate, high, c, t1, t2));
+        low = CALL(qdd_cswap_gate, low, c, t1, t2);
+        bdd_refs_push(low);
+        high = bdd_refs_sync(SYNC(qdd_cswap_gate));
+        bdd_refs_pop(1);
     }
+
     QDD res = qdd_makenode(var, low, high); 
 
     if (cachenow) {
         if (cache_put3(CACHE_QDD_CGATE, GATE_OPID(GATEID_swap, c, t1, t2), qdd, 0, res))
             sylvan_stats_count(QDD_CGATE_CACHEDPUT);
     }
-
     
     AMP new_root_amp = Cmul(QDD_AMP(qdd), QDD_AMP(res));
     res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
