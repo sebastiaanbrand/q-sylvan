@@ -754,7 +754,7 @@ int test_QFT()
     bool x3[] = {0,1,1}; // little endian (q0, q1, q2)
     q3 = qdd_create_basis_state(3, x3);
     qref3 = qdd_create_basis_state(3, x3);
-    q3 = qdd_QFT(q3, 3);
+    q3 = qdd_QFT(q3, 0, 2);
 
     // check approx equal against output from qiskit
     x3[2]=0; x3[1]=0; x3[0]=0; a = qdd_get_amplitude(q3, x3); test_assert(CapproxEqual(Cvalue(a),Cmake(3.5355339059327384e-01,-8.6595605623549353e-17)));
@@ -767,7 +767,7 @@ int test_QFT()
     x3[2]=1; x3[1]=1; x3[0]=1; a = qdd_get_amplitude(q3, x3); test_assert(CapproxEqual(Cvalue(a),Cmake(-2.5000000000000017e-01,-2.5000000000000000e-01)));
 
     // inverse QFT
-    q3 = qdd_QFT_dag(q3, 3);
+    q3 = qdd_QFT_inv(q3, 0, 2);
     test_assert(qdd_equivalent(q3, qref3, 3, false, false));
     test_assert(qdd_equivalent(q3, qref3, 3, true, false));
     test_assert(q3 == qref3);
@@ -776,7 +776,7 @@ int test_QFT()
     // 5 qubit QFT
     bool x5[] = {0,1,1,0,1};
     q5 = qdd_create_basis_state(5, x5);
-    q5 = qdd_QFT(q5, 5);
+    q5 = qdd_QFT(q5, 0, 4);
 
     // check approx equal against output from qiskit
     double thres = 1e-9;
@@ -816,7 +816,8 @@ int test_QFT()
     // inverse QFT
     //   the equality checks as done for the 3 qubit  case don't pass here
     //   (because of float/rounding imprecision?)
-    q5 = qdd_QFT_dag(q5, 5);
+    q5 = qdd_QFT_inv(q5, 0, 4);
+    
     /*
     x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); Cprint(Cvalue(a)); printf("\n"); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
     x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); Cprint(Cvalue(a)); printf("\n"); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));

@@ -718,69 +718,63 @@ TASK_IMPL_4(QDD, qdd_all_control_phase, QDD, qdd, BDDVAR, k, BDDVAR, n, bool*, x
 
 
 QDD
-qdd_QFT(QDD qdd, int n)
+qdd_QFT(QDD qdd, BDDVAR first, BDDVAR last)
 {
     LACE_ME;
 
     int k;
     QDD res = qdd;
-    BDDVAR c;
-    BDDVAR t;
-    for (c = 0; c < n; c++) {
+    BDDVAR a, b;
+    for (a = first; a <= last; a++) {
         
         // H gate on current qubit
-        res = qdd_gate(res, GATEID_H, c);
+        res = qdd_gate(res, GATEID_H, a);
 
         // Controlled phase gates on all qubits below
-        for (t = c+1; t < n; t++) {
-            k = (t - c) + 1;
-            res = qdd_cgate(res, GATEID_Rk(k), c, t);
+        for (b = a+1; b <= last; b++) {
+            k = (b - a) + 1;
+            res = qdd_cgate(res, GATEID_Rk(k), a, b);
         }
     }
 
     // swap qubit order
-    for (c = 0; c < (int)(n/2); c++) {
-        t = (n - 1) - c;
-        res = qdd_swap_gate(res, c, t);
+    int num_qubits = (last - first) + 1;
+    for (int j = 0; j < (int)(num_qubits/2); j++) {
+        a = first + j;
+        b = last  - j;
+        res = qdd_swap_gate(res, a, b);
     }
     return res;
 }
 
 QDD
-qdd_QFT_dag(QDD qdd, int n)
+qdd_QFT_inv(QDD qdd, BDDVAR first, BDDVAR last)
 {
-    //printf("QFT^dag on %d qubits\n", n);
     LACE_ME;
-
+    
     int k;
     QDD res = qdd;
-    BDDVAR c;
-    BDDVAR t;
+    BDDVAR a, b;
 
     // swap gates
-    for (c = 0; c < (int)(n/2); c++) {
-    //for (c = (int)(n/2); c-- > 0; ) {
-        t = (n - 1) - c;
-        res = qdd_swap_gate(res, c, t);
-        //printf("swap (%d, %d)\n", c, t);
+    int num_qubits = (last - first) + 1;
+    for (int j = 0; j < (int)(num_qubits/2); j++) {
+        a = first + j;
+        b = last  - j;
+        res = qdd_swap_gate(res, a, b);
     }
     
-    int counter = 0;
     // H gates and phase gates (but now backwards)
-    for (c = n; c-- > 0; ) { // weird for loop because BDDVARs are unsigned
+    for (a = last + 1; a-- > 0; ) { // weird for loop because BDDVARs are unsigned
 
         // Controlled phase gates (negative angles this time)
-        for (t = (n-1); t >= (c+1); t--){
-            k = (t - c) + 1;
-            res = qdd_cgate(res, GATEID_Rk_dag(k), c, t);
-            //printf("Rk(%d) (%d, %d)\n",k, c, t);
-
-            if(counter++ > 10) return res;
+        for (b = last; b >= (a+1); b--){
+            k = (b - a) + 1;
+            res = qdd_cgate(res, GATEID_Rk_dag(k), a, b);
         }
 
         // H on current qubit
-        res = qdd_gate(res, GATEID_H, c);
-        //printf("H on %d\n", c);
+        res = qdd_gate(res, GATEID_H, a);
     }
 
     return res;

@@ -152,14 +152,14 @@ QDD qdd_swap_gate(QDD qdd, BDDVAR qubit1, BDDVAR qubit2);
 TASK_DECL_4(QDD, qdd_all_control_phase, QDD, BDDVAR, BDDVAR, bool*);
 
 /**
- * Executes the Quantum Fourier Transform circuit on the first n qubits of qdd.
+ * Executes the QFT circuit on qubits `first` through `last`.
  */
-QDD qdd_QFT(QDD qdd, int n);
+QDD qdd_QFT(QDD qdd, BDDVAR first, BDDVAR last);
 
 /**
- * Executes the inverse QFT circuit on the first n qubits of qdd.
+ * Executes the inverse QFT circuit on qubits `first` through `last`.
  */
-QDD qdd_QFT_dag(QDD qdd, int n);
+QDD qdd_QFT_inv(QDD qdd, BDDVAR first, BDDVAR last);
 
 
 /**
