@@ -906,18 +906,16 @@ TASK_IMPL_1(QDD, _qdd_unnormed_prob, QDD, qdd)
         }
     }
     
-    // TODO: LACE
     qddnode_t node = QDD_GETNODE(QDD_PTR(qdd));
-    double p_low   = _qdd_unnormed_prob(qddnode_getlow(node));
-    double p_high  = _qdd_unnormed_prob(qddnode_gethigh(node)); 
-    double res = (p_low + p_high) * _prob(QDD_AMP(qdd));
-
+    double p_low, p_high, res;
 
     bdd_refs_spawn(SPAWN(_qdd_unnormed_prob, qddnode_gethigh(node)));
     p_low = CALL(_qdd_unnormed_prob, qddnode_getlow(node));
     bdd_refs_push(p_low); // Q: this is not a bdd/qdd node, do we need to protect this?
     p_high = bdd_refs_sync(SYNC(_qdd_unnormed_prob)); // syncs SPAWN
     bdd_refs_pop(1);
+
+    res = (p_low + p_high) * _prob(QDD_AMP(qdd));
 
     if (cachenow) {
         if (cache_put3(CACHE_QDD_PROB, 0LL, qdd, 0LL, res)) sylvan_stats_count(QDD_PROB_CACHEDPUT);
