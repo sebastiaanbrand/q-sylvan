@@ -652,6 +652,60 @@ qdd_swap_gate(QDD qdd, BDDVAR qubit1, BDDVAR qubit2)
     return res;
 }
 
+QDD
+qdd_cswap_gate(QDD qdd, BDDVAR c, BDDVAR t1, BDDVAR t2)
+{
+    assert (c  < t1);
+    assert (t1 < t2);
+
+    // similar to normal control gate, TODO: maybe generalize qdd_cgate?
+    bool skipped = false;
+    if (QDD_PTR(qdd) == QDD_TERMINAL) {
+        skipped = true;
+    }
+    else {
+        qddnode_t node = QDD_GETNODE(QDD_PTR(qdd));
+        if (qddnode_getvar(node) > c) {
+            skipped = true;
+        }
+    }
+
+    BDDVAR var;
+    QDD low, high;
+    bool control_here = false;
+    if (skipped) { // var > control
+        low  = qdd_bundle_ptr_amp(QDD_PTR(qdd), C_ONE);
+        high = qdd_bundle_ptr_amp(QDD_PTR(qdd), C_ONE);
+        var  = c;
+        control_here = true;
+    }
+    else {
+        // not skipped, either (var == control) or (var < control)
+        qddnode_t node = QDD_GETNODE(QDD_PTR(qdd));
+        var  = qddnode_getvar(node);
+        low  = qddnode_getlow(node);
+        high = qddnode_gethigh(node);
+        if (var == c) control_here = true;
+    }
+
+    if (control_here) {
+        // apply swap to high, but not to low
+        high = qdd_swap_gate(high, t1, t2);
+    }
+    else {
+        // recursive call to both children
+        low  = qdd_cswap_gate(low,  c, t1, t2);
+        high = qdd_cswap_gate(high, c, t1, t2);
+    }
+
+    // TODO: cache + LACE
+
+    QDD res = qdd_makenode(var, low, high); 
+    AMP new_root_amp = Cmul(QDD_AMP(qdd), QDD_AMP(res));
+    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
+    return res;
+}
+
 
 TASK_IMPL_4(QDD, qdd_all_control_phase, QDD, qdd, BDDVAR, k, BDDVAR, n, bool*, x)
 {
