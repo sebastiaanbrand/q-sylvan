@@ -158,13 +158,17 @@ TASK_DECL_4(QDD, qdd_all_control_phase, QDD, BDDVAR, BDDVAR, bool*);
 
 /**
  * Executes the QFT circuit on qubits `first` through `last`.
+ * 
+ * @param swap Yes or no swapping of qubit order.
  */
-QDD qdd_QFT(QDD qdd, BDDVAR first, BDDVAR last);
+QDD qdd_QFT(QDD qdd, BDDVAR first, BDDVAR last, bool swap);
 
 /**
  * Executes the inverse QFT circuit on qubits `first` through `last`.
+ * 
+ * @param swap Yes or no swapping of qubit order.
  */
-QDD qdd_QFT_inv(QDD qdd, BDDVAR first, BDDVAR last);
+QDD qdd_QFT_inv(QDD qdd, BDDVAR first, BDDVAR last, bool swap);
 
 
 /**

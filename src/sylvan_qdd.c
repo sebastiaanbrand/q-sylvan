@@ -789,7 +789,7 @@ TASK_IMPL_4(QDD, qdd_all_control_phase, QDD, qdd, BDDVAR, k, BDDVAR, n, bool*, x
 
 
 QDD
-qdd_QFT(QDD qdd, BDDVAR first, BDDVAR last)
+qdd_QFT(QDD qdd, BDDVAR first, BDDVAR last, bool swap)
 {
     LACE_ME;
 
@@ -809,17 +809,19 @@ qdd_QFT(QDD qdd, BDDVAR first, BDDVAR last)
     }
 
     // swap qubit order
-    int num_qubits = (last - first) + 1;
-    for (int j = 0; j < (int)(num_qubits/2); j++) {
-        a = first + j;
-        b = last  - j;
-        res = qdd_swap_gate(res, a, b);
+    if (swap) {
+        int num_qubits = (last - first) + 1;
+        for (int j = 0; j < (int)(num_qubits/2); j++) {
+            a = first + j;
+            b = last  - j;
+            res = qdd_swap_gate(res, a, b);
+        }
     }
     return res;
 }
 
 QDD
-qdd_QFT_inv(QDD qdd, BDDVAR first, BDDVAR last)
+qdd_QFT_inv(QDD qdd, BDDVAR first, BDDVAR last, bool swap)
 {
     LACE_ME;
     
@@ -828,11 +830,13 @@ qdd_QFT_inv(QDD qdd, BDDVAR first, BDDVAR last)
     BDDVAR a, b;
 
     // swap gates
-    int num_qubits = (last - first) + 1;
-    for (int j = 0; j < (int)(num_qubits/2); j++) {
-        a = first + j;
-        b = last  - j;
-        res = qdd_swap_gate(res, a, b);
+    if (swap) {
+        int num_qubits = (last - first) + 1;
+        for (int j = 0; j < (int)(num_qubits/2); j++) {
+            a = first + j;
+            b = last  - j;
+            res = qdd_swap_gate(res, a, b);
+        }
     }
     
     // H gates and phase gates (but now backwards)
