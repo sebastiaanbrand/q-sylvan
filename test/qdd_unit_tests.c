@@ -952,22 +952,71 @@ int test_shor()
     QDD q, qref;
     bool x3[] = {0,0,0};
     bool as[] = {1,0,1};
+    AMP a;
 
     LACE_ME;
 
     // <Test qdd_phi_add>
-    // |+++> state
+    // Test inversion
     q = qdd_create_basis_state(3, x3);
     q = qdd_gate(q, GATEID_H, 0);
     q = qdd_gate(q, GATEID_H, 1);
     q = qdd_gate(q, GATEID_H, 2);
     qref = q;
-
     q = qdd_phi_add(q, 0, 2, as);
     q = qdd_phi_add_inv(q, 0, 2, as);
     test_assert(qdd_equivalent(q, qref, 3, false, false));
     test_assert(qdd_equivalent(q, qref, 3, true, false));
     test_assert(q == qref);
+
+    // Test addition in Fourier space (be mindful about endianness here!)
+    // 2 + 1 (no carry)
+    x3[0] = 0; x3[1] = 1; x3[2] = 0;   // x = 010 = 2
+    as[0] = 0; as[1] = 0; as[2] = 1;   // a = 001 = 1
+    q = qdd_create_basis_state(3, x3); // create state |x>
+    q = qdd_QFT(q, 0, 2, false);       // QFT|x> = |phi(x)>
+    q = qdd_phi_add(q, 0, 2, as);      // addition in Fourier space gives |phi(x+a)>
+    q = qdd_QFT_inv(q, 0, 2, false);   // expected out = |x+a> = |3> = |011>
+    x3[0]=0; x3[1]=0; x3[2]=0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
+    x3[0]=0; x3[1]=0; x3[2]=1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
+    x3[0]=0; x3[1]=1; x3[2]=0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
+    x3[0]=0; x3[1]=1; x3[2]=1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ONE);
+    x3[0]=1; x3[1]=0; x3[2]=0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
+    x3[0]=1; x3[1]=0; x3[2]=1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
+    x3[0]=1; x3[1]=1; x3[2]=0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
+    x3[0]=1; x3[1]=1; x3[2]=1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
+
+    // 2 + 2 (carry, should go the the left)
+    x3[0] = 0; x3[1] = 1; x3[2] = 0;   // x = 010
+    as[0] = 0; as[1] = 1; as[2] = 0;   // a = 010
+    q = qdd_create_basis_state(3, x3); // create state |x>
+    q = qdd_QFT(q, 0, 2, false);       // QFT|x> = |phi(x)>
+    q = qdd_phi_add(q, 0, 2, as);      // addition in Fourier space gives |phi(x+a)>
+    q = qdd_QFT_inv(q, 0, 2, false);   // expected out = |x+a> = |4> = |100>
+    x3[0]=0; x3[1]=0; x3[2]=0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
+    x3[0]=0; x3[1]=0; x3[2]=1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
+    x3[0]=0; x3[1]=1; x3[2]=0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
+    x3[0]=0; x3[1]=1; x3[2]=1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
+    x3[0]=1; x3[1]=0; x3[2]=0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ONE);
+    x3[0]=1; x3[1]=0; x3[2]=1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
+    x3[0]=1; x3[1]=1; x3[2]=0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
+    x3[0]=1; x3[1]=1; x3[2]=1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
+
+    // 2 + 3 (carry, should go the the left)
+    x3[0] = 0; x3[1] = 1; x3[2] = 0;   // x = 010
+    as[0] = 0; as[1] = 1; as[2] = 1;   // a = 011
+    q = qdd_create_basis_state(3, x3); // create state |x>
+    q = qdd_QFT(q, 0, 2, false);       // QFT|x> = |phi(x)>
+    q = qdd_phi_add(q, 0, 2, as);      // addition in Fourier space gives |phi(x+a)>
+    q = qdd_QFT_inv(q, 0, 2, false);   // expected out = |x+a> = |5> = |101>
+    x3[0]=0; x3[1]=0; x3[2]=0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
+    x3[0]=0; x3[1]=0; x3[2]=1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
+    x3[0]=0; x3[1]=1; x3[2]=0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
+    x3[0]=0; x3[1]=1; x3[2]=1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
+    x3[0]=1; x3[1]=0; x3[2]=0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
+    x3[0]=1; x3[1]=0; x3[2]=1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ONE);
+    x3[0]=1; x3[1]=1; x3[2]=0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
+    x3[0]=1; x3[1]=1; x3[2]=1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     // </Test qdd_phi_add>
 
 

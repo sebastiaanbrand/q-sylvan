@@ -183,6 +183,20 @@ QDD qdd_grover(BDDVAR n, bool* flag);
  * The flollowing functions are a breakdown of the components needed for Shor
  * as in Beauregard, "Circuit for Shor's algorithm using 2n+ 3 qubits." (2002).
  */
+/**
+ * Addition in Fourier space. Important to here note is the endianess (which I 
+ * often struggel with to get the right way around). If |x> is a basis state
+ * written like |q0, q1, q2>, and a is a bit-vector a[0], a[1], a[1], both are/ 
+ * should be encoded with the MSB in the q0/a[0] position. That way, if we index
+ * x/a "forwards" we have the "normal" binary representation of an integer.
+ * Carries happen from q(k) -> q(k-1) (so e.g. from q1 to q0), so if we write
+ * the state as |q0, q1, q2> carries go to the left (as normal).
+ * 
+ * @param qdd A QDD encoding a state |phi(x)> = QFT|x> with |x> a z-basis state.
+ * @param a A big-endian (MSB first) encoding of some integer.
+ * 
+ * Returns A QDD encoding |phi(x + a)>, with (x+a) encoded in |q0, q1, q2, ..>
+ */
 QDD qdd_phi_add(QDD qdd, BDDVAR first, BDDVAR last, bool* a);
 QDD qdd_phi_add_inv(QDD qdd, BDDVAR first, BDDVAR last, bool* a);
 QDD qdd_phi_add_mod();
