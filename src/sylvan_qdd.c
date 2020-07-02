@@ -72,24 +72,29 @@ QDD_PTR(QDD q)
 }
 
 /**
- *  For caching, we need to uniquely identify gates (and which qubit they are 
- *  applied on)
- *  Uses lowest 40 bits (and should not use more):
- *  [    24 bits blank   | 8 bit c | 8 bit t1 | 8 bit t2 |  16 bits gateid    ]
- *  Set control = 0 for single qubit gates
- *  (maybe put this elsewhere?)
+ *  24 bit gateid, 2 possible qubit parameters (e.g. control/target)
  */
 static inline uint64_t
-GATE_OPID(uint32_t gateid, BDDVAR c, BDDVAR t1, BDDVAR t2)
+GATE_OPID_40(uint32_t gateid, BDDVAR a, BDDVAR b)
 {
-    // I don't remember why we're doing this with the inputs
-    uint64_t _c = c;
-    uint64_t _t1 = t1;
-    uint64_t _t2 = t2;
-    uint64_t res = _c<<32 | _t1<<24 | _t2<<16 | gateid;
+    uint64_t res = ((uint64_t)b)<<32 | ((uint64_t)a)<<24 | gateid;
     return res;
 }
 
+/**
+ * 24 bits gateid, 5 possible qubit parameters (e.g. target/control/range)
+ */
+static inline uint64_t
+GATE_OPID_64(uint32_t gateid, BDDVAR a, BDDVAR b, BDDVAR c, BDDVAR d, BDDVAR e)
+{
+    uint64_t res = ((uint64_t)e)<<56 | 
+                   ((uint64_t)d)<<48 | 
+                   ((uint64_t)c)<<40 | 
+                   ((uint64_t)b)<<32 | 
+                   ((uint64_t)a)<<24 | 
+                   gateid;
+    return res;
+}
 
 /**
  * Gets the variable number of a given node `n`.
@@ -399,7 +404,7 @@ TASK_IMPL_3(QDD, qdd_gate, QDD, q, uint32_t, gate, BDDVAR, qubit)
         if (cachenow) {
             QDD res;
             // check if this calculation has already been done before for this node/gate
-            if (cache_get3(CACHE_QDD_GATE, GATE_OPID(gate, 0, qubit, 0), q, sylvan_false, &res)) {
+            if (cache_get3(CACHE_QDD_GATE, GATE_OPID_40(gate, qubit, 0), q, sylvan_false, &res)) {
                 sylvan_stats_count(QDD_GATE_CACHED);
                 return res;
             }
@@ -417,7 +422,7 @@ TASK_IMPL_3(QDD, qdd_gate, QDD, q, uint32_t, gate, BDDVAR, qubit)
         res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
 
         if (cachenow) {
-            if (cache_put3(CACHE_QDD_GATE, GATE_OPID(gate, 0, qubit, 0), q, sylvan_false, res)) sylvan_stats_count(QDD_GATE_CACHEDPUT);
+            if (cache_put3(CACHE_QDD_GATE, GATE_OPID_40(gate, qubit, 0), q, sylvan_false, res)) sylvan_stats_count(QDD_GATE_CACHEDPUT);
         }
         return res;
     }
@@ -489,7 +494,7 @@ TASK_IMPL_4(QDD, qdd_cgate, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t)
         if (cachenow) {
             QDD res;
             // check if this calculation has already been done before for this node/gate
-            if (cache_get3(CACHE_QDD_CGATE, GATE_OPID(gate, c, t, 0), q, sylvan_false, &res)) {
+            if (cache_get3(CACHE_QDD_CGATE, GATE_OPID_40(gate, c, t), q, sylvan_false, &res)) {
                 sylvan_stats_count(QDD_CGATE_CACHED);
                 return res;
             }
@@ -506,7 +511,7 @@ TASK_IMPL_4(QDD, qdd_cgate, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t)
         res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
 
         if (cachenow) {
-            if (cache_put3(CACHE_QDD_CGATE, GATE_OPID(gate, c, t, 0), q, sylvan_false, res)) sylvan_stats_count(QDD_CGATE_CACHEDPUT);
+            if (cache_put3(CACHE_QDD_CGATE, GATE_OPID_40(gate, c, t), q, sylvan_false, res)) sylvan_stats_count(QDD_CGATE_CACHEDPUT);
         }
         return res;
     }
@@ -662,7 +667,7 @@ TASK_IMPL_4(QDD, qdd_cswap_gate, QDD, qdd, BDDVAR, c, BDDVAR, t1, BDDVAR, t2)
     bool cachenow = 1; 
     if (cachenow) {
         QDD res;
-        if (cache_get3(CACHE_QDD_CGATE, GATE_OPID(GATEID_swap, c, t1, t2), qdd, 0, &res)) {
+        if (cache_get3(CACHE_QDD_CGATE, sylvan_false, qdd, GATE_OPID_64(GATEID_swap, c, t1, t2, 0, 0), &res)) {
             sylvan_stats_count(QDD_CGATE_CACHED);
             return res;
         }
@@ -714,7 +719,7 @@ TASK_IMPL_4(QDD, qdd_cswap_gate, QDD, qdd, BDDVAR, c, BDDVAR, t1, BDDVAR, t2)
     QDD res = qdd_makenode(var, low, high); 
 
     if (cachenow) {
-        if (cache_put3(CACHE_QDD_CGATE, GATE_OPID(GATEID_swap, c, t1, t2), qdd, 0, res))
+        if (cache_put3(CACHE_QDD_CGATE, sylvan_false, qdd, GATE_OPID_64(GATEID_swap, c, t1, t2, 0, 0), res))
             sylvan_stats_count(QDD_CGATE_CACHEDPUT);
     }
     

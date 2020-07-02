@@ -184,6 +184,7 @@ QDD qdd_grover(BDDVAR n, bool* flag);
  * as in Beauregard, "Circuit for Shor's algorithm using 2n+ 3 qubits." (2002).
  */
 /**
+ * Implements circuit in Fig. 3.
  * Addition in Fourier space. Important here to note is the endianess (which I 
  * often struggel with to get the right way around). If |x> is a basis state
  * written like |q0, q1, q2>, and a is a bit-vector a[0], a[1], a[1], both are/ 
