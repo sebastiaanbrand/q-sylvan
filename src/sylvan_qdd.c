@@ -860,6 +860,9 @@ qdd_QFT_inv(QDD qdd, BDDVAR first, BDDVAR last, bool swap)
     return res;
 }
 
+
+/***********************************<Grover>***********************************/
+
 QDD 
 _qdd_grover_iteration(QDD qdd, BDDVAR n, bool* flag)
 {
@@ -903,6 +906,9 @@ qdd_grover(BDDVAR n, bool* flag)
 
     return qdd;
 }
+
+/***********************************</Grover>**********************************/
+
 
 /*******************************<Shor components>******************************/
 
@@ -952,9 +958,8 @@ qdd_phi_add_inv(QDD qdd, BDDVAR first, BDDVAR last, bool* a)
     return res;
 }
 
-
-
 /******************************</Shor components>******************************/
+
 
 QDD
 qdd_measure_q0(QDD qdd, int *m, double *p)
@@ -1085,52 +1090,40 @@ _prob(AMP a)
     return (abs*abs);
 }
 
-QDD
-qdd_create_all_zero_state(int n)
-{
-    assert(n >= 1);
 
+/***************************<Initial state creation>***************************/
+
+QDD
+qdd_create_all_zero_state(BDDVAR n)
+{
     bool x[n];
     for(int k=0; k<n; k++) x[k] = 0;
     return qdd_create_basis_state(n, x);
 }
 
 QDD
-qdd_create_basis_state(int n, bool* x)
+qdd_create_basis_state(BDDVAR n, bool* x)
 {
-    assert(n >= 1);
-
-    struct qddnode node;
-    PTR low_child, high_child;
-    AMP low_amp, high_amp;
-
     // start at terminal, and build backwards
-    PTR prev = QDD_TERMINAL;
-    for(int k = n-1; k >=0; k--){
+    QDD low, high, prev = QDD_TERMINAL;
 
+    for(int k = n-1; k >=0; k--){
         if(x[k] == 0){
-            low_child  = prev;
-            low_amp    = C_ONE;
-            high_child = QDD_TERMINAL;
-            high_amp   = C_ZERO;
+            low = qdd_bundle_ptr_amp(QDD_PTR(prev), C_ONE);
+            high = qdd_bundle_ptr_amp(QDD_TERMINAL, C_ZERO);
         }
         else if(x[k] == 1){
-            low_child  = QDD_TERMINAL;
-            low_amp    = C_ZERO;
-            high_child = prev;
-            high_amp   = C_ONE;
+            low = qdd_bundle_ptr_amp(QDD_TERMINAL, C_ZERO);
+            high = qdd_bundle_ptr_amp(QDD_PTR(prev), C_ONE);
         }
-
-        // pack info into node (TODO: rename this function)
-        qddnode_make(&node, k, low_child, high_child, low_amp, high_amp);
-
-        // actually make the node (i.e. add to nodetable)
-        prev = QDD_PTR(qdd_makenode(k, node.low, node.high));
+        // add node to unique table
+        prev = qdd_makenode(k, low, high);
     }
-
-    QDD root_edge = qdd_bundle_ptr_amp(prev, C_ONE);
-    return root_edge;
+    return prev;
 }
+
+/**************************</Initial state creation>***************************/
+
 
 bool
 qdd_equivalent(QDD a, QDD b, int n, bool exact, bool verbose)

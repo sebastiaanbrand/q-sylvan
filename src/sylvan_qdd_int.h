@@ -25,7 +25,7 @@ cint C_ZERO; // TODO: don't hashed
 cint C_ONE; // TODO: don't hashed
 
 // GATE_ID's (gates are initialized in qdd_complex_init)
-// currently 16 bits available for this number (see GATE_OPID)
+// currently 24 bits available for this number (see GATE_OPID)
 static const uint32_t GATEID_I = 0;
 static const uint32_t GATEID_X = 1;
 static const uint32_t GATEID_Y = 2;

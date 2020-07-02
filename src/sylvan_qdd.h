@@ -240,7 +240,7 @@ double _prob(AMP a);
  * 
  * @return A QDD encoding the n-qubit state |00..0>.
  */
-extern QDD qdd_create_all_zero_state(int n);
+extern QDD qdd_create_all_zero_state(BDDVAR n);
 
 /**
  * Creates a QDD for an n-qubit state |x>.
@@ -250,7 +250,7 @@ extern QDD qdd_create_all_zero_state(int n);
  * 
  * @return A QDD encoding of the n-qubit state |x>.
  */
-extern QDD qdd_create_basis_state(int n, bool* x);
+extern QDD qdd_create_basis_state(BDDVAR n, bool* x);
 
 
 /**
