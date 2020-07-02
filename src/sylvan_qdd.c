@@ -34,6 +34,8 @@
 // - sylvan_qdd_int.c
 // consistent with for example the equivalent mtbdd files.
 
+
+/****************< (bit level) manipulation of QDD / qddnode_t >***************/
 /**
  * QDD node structure (128 bits)
  * 
@@ -161,7 +163,6 @@ qddnode_getamphigh(qddnode_t n)
     return (AMP) QDD_AMP(n->high);
 }
 
-
 /**
  * Gets the value of the "marked" flag.
  */
@@ -182,32 +183,6 @@ qddnode_setmark(qddnode_t n, bool mark)
 }
 
 /**
- * Pretty prints the information contained in `n`.
- */
-static void qddnode_pprint(qddnode_t n)
-{
-    AMP amp_low  = qddnode_getamplow(n);
-    AMP amp_high = qddnode_getamphigh(n);
-    printf("[var=%d, low=%lx, high=%lx, ", 
-             qddnode_getvar(n),
-             qddnode_getptrlow(n),
-             qddnode_getptrhigh(n));
-    if(amp_low == C_ZERO)      printf("a=C_ZERO, ");
-    else if(amp_low == C_ONE)  printf("a=C_ONE, ");
-    else {
-        printf("a=%lx, ",amp_low);
-        printf("("); Cprint(Cvalue(amp_high)); printf(")");
-    }                      
-    if(amp_high == C_ZERO)     printf("b=C_ZERO ");
-    else if(amp_high == C_ONE) printf("b=C_ONE, ");
-    else {                     
-        printf("b=%lx", amp_high);
-        printf("("); Cprint(Cvalue(amp_high)); printf(")");
-    }
-    printf("]\n");
-}
-
-/**
  * Gets the node `p` is pointing to.
  * TODO (?) return special node for when p == QDD_TERMINAL
  */
@@ -217,7 +192,9 @@ QDD_GETNODE(PTR p)
     return (qddnode_t) llmsset_index_to_ptr(nodes, p);
 }
 
-
+/**
+ * Packs a PTR and AMP into a single 64 bit QDD.
+ */
 static inline QDD
 qdd_bundle_ptr_amp(PTR p, AMP a)
 {
@@ -255,6 +232,8 @@ qddnode_make(qddnode_t n, BDDVAR var, PTR low, PTR high, AMP a, AMP b)
     n->high = qdd_bundle_high(var, high, b);
 }
 
+
+/***************</ (bit level) manipulation of QDD / qddnode_t >***************/
 
 
 static PTR
@@ -364,102 +343,72 @@ qdd_countnodes(QDD qdd)
 }
 
 
-TASK_IMPL_3(QDD, qdd_gate, QDD, q, uint32_t, gate, BDDVAR, qubit)
+TASK_IMPL_3(QDD, qdd_gate, QDD, q, uint32_t, gate, BDDVAR, target)
 {
-    if(QDD_PTR(q) == QDD_TERMINAL){
-        // Should do the same as 'passed qubit' (i.e. consider terminal as 
-        // a node with very high var)
-        // (TODO: maybe handle this in QDD_GETNODE)
-        PTR l, h;
-        AMP a, b;
-        l = QDD_PTR(q);
-        h = QDD_PTR(q);
-        a = C_ONE;
-        b = C_ONE;
-
-        AMP a_u00 = Cmul(a, gates[gate][0]);
-        AMP a_u10 = Cmul(a, gates[gate][2]);
-        AMP b_u01 = Cmul(b, gates[gate][1]);
-        AMP b_u11 = Cmul(b, gates[gate][3]);
-
-        QDD qdd1 = qdd_makenode(qubit, qdd_bundle_ptr_amp(l, a_u00), 
-                                       qdd_bundle_ptr_amp(l, a_u10));
-        QDD qdd2 = qdd_makenode(qubit, qdd_bundle_ptr_amp(h, b_u01),
-                                       qdd_bundle_ptr_amp(h, b_u11));
-        
-        QDD sum = qdd_plus(qdd1, qdd2);
-        AMP new_root_amp = Cmul(QDD_AMP(q), QDD_AMP(sum));
-        QDD res = qdd_bundle_ptr_amp(QDD_PTR(sum), new_root_amp);
-        return res;
+    // Check cache
+    QDD res;
+    bool cachenow = 1;
+    if (cachenow) {
+        if (cache_get3(CACHE_QDD_GATE, GATE_OPID_40(gate, target, 0), q, sylvan_false, &res)) {
+            sylvan_stats_count(QDD_GATE_CACHED);
+            return res;
+        }
     }
-    
-    // get node info
-    qddnode_t node = QDD_GETNODE(QDD_PTR(q));
-    BDDVAR var = qddnode_getvar(node);
-    
-    // "above" the desired qubit in the QDD
-    if(var < qubit){
 
-        bool cachenow = 1;
-        if (cachenow) {
-            QDD res;
-            // check if this calculation has already been done before for this node/gate
-            if (cache_get3(CACHE_QDD_GATE, GATE_OPID_40(gate, qubit, 0), q, sylvan_false, &res)) {
-                sylvan_stats_count(QDD_GATE_CACHED);
-                return res;
-            }
-        }
-        
-        QDD res_low, res_high;
-        bdd_refs_spawn(SPAWN(qdd_gate, node->high, gate, qubit));
-        res_low = CALL(qdd_gate, node->low, gate, qubit);
-        bdd_refs_push(res_low);
-        res_high = bdd_refs_sync(SYNC(qdd_gate));
-        bdd_refs_pop(1);
-
-        QDD res  = qdd_makenode(var, res_low, res_high);
-        AMP new_root_amp = Cmul(QDD_AMP(q), QDD_AMP(res));
-        res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
-
-        if (cachenow) {
-            if (cache_put3(CACHE_QDD_GATE, GATE_OPID_40(gate, qubit, 0), q, sylvan_false, res)) sylvan_stats_count(QDD_GATE_CACHEDPUT);
-        }
-        return res;
+    // TODO: make has_skipped(BDDVAR target) function
+    bool skipped = false;
+    bool at_targ = false;
+    BDDVAR var;
+    if(QDD_PTR(q) == QDD_TERMINAL) {
+        skipped = true;
     }
     else {
-        PTR l, h;
-        AMP a, b;
-        // exactly at qubit
-        if(var == qubit){
-            l = qddnode_getptrlow(node);
-            h = qddnode_getptrhigh(node);
-            a = qddnode_getamplow(node);
-            b = qddnode_getamphigh(node);
-        }
-        // passed qubit (node with var == qubit was a don't-care)
-        else {
-            l = QDD_PTR(q);
-            h = QDD_PTR(q);
-            a = C_ONE;
-            b = C_ONE;
-        }
-
-        AMP a_u00 = Cmul(a, gates[gate][0]);
-        AMP a_u10 = Cmul(a, gates[gate][2]);
-        AMP b_u01 = Cmul(b, gates[gate][1]);
-        AMP b_u11 = Cmul(b, gates[gate][3]);
-
-        QDD qdd1 = qdd_makenode(qubit, qdd_bundle_ptr_amp(l, a_u00), 
-                                       qdd_bundle_ptr_amp(l, a_u10));
-        QDD qdd2 = qdd_makenode(qubit, qdd_bundle_ptr_amp(h, b_u01),
-                                       qdd_bundle_ptr_amp(h, b_u11));
-        QDD sum = qdd_plus(qdd1, qdd2);
-
-        // multiply root amp of sum with input root amp
-        AMP new_root_amp = Cmul(QDD_AMP(q), QDD_AMP(sum));
-        QDD res = qdd_bundle_ptr_amp(QDD_PTR(sum), new_root_amp);
-        return res;
+        qddnode_t node = QDD_GETNODE(QDD_PTR(q));
+        var = qddnode_getvar(node);
+        if (var >  target) skipped = true;
+        if (var == target) at_targ = true;
     }
+
+    QDD low, high;
+    if (skipped) {
+        low  = qdd_bundle_ptr_amp(QDD_PTR(q), C_ONE);
+        high = qdd_bundle_ptr_amp(QDD_PTR(q), C_ONE);
+        var  = target;
+    }
+    else {
+        qddnode_t node = QDD_GETNODE(QDD_PTR(q));
+        low  = qddnode_getlow(node);
+        high = qddnode_gethigh(node);
+    }
+
+    if (skipped || at_targ) { // apply gate here
+        AMP a_u00 = Cmul(QDD_AMP(low), gates[gate][0]);
+        AMP a_u10 = Cmul(QDD_AMP(low), gates[gate][2]);
+        AMP b_u01 = Cmul(QDD_AMP(high), gates[gate][1]);
+        AMP b_u11 = Cmul(QDD_AMP(high), gates[gate][3]);
+        QDD qdd1 = qdd_makenode(target, qdd_bundle_ptr_amp(QDD_PTR(low), a_u00), 
+                                        qdd_bundle_ptr_amp(QDD_PTR(low), a_u10));
+        QDD qdd2 = qdd_makenode(target, qdd_bundle_ptr_amp(QDD_PTR(high),b_u01),
+                                        qdd_bundle_ptr_amp(QDD_PTR(high),b_u11));
+        res = qdd_plus(qdd1, qdd2);
+    }
+    else { // not at target qubit yet, recursive calls down
+        bdd_refs_spawn(SPAWN(qdd_gate, high, gate, target));
+        low = CALL(qdd_gate, low, gate, target);
+        bdd_refs_push(low);
+        high = bdd_refs_sync(SYNC(qdd_gate));
+        bdd_refs_pop(1);
+        res  = qdd_makenode(var, low, high);
+    }
+
+    // multiply root amp of sum with input root amp
+    AMP new_root_amp = Cmul(QDD_AMP(q), QDD_AMP(res));
+    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
+    if (cachenow) {
+        if (cache_put3(CACHE_QDD_GATE, GATE_OPID_40(gate, target, 0), q, sylvan_false, res)) 
+            sylvan_stats_count(QDD_GATE_CACHEDPUT);
+    }
+    return res;
 }
 
 TASK_IMPL_4(QDD, qdd_cgate, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t)
@@ -1186,6 +1135,36 @@ _print_bitstring(bool *x, int n)
     for(int k=n-1; k>=0; k--) printf("%d", x[k]);
 }
 
+
+
+/**************************<printing & file writing>***************************/
+
+/**
+ * Pretty prints the information contained in `n`.
+ */
+static void qddnode_pprint(qddnode_t n)
+{
+    AMP amp_low  = qddnode_getamplow(n);
+    AMP amp_high = qddnode_getamphigh(n);
+    printf("[var=%d, low=%lx, high=%lx, ", 
+             qddnode_getvar(n),
+             qddnode_getptrlow(n),
+             qddnode_getptrhigh(n));
+    if(amp_low == C_ZERO)      printf("a=C_ZERO, ");
+    else if(amp_low == C_ONE)  printf("a=C_ONE, ");
+    else {
+        printf("a=%lx, ",amp_low);
+        printf("("); Cprint(Cvalue(amp_high)); printf(")");
+    }                      
+    if(amp_high == C_ZERO)     printf("b=C_ZERO ");
+    else if(amp_high == C_ONE) printf("b=C_ONE, ");
+    else {                     
+        printf("b=%lx", amp_high);
+        printf("("); Cprint(Cvalue(amp_high)); printf(")");
+    }
+    printf("]\n");
+}
+
 void
 _print_qdd(QDD q)
 {
@@ -1210,7 +1189,6 @@ qdd_printnodes(QDD q)
     _print_qdd(q);
     qdd_unmark_rec(q);
 }
-
 
 static void
 qdd_fprintdot_label(FILE *out, AMP a)
@@ -1280,4 +1258,4 @@ qdd_fprintdot(FILE *out, QDD qdd)
     fprintf(out, "}\n");
 }
 
-
+/**************************</printing & file writing>**************************/
