@@ -343,6 +343,89 @@ qdd_countnodes(QDD qdd)
 }
 
 
+/************************<applying gates implementation>***********************/
+
+TASK_IMPL_2(QDD, qdd_plus, QDD, a, QDD, b)
+{
+    // Trivial cases
+    if(QDD_AMP(a) == C_ZERO) return b;
+    if(QDD_AMP(b) == C_ZERO) return a;
+
+    // Check cache
+    QDD res;
+    bool cachenow = 1;
+    if (cachenow) {
+        if (cache_get3(CACHE_QDD_PLUS, sylvan_false, a, b, &res)) {
+            sylvan_stats_count(QDD_PLUS_CACHED);
+            return res;
+        }
+    }
+
+    // Get var(a) and var(b)
+    QDD low_a, low_b, high_a, high_b;
+    BDDVAR var_a = UINT32_MAX, var_b = UINT32_MAX, topvar;
+    if (QDD_PTR(a) != QDD_TERMINAL) {
+        qddnode_t node = QDD_GETNODE(QDD_PTR(a));
+        var_a  = qddnode_getvar(node);
+    }
+    if (QDD_PTR(b) != QDD_TERMINAL) {
+        qddnode_t node = QDD_GETNODE(QDD_PTR(b));
+        var_b  = qddnode_getvar(node);
+    }
+
+    // Check which is topvar, insert node for QDD with skipped case
+    low_a  = qdd_bundle_ptr_amp(QDD_PTR(a), C_ONE);
+    high_a = qdd_bundle_ptr_amp(QDD_PTR(a), C_ONE);
+    low_b  = qdd_bundle_ptr_amp(QDD_PTR(b), C_ONE);
+    high_b = qdd_bundle_ptr_amp(QDD_PTR(b), C_ONE);
+    if (var_a <= var_b) { // didn't skip in QDD a
+        qddnode_t node = QDD_GETNODE(QDD_PTR(a));
+        low_a  = qddnode_getlow(node);
+        high_a = qddnode_gethigh(node);
+        topvar = var_a;
+    }
+    if (var_b <= var_a) { // didn't skip in QDD b
+        qddnode_t node = QDD_GETNODE(QDD_PTR(b));
+        low_b  = qddnode_getlow(node);
+        high_b = qddnode_gethigh(node);
+        topvar = var_b;
+    }
+
+    // Base/terminal case: same target and same variable
+    if(QDD_PTR(a) == QDD_PTR(b) && var_a == var_b){
+        AMP sum = Cadd(QDD_AMP(a), QDD_AMP(b));
+        res = qdd_bundle_ptr_amp(QDD_PTR(a), sum);
+        return res;
+    }
+
+    // If not base/terminal case, pass edge weight of current edge down
+    AMP amp_la, amp_ha, amp_lb, amp_hb;
+    amp_la = Cmul(QDD_AMP(a), QDD_AMP(low_a));
+    amp_ha = Cmul(QDD_AMP(a), QDD_AMP(high_a));
+    amp_lb = Cmul(QDD_AMP(b), QDD_AMP(low_b));
+    amp_hb = Cmul(QDD_AMP(b), QDD_AMP(high_b));
+    low_a  = qdd_bundle_ptr_amp(QDD_PTR(low_a),  amp_la);
+    high_a = qdd_bundle_ptr_amp(QDD_PTR(high_a), amp_ha);
+    low_b  = qdd_bundle_ptr_amp(QDD_PTR(low_b),  amp_lb);
+    high_b = qdd_bundle_ptr_amp(QDD_PTR(high_b), amp_hb);
+
+    // Recursive calls down
+    QDD low, high;
+    bdd_refs_spawn(SPAWN(qdd_plus, high_a, high_b));
+    low = CALL(qdd_plus, low_a, low_b);
+    bdd_refs_push(low);
+    high = bdd_refs_sync(SYNC(qdd_plus));
+    bdd_refs_pop(1);
+
+    // Put in cache, return
+    res = qdd_makenode(topvar, low, high);
+    if (cachenow) {
+        if (cache_put3(CACHE_QDD_PLUS, sylvan_false, a, b, res)) 
+            sylvan_stats_count(QDD_PLUS_CACHEDPUT);
+    }
+    return res;
+}
+
 TASK_IMPL_3(QDD, qdd_gate, QDD, q, uint32_t, gate, BDDVAR, target)
 {
     // Check cache
@@ -401,7 +484,7 @@ TASK_IMPL_3(QDD, qdd_gate, QDD, q, uint32_t, gate, BDDVAR, target)
         res  = qdd_makenode(var, low, high);
     }
 
-    // multiply root amp of sum with input root amp, check cache, return
+    // Multiply root amp of sum with input root amp, add to cache, return
     AMP new_root_amp = Cmul(QDD_AMP(q), QDD_AMP(res));
     res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     if (cachenow) {
@@ -463,7 +546,7 @@ TASK_IMPL_4(QDD, qdd_cgate, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t)
     }
     res  = qdd_makenode(var, low, high);
 
-    // multiply root amp of sum with input root amp, check cache, return
+    // Multiply root amp of sum with input root amp, add to cache, return
     AMP new_root_amp = Cmul(QDD_AMP(q), QDD_AMP(res));
     res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     if (cachenow) {
@@ -473,105 +556,7 @@ TASK_IMPL_4(QDD, qdd_cgate, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t)
     return res;
 }
 
-TASK_IMPL_2(QDD, qdd_plus, QDD, a, QDD, b)
-{
-    AMP amp_a = QDD_AMP(a);
-    AMP amp_b = QDD_AMP(b);
-    
-    // Optimization base/terminal cases
-    // (are not required for this function to function correctly,
-    // but can save work)
-    if(amp_a == C_ZERO) return b;
-    if(amp_b == C_ZERO) return a;
-
-    // Get info from node (unless terminal)
-    BDDVAR var_a, var_b;
-    QDD a_low, a_high;
-    QDD b_low, b_high;
-    if(QDD_PTR(a) == QDD_TERMINAL){
-        var_a = 9000; // TODO: do this slightly cleaner
-    }
-    else{
-        qddnode_t node_a = QDD_GETNODE(QDD_PTR(a));
-        var_a  = qddnode_getvar(node_a);
-        a_low  = qddnode_getlow(node_a);
-        a_high = qddnode_gethigh(node_a);
-        // Pass edge weight of current edge down to low/high
-        AMP new_amp_low  = Cmul(amp_a, QDD_AMP(a_low));
-        AMP new_amp_high = Cmul(amp_a, QDD_AMP(a_high));
-        a_low  = qdd_bundle_ptr_amp(QDD_PTR(a_low),  new_amp_low);
-        a_high = qdd_bundle_ptr_amp(QDD_PTR(a_high), new_amp_high);
-    }
-    if(QDD_PTR(b) == QDD_TERMINAL){
-        var_b = 9000; // TODO: do this slightly cleaner
-    }
-    else{
-        qddnode_t node_b = QDD_GETNODE(QDD_PTR(b));
-        var_b  = qddnode_getvar(node_b);
-        b_low  = qddnode_getlow(node_b);
-        b_high = qddnode_gethigh(node_b);
-        // Pass edge weight of current edge down to low/high
-        AMP new_amp_low  = Cmul(amp_b, QDD_AMP(b_low));
-        AMP new_amp_high = Cmul(amp_b, QDD_AMP(b_high));
-        b_low  = qdd_bundle_ptr_amp(QDD_PTR(b_low),  new_amp_low);
-        b_high = qdd_bundle_ptr_amp(QDD_PTR(b_high), new_amp_high);
-    }
-
-
-    // Base/terminal case: same target and same variable
-    if(QDD_PTR(a) == QDD_PTR(b) && var_a == var_b){
-        AMP sum = Cadd(amp_a, amp_b);
-        QDD res = qdd_bundle_ptr_amp(QDD_PTR(a), sum);
-        return res;
-    }
-
-
-
-    sylvan_stats_count(QDD_PLUS);
-
-    bool cachenow = 1;
-    if (cachenow) {
-        QDD res;
-        if (cache_get3(CACHE_QDD_PLUS, sylvan_false, a, b, &res)) {
-            //printf("\nlooked something up instead of recomputing for PLUS\n\n");
-            sylvan_stats_count(QDD_PLUS_CACHED);
-            return res;
-        }
-    }
-    
-    // Recursive case
-    // If var_a != var_b, the higher one "skips" the lower variable and 
-    // is effectively a don't-care for that lower variable. In this case
-    // we (effectively) "reinsert" this don't-care.
-    BDDVAR level = var_a;
-    if(var_a > var_b){
-        a_low  = a;
-        a_high = a;
-        level  = var_b;
-    }
-    else if(var_a < var_b){
-        b_low  = b;
-        b_high = b;
-        level  = var_a;
-    }
-
-    QDD res_low, res_high;
-
-    bdd_refs_spawn(SPAWN(qdd_plus, a_high, b_high));
-    res_low = CALL(qdd_plus, a_low, b_low);
-    bdd_refs_push(res_low);
-    res_high = bdd_refs_sync(SYNC(qdd_plus));
-    bdd_refs_pop(1);
-
-
-    QDD res = qdd_makenode(level, res_low, res_high);
-
-    if (cachenow) {
-        if (cache_put3(CACHE_QDD_PLUS, sylvan_false, a, b, res)) sylvan_stats_count(QDD_PLUS_CACHEDPUT);
-    }
-
-    return res;
-}
+/***********************</applying gates implementation>***********************/
 
 QDD
 qdd_swap_gate(QDD qdd, BDDVAR qubit1, BDDVAR qubit2)
@@ -1031,7 +1016,7 @@ QDD
 qdd_create_all_zero_state(BDDVAR n)
 {
     bool x[n];
-    for(int k=0; k<n; k++) x[k] = 0;
+    for(BDDVAR k=0; k<n; k++) x[k] = 0;
     return qdd_create_basis_state(n, x);
 }
 
