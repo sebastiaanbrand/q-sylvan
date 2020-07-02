@@ -125,7 +125,7 @@ static const AMP        NIL = 0;
 #define qdd_plus(a,b) (CALL(qdd_plus,a,b));
 TASK_DECL_2(QDD, qdd_plus, QDD, QDD);
 
-#define qdd_gate(q,gate,qubit) (CALL(qdd_gate,q,gate,qubit));
+#define qdd_gate(q,gate,target) (CALL(qdd_gate,q,gate,target));
 TASK_DECL_3(QDD, qdd_gate, QDD, uint32_t, BDDVAR);
 
 #define qdd_cgate(q,gate,c,t) (CALL(qdd_cgate,q,gate,c,t));
