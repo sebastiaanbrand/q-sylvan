@@ -89,6 +89,9 @@ cint Cdiv(cint,cint);
 
 void init_amplitude_table(int logsize);
 void free_amplitude_table();
+void init_new_empty_table();
+void delete_old_table();
+cint move_from_old_to_new(cint);
 
 
 #endif

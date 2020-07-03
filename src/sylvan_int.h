@@ -108,6 +108,7 @@ static const uint64_t CACHE_QDD_PLUS                = (57LL<<40);
 static const uint64_t CACHE_QDD_GATE                = (58LL<<40);
 static const uint64_t CACHE_QDD_CGATE               = (59LL<<40);
 static const uint64_t CACHE_QDD_PROB                = (60LL<<40);
+static const uint64_t CACHE_QDD_CLEAN_AMP_TABLE     = (61LL<<40);
 
 #ifdef __cplusplus
 }

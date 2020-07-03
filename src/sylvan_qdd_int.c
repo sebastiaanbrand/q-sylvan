@@ -29,7 +29,10 @@ Note use of cosl and sinl for long double computation
 static long double Pi;    // set value of global Pi
 
 
+int      LOGSIZE;
 cmap_t * ctable;
+cmap_t * ctable_old;
+
 
 
 // return complex conjugate
@@ -121,6 +124,14 @@ Cvalue (cint i)
 {
     complex_t * res;
     res = cmap_get(ctable, i);
+    return *res;
+}
+
+complex_t
+Cvalue_old (cint i)
+{
+    complex_t * res;
+    res = cmap_get(ctable_old, i);
     return *res;
 }
 
@@ -374,6 +385,7 @@ CUnit (cint a)
 void
 init_amplitude_table(int logsize)
 {
+    LOGSIZE = logsize;
     ctable = cmap_create(logsize);
 
     
@@ -456,4 +468,28 @@ void
 free_amplitude_table()
 {
     cmap_free(ctable);
+}
+
+void
+init_new_empty_table()
+{
+    // point old to current (full) ctable
+    ctable_old = ctable;
+
+    // re-init new (empty) ctable
+    init_amplitude_table(LOGSIZE);
+}
+
+void
+delete_old_table()
+{
+    // delete  old (full) table
+    cmap_free(ctable_old);
+}
+
+cint
+move_from_old_to_new(cint a)
+{
+    complex_t c = Cvalue_old(a);
+    return Clookup(c);
 }

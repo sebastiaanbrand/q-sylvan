@@ -272,6 +272,13 @@ extern bool qdd_equivalent(QDD a, QDD b, int n, bool exact, bool verbose);
 // counts the nodes by recursively marking them (and unmarks when done)
 extern uint64_t qdd_countnodes(QDD qdd);
 
+void clean_amplitude_table(QDD qdds[], int number);
+/**
+ * Recursive function for moving amps from old to new amp table.
+ */
+#define _fill_new_amp_table(qdd) (CALL(_fill_new_amp_table, qdd));
+TASK_DECL_1(QDD, _fill_new_amp_table, QDD);
+
 /**
  * Write a .dot representation of a given QDD
  */

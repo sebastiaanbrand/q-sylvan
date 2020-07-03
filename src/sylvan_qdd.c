@@ -343,6 +343,69 @@ qdd_countnodes(QDD qdd)
 }
 
 
+/**************************<cleaning amplitude table>**************************/
+
+void
+clean_amplitude_table(QDD qdds[], int number)
+{
+    LACE_ME;
+    // 1. Create new amp table
+    init_new_empty_table();
+
+    // 2. Fill new table with amps present in given QDDs
+    for (int i = 0; i < number; i++) qdds[i] = _fill_new_amp_table(qdds[i]);
+
+    // 3. Delete old amp table
+    delete_old_table();
+
+    // 4. Any cache we migh have is now invalid because the same amplitudes 
+    //    might now have different indices in the amp table
+    cache_clear();
+}
+
+TASK_IMPL_1(QDD, _fill_new_amp_table, QDD, qdd)
+{
+    // Check cache
+    QDD res;
+    bool cachenow = 1;
+    if (cachenow) {
+        if (cache_get3(CACHE_QDD_CLEAN_AMP_TABLE, 0LL, qdd, 0LL, &res)) {
+            return res;
+        }
+    }
+
+    // Move amp from old to new table, get new index
+    AMP new_amp = move_from_old_to_new(QDD_AMP(qdd));
+    qdd = qdd_bundle_ptr_amp(QDD_PTR(qdd), new_amp);
+
+    // If terminal, return
+    if (QDD_PTR(qdd) == QDD_TERMINAL) return qdd;
+    
+    // Recursive for children  // TODO: caching
+    QDD low, high;
+    qddnode_t n = QDD_GETNODE(QDD_PTR(qdd));
+    bdd_refs_spawn(SPAWN(_fill_new_amp_table, qddnode_gethigh(n)));
+    low = CALL(_fill_new_amp_table, qddnode_getlow(n));
+    bdd_refs_push(low);
+    high = bdd_refs_sync(SYNC(_fill_new_amp_table));
+    bdd_refs_pop(1);
+
+    // We don't need to use the 'qdd_makenode()' function which normalizes the 
+    // amplitudes, because the QDD doesn't actually change, only the AMP indices,
+    // but none of the actual values.
+    PTR ptr = _qdd_makenode(qddnode_getvar(n), QDD_PTR(low), QDD_PTR(high), 
+                                               QDD_AMP(low), QDD_AMP(high));
+
+    // Put in cache, return
+    res = qdd_bundle_ptr_amp(ptr, new_amp);
+    if (cachenow) cache_put3(CACHE_QDD_CLEAN_AMP_TABLE, 0LL, qdd, 0LL, res);
+    return res;
+}
+
+/*************************</cleaning amplitude table>**************************/
+
+
+
 /************************<applying gates implementation>***********************/
 
 TASK_IMPL_2(QDD, qdd_plus, QDD, a, QDD, b)
