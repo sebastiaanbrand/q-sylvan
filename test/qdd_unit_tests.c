@@ -755,11 +755,12 @@ int test_measurement()
 
     LACE_ME;
 
+    // kets labeld as |q2, q1, q0>
     for(int i=0; i < repeat; i++) {
         // |000> 
         x3[2]=0; x3[1]=0; x3[0]=0;
         q   = qdd_create_basis_state(3, x3);
-        qPM = qdd_measure_q0(q, &m, &prob);
+        qPM = qdd_measure_qubit(q, 0, &m, &prob);
         test_assert(m == 0);
         test_assert(prob == 1.0);
         test_assert(qdd_equivalent(q, qPM, 3, false, false));
@@ -769,7 +770,7 @@ int test_measurement()
         // |010>
         x3[2]=0; x3[1]=1; x3[0]=0;
         q   = qdd_create_basis_state(3, x3);
-        qPM = qdd_measure_q0(q, &m, &prob);
+        qPM = qdd_measure_qubit(q, 0, &m, &prob);
         test_assert(m == 0);
         test_assert(prob == 1.0);
         test_assert(qdd_equivalent(q, qPM, 3, false, false));
@@ -779,7 +780,7 @@ int test_measurement()
         // |011>
         x3[2]=0; x3[1]=1; x3[0]=1;
         q   = qdd_create_basis_state(3, x3);
-        qPM = qdd_measure_q0(q, &m, &prob);
+        qPM = qdd_measure_qubit(q, 0, &m, &prob);
         test_assert(m == 1);
         test_assert(prob == 0.0);
         test_assert(qdd_equivalent(q, qPM, 3, false, false));
@@ -790,9 +791,33 @@ int test_measurement()
         x3[2]=0; x3[1]=0; x3[0]=0;
         q   = qdd_create_basis_state(3, x3);
         q   = qdd_gate(q, GATEID_H, 0);
-        qPM = qdd_measure_q0(q, &m, &prob);
+        qPM = qdd_measure_qubit(q, 0, &m, &prob);
         test_assert(abs(prob - 0.5) < TOLERANCE);
-        x3[2]=0; x3[1]=0; x3[0]=m;
+        x3[2]=0; x3[1]=0; x3[0]=m; // either |001> or |001> depending on m
+        q = qdd_create_basis_state(3, x3); 
+        test_assert(qdd_equivalent(q, qPM, 3, false, true));
+        test_assert(qdd_equivalent(q, qPM, 3, true, false));
+        test_assert(q == qPM);
+
+        // |0+0>
+        x3[2]=0; x3[1]=0; x3[0]=0;
+        q   = qdd_create_basis_state(3, x3);
+        q   = qdd_gate(q, GATEID_H, 1);
+        qPM = qdd_measure_qubit(q, 1, &m, &prob);
+        test_assert(abs(prob - 0.5) < TOLERANCE);
+        x3[2]=0; x3[1]=m; x3[0]=0; // either |000> or |010> depending on m
+        q = qdd_create_basis_state(3, x3);
+        test_assert(qdd_equivalent(q, qPM, 3, false, true));
+        test_assert(qdd_equivalent(q, qPM, 3, true, false));
+        test_assert(q == qPM);
+
+        // |+00>
+        x3[2]=0; x3[1]=0; x3[0]=0;
+        q   = qdd_create_basis_state(3, x3);
+        q   = qdd_gate(q, GATEID_H, 2);
+        qPM = qdd_measure_qubit(q, 2, &m, &prob);
+        test_assert(abs(prob - 0.5) < TOLERANCE);
+        x3[2]=m; x3[1]=0; x3[0]=0; // either |000> or |100> depending on m
         q = qdd_create_basis_state(3, x3);
         test_assert(qdd_equivalent(q, qPM, 3, false, true));
         test_assert(qdd_equivalent(q, qPM, 3, true, false));
@@ -1165,6 +1190,15 @@ int test_20qubit_circuit()
     q = qdd_cgate(q, GATEID_Z, 5, 15);      q = qdd_cgate(q, GATEID_X, 0, 15);      q = qdd_cgate(q, GATEID_X, 1, 6);       q = qdd_cgate(q, GATEID_X, 8, 16);
     q = qdd_cgate(q, GATEID_X, 5, 19);      q = qdd_cgate(q, GATEID_Z, 3, 18);      q = qdd_cgate(q, GATEID_X, 5, 8);       q = qdd_cgate(q, GATEID_Z, 14, 18);
     node_count = qdd_countnodes(q);
+
+    // test clean amp table
+    QDD qdds[2];
+    qdds[0] = q; qdds[1] = qref;
+    printf("before clean: %lx\n", q);
+    clean_amplitude_table(qdds, 2);
+    q = qdds[0]; qref = qdds[1];
+    printf("after clean:  %lx\n", q); 
+
     // inverse
     q = qdd_cgate(q, GATEID_Z, 14, 18);     q = qdd_cgate(q, GATEID_X, 5, 8);       q = qdd_cgate(q, GATEID_Z, 3, 18);      q = qdd_cgate(q, GATEID_X, 5, 19);
     q = qdd_cgate(q, GATEID_X, 8, 16);      q = qdd_cgate(q, GATEID_X, 1, 6);       q = qdd_cgate(q, GATEID_X, 0, 15);      q = qdd_cgate(q, GATEID_Z, 5, 15);

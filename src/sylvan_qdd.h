@@ -206,14 +206,16 @@ QDD qdd_shor();
 
 
 /**
- * Computational basis measurement on qubit q0.
+ * Computational basis measurement on qubit q_k.
  * 
  * @param qdd A QDD encoding of some n qubit state.
- * @param m Return of measurement outcome (0 or 1)
+ * @param k Which qubit to measure.
+ * @param m Return of measurement outcome (0 or 1).
+ * @param p Return of measurement probability.
  * 
  * @return QDD of post-measurement state corresponding to measurement outcome.
  */
-QDD qdd_measure_q0(QDD qdd, int *m, double *p);
+QDD qdd_measure_qubit(QDD qqd, BDDVAR k, int *m, double *p);
 
 /**
  * (Recursive) helper function for obtaining probabilities for measurements

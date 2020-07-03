@@ -381,7 +381,7 @@ TASK_IMPL_1(QDD, _fill_new_amp_table, QDD, qdd)
     // If terminal, return
     if (QDD_PTR(qdd) == QDD_TERMINAL) return qdd;
     
-    // Recursive for children  // TODO: caching
+    // Recursive for children
     QDD low, high;
     qddnode_t n = QDD_GETNODE(QDD_PTR(qdd));
     bdd_refs_spawn(SPAWN(_fill_new_amp_table, qddnode_gethigh(n)));
@@ -943,6 +943,9 @@ qdd_phi_add_inv(QDD qdd, BDDVAR first, BDDVAR last, bool* a)
 /******************************</Shor components>******************************/
 
 
+
+/***********************<measurements and probabilities>***********************/
+
 QDD
 qdd_measure_q0(QDD qdd, int *m, double *p)
 {  
@@ -1003,6 +1006,15 @@ qdd_measure_q0(QDD qdd, int *m, double *p)
     return res;
 }
 
+QDD
+qdd_measure_qubit(QDD qdd, BDDVAR k, int *m, double *p)
+{
+    if (k == 0) return qdd_measure_q0(qdd, m, p);
+    qdd = qdd_swap_gate(qdd, 0, k);
+    qdd = qdd_measure_q0(qdd, m, p);
+    qdd = qdd_swap_gate(qdd, 0, k);
+    return qdd;
+}
 
 TASK_IMPL_1(QDD, _qdd_unnormed_prob, QDD, qdd)
 {
@@ -1035,7 +1047,6 @@ TASK_IMPL_1(QDD, _qdd_unnormed_prob, QDD, qdd)
 
     return res;
 }
-
 
 AMP
 qdd_get_amplitude(QDD q, bool* basis_state)
@@ -1071,6 +1082,9 @@ _prob(AMP a)
     double abs = sqrt( (c.r*c.r) + (c.i*c.i) );
     return (abs*abs);
 }
+
+/***********************<measurements and probabilities>***********************/
+
 
 
 /***************************<Initial state creation>***************************/
