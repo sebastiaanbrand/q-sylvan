@@ -185,7 +185,7 @@ int bench_grover(int num_qubits)
 int runbench()
 {
     //if (bench_25qubit_circuit()) return 1;
-    if (bench_grover(9)) return 1;
+    if (bench_grover(10)) return 1;
 
     return 0;
 }
@@ -206,7 +206,7 @@ int main()
     // rely on bdd stuff (like cache)
     sylvan_init_bdd();
     // TODO: make sylvan_init_qdd() function and handle stuff there
-    init_amplitude_table(19);
+    init_amplitude_table(20);
 
     int res = runbench();
 

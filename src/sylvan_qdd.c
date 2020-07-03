@@ -40,14 +40,13 @@
  * QDD node structure (128 bits)
  * 
  * 64 bits low:
- *       4 bits: lower 4 bits of 8 bit variable/qubit number of this node
- *       1 bit:  marked/unmarked flag
- *      19 bits: index of edge weight of low edge in Ctable (AMP)
+ *       4 bits: lower 4 bits of 7 bit variable/qubit number of this node
+ *      20 bits: index of edge weight of low edge in Ctable (AMP)
  *      40 bits: low edge pointer to next node (PTR)
  * 64 bits high:
- *       4 bits: upper 4 bits of 8 bit variable/qubit number of this node
- *       1 bit:  (unused)
- *      19 bits: index of edge weight of high edge in Ctable (AMP)
+ *       1 bit:  marked/unmarked flag (TODO: use first bit of PTR for this? (reserved for sylvan_invalid))
+ *       3 bits: upper 3 bits of 7 bit variable/qubit number of this node
+ *      20 bits: index of edge weight of high edge in Ctable (AMP)
  *      40 bits: high edge pointer to next node (PTR)
  */
 typedef struct __attribute__((packed)) qddnode {
@@ -61,7 +60,7 @@ typedef struct __attribute__((packed)) qddnode {
 static inline AMP
 QDD_AMP(QDD q)
 {
-    return (q & 0x07ffff0000000000) >> 40; // 19 bits
+    return (q & 0x0fffff0000000000) >> 40; // 20 bits
 }
 
 /**
@@ -104,7 +103,7 @@ GATE_OPID_64(uint32_t gateid, BDDVAR a, BDDVAR b, BDDVAR c, BDDVAR d, BDDVAR e)
 static inline BDDVAR
 qddnode_getvar(qddnode_t n)
 {
-    return (BDDVAR) ( (n->low >> 60) | ((n->high >> 56) & 0xf0) ); // 8 bits
+    return (BDDVAR) ( (n->low >> 60) | ((n->high >> 56) & 0x70) ); // 7 bits
 }
 
 /**
@@ -114,7 +113,7 @@ qddnode_getvar(qddnode_t n)
 static inline QDD
 qddnode_getlow(qddnode_t n)
 {
-    return (QDD) n->low & 0x07ffffffffffffff; // 59 bits
+    return (QDD) n->low & 0x0fffffffffffffff; // 60 bits
 }
 
 /**
@@ -124,7 +123,7 @@ qddnode_getlow(qddnode_t n)
 static inline QDD
 qddnode_gethigh(qddnode_t n)
 {
-    return (QDD) n->high & 0x07ffffffffffffff; // 59 bits
+    return (QDD) n->high & 0x0fffffffffffffff; // 60 bits
 }
 
 /**
@@ -169,7 +168,7 @@ qddnode_getamphigh(qddnode_t n)
 static inline bool
 qddnode_getmark(qddnode_t n)
 {
-    return n->low & 0x0800000000000000 ? 1 : 0;
+    return n->high & 0x8000000000000000 ? 1 : 0;
 }
 
 /**
@@ -178,8 +177,8 @@ qddnode_getmark(qddnode_t n)
 static inline void
 qddnode_setmark(qddnode_t n, bool mark)
 {
-    if (mark) n->low |= 0x0800000000000000; // set 5th bit from left to 1
-    else n->low &= 0xf7ffffffffffffff;      // set 5th bit from left to 0
+    if (mark) n->high |= 0x8000000000000000; // set 1th bit from left to 1
+    else      n->high &= 0x7fffffffffffffff; // set 1th bit from left to 0
 }
 
 /**
@@ -199,7 +198,7 @@ static inline QDD
 qdd_bundle_ptr_amp(PTR p, AMP a)
 {
     assert (p <= 0x000000fffffffffe);   // avoid clash with sylvan_invalid
-    assert (a <= 0x000000000007ffff);
+    assert (a <= 0x00000000000fffff);
     return (a << 40 | p);
 }
 
@@ -208,7 +207,7 @@ static inline QDD
 qdd_bundle_low(BDDVAR var, PTR p, AMP a)
 {
     // on the low edge we store the bottom 4 bits of the 8 bit var
-    assert (var <= 0xff);
+    assert (var <= 0x7f);
     QDD q = qdd_bundle_ptr_amp(p, a);
     q = ((uint64_t)var << 60) | q;
     return q;
@@ -219,9 +218,9 @@ static inline QDD
 qdd_bundle_high(BDDVAR var, PTR p, AMP a)
 {
     // on the high edge we store the top 4 bits of the 8 bit var
-    assert (var <= 0xff);
+    assert (var <= 0x7f);
     QDD q = qdd_bundle_ptr_amp(p, a);
-    return (((uint64_t)var & 0xf0) << 56) | q;
+    return (((uint64_t)var & 0x70) << 56) | q;
 }
 
 

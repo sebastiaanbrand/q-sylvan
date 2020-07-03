@@ -1279,7 +1279,7 @@ int main()
     // rely on bdd stuff (like cache)
     sylvan_init_bdd();
     // TODO: make sylvan_init_qdd() function and handle stuff there
-    init_amplitude_table(19);
+    init_amplitude_table(20);
 
     int res = runtests();
 
