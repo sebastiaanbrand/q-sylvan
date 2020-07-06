@@ -640,7 +640,7 @@ int test_ccz_gate()
     return 0;
 }
 
-int test_swap_gate()
+int test_swap_circuit()
 {
     QDD q;
     bool x3[] = {0,0,0};
@@ -659,7 +659,7 @@ int test_swap_gate()
     x3[2] = 1; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 1; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
 
-    q = qdd_swap_gate(q, 0, 2);
+    q = qdd_swap_circuit(q, 0, 2);
     x3[2] = 0; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 0; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ONE);
     x3[2] = 0; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
@@ -669,7 +669,7 @@ int test_swap_gate()
     x3[2] = 1; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 1; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
 
-    q = qdd_swap_gate(q, 0, 1);
+    q = qdd_swap_circuit(q, 0, 1);
     x3[2] = 0; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 0; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 0; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ONE);
@@ -685,7 +685,7 @@ int test_swap_gate()
     return 0;
 }
 
-int test_cswap_gate()
+int test_cswap_circuit()
 {
     QDD q;
     bool x3[] = {0,0,0};
@@ -695,7 +695,7 @@ int test_cswap_gate()
 
     x3[2]=1; x3[1]=0; x3[0]=0; 
     q = qdd_create_basis_state(3, x3);
-    q = qdd_cswap_gate(q, 0, 1, 2); // control is |0>, nothing should happen
+    q = qdd_cswap(q, 0, 1, 2); // control is |0>, nothing should happen
     x3[2] = 0; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 0; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 0; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
@@ -707,7 +707,7 @@ int test_cswap_gate()
 
     x3[2]=1; x3[1]=0; x3[0]=1; 
     q = qdd_create_basis_state(3, x3);
-    q = qdd_cswap_gate(q, 0, 1, 2); // control is |1>, should swap q1 and q2
+    q = qdd_cswap(q, 0, 1, 2); // control is |1>, should swap q1 and q2
     x3[2] = 0; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 0; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 0; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
@@ -729,7 +729,7 @@ int test_cswap_gate()
     x3[2] = 1; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 1; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     
-    q = qdd_cswap_gate(q, 0, 1, 2); // control is |+>, expected output: 1/sqrt(2)(|100> + |011>)
+    q = qdd_cswap(q, 0, 1, 2); // control is |+>, expected output: 1/sqrt(2)(|100> + |011>)
     x3[2] = 0; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 0; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 0; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
@@ -1190,15 +1190,6 @@ int test_20qubit_circuit()
     q = qdd_cgate(q, GATEID_Z, 5, 15);      q = qdd_cgate(q, GATEID_X, 0, 15);      q = qdd_cgate(q, GATEID_X, 1, 6);       q = qdd_cgate(q, GATEID_X, 8, 16);
     q = qdd_cgate(q, GATEID_X, 5, 19);      q = qdd_cgate(q, GATEID_Z, 3, 18);      q = qdd_cgate(q, GATEID_X, 5, 8);       q = qdd_cgate(q, GATEID_Z, 14, 18);
     node_count = qdd_countnodes(q);
-
-    // test clean amp table
-    QDD qdds[2];
-    qdds[0] = q; qdds[1] = qref;
-    printf("before clean: %lx\n", q);
-    clean_amplitude_table(qdds, 2);
-    q = qdds[0]; qref = qdds[1];
-    printf("after clean:  %lx\n", q); 
-
     // inverse
     q = qdd_cgate(q, GATEID_Z, 14, 18);     q = qdd_cgate(q, GATEID_X, 5, 8);       q = qdd_cgate(q, GATEID_Z, 3, 18);      q = qdd_cgate(q, GATEID_X, 5, 19);
     q = qdd_cgate(q, GATEID_X, 8, 16);      q = qdd_cgate(q, GATEID_X, 1, 6);       q = qdd_cgate(q, GATEID_X, 0, 15);      q = qdd_cgate(q, GATEID_Z, 5, 15);
@@ -1251,8 +1242,8 @@ int runtests()
     if (test_cx_gate()) return 1;
     if (test_cz_gate()) return 1;
     if (test_ccz_gate()) return 1;
-    if (test_swap_gate()) return 1;
-    if (test_cswap_gate()) return 1;
+    if (test_swap_circuit()) return 1;
+    if (test_cswap_circuit()) return 1;
     if (test_measurement()) return 1;
     if (test_QFT()) return 1;
     if (test_grover()) return 1;

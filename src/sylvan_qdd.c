@@ -405,7 +405,7 @@ TASK_IMPL_1(QDD, _fill_new_amp_table, QDD, qdd)
 
 
 
-/************************<applying gates implementation>***********************/
+/*******************************<applying gates>*******************************/
 
 TASK_IMPL_2(QDD, qdd_plus, QDD, a, QDD, b)
 {
@@ -618,10 +618,13 @@ TASK_IMPL_4(QDD, qdd_cgate, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t)
     return res;
 }
 
-/***********************</applying gates implementation>***********************/
+/******************************</applying gates>*******************************/
 
+
+
+/*********************<applying (controlled) sub-circuits>*********************/
 QDD
-qdd_swap_gate(QDD qdd, BDDVAR qubit1, BDDVAR qubit2)
+qdd_swap_circuit(QDD qdd, BDDVAR qubit1, BDDVAR qubit2)
 {
     assert (qubit1 < qubit2);
     
@@ -640,7 +643,7 @@ qdd_swap_gate(QDD qdd, BDDVAR qubit1, BDDVAR qubit2)
     return res;
 }
 
-TASK_IMPL_4(QDD, qdd_cswap_gate, QDD, qdd, BDDVAR, c, BDDVAR, t1, BDDVAR, t2)
+TASK_IMPL_4(QDD, qdd_cswap, QDD, qdd, BDDVAR, c, BDDVAR, t1, BDDVAR, t2)
 {
     assert (c  < t1);
     assert (t1 < t2);
@@ -648,7 +651,7 @@ TASK_IMPL_4(QDD, qdd_cswap_gate, QDD, qdd, BDDVAR, c, BDDVAR, t1, BDDVAR, t2)
     bool cachenow = 1; 
     if (cachenow) {
         QDD res;
-        if (cache_get3(CACHE_QDD_CGATE, sylvan_false, qdd, GATE_OPID_64(GATEID_swap, c, t1, t2, 0, 0), &res)) {
+        if (cache_get3(CACHE_QDD_SUBCIRC, sylvan_false, qdd, GATE_OPID_64(CIRCID_swap, c, t1, t2, 0, 0), &res)) {
             sylvan_stats_count(QDD_CGATE_CACHED);
             return res;
         }
@@ -686,21 +689,21 @@ TASK_IMPL_4(QDD, qdd_cswap_gate, QDD, qdd, BDDVAR, c, BDDVAR, t1, BDDVAR, t2)
 
     if (control_here) {
         // apply swap to high, but not to low
-        high = qdd_swap_gate(high, t1, t2);
+        high = qdd_swap_circuit(high, t1, t2);
     }
     else {
         // recursive call to both children
-        bdd_refs_spawn(SPAWN(qdd_cswap_gate, high, c, t1, t2));
-        low = CALL(qdd_cswap_gate, low, c, t1, t2);
+        bdd_refs_spawn(SPAWN(qdd_cswap, high, c, t1, t2));
+        low = CALL(qdd_cswap, low, c, t1, t2);
         bdd_refs_push(low);
-        high = bdd_refs_sync(SYNC(qdd_cswap_gate));
+        high = bdd_refs_sync(SYNC(qdd_cswap));
         bdd_refs_pop(1);
     }
 
     QDD res = qdd_makenode(var, low, high); 
 
     if (cachenow) {
-        if (cache_put3(CACHE_QDD_CGATE, sylvan_false, qdd, GATE_OPID_64(GATEID_swap, c, t1, t2, 0, 0), res))
+        if (cache_put3(CACHE_QDD_CGATE, sylvan_false, qdd, GATE_OPID_64(CIRCID_swap, c, t1, t2, 0, 0), res))
             sylvan_stats_count(QDD_CGATE_CACHEDPUT);
     }
     
@@ -800,7 +803,7 @@ qdd_QFT(QDD qdd, BDDVAR first, BDDVAR last, bool swap)
         for (int j = 0; j < (int)(num_qubits/2); j++) {
             a = first + j;
             b = last  - j;
-            res = qdd_swap_gate(res, a, b);
+            res = qdd_swap_circuit(res, a, b);
         }
     }
     return res;
@@ -821,7 +824,7 @@ qdd_QFT_inv(QDD qdd, BDDVAR first, BDDVAR last, bool swap)
         for (int j = 0; j < (int)(num_qubits/2); j++) {
             a = first + j;
             b = last  - j;
-            res = qdd_swap_gate(res, a, b);
+            res = qdd_swap_circuit(res, a, b);
         }
     }
     
@@ -840,6 +843,9 @@ qdd_QFT_inv(QDD qdd, BDDVAR first, BDDVAR last, bool swap)
 
     return res;
 }
+
+/********************</applying (controlled) sub-circuits>*********************/
+
 
 
 /***********************************<Grover>***********************************/
@@ -1009,9 +1015,9 @@ QDD
 qdd_measure_qubit(QDD qdd, BDDVAR k, int *m, double *p)
 {
     if (k == 0) return qdd_measure_q0(qdd, m, p);
-    qdd = qdd_swap_gate(qdd, 0, k);
+    qdd = qdd_swap_circuit(qdd, 0, k);
     qdd = qdd_measure_q0(qdd, m, p);
-    qdd = qdd_swap_gate(qdd, 0, k);
+    qdd = qdd_swap_circuit(qdd, 0, k);
     return qdd;
 }
 

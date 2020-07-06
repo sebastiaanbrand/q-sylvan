@@ -46,13 +46,12 @@ static inline uint32_t GATEID_Rk(int k) { return k + 8; };
 // (GATEIDs 264 through 519)
 static inline uint32_t GATEID_Rk_dag(int k){ return k + 264; };
 
-static const uint32_t GATEID_swap = 520; // only used as ID for caching 
 // 2x2 gates, k := GATEID_U 
 // gates[k][0] = u00 (top left)
 // gates[k][1] = u01 (top right)
 // gates[k][2] = u10 (bottom left)
 // gates[k][3] = u11 (bottom right)
-cint gates[521][4]; // max 2^16 gates atm
+cint gates[520][4]; // max 2^16 gates atm
 
 
 //uint32_t Ctentries;

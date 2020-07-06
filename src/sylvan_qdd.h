@@ -131,16 +131,22 @@ TASK_DECL_3(QDD, qdd_gate, QDD, uint32_t, BDDVAR);
 #define qdd_cgate(q,gate,c,t) (CALL(qdd_cgate,q,gate,c,t));
 TASK_DECL_4(QDD, qdd_cgate, QDD, uint32_t, BDDVAR, BDDVAR);
 
+
+
+
+/*********************<applying (controlled) sub-circuits>*********************/
+// IDs used for caching
+static const uint32_t CIRCID_swap = 0 ;
 /**
- * Applies a swap gate on the given qubits.
+ * Implements a SWAP gate from single-qubit and controlled gates.
  */
-QDD qdd_swap_gate(QDD qdd, BDDVAR qubit1, BDDVAR qubit2);
+QDD qdd_swap_circuit(QDD qdd, BDDVAR qubit1, BDDVAR qubit2);
 
 /**
  * Applies a controlled swap gate, with the given control and targets.
  */
-#define qdd_cswap_gate(qdd, c, t1, t2) (CALL(qdd_cswap_gate,qdd,c,t1,t2));
-TASK_DECL_4(QDD, qdd_cswap_gate, QDD, BDDVAR, BDDVAR, BDDVAR);
+#define qdd_cswap(qdd, c, t1, t2) (CALL(qdd_cswap,qdd,c,t1,t2));
+TASK_DECL_4(QDD, qdd_cswap, QDD, BDDVAR, BDDVAR, BDDVAR);
 
 /**
  * Applies a phase of -1 to a single basis state |x>.
@@ -169,6 +175,10 @@ QDD qdd_QFT(QDD qdd, BDDVAR first, BDDVAR last, bool swap);
  * @param swap Yes or no swapping of qubit order.
  */
 QDD qdd_QFT_inv(QDD qdd, BDDVAR first, BDDVAR last, bool swap);
+
+/********************</applying (controlled) sub-circuits>*********************/
+
+
 
 
 /**
