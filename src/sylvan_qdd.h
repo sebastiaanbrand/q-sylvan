@@ -135,18 +135,30 @@ TASK_DECL_4(QDD, qdd_cgate, QDD, uint32_t, BDDVAR, BDDVAR);
 
 
 /*********************<applying (controlled) sub-circuits>*********************/
-// IDs used for caching
-static const uint32_t CIRCID_swap = 0 ;
+// Circuit IDs used for caching
+//#define CIRCID_swap 0
+static const uint32_t CIRCID_swap = 0;
+static const uint32_t MAX_CONTROLS = 3;
 /**
  * Implements a SWAP gate from single-qubit and controlled gates.
  */
 QDD qdd_swap_circuit(QDD qdd, BDDVAR qubit1, BDDVAR qubit2);
 
 /**
+ * Generalized implementation of applying controlled versions of sub-circuit
+ * functions defined here.
+ * cs needs to be an array of length 3 (3 possible control qubits), if used fewer
+ * controls use e.g. cs = [c1, c2, UINT8_MAX]
+ * // TODO: define BDDVAR INVALID_VAR somewhere.
+ */
+#define qdd_csubcirc(qdd, circ_id, cs, t1, t2) (CALL(qdd_csubcirc,qdd,circ_id,cs,0,t1,t2));
+TASK_DECL_6(QDD, qdd_csubcirc, QDD, uint32_t, BDDVAR*, uint32_t, BDDVAR, BDDVAR);
+
+/**
  * Applies a controlled swap gate, with the given control and targets.
  */
-#define qdd_cswap(qdd, c, t1, t2) (CALL(qdd_cswap,qdd,c,t1,t2));
-TASK_DECL_4(QDD, qdd_cswap, QDD, BDDVAR, BDDVAR, BDDVAR);
+//#define qdd_cswap(qdd, c, t1, t2) (CALL(qdd_cswap,qdd,c,t1,t2));
+//TASK_DECL_4(QDD, qdd_cswap, QDD, BDDVAR, BDDVAR, BDDVAR);
 
 /**
  * Applies a phase of -1 to a single basis state |x>.

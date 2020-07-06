@@ -643,6 +643,72 @@ qdd_swap_circuit(QDD qdd, BDDVAR qubit1, BDDVAR qubit2)
     return res;
 }
 
+
+
+TASK_IMPL_6(QDD, qdd_csubcirc, QDD, qdd, uint32_t, circ_id, BDDVAR*, cs, uint32_t, ci, BDDVAR, t1, BDDVAR, t2)
+{
+    // TODO: cache lookup
+
+    // Get current control qubit
+    BDDVAR c = cs[ci];
+
+    QDD res;
+    // If no more control qubits, apply sub-circ here
+    if (c == UINT8_MAX || ci > MAX_CONTROLS) {
+        // TODO: switch case :)
+        res = qdd_swap_circuit(qdd, t1, t2);
+    }
+    else {
+        // Check if skipped control node
+        bool skipped = false;
+        if (QDD_PTR(qdd) == QDD_TERMINAL) skipped = true;
+        else {
+            qddnode_t node = QDD_GETNODE(QDD_PTR(qdd));
+            if (qddnode_getvar(node) > c) skipped = true;
+        }
+
+        // Check if we need to control here
+        BDDVAR var;
+        QDD low, high;
+        bool control_here = false;
+        if (skipped) { // var > control
+            low  = qdd_bundle_ptr_amp(QDD_PTR(qdd), C_ONE);
+            high = qdd_bundle_ptr_amp(QDD_PTR(qdd), C_ONE);
+            var  = c;
+            control_here = true;
+        }
+        else {
+            // not skipped, either (var == control) or (var < control)
+            qddnode_t node = QDD_GETNODE(QDD_PTR(qdd));
+            var  = qddnode_getvar(node);
+            low  = qddnode_getlow(node);
+            high = qddnode_gethigh(node);
+            if (var == c) control_here = true;
+        }
+
+        if (control_here) {
+            ci++; // next control qubit
+            high = CALL(qdd_csubcirc, high, circ_id, cs, ci, t1, t2);
+        }
+        else {
+            // recursive call to both children
+            bdd_refs_spawn(SPAWN(qdd_csubcirc, high, circ_id, cs, ci, t1, t2));
+            low = CALL(qdd_csubcirc, low, circ_id, cs, ci, t1, t2);
+            bdd_refs_push(low);
+            high = bdd_refs_sync(SYNC(qdd_csubcirc));
+            bdd_refs_pop(1);
+        }
+        res = qdd_makenode(var, low, high); 
+    }
+
+    // TODO: cache insert
+
+    AMP new_root_amp = Cmul(QDD_AMP(qdd), QDD_AMP(res));
+    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
+    return res;
+}
+
+/*
 TASK_IMPL_4(QDD, qdd_cswap, QDD, qdd, BDDVAR, c, BDDVAR, t1, BDDVAR, t2)
 {
     assert (c  < t1);
@@ -711,7 +777,7 @@ TASK_IMPL_4(QDD, qdd_cswap, QDD, qdd, BDDVAR, c, BDDVAR, t1, BDDVAR, t2)
     res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     return res;
 }
-
+*/
 
 TASK_IMPL_4(QDD, qdd_all_control_phase, QDD, qdd, BDDVAR, k, BDDVAR, n, bool*, x)
 {

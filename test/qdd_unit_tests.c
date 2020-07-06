@@ -691,11 +691,14 @@ int test_cswap_circuit()
     bool x3[] = {0,0,0};
     AMP a;
 
+    uint32_t cs[3];
+    cs[0] = 0; cs[1] = UINT8_MAX; cs[2] = UINT8_MAX; // control only on q0
+
     LACE_ME;
 
     x3[2]=1; x3[1]=0; x3[0]=0; 
     q = qdd_create_basis_state(3, x3);
-    q = qdd_cswap(q, 0, 1, 2); // control is |0>, nothing should happen
+    q = qdd_csubcirc(q, CIRCID_swap, cs, 1, 2); // control is |0>, nothing should happen
     x3[2] = 0; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 0; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 0; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
@@ -707,7 +710,7 @@ int test_cswap_circuit()
 
     x3[2]=1; x3[1]=0; x3[0]=1; 
     q = qdd_create_basis_state(3, x3);
-    q = qdd_cswap(q, 0, 1, 2); // control is |1>, should swap q1 and q2
+    q = qdd_csubcirc(q, CIRCID_swap, cs, 1, 2); // control is |1>, should swap q1 and q2
     x3[2] = 0; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 0; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 0; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
@@ -729,7 +732,7 @@ int test_cswap_circuit()
     x3[2] = 1; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 1; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     
-    q = qdd_cswap(q, 0, 1, 2); // control is |+>, expected output: 1/sqrt(2)(|100> + |011>)
+    q = qdd_csubcirc(q, CIRCID_swap, cs, 1, 2); // control is |+>, expected output: 1/sqrt(2)(|100> + |011>)
     x3[2] = 0; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 0; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 0; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
