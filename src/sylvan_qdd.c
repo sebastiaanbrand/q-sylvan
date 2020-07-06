@@ -623,6 +623,7 @@ TASK_IMPL_4(QDD, qdd_cgate, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t)
 
 
 /*********************<applying (controlled) sub-circuits>*********************/
+
 QDD
 qdd_swap_circuit(QDD qdd, BDDVAR qubit1, BDDVAR qubit2)
 {
@@ -643,20 +644,31 @@ qdd_swap_circuit(QDD qdd, BDDVAR qubit1, BDDVAR qubit2)
     return res;
 }
 
-
-
 TASK_IMPL_6(QDD, qdd_csubcirc, QDD, qdd, uint32_t, circ_id, BDDVAR*, cs, uint32_t, ci, BDDVAR, t1, BDDVAR, t2)
 {
-    // TODO: cache lookup
+    // Cache lookup
+    QDD res;
+    bool cachenow = 1;
+    if (cachenow) {
+        if (cache_get3(CACHE_QDD_SUBCIRC, sylvan_false, qdd, 
+                       GATE_OPID_64(circ_id, cs[0], cs[1], cs[2], t1, t2), 
+                       &res)) {
+            return res;
+        }
+    }
 
     // Get current control qubit
     BDDVAR c = cs[ci];
 
-    QDD res;
     // If no more control qubits, apply sub-circ here
     if (c == UINT8_MAX || ci > MAX_CONTROLS) {
-        // TODO: switch case :)
-        res = qdd_swap_circuit(qdd, t1, t2);
+        switch (circ_id) {
+            case CIRCID_swap :
+                res = qdd_swap_circuit(qdd, t1, t2);
+                break;
+            default :
+                assert ("Invalid circuit ID" && false);
+        }
     }
     else {
         // Check if skipped control node
@@ -701,83 +713,16 @@ TASK_IMPL_6(QDD, qdd_csubcirc, QDD, qdd, uint32_t, circ_id, BDDVAR*, cs, uint32_
         res = qdd_makenode(var, low, high); 
     }
 
-    // TODO: cache insert
-
+    // Multiply root amp of sum with input root amp, add to cache, return
     AMP new_root_amp = Cmul(QDD_AMP(qdd), QDD_AMP(res));
     res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
+    if (cachenow) {
+        cache_put3(CACHE_QDD_SUBCIRC, sylvan_false, qdd, 
+                   GATE_OPID_64(CIRCID_swap, cs[0], cs[1], cs[2], t1, t2), 
+                   res);
+    }
     return res;
 }
-
-/*
-TASK_IMPL_4(QDD, qdd_cswap, QDD, qdd, BDDVAR, c, BDDVAR, t1, BDDVAR, t2)
-{
-    assert (c  < t1);
-    assert (t1 < t2);
-
-    bool cachenow = 1; 
-    if (cachenow) {
-        QDD res;
-        if (cache_get3(CACHE_QDD_SUBCIRC, sylvan_false, qdd, GATE_OPID_64(CIRCID_swap, c, t1, t2, 0, 0), &res)) {
-            sylvan_stats_count(QDD_CGATE_CACHED);
-            return res;
-        }
-    }
-
-    // similar to normal control gate, TODO: maybe generalize qdd_cgate?
-    bool skipped = false;
-    if (QDD_PTR(qdd) == QDD_TERMINAL) {
-        skipped = true;
-    }
-    else {
-        qddnode_t node = QDD_GETNODE(QDD_PTR(qdd));
-        if (qddnode_getvar(node) > c) {
-            skipped = true;
-        }
-    }
-
-    BDDVAR var;
-    QDD low, high;
-    bool control_here = false;
-    if (skipped) { // var > control
-        low  = qdd_bundle_ptr_amp(QDD_PTR(qdd), C_ONE);
-        high = qdd_bundle_ptr_amp(QDD_PTR(qdd), C_ONE);
-        var  = c;
-        control_here = true;
-    }
-    else {
-        // not skipped, either (var == control) or (var < control)
-        qddnode_t node = QDD_GETNODE(QDD_PTR(qdd));
-        var  = qddnode_getvar(node);
-        low  = qddnode_getlow(node);
-        high = qddnode_gethigh(node);
-        if (var == c) control_here = true;
-    }
-
-    if (control_here) {
-        // apply swap to high, but not to low
-        high = qdd_swap_circuit(high, t1, t2);
-    }
-    else {
-        // recursive call to both children
-        bdd_refs_spawn(SPAWN(qdd_cswap, high, c, t1, t2));
-        low = CALL(qdd_cswap, low, c, t1, t2);
-        bdd_refs_push(low);
-        high = bdd_refs_sync(SYNC(qdd_cswap));
-        bdd_refs_pop(1);
-    }
-
-    QDD res = qdd_makenode(var, low, high); 
-
-    if (cachenow) {
-        if (cache_put3(CACHE_QDD_CGATE, sylvan_false, qdd, GATE_OPID_64(CIRCID_swap, c, t1, t2, 0, 0), res))
-            sylvan_stats_count(QDD_CGATE_CACHEDPUT);
-    }
-    
-    AMP new_root_amp = Cmul(QDD_AMP(qdd), QDD_AMP(res));
-    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
-    return res;
-}
-*/
 
 TASK_IMPL_4(QDD, qdd_all_control_phase, QDD, qdd, BDDVAR, k, BDDVAR, n, bool*, x)
 {

@@ -136,8 +136,7 @@ TASK_DECL_4(QDD, qdd_cgate, QDD, uint32_t, BDDVAR, BDDVAR);
 
 /*********************<applying (controlled) sub-circuits>*********************/
 // Circuit IDs used for caching
-//#define CIRCID_swap 0
-static const uint32_t CIRCID_swap = 0;
+#define CIRCID_swap 0
 static const uint32_t MAX_CONTROLS = 3;
 /**
  * Implements a SWAP gate from single-qubit and controlled gates.
