@@ -710,7 +710,20 @@ qdd_circuit_QFT_inv(QDD qdd, BDDVAR first, BDDVAR last)
     return res;
 }
 
-TASK_IMPL_6(QDD, qdd_csubcirc, QDD, qdd, uint32_t, circ_id, BDDVAR*, cs, uint32_t, ci, BDDVAR, t1, BDDVAR, t2)
+QDD
+qdd_circuit(QDD qdd, uint32_t circ_id, BDDVAR t1, BDDVAR t2)
+{
+    switch (circ_id) {  // don't judge me
+        case CIRCID_swap       : return qdd_circuit_swap(qdd, t1, t2);
+        case CIRCID_swap_range : return qdd_circuit_swap_range(qdd, t1, t2);
+        case CIRCID_QFT        : return qdd_circuit_QFT(qdd, t1, t2);
+        case CIRCID_QFT_inv    : return qdd_circuit_QFT_inv(qdd, t1, t2);
+        default :
+            assert ("Invalid circuit ID" && false);
+    }
+}
+
+TASK_IMPL_6(QDD, qdd_ccircuit, QDD, qdd, uint32_t, circ_id, BDDVAR*, cs, uint32_t, ci, BDDVAR, t1, BDDVAR, t2)
 {
     // Cache lookup
     QDD res;
@@ -728,14 +741,7 @@ TASK_IMPL_6(QDD, qdd_csubcirc, QDD, qdd, uint32_t, circ_id, BDDVAR*, cs, uint32_
 
     // If no more control qubits, apply sub-circ here
     if (c == UINT8_MAX || ci > MAX_CONTROLS) {
-        // TODO: move this switch case to separate function
-        switch (circ_id) {
-            case CIRCID_swap :
-                res = qdd_circuit_swap(qdd, t1, t2);
-                break;
-            default :
-                assert ("Invalid circuit ID" && false);
-        }
+        res = qdd_circuit(qdd, circ_id, t1, t2);
     }
     else {
         // Check if skipped control node
@@ -767,14 +773,14 @@ TASK_IMPL_6(QDD, qdd_csubcirc, QDD, qdd, uint32_t, circ_id, BDDVAR*, cs, uint32_
 
         if (control_here) {
             ci++; // next control qubit
-            high = CALL(qdd_csubcirc, high, circ_id, cs, ci, t1, t2);
+            high = CALL(qdd_ccircuit, high, circ_id, cs, ci, t1, t2);
         }
         else {
             // recursive call to both children
-            bdd_refs_spawn(SPAWN(qdd_csubcirc, high, circ_id, cs, ci, t1, t2));
-            low = CALL(qdd_csubcirc, low, circ_id, cs, ci, t1, t2);
+            bdd_refs_spawn(SPAWN(qdd_ccircuit, high, circ_id, cs, ci, t1, t2));
+            low = CALL(qdd_ccircuit, low, circ_id, cs, ci, t1, t2);
             bdd_refs_push(low);
-            high = bdd_refs_sync(SYNC(qdd_csubcirc));
+            high = bdd_refs_sync(SYNC(qdd_ccircuit));
             bdd_refs_pop(1);
         }
         res = qdd_makenode(var, low, high); 

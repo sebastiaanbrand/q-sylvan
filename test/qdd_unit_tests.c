@@ -692,13 +692,13 @@ int test_cswap_circuit()
     AMP a;
 
     uint32_t cs[3];
-    cs[0] = 0; cs[1] = UINT8_MAX; cs[2] = UINT8_MAX; // control only on q0
+    cs[0] = 0; cs[1] = QDD_INVALID_VAR; cs[2] = QDD_INVALID_VAR; // control only on q0
 
     LACE_ME;
 
     x3[2]=1; x3[1]=0; x3[0]=0; 
     q = qdd_create_basis_state(3, x3);
-    q = qdd_csubcirc(q, CIRCID_swap, cs, 1, 2); // control is |0>, nothing should happen
+    q = qdd_ccircuit(q, CIRCID_swap, cs, 1, 2); // control is |0>, nothing should happen
     x3[2] = 0; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 0; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 0; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
@@ -710,7 +710,7 @@ int test_cswap_circuit()
 
     x3[2]=1; x3[1]=0; x3[0]=1; 
     q = qdd_create_basis_state(3, x3);
-    q = qdd_csubcirc(q, CIRCID_swap, cs, 1, 2); // control is |1>, should swap q1 and q2
+    q = qdd_ccircuit(q, CIRCID_swap, cs, 1, 2); // control is |1>, should swap q1 and q2
     x3[2] = 0; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 0; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 0; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
@@ -732,7 +732,7 @@ int test_cswap_circuit()
     x3[2] = 1; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 1; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     
-    q = qdd_csubcirc(q, CIRCID_swap, cs, 1, 2); // control is |+>, expected output: 1/sqrt(2)(|100> + |011>)
+    q = qdd_ccircuit(q, CIRCID_swap, cs, 1, 2); // control is |+>, expected output: 1/sqrt(2)(|100> + |011>)
     x3[2] = 0; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 0; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 0; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
@@ -842,8 +842,8 @@ int test_QFT()
     bool x3[] = {0,1,1}; // little endian (q0, q1, q2)
     q3 = qdd_create_basis_state(3, x3);
     qref3 = qdd_create_basis_state(3, x3);
-    q3 = qdd_circuit_QFT(q3, 0, 2);
-    q3 = qdd_circuit_swap_range(q3, 0, 2);
+    q3 = qdd_circuit(q3, CIRCID_QFT, 0, 2);
+    q3 = qdd_circuit(q3, CIRCID_swap_range, 0, 2);
 
     // check approx equal against output from qiskit
     x3[2]=0; x3[1]=0; x3[0]=0; a = qdd_get_amplitude(q3, x3); test_assert(CapproxEqual(Cvalue(a),Cmake(3.5355339059327384e-01,-8.6595605623549353e-17)));
@@ -856,8 +856,8 @@ int test_QFT()
     x3[2]=1; x3[1]=1; x3[0]=1; a = qdd_get_amplitude(q3, x3); test_assert(CapproxEqual(Cvalue(a),Cmake(-2.5000000000000017e-01,-2.5000000000000000e-01)));
 
     // inverse QFT
-    q3 = qdd_circuit_swap_range(q3, 0, 2);
-    q3 = qdd_circuit_QFT_inv(q3, 0, 2);
+    q3 = qdd_circuit(q3, CIRCID_swap_range, 0, 2);
+    q3 = qdd_circuit(q3, CIRCID_QFT_inv, 0, 2);
     test_assert(qdd_equivalent(q3, qref3, 3, false, false));
     test_assert(qdd_equivalent(q3, qref3, 3, true, false));
     test_assert(q3 == qref3);
@@ -866,8 +866,8 @@ int test_QFT()
     // 5 qubit QFT
     bool x5[] = {0,1,1,0,1};
     q5 = qdd_create_basis_state(5, x5);
-    q5 = qdd_circuit_QFT(q5, 0, 4);
-    q5 = qdd_circuit_swap_range(q5, 0, 4);
+    q5 = qdd_circuit(q5, CIRCID_QFT, 0, 4);
+    q5 = qdd_circuit(q5, CIRCID_swap_range, 0, 4);
 
     // check approx equal against output from qiskit
     double thres = 1e-9;
@@ -907,8 +907,8 @@ int test_QFT()
     // inverse QFT
     //   the equality checks as done for the 3 qubit  case don't pass here
     //   (because of float/rounding imprecision?)
-    q5 = qdd_circuit_swap_range(q5, 0, 4);
-    q5 = qdd_circuit_QFT_inv(q5, 0, 4);
+    q5 = qdd_circuit(q5, CIRCID_swap_range, 0, 4);
+    q5 = qdd_circuit(q5, CIRCID_QFT_inv, 0, 4);
     
     
     /*
@@ -1004,12 +1004,12 @@ int test_shor()
 
     // Test addition in Fourier space (be mindful about endianness here!)
     // 2 + 1 (no carry)
-    x3[0] = 0; x3[1] = 1; x3[2] = 0;   // x = 010 = 2
-    as[0] = 0; as[1] = 0; as[2] = 1;   // a = 001 = 1
-    q = qdd_create_basis_state(3, x3); // create state |x>
-    q = qdd_circuit_QFT(q, 0, 2);      // QFT|x> = |phi(x)>
-    q = qdd_phi_add(q, 0, 2, as);      // addition in Fourier space gives |phi(x+a)>
-    q = qdd_circuit_QFT_inv(q, 0, 2);  // expected out = |x+a> = |3> = |011>
+    x3[0] = 0; x3[1] = 1; x3[2] = 0;          // x = 010 = 2
+    as[0] = 0; as[1] = 0; as[2] = 1;          // a = 001 = 1
+    q = qdd_create_basis_state(3, x3);        // create state |x>
+    q = qdd_circuit(q, CIRCID_QFT, 0, 2);     // QFT|x> = |phi(x)>
+    q = qdd_phi_add(q, 0, 2, as);             // addition in Fourier space gives |phi(x+a)>
+    q = qdd_circuit(q, CIRCID_QFT_inv, 0, 2); // expected out = |x+a> = |3> = |011>
     x3[0]=0; x3[1]=0; x3[2]=0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[0]=0; x3[1]=0; x3[2]=1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[0]=0; x3[1]=1; x3[2]=0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
@@ -1020,12 +1020,12 @@ int test_shor()
     x3[0]=1; x3[1]=1; x3[2]=1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
 
     // 2 + 2 (carry, should go the the left)
-    x3[0] = 0; x3[1] = 1; x3[2] = 0;   // x = 010
-    as[0] = 0; as[1] = 1; as[2] = 0;   // a = 010
-    q = qdd_create_basis_state(3, x3); // create state |x>
-    q = qdd_circuit_QFT(q, 0, 2);      // QFT|x> = |phi(x)>
-    q = qdd_phi_add(q, 0, 2, as);      // addition in Fourier space gives |phi(x+a)>
-    q = qdd_circuit_QFT_inv(q, 0, 2);  // expected out = |x+a> = |4> = |100>
+    x3[0] = 0; x3[1] = 1; x3[2] = 0;          // x = 010
+    as[0] = 0; as[1] = 1; as[2] = 0;          // a = 010
+    q = qdd_create_basis_state(3, x3);        // create state |x>
+    q = qdd_circuit(q, CIRCID_QFT, 0, 2);     // QFT|x> = |phi(x)>
+    q = qdd_phi_add(q, 0, 2, as);             // addition in Fourier space gives |phi(x+a)>
+    q = qdd_circuit(q, CIRCID_QFT_inv, 0, 2); // expected out = |x+a> = |4> = |100>
     x3[0]=0; x3[1]=0; x3[2]=0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[0]=0; x3[1]=0; x3[2]=1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[0]=0; x3[1]=1; x3[2]=0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
@@ -1036,12 +1036,12 @@ int test_shor()
     x3[0]=1; x3[1]=1; x3[2]=1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
 
     // 2 + 3 (carry, should go the the left)
-    x3[0] = 0; x3[1] = 1; x3[2] = 0;   // x = 010
-    as[0] = 0; as[1] = 1; as[2] = 1;   // a = 011
-    q = qdd_create_basis_state(3, x3); // create state |x>
-    q = qdd_circuit_QFT(q, 0, 2);      // QFT|x> = |phi(x)>
-    q = qdd_phi_add(q, 0, 2, as);      // addition in Fourier space gives |phi(x+a)>
-    q = qdd_circuit_QFT_inv(q, 0, 2);  // expected out = |x+a> = |5> = |101>
+    x3[0] = 0; x3[1] = 1; x3[2] = 0;          // x = 010
+    as[0] = 0; as[1] = 1; as[2] = 1;          // a = 011
+    q = qdd_create_basis_state(3, x3);        // create state |x>
+    q = qdd_circuit(q, CIRCID_QFT, 0, 2);     // QFT|x> = |phi(x)>
+    q = qdd_phi_add(q, 0, 2, as);             // addition in Fourier space gives |phi(x+a)>
+    q = qdd_circuit(q, CIRCID_QFT_inv, 0, 2); // expected out = |x+a> = |5> = |101>
     x3[0]=0; x3[1]=0; x3[2]=0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[0]=0; x3[1]=0; x3[2]=1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[0]=0; x3[1]=1; x3[2]=0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);

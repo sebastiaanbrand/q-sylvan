@@ -98,29 +98,16 @@ extern "C" {
  * qddnote_t : essentially a node, containing two edges (to its children).
  */
 
-/**
- * low 40 bits          = pointer
- * high 20/24 bits      = amplitude (normalized)
- * 0x[0][00000][0000000000]
- */
-typedef uint64_t QDD; // QDD edge
+typedef uint64_t QDD; // QDD edge (contains AMP and PTR)
 typedef uint64_t AMP; // amplitude index
-typedef uint64_t PTR; // node index (TODO: rename PTR to something else to avoid
-                      // ambiguity with actual pointers)
+typedef uint64_t PTR; // node index
 
 
-/**
- * QDD with pointer value 1, and amplitude 1. However we need to be able to 
- * point to the root with amplitudes other than 1?
- * NOTE: renamed ONE -> QDD_ONE for now because of conflict with Bdd ONE
- */
-static const QDD        QDD_ONE = (1ULL << 40) | 1; // 0x[0][00001][0000000001]
-//static const QDD        QDD_TERMINAL = 1; // 0x[0][00000][0000000001]
 static const PTR        QDD_TERMINAL = 1;
+static const BDDVAR     QDD_INVALID_VAR = UINT8_MAX;
 
 
-static const AMP        NIL = 0;
-
+/*******************************<applying gates>*******************************/
 
 #define qdd_plus(a,b) (CALL(qdd_plus,a,b));
 TASK_DECL_2(QDD, qdd_plus, QDD, QDD);
@@ -131,12 +118,18 @@ TASK_DECL_3(QDD, qdd_gate, QDD, uint32_t, BDDVAR);
 #define qdd_cgate(q,gate,c,t) (CALL(qdd_cgate,q,gate,c,t));
 TASK_DECL_4(QDD, qdd_cgate, QDD, uint32_t, BDDVAR, BDDVAR);
 
+/******************************</applying gates>*******************************/
 
 
 
 /*********************<applying (controlled) sub-circuits>*********************/
-// Circuit IDs used for caching
+
+// Circuit IDs
 #define CIRCID_swap         0
+#define CIRCID_swap_range   1
+#define CIRCID_QFT          2
+#define CIRCID_QFT_inv      3
+// For now we have at most 3 control qubits
 static const uint32_t MAX_CONTROLS = 3;
 
 /**
@@ -160,20 +153,22 @@ QDD qdd_circuit_QFT(QDD qdd, BDDVAR first, BDDVAR last);
 QDD qdd_circuit_QFT_inv(QDD qdd, BDDVAR first, BDDVAR last);
 
 /**
- * Generalized implementation of applying controlled versions of sub-circuit
- * functions defined here.
- * cs needs to be an array of length 3 (3 possible control qubits), if used fewer
- * controls use e.g. cs = [c1, c2, UINT8_MAX]
- * // TODO: define BDDVAR INVALID_VAR somewhere.
+ * Applies the given circuit (parameters can be two targets or a range
+ * depending on the circuit.)
  */
-#define qdd_csubcirc(qdd, circ_id, cs, t1, t2) (CALL(qdd_csubcirc,qdd,circ_id,cs,0,t1,t2));
-TASK_DECL_6(QDD, qdd_csubcirc, QDD, uint32_t, BDDVAR*, uint32_t, BDDVAR, BDDVAR);
+QDD qdd_circuit(QDD qdd, uint32_t circ_id, BDDVAR t1, BDDVAR t2);
 
 /**
- * Applies a controlled swap gate, with the given control and targets.
+ * Generalized implementation of applying controlled versions of sub-circuit
+ * functions defined here.
+ * @param circ_id CIRCID_something
+ * @param cs BDDVAR[] of control qubits. Needs to be length 3. If using fewer
+ *           controls use e.g. cs = [c1, c2, QDD_INVALID_VAR]
+ * @param t1 BDDVAR. Parameter 1 for given circuit.
+ * @param t2 BDDVAR. Parameter 2 for given circuit.
  */
-//#define qdd_cswap(qdd, c, t1, t2) (CALL(qdd_cswap,qdd,c,t1,t2));
-//TASK_DECL_4(QDD, qdd_cswap, QDD, BDDVAR, BDDVAR, BDDVAR);
+#define qdd_ccircuit(qdd, circ_id, cs, t1, t2) (CALL(qdd_ccircuit,qdd,circ_id,cs,0,t1,t2));
+TASK_DECL_6(QDD, qdd_ccircuit, QDD, uint32_t, BDDVAR*, uint32_t, BDDVAR, BDDVAR);
 
 /**
  * Applies a phase of -1 to a single basis state |x>.
@@ -188,7 +183,6 @@ TASK_DECL_6(QDD, qdd_csubcirc, QDD, uint32_t, BDDVAR*, uint32_t, BDDVAR, BDDVAR)
  */
 #define qdd_all_control_phase(qdd, n, x) (CALL(qdd_all_control_phase,qdd,0,n,x));
 TASK_DECL_4(QDD, qdd_all_control_phase, QDD, BDDVAR, BDDVAR, bool*);
-
 
 /********************</applying (controlled) sub-circuits>*********************/
 
