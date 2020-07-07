@@ -136,12 +136,28 @@ TASK_DECL_4(QDD, qdd_cgate, QDD, uint32_t, BDDVAR, BDDVAR);
 
 /*********************<applying (controlled) sub-circuits>*********************/
 // Circuit IDs used for caching
-#define CIRCID_swap 0
+#define CIRCID_swap         0
 static const uint32_t MAX_CONTROLS = 3;
+
 /**
- * Implements a SWAP gate from single-qubit and controlled gates.
+ * Circuit which implements a SWAP gate from single-qubit and controlled gates.
  */
-QDD qdd_swap_circuit(QDD qdd, BDDVAR qubit1, BDDVAR qubit2);
+QDD qdd_circuit_swap(QDD qdd, BDDVAR qubit1, BDDVAR qubit2);
+
+/**
+ * Circuit which swaps the order of the qubits from `first` to `last`.
+ */
+QDD qdd_circuit_swap_range(QDD qdd, BDDVAR first, BDDVAR last);
+
+/**
+ * Executes the QFT circuit on qubits `first` through `last`.
+ */
+QDD qdd_circuit_QFT(QDD qdd, BDDVAR first, BDDVAR last);
+
+/**
+ * Executes the inverse QFT circuit on qubits `first` through `last`.
+ */
+QDD qdd_circuit_QFT_inv(QDD qdd, BDDVAR first, BDDVAR last);
 
 /**
  * Generalized implementation of applying controlled versions of sub-circuit
@@ -173,19 +189,6 @@ TASK_DECL_6(QDD, qdd_csubcirc, QDD, uint32_t, BDDVAR*, uint32_t, BDDVAR, BDDVAR)
 #define qdd_all_control_phase(qdd, n, x) (CALL(qdd_all_control_phase,qdd,0,n,x));
 TASK_DECL_4(QDD, qdd_all_control_phase, QDD, BDDVAR, BDDVAR, bool*);
 
-/**
- * Executes the QFT circuit on qubits `first` through `last`.
- * 
- * @param swap Yes or no swapping of qubit order.
- */
-QDD qdd_QFT(QDD qdd, BDDVAR first, BDDVAR last, bool swap);
-
-/**
- * Executes the inverse QFT circuit on qubits `first` through `last`.
- * 
- * @param swap Yes or no swapping of qubit order.
- */
-QDD qdd_QFT_inv(QDD qdd, BDDVAR first, BDDVAR last, bool swap);
 
 /********************</applying (controlled) sub-circuits>*********************/
 

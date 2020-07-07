@@ -625,7 +625,7 @@ TASK_IMPL_4(QDD, qdd_cgate, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t)
 /*********************<applying (controlled) sub-circuits>*********************/
 
 QDD
-qdd_swap_circuit(QDD qdd, BDDVAR qubit1, BDDVAR qubit2)
+qdd_circuit_swap(QDD qdd, BDDVAR qubit1, BDDVAR qubit2)
 {
     assert (qubit1 < qubit2);
     
@@ -640,6 +640,72 @@ qdd_swap_circuit(QDD qdd, BDDVAR qubit1, BDDVAR qubit2)
     res = qdd_gate(res, GATEID_H, qubit1);
     // CNOT
     res = qdd_cgate(res, GATEID_X, qubit1, qubit2);
+
+    return res;
+}
+
+QDD
+qdd_circuit_swap_range(QDD qdd, BDDVAR first, BDDVAR last)
+{
+    QDD res = qdd;
+    BDDVAR a, b;
+    int num_qubits = (last - first) + 1;
+    for (int j = 0; j < (int)(num_qubits/2); j++) {
+        a = first + j;
+        b = last  - j;
+        res = qdd_circuit_swap(res, a, b);
+    }
+    return res;
+}
+
+QDD
+qdd_circuit_QFT(QDD qdd, BDDVAR first, BDDVAR last)
+{
+    LACE_ME;
+
+    int k;
+    QDD res = qdd;
+    BDDVAR a, b;
+    for (a = first; a <= last; a++) {
+        
+        // H gate on current qubit
+        res = qdd_gate(res, GATEID_H, a);
+
+        // Controlled phase gates on all qubits below
+        for (b = a+1; b <= last; b++) {
+            k = (b - a) + 1;
+            res = qdd_cgate(res, GATEID_Rk(k), a, b);
+        }
+    }
+
+    // Note that we're not swapping the qubit order in this function
+
+    return res;
+}
+
+QDD
+qdd_circuit_QFT_inv(QDD qdd, BDDVAR first, BDDVAR last)
+{
+    LACE_ME;
+    
+    int k;
+    QDD res = qdd;
+    BDDVAR a, b;
+
+    // Note that we're not swapping the qubit order in this function
+    
+    // H gates and phase gates (but now backwards)
+    for (a = last + 1; a-- > first; ) { // weird for loop because BDDVARs are unsigned
+
+        // Controlled phase gates (negative angles this time)
+        for (b = last; b >= (a+1); b--){
+            k = (b - a) + 1;
+            res = qdd_cgate(res, GATEID_Rk_dag(k), a, b);
+        }
+
+        // H on current qubit
+        res = qdd_gate(res, GATEID_H, a);
+    }
 
     return res;
 }
@@ -662,9 +728,10 @@ TASK_IMPL_6(QDD, qdd_csubcirc, QDD, qdd, uint32_t, circ_id, BDDVAR*, cs, uint32_
 
     // If no more control qubits, apply sub-circ here
     if (c == UINT8_MAX || ci > MAX_CONTROLS) {
+        // TODO: move this switch case to separate function
         switch (circ_id) {
             case CIRCID_swap :
-                res = qdd_swap_circuit(qdd, t1, t2);
+                res = qdd_circuit_swap(qdd, t1, t2);
                 break;
             default :
                 assert ("Invalid circuit ID" && false);
@@ -788,72 +855,6 @@ TASK_IMPL_4(QDD, qdd_all_control_phase, QDD, qdd, BDDVAR, k, BDDVAR, n, bool*, x
 }
 
 
-QDD
-qdd_QFT(QDD qdd, BDDVAR first, BDDVAR last, bool swap)
-{
-    LACE_ME;
-
-    int k;
-    QDD res = qdd;
-    BDDVAR a, b;
-    for (a = first; a <= last; a++) {
-        
-        // H gate on current qubit
-        res = qdd_gate(res, GATEID_H, a);
-
-        // Controlled phase gates on all qubits below
-        for (b = a+1; b <= last; b++) {
-            k = (b - a) + 1;
-            res = qdd_cgate(res, GATEID_Rk(k), a, b);
-        }
-    }
-
-    // swap qubit order
-    if (swap) {
-        int num_qubits = (last - first) + 1;
-        for (int j = 0; j < (int)(num_qubits/2); j++) {
-            a = first + j;
-            b = last  - j;
-            res = qdd_swap_circuit(res, a, b);
-        }
-    }
-    return res;
-}
-
-QDD
-qdd_QFT_inv(QDD qdd, BDDVAR first, BDDVAR last, bool swap)
-{
-    LACE_ME;
-    
-    int k;
-    QDD res = qdd;
-    BDDVAR a, b;
-
-    // swap gates
-    if (swap) {
-        int num_qubits = (last - first) + 1;
-        for (int j = 0; j < (int)(num_qubits/2); j++) {
-            a = first + j;
-            b = last  - j;
-            res = qdd_swap_circuit(res, a, b);
-        }
-    }
-    
-    // H gates and phase gates (but now backwards)
-    for (a = last + 1; a-- > 0; ) { // weird for loop because BDDVARs are unsigned
-
-        // Controlled phase gates (negative angles this time)
-        for (b = last; b >= (a+1); b--){
-            k = (b - a) + 1;
-            res = qdd_cgate(res, GATEID_Rk_dag(k), a, b);
-        }
-
-        // H on current qubit
-        res = qdd_gate(res, GATEID_H, a);
-    }
-
-    return res;
-}
 
 /********************</applying (controlled) sub-circuits>*********************/
 
@@ -1026,9 +1027,9 @@ QDD
 qdd_measure_qubit(QDD qdd, BDDVAR k, int *m, double *p)
 {
     if (k == 0) return qdd_measure_q0(qdd, m, p);
-    qdd = qdd_swap_circuit(qdd, 0, k);
+    qdd = qdd_circuit_swap(qdd, 0, k);
     qdd = qdd_measure_q0(qdd, m, p);
-    qdd = qdd_swap_circuit(qdd, 0, k);
+    qdd = qdd_circuit_swap(qdd, 0, k);
     return qdd;
 }
 
