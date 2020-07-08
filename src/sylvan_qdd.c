@@ -921,6 +921,29 @@ qdd_grover(BDDVAR n, bool* flag)
 
 /*******************************<Shor components>******************************/
 
+uint64_t 
+inverse_mod(uint64_t a, uint64_t N) {
+    int t = 0;
+	int newt = 1;
+    int r = N;
+    int newr = a;
+    int h;
+    while(newr != 0) {
+        int quotient = r / newr;
+        h = t;
+        t = newt;
+        newt = h - quotient * newt;
+        h = r;
+        r = newr;
+        newr = h - quotient * newr;
+    }
+    if(r > 1)
+        printf("ERROR: a is not invertible\n");
+    if(t < 0)
+    	t = t + N;
+    return t;
+}
+
 QDD 
 qdd_phi_add(QDD qdd, BDDVAR first, BDDVAR last, bool* a) 
 {
@@ -1030,7 +1053,7 @@ qdd_phi_add_mod_inv(QDD qdd, BDDVAR* cs)
 
 
 QDD
-qdd_shor_cmult(QDD qdd)
+qdd_cmult(QDD qdd, uint64_t a, uint64_t N)
 {
     // control      = q[0], 
     // target range = q[1], q[2n+2]
@@ -1040,42 +1063,99 @@ qdd_shor_cmult(QDD qdd)
     // 2. loop over k
         // 2a. double controlled phi_add_mod(a* 2^k)
     // 3. QFT^-1 on bottom register
+    return qdd;
 }
 
 QDD
-qdd_shor_ua(QDD qdd, uint32_t n)
+qdd_cmult_inv(QDD qdd, uint64_t a, uint64_t N)
+{
+    // inverse of above
+
+    return qdd;
+}
+
+QDD
+qdd_shor_ua(QDD qdd,  uint64_t a, uint64_t N)
 {
     // control      = q[0], 
     // target range = q[1], q[2n+2]
-    QDD res = qdd;
 
-    // (always control on q0)
-    // TODO
+    // (always control on q0) (->parameterize?)
+
+    // WIP
     // 1. controlled Cmult(a)
+    qdd = qdd_cmult(qdd, a, N);
     // 2. controlled swap top/bottom registers
-    // 3. controlled Cmult_inv(a^-1)
 
-    return res;
+    // 3. controlled Cmult_inv(a^-1)
+    uint64_t a_inv = inverse_mod(a, N);
+    qdd = qdd_cmult_inv(qdd, a_inv, N);
+
+    return qdd;
 }
 
 uint32_t
-shor_period_finding()
+shor_period_finding(uint64_t a, uint64_t N)
 {
     // TODO: circuit (quantum period finding of f(x) = a^x mod N)
     // create QDD
+    uint32_t num_qubits = 2*shor_n + 3;
+    QDD qdd = qdd_create_all_zero_state(num_qubits); // TODO: not all zero state
 
-    // for...
-    // H
-    // controlled Ua^...
-    // single qubit gate
-    // measure q0
-    // 
+    int as[2*shor_n];
+	as[2*shor_n-1] = a;
+	uint64_t new_a = a;
+	for(int i = 2*shor_n-2; i >= 0; i--) {
+		new_a = new_a * new_a;
+		new_a = new_a % N;
+		as[i] = new_a;
+	}
+
+    printf("as:[");
+    for (int i = 0; i < 2*shor_n; i++) printf("%ld, ", as[i]);
+    printf("]\n");
+
+    LACE_ME;
+
+    int m_outcomes[2*num_qubits];
+    int m_outcome;
+    double m_prob;
+
+    for (int i = 0; i < 2*shor_n; i++) {
+        // H on top wire
+        qdd = qdd_gate(qdd, GATEID_H, 0);
+        // controlled Ua^...
+        qdd = qdd_shor_ua(qdd, as[i], N);
+
+        // phase gates based on previous measurement
+        int k = 1; // maybe this needs to start at 2
+        for (int j = i-1; j >= 0; j--) {
+            if (m_outcomes[j] == 1)
+                qdd = qdd_gate(qdd, GATEID_Rk_dag(k), 0); // maybe Rk instead
+            k = k << 1; // 2^(iteration)
+        }
+
+        // H on top wire
+        qdd = qdd_gate(qdd, GATEID_H, 0);
+        // measure q0
+        qdd = qdd_measure_qubit(qdd, 0, &m_outcome, &m_prob);
+        m_outcomes[i] = m_outcome;
+        // make sure q0 is in the |0> state
+        if (m_outcome == 1) qdd = qdd_gate(qdd, GATEID_X, 0);
+
+        // reset cache
+        sylvan_clear_cache();
+        // (clean amp table?)
+    }
+    
 }
 
 void
 shor_set_globals(uint64_t a, uint64_t N) 
 {
     shor_n = ceil(log2(N)); // need 2n + 3 qubits
+    bool as[shor_n],  Ns[shor_n];
+
     // TODO: set int[] with bitvalues of a
     // TODO: set int[] with bitvalues of N
 }
@@ -1099,14 +1179,12 @@ run_shor(uint64_t N)
 	} while (my_gcd(a, N) != 1 || a == 1);
 
     shor_set_globals(a, N);
-    uint32_t num_qubits = shor_n*2 + 3;
-
+    
     printf("input N        = %ld\n", N);
-    printf("n (bits for N) = %d\n", shor_n);
-    printf("2n + 3         = %d\n", num_qubits);
-    printf("random a       = %ld\n",a);
+    printf("n (bits for N) = %d\n",  shor_n);
+    printf("random a       = %ld\n", a);
 
-    uint32_t r = shor_period_finding();
+    uint32_t r = shor_period_finding(a, N);
 
     // TODO: post processing
 }
@@ -1451,8 +1529,6 @@ qdd_fprintdot_rec(FILE *out, QDD qdd)
                 QDD_PTR(qdd), qddnode_getptrhigh(n));
     qdd_fprintdot_label(out, qddnode_getamphigh(n));
     fprintf(out, "];\n");
-    
-    // TODO: edge weights
 }
 
 void
