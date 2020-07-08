@@ -125,10 +125,15 @@ TASK_DECL_4(QDD, qdd_cgate, QDD, uint32_t, BDDVAR, BDDVAR);
 /*********************<applying (controlled) sub-circuits>*********************/
 
 // Circuit IDs
-#define CIRCID_swap         0
-#define CIRCID_swap_range   1
-#define CIRCID_QFT          2
-#define CIRCID_QFT_inv      3
+#define CIRCID_swap          0
+#define CIRCID_swap_range    1
+#define CIRCID_QFT           2
+#define CIRCID_QFT_inv       3
+#define CIRCID_phi_add_a     4 // part of Shor (not the greatest way to do this)
+#define CIRCID_phi_add_N     5 // part of Shor
+#define CIRCID_phi_add_a_inv 6 // part of Shor
+#define CIRCID_phi_add_N_inv 7 // part of Shor
+
 // For now we have at most 3 control qubits
 static const uint32_t MAX_CONTROLS = 3;
 
@@ -216,11 +221,18 @@ QDD qdd_grover(BDDVAR n, bool* flag);
  * 
  * Returns A QDD encoding |phi(x + a)>, with (x+a)
  */
-QDD qdd_phi_add(QDD qdd, BDDVAR first, BDDVAR last, bool* a);
+QDD qdd_phi_add(QDD qdd, BDDVAR first, BDDVAR last, bool* a); // Fig. 3
 QDD qdd_phi_add_inv(QDD qdd, BDDVAR first, BDDVAR last, bool* a);
-QDD qdd_phi_add_mod();
-QDD qdd_cmult();
-QDD qdd_shor();
+QDD qdd_phi_add_mod(QDD qdd, BDDVAR* cs); // Fig. 5
+QDD qdd_phi_add_mod_inv();
+QDD qdd_cmult(); // Fig. 6
+QDD qdd_cmult_inv();
+QDD qdd_shor_ua(QDD qdd, uint32_t n); // Fig. 7
+void run_shor();
+// global vars for Shor (not ideal but it is difficult enough as it is)
+uint32_t  shor_n;
+uint32_t* shor_bits_a;
+uint32_t* shor_bits_N;
 
 
 /**

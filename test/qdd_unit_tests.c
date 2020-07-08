@@ -1052,7 +1052,9 @@ int test_shor()
     x3[0]=1; x3[1]=1; x3[2]=1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     // </Test qdd_phi_add>
 
-
+    printf("\n");
+    run_shor(15);
+    printf("\n\n");
 
     if(VERBOSE) printf("qdd Shor:                 TODO\n");
     return 0;

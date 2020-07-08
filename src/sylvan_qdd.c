@@ -713,11 +713,15 @@ qdd_circuit_QFT_inv(QDD qdd, BDDVAR first, BDDVAR last)
 QDD
 qdd_circuit(QDD qdd, uint32_t circ_id, BDDVAR t1, BDDVAR t2)
 {
-    switch (circ_id) {  // don't judge me
-        case CIRCID_swap       : return qdd_circuit_swap(qdd, t1, t2);
-        case CIRCID_swap_range : return qdd_circuit_swap_range(qdd, t1, t2);
-        case CIRCID_QFT        : return qdd_circuit_QFT(qdd, t1, t2);
-        case CIRCID_QFT_inv    : return qdd_circuit_QFT_inv(qdd, t1, t2);
+    switch (circ_id) {  // don't judge me please
+        case CIRCID_swap          : return qdd_circuit_swap(qdd, t1, t2);
+        case CIRCID_swap_range    : return qdd_circuit_swap_range(qdd, t1, t2);
+        case CIRCID_QFT           : return qdd_circuit_QFT(qdd, t1, t2);
+        case CIRCID_QFT_inv       : return qdd_circuit_QFT_inv(qdd, t1, t2);
+        case CIRCID_phi_add_a     : return qdd_phi_add(qdd, t1, t2, shor_bits_a);
+        case CIRCID_phi_add_N     : return qdd_phi_add(qdd, t1, t2, shor_bits_N);
+        case CIRCID_phi_add_a_inv : return qdd_phi_add_inv(qdd, t1, t2, shor_bits_a);
+        case CIRCID_phi_add_N_inv : return qdd_phi_add_inv(qdd, t1, t2, shor_bits_N);
         default :
             assert ("Invalid circuit ID" && false);
     }
@@ -961,6 +965,150 @@ qdd_phi_add_inv(QDD qdd, BDDVAR first, BDDVAR last, bool* a)
         }
     }
     return res;
+}
+
+QDD
+qdd_phi_add_mod(QDD qdd, BDDVAR* cs)
+{
+    // control      = q[0], q[k] with 1 <= k <= n
+    // target range = q[n+1], q[2n+2]
+    // (not 100% sure about this)
+    BDDVAR b4_t1  = 0;
+    BDDVAR t1     = shor_n + 1;
+    BDDVAR t2     = 2*shor_n;
+    BDDVAR qft_ex = 2*shor_n + 1; // ? this "extra" qubit for QFT in Fig. 5
+    BDDVAR bottom = 2*shor_n + 2;
+
+    LACE_ME;
+
+    QDD res = qdd;
+    // 1.  controlled(c1,c2) phi_add(a)
+    res = qdd_ccircuit(res, CIRCID_phi_add_a, cs, t1, t2);
+    // 2.  phi_add_inv(N)
+    res = qdd_circuit(res, CIRCID_phi_add_N_inv, t1, t2);
+    // 3.  QFT_inv
+    res = qdd_circuit(res, CIRCID_QFT_inv, t1, qft_ex);
+    // 4.  CNOT (target "bottom" qubit)
+    res = qdd_cgate(res, GATEID_X, qft_ex, bottom);
+    // 5.  QFT
+    res = qdd_circuit(res, CIRCID_QFT, t1, qft_ex);
+    // 6.  controlled phi_add(N) (control "bottom" target)
+        // 6a. swap
+        res = qdd_circuit(res, CIRCID_swap, b4_t1, bottom);
+        // 6b. controlled phi_add(N) with control above target
+        res = qdd_ccircuit(res, CIRCID_phi_add_N, b4_t1, t1, t2);
+        // 6c. swap back
+        res = qdd_circuit(res, CIRCID_swap, b4_t1, bottom);
+    // 7. controlled(c1, c2) phi_add_inv(a)
+    res = qdd_ccircuit(res, CIRCID_phi_add_a_inv, cs, t1, t2);
+    // 8.  QFT_inv
+    res = qdd_circuit(res, CIRCID_QFT_inv, t1, qft_ex);
+    // 9.  X on ...?
+    res = qdd_gate(res, GATEID_X, qft_ex);
+    // 10. CNOT
+    res = qdd_cgate(res, GATEID_X, qft_ex, bottom);
+    // 11. X on ...?
+    res = qdd_gate(res, GATEID_X, qft_ex);
+    // 12. QFT
+    res = qdd_circuit(res, CIRCID_swap, t1, qft_ex);
+    // 13. phi_add(a)
+    res = qdd_ccircuit(res, CIRCID_phi_add_a, cs, t1, t2);
+    
+    return res;
+}
+
+QDD
+qdd_phi_add_mod_inv(QDD qdd, BDDVAR* cs)
+{
+    // Inverse of function above
+    QDD res = qdd;
+
+    // TODO
+
+    return res;
+}
+
+
+QDD
+qdd_shor_cmult(QDD qdd)
+{
+    // control      = q[0], 
+    // target range = q[1], q[2n+2]
+
+    // this implements the _controlled_ cmult operation
+    // 1. QFT on bottom register
+    // 2. loop over k
+        // 2a. double controlled phi_add_mod(a* 2^k)
+    // 3. QFT^-1 on bottom register
+}
+
+QDD
+qdd_shor_ua(QDD qdd, uint32_t n)
+{
+    // control      = q[0], 
+    // target range = q[1], q[2n+2]
+    QDD res = qdd;
+
+    // (always control on q0)
+    // TODO
+    // 1. controlled Cmult(a)
+    // 2. controlled swap top/bottom registers
+    // 3. controlled Cmult_inv(a^-1)
+
+    return res;
+}
+
+uint32_t
+shor_period_finding()
+{
+    // TODO: circuit (quantum period finding of f(x) = a^x mod N)
+    // create QDD
+
+    // for...
+    // H
+    // controlled Ua^...
+    // single qubit gate
+    // measure q0
+    // 
+}
+
+void
+shor_set_globals(uint64_t a, uint64_t N) 
+{
+    shor_n = ceil(log2(N)); // need 2n + 3 qubits
+    // TODO: set int[] with bitvalues of a
+    // TODO: set int[] with bitvalues of N
+}
+
+uint64_t 
+my_gcd (uint64_t a, uint64_t b) // clash with gcd in sylvan_mtbdd.c ...
+{
+  uint64_t c;
+  while ( a != 0 ) { c = a; a = b%a;  b = c; }
+  return b;
+}
+
+void
+run_shor(uint64_t N)
+{
+    // TODO: the classical part
+    srand(time(NULL));
+    uint64_t a;
+	do {
+		a = rand() % N;
+	} while (my_gcd(a, N) != 1 || a == 1);
+
+    shor_set_globals(a, N);
+    uint32_t num_qubits = shor_n*2 + 3;
+
+    printf("input N        = %ld\n", N);
+    printf("n (bits for N) = %d\n", shor_n);
+    printf("2n + 3         = %d\n", num_qubits);
+    printf("random a       = %ld\n",a);
+
+    uint32_t r = shor_period_finding();
+
+    // TODO: post processing
 }
 
 /******************************</Shor components>******************************/
