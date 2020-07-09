@@ -129,10 +129,10 @@ TASK_DECL_4(QDD, qdd_cgate, QDD, uint32_t, BDDVAR, BDDVAR);
 #define CIRCID_swap_range    1
 #define CIRCID_QFT           2
 #define CIRCID_QFT_inv       3
-#define CIRCID_phi_add_a     4 // part of Shor (not the greatest way to do this)
-#define CIRCID_phi_add_N     5 // part of Shor
-#define CIRCID_phi_add_a_inv 6 // part of Shor
-#define CIRCID_phi_add_N_inv 7 // part of Shor
+#define CIRCID_phi_add_a     4 // call phi_add(shor_bits_a)
+#define CIRCID_phi_add_N     5 // call phi_add(shor_bits_N)
+#define CIRCID_phi_add_a_inv 6 // call phi_add_inv(shor_bits_a)
+#define CIRCID_phi_add_N_inv 7 // call phi_add_inv(shor_bits_N)
 
 // For now we have at most 3 control qubits
 static const uint32_t MAX_CONTROLS = 3;
@@ -223,17 +223,18 @@ QDD qdd_grover(BDDVAR n, bool* flag);
  */
 QDD qdd_phi_add(QDD qdd, BDDVAR first, BDDVAR last, bool* a); // Fig. 3
 QDD qdd_phi_add_inv(QDD qdd, BDDVAR first, BDDVAR last, bool* a);
-QDD qdd_phi_add_mod(QDD qdd, BDDVAR* cs); // Fig. 5
+QDD qdd_phi_add_mod(QDD qdd, BDDVAR* cs, uint64_t a, uint64_t N); // Fig. 5
 QDD qdd_phi_add_mod_inv();
 QDD qdd_cmult(QDD qdd, uint64_t a, uint64_t N); // Fig. 6
 QDD qdd_cmult_inv(QDD qdd, uint64_t a, uint64_t N);
 QDD qdd_shor_ua(QDD qdd, uint64_t a, uint64_t N); // Fig. 7
 uint32_t shor_period_finding(uint64_t a, uint64_t N); // Fig. 8
+void shor_set_globals(uint64_t a, uint64_t N);
 void run_shor();
 // global vars for Shor (not ideal but it is difficult enough as it is)
 uint32_t  shor_n;
-bool* shor_bits_a;
-bool* shor_bits_N;
+bool shor_bits_a[64];
+bool shor_bits_N[64];
 
 
 /**
@@ -305,7 +306,7 @@ extern bool qdd_equivalent(QDD a, QDD b, int n, bool exact, bool verbose);
 // counts the nodes by recursively marking them (and unmarks when done)
 extern uint64_t qdd_countnodes(QDD qdd);
 
-void clean_amplitude_table(QDD qdds[], int number);
+void clean_amplitude_table(QDD qdds[], int n_qdds);
 /**
  * Recursive function for moving amps from old to new amp table.
  */
@@ -321,7 +322,7 @@ void qdd_fprintdot(FILE *out, QDD qdd);
 // debug stuff
 extern void qdd_printnodes(QDD q);
 bool _next_bitstring(bool *x, int n);
-void _print_bitstring(bool *x, int n);
+void _print_bitstring(bool *x, int n, bool backwards);
 
 
 #ifdef __cplusplus

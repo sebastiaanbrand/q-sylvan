@@ -345,14 +345,14 @@ qdd_countnodes(QDD qdd)
 /**************************<cleaning amplitude table>**************************/
 
 void
-clean_amplitude_table(QDD qdds[], int number)
+clean_amplitude_table(QDD qdds[], int n_qdds)
 {
     LACE_ME;
     // 1. Create new amp table
     init_new_empty_table();
 
     // 2. Fill new table with amps present in given QDDs
-    for (int i = 0; i < number; i++) qdds[i] = _fill_new_amp_table(qdds[i]);
+    for (int i = 0; i < n_qdds; i++) qdds[i] = _fill_new_amp_table(qdds[i]);
 
     // 3. Delete old amp table
     delete_old_table();
@@ -991,7 +991,7 @@ qdd_phi_add_inv(QDD qdd, BDDVAR first, BDDVAR last, bool* a)
 }
 
 QDD
-qdd_phi_add_mod(QDD qdd, BDDVAR* cs)
+qdd_phi_add_mod(QDD qdd, BDDVAR* cs, uint64_t a, uint64_t N)
 {
     // control      = q[0], q[k] with 1 <= k <= n
     // target range = q[n+1], q[2n+2]
@@ -1003,41 +1003,47 @@ qdd_phi_add_mod(QDD qdd, BDDVAR* cs)
     BDDVAR bottom = 2*shor_n + 2;
 
     LACE_ME;
+    // clear cache (this function is called with different a, and cached results
+    // are not parameterized on a)
+    sylvan_clear_cache();
+    shor_set_globals(a, N); // set bitvalues of a/N (N says the same though)
 
-    QDD res = qdd;
+
+    
     // 1.  controlled(c1,c2) phi_add(a)
-    res = qdd_ccircuit(res, CIRCID_phi_add_a, cs, t1, t2);
+    qdd = qdd_ccircuit(qdd, CIRCID_phi_add_a, cs, t1, t2); 
     // 2.  phi_add_inv(N)
-    res = qdd_circuit(res, CIRCID_phi_add_N_inv, t1, t2);
+    qdd = qdd_circuit(qdd, CIRCID_phi_add_N_inv, t1, t2); 
     // 3.  QFT_inv
-    res = qdd_circuit(res, CIRCID_QFT_inv, t1, qft_ex);
+    qdd = qdd_circuit(qdd, CIRCID_QFT_inv, t1, qft_ex);  
     // 4.  CNOT (target "bottom" qubit)
-    res = qdd_cgate(res, GATEID_X, qft_ex, bottom);
+    qdd = qdd_cgate(qdd, GATEID_X, qft_ex, bottom); /*
     // 5.  QFT
-    res = qdd_circuit(res, CIRCID_QFT, t1, qft_ex);
+    qdd = qdd_circuit(qdd, CIRCID_QFT, t1, qft_ex);
     // 6.  controlled phi_add(N) (control "bottom" target)
         // 6a. swap
-        res = qdd_circuit(res, CIRCID_swap, b4_t1, bottom);
+        qdd = qdd_circuit(qdd, CIRCID_swap, b4_t1, bottom);
         // 6b. controlled phi_add(N) with control above target
-        res = qdd_ccircuit(res, CIRCID_phi_add_N, b4_t1, t1, t2);
+        qdd = qdd_ccircuit(qdd, CIRCID_phi_add_N, b4_t1, t1, t2);
         // 6c. swap back
-        res = qdd_circuit(res, CIRCID_swap, b4_t1, bottom);
+        qdd = qdd_circuit(qdd, CIRCID_swap, b4_t1, bottom);
     // 7. controlled(c1, c2) phi_add_inv(a)
-    res = qdd_ccircuit(res, CIRCID_phi_add_a_inv, cs, t1, t2);
+    qdd = qdd_ccircuit(qdd, CIRCID_phi_add_a_inv, cs, t1, t2);
     // 8.  QFT_inv
-    res = qdd_circuit(res, CIRCID_QFT_inv, t1, qft_ex);
+    qdd = qdd_circuit(qdd, CIRCID_QFT_inv, t1, qft_ex);
     // 9.  X on ...?
-    res = qdd_gate(res, GATEID_X, qft_ex);
+    qdd = qdd_gate(qdd, GATEID_X, qft_ex);
     // 10. CNOT
-    res = qdd_cgate(res, GATEID_X, qft_ex, bottom);
+    qdd = qdd_cgate(qdd, GATEID_X, qft_ex, bottom);
     // 11. X on ...?
-    res = qdd_gate(res, GATEID_X, qft_ex);
+    qdd = qdd_gate(qdd, GATEID_X, qft_ex);
     // 12. QFT
-    res = qdd_circuit(res, CIRCID_swap, t1, qft_ex);
+    qdd = qdd_circuit(qdd, CIRCID_QFT, t1, qft_ex); 
     // 13. phi_add(a)
-    res = qdd_ccircuit(res, CIRCID_phi_add_a, cs, t1, t2);
-    
-    return res;
+    qdd = qdd_ccircuit(qdd, CIRCID_phi_add_a, cs, t1, t2); 
+    */
+
+    return qdd;
 }
 
 QDD
@@ -1057,12 +1063,26 @@ qdd_cmult(QDD qdd, uint64_t a, uint64_t N)
 {
     // control      = q[0], 
     // target range = q[1], q[2n+2]
+    BDDVAR qft_t1 = shor_n + 1;
+    BDDVAR qft_t2 = 2*shor_n; // + 1?
 
     // this implements the _controlled_ cmult operation
     // 1. QFT on bottom register
+    qdd = qdd_circuit(qdd, CIRCID_QFT, qft_t1, qft_t2);
+
     // 2. loop over k
+    uint64_t t = a;
+    BDDVAR cs[] = {0, QDD_INVALID_VAR, QDD_INVALID_VAR};
+    for (BDDVAR i = 1; i <= shor_n; i++) { // loop the other way in QMDD imp?
         // 2a. double controlled phi_add_mod(a* 2^k)
+        cs[1] = i;
+        qdd = qdd_phi_add_mod(qdd, cs, t, N);
+        t = (2*t) % N;
+    }
+
     // 3. QFT^-1 on bottom register
+    qdd = qdd_circuit(qdd, CIRCID_QFT_inv, qft_t1, qft_t2);
+
     return qdd;
 }
 
@@ -1080,12 +1100,19 @@ qdd_shor_ua(QDD qdd,  uint64_t a, uint64_t N)
     // control      = q[0], 
     // target range = q[1], q[2n+2]
 
+    LACE_ME;
+
     // (always control on q0) (->parameterize?)
 
     // WIP
     // 1. controlled Cmult(a)
     qdd = qdd_cmult(qdd, a, N);
-    // 2. controlled swap top/bottom registers
+
+    // 2. controlled swap top/bottom registers (not sure what QMDD imp. is doing)
+    BDDVAR cs[] = {0, QDD_INVALID_VAR, QDD_INVALID_VAR};
+    for (int i = 1; i <= shor_n; i++) {
+        qdd = qdd_ccircuit(qdd, CIRCID_swap, cs, i, shor_n+i)
+    }
 
     // 3. controlled Cmult_inv(a^-1)
     uint64_t a_inv = inverse_mod(a, N);
@@ -1102,7 +1129,7 @@ shor_period_finding(uint64_t a, uint64_t N)
     uint32_t num_qubits = 2*shor_n + 3;
     QDD qdd = qdd_create_all_zero_state(num_qubits); // TODO: not all zero state
 
-    int as[2*shor_n];
+    uint64_t as[2*shor_n];
 	as[2*shor_n-1] = a;
 	uint64_t new_a = a;
 	for(int i = 2*shor_n-2; i >= 0; i--) {
@@ -1117,7 +1144,7 @@ shor_period_finding(uint64_t a, uint64_t N)
 
     LACE_ME;
 
-    int m_outcomes[2*num_qubits];
+    int m_outcomes[2*shor_n];
     int m_outcome;
     double m_prob;
 
@@ -1143,9 +1170,10 @@ shor_period_finding(uint64_t a, uint64_t N)
         // make sure q0 is in the |0> state
         if (m_outcome == 1) qdd = qdd_gate(qdd, GATEID_X, 0);
 
-        // reset cache
+        // reset cache, clean amp table
         sylvan_clear_cache();
-        // (clean amp table?)
+        QDD qdds[1]; qdds[0] = qdd;
+        clean_amplitude_table(qdds, 1);
     }
     
 }
@@ -1153,11 +1181,13 @@ shor_period_finding(uint64_t a, uint64_t N)
 void
 shor_set_globals(uint64_t a, uint64_t N) 
 {
-    shor_n = ceil(log2(N)); // need 2n + 3 qubits
-    bool as[shor_n],  Ns[shor_n];
-
-    // TODO: set int[] with bitvalues of a
-    // TODO: set int[] with bitvalues of N
+    shor_n = ceil(log2(N)); // number of bits for N (not the number of qubits!)  
+    uint64_t p2 = 1;
+    for (int i = 0; i < shor_n; i++) { // LSB in bits[0], MSB in bits[63]
+        shor_bits_a[i] = a & p2;
+        shor_bits_N[i] = N & p2;
+        p2 = p2 << 1;
+    }
 }
 
 uint64_t 
@@ -1227,7 +1257,11 @@ qdd_measure_q0(QDD qdd, int *m, double *p)
     double prob_root = _prob(QDD_AMP(qdd));
     prob_low  *= prob_root; // printf("p low  = %.60f\n", prob_low);
     prob_high *= prob_root; // printf("p high = %.60f\n", prob_high);
-    assert(abs(prob_low + prob_high - 1.0) < TOLERANCE);
+    if (fabs(prob_low + prob_high - 1.0) > TOLERANCE) {
+        //assert("probabilies don't sum to 1" && false);
+    }
+    printf("prob sum = %.55lf \n", prob_low + prob_high);
+    
 
     // flip a coin
     float rnd = ((float)rand())/RAND_MAX;
@@ -1383,7 +1417,7 @@ qdd_equivalent(QDD a, QDD b, int n, bool exact, bool verbose)
         if(exact){
             if(!CexactEqual(Cvalue(amp_a), Cvalue(amp_b))){
                 if(verbose){
-                    _print_bitstring(x, n);
+                    _print_bitstring(x, n, true);
                     printf(", amp a ="); Cprint(Cvalue(amp_a));
                     printf(" != amp b ="); Cprint(Cvalue(amp_b));
                     printf("\n");
@@ -1394,7 +1428,7 @@ qdd_equivalent(QDD a, QDD b, int n, bool exact, bool verbose)
         else{
             if(!CapproxEqual(Cvalue(amp_a), Cvalue(amp_b))){
                 if(verbose){
-                    _print_bitstring(x, n);
+                    _print_bitstring(x, n, true);
                     printf(", amp a ="); Cprint(Cvalue(amp_a));
                     printf(" !~= amp b ="); Cprint(Cvalue(amp_b));
                     printf("\n");
@@ -1426,9 +1460,12 @@ _next_bitstring(bool *x, int n)
 }
 
 void
-_print_bitstring(bool *x, int n)
+_print_bitstring(bool *x, int n, bool backwards)
 {
-    for(int k=n-1; k>=0; k--) printf("%d", x[k]);
+    if (backwards)
+        for(int k=n-1; k>=0; k--) printf("%d", x[k]);
+    else 
+        for(int k=0; k<n; k++) printf("%d", x[k]);
 }
 
 

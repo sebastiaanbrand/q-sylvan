@@ -69,7 +69,8 @@ cmap_find_or_put (const cmap_t *cmap, const complex_t *v, ref_t *ret)
     uint32_t            hash = SuperFastHash(&rounded, sizeof(complex_t), 0);
     uint32_t            prime = odd_primes[hash & PRIME_MASK];
     bucket_t *val = (bucket_t *) &rounded;
-    assert (val->d[0] != LOCK && val->d[0] != EMPTY);
+    assert (val->d[0] != LOCK);
+    assert (val->d[0] != EMPTY);
 
     for (unsigned int c = 0; c < cmap->threshold; c++) {
         size_t              ref = hash & cmap->mask;
