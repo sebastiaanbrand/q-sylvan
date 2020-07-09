@@ -370,6 +370,24 @@ int test_x_gate()
     test_assert(qdd_countnodes(q3) == 4);
     test_assert(qdd_countnodes(q4) == 4);
     test_assert(qdd_countnodes(q5) == 4);
+    
+    // Same 3 qubit test with sqrt(X)
+    x3[2] = 0; x3[1] = 0; x3[0] = 0; q3 = qdd_create_basis_state(3, x3);
+    x3[2] = 0; x3[1] = 1; x3[0] = 0; q4 = qdd_create_basis_state(3, x3);
+    x3[2] = 0; x3[1] = 1; x3[0] = 1; q5 = qdd_create_basis_state(3, x3);
+
+    q3 = qdd_gate(q3, GATEID_sqrtX, 1);
+    q3 = qdd_gate(q3, GATEID_sqrtX, 1); 
+    test_assert(q3 == q4);
+
+    q3 = qdd_gate(q3, GATEID_sqrtX, 0);
+    q3 = qdd_gate(q3, GATEID_sqrtX, 0); 
+    test_assert(q3 == q5);
+    
+    test_assert(qdd_countnodes(q3) == 4);
+    test_assert(qdd_countnodes(q4) == 4);
+    test_assert(qdd_countnodes(q5) == 4);
+
 
     if(VERBOSE) printf("qdd x gates:              ok\n");
     return 0;
@@ -1052,9 +1070,9 @@ int test_shor()
     x3[0]=1; x3[1]=1; x3[2]=1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     // </Test qdd_phi_add>
 
-    printf("\n");
-    run_shor(15);
-    printf("\n\n");
+    //printf("\n");
+    //run_shor(15);
+    //printf("\n\n");
 
     if(VERBOSE) printf("qdd Shor:                 TODO\n");
     return 0;

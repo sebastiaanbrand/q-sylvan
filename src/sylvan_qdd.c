@@ -1258,9 +1258,9 @@ qdd_measure_q0(QDD qdd, int *m, double *p)
     prob_low  *= prob_root; // printf("p low  = %.60f\n", prob_low);
     prob_high *= prob_root; // printf("p high = %.60f\n", prob_high);
     if (fabs(prob_low + prob_high - 1.0) > TOLERANCE) {
-        //assert("probabilies don't sum to 1" && false);
+        printf("prob sum = %.55lf \n", prob_low + prob_high);
+        assert("probabilies don't sum to 1" && false);
     }
-    printf("prob sum = %.55lf \n", prob_low + prob_high);
     
 
     // flip a coin

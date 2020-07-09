@@ -432,6 +432,15 @@ init_amplitude_table(int logsize)
     gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
     gates[k][2] = C_ZERO; gates[k][3] = Clookup(Cmake(1.0/sqrt(2.0), -1.0/sqrt(2.0)));
 
+    k = GATEID_sqrtX;
+    gates[k][0] = Clookup(Cmake(0.5, 0.5)); gates[k][1] = Clookup(Cmake(0.5,-0.5));
+    gates[k][2] = Clookup(Cmake(0.5,-0.5)); gates[k][3] = Clookup(Cmake(0.5, 0.5));
+
+    k = GATEID_sqrtY;
+    gates[k][0] = Clookup(Cmake(0.5, 0.5)); gates[k][1] = Clookup(Cmake(-0.5,-0.5));
+    gates[k][2] = Clookup(Cmake(0.5, 0.5)); gates[k][3] = Clookup(Cmake(0.5, 0.5));
+
+
     Pi = 2.0 * acos(0.0);
 
     init_phase_gates(255);
