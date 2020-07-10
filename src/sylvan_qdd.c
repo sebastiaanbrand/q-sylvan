@@ -1299,6 +1299,61 @@ qdd_measure_qubit(QDD qdd, BDDVAR k, int *m, double *p)
     return qdd;
 }
 
+QDD
+qdd_measure_all(QDD qdd, BDDVAR n, bool* ms)
+{
+    LACE_ME;
+
+    qddnode_t node;
+    bool skipped;
+    BDDVAR var;
+    double prob_low, prob_high, prob_sum;
+
+    for (BDDVAR k=0; k < n; k++) {
+        // find relevant node (assuming it should be the next one)
+        skipped = false;
+        if (QDD_PTR(qdd) == QDD_TERMINAL) {
+            skipped = true;
+        }
+        else {
+            node = QDD_GETNODE(QDD_PTR(qdd));
+            var = qddnode_getvar(node);
+            assert(var >= k);
+            if (var > k) skipped = true;
+        }
+        QDD low, high;
+        if (skipped) {
+            // if skipped q0 is a don't care, treat separately?
+            low  = qdd_bundle_ptr_amp(QDD_PTR(qdd), C_ONE);
+            high = qdd_bundle_ptr_amp(QDD_PTR(qdd), C_ONE);
+        }
+        else {
+            low  = qddnode_getlow(node);
+            high = qddnode_gethigh(node);
+        }
+
+        prob_low  = _qdd_unnormed_prob(low);
+        prob_high = _qdd_unnormed_prob(high); // LACE?
+        prob_sum  = prob_low + prob_high;
+        prob_high /= prob_sum;
+        prob_low  /= prob_sum;
+
+        if (fabs(prob_low + prob_high - 1.0) > TOLERANCE) {
+            printf("prob sum = %.55lf \n", prob_low + prob_high);
+            assert("probabilies don't sum to 1" && false);
+        }
+
+        // flip a coin
+        float rnd = ((float)rand())/RAND_MAX;
+        ms[k] = (rnd < prob_low) ? 0 : 1;
+
+        // Get next edge
+        qdd = (ms[k] == 0) ? low : high;
+    }
+
+    return qdd_create_basis_state(n, ms);
+}
+
 TASK_IMPL_1(QDD, _qdd_unnormed_prob, QDD, qdd)
 {
     if (QDD_PTR(qdd) == QDD_TERMINAL) return _prob(QDD_AMP(qdd));

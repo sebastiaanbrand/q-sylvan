@@ -249,6 +249,8 @@ bool shor_bits_N[64];
  */
 QDD qdd_measure_qubit(QDD qqd, BDDVAR k, int *m, double *p);
 
+QDD qdd_measure_all(QDD qdd, BDDVAR n, bool* ms);
+
 /**
  * (Recursive) helper function for obtaining probabilities for measurements
  */

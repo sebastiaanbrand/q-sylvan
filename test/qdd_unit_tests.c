@@ -775,6 +775,7 @@ int test_measurement()
     double prob;
 
     LACE_ME;
+    srand(time(NULL));
 
     // kets labeld as |q2, q1, q0>
     for(int i=0; i < repeat; i++) {
@@ -814,7 +815,7 @@ int test_measurement()
         q   = qdd_gate(q, GATEID_H, 0);
         qPM = qdd_measure_qubit(q, 0, &m, &prob);
         test_assert(abs(prob - 0.5) < TOLERANCE);
-        x3[2]=0; x3[1]=0; x3[0]=m; // either |001> or |001> depending on m
+        x3[2]=0; x3[1]=0; x3[0]=m; // either |000> or |001> depending on m
         q = qdd_create_basis_state(3, x3); 
         test_assert(qdd_equivalent(q, qPM, 3, false, true));
         test_assert(qdd_equivalent(q, qPM, 3, true, false));
@@ -844,6 +845,88 @@ int test_measurement()
         test_assert(qdd_equivalent(q, qPM, 3, true, false));
         test_assert(q == qPM);
     }
+
+    // Test measure all
+    bool ms[3] = {0};
+    int m_zer[3] = {0};
+    for(int i=0; i < repeat; i++) {
+        
+        // |000>  
+        x3[2]=0; x3[1]=0; x3[0]=0;
+        q   = qdd_create_basis_state(3, x3);
+        qPM = qdd_measure_all(q, 3, ms);
+        test_assert(ms[0] == 0);
+        test_assert(ms[1] == 0);
+        test_assert(ms[2] == 0);
+        test_assert(qdd_equivalent(q, qPM, 3, false, false));
+        test_assert(qdd_equivalent(q, qPM, 3, true, false));
+        test_assert(q == qPM);
+
+        // |010>
+        x3[2]=0; x3[1]=1; x3[0]=0;
+        q   = qdd_create_basis_state(3, x3);
+        qPM = qdd_measure_all(q, 3, ms);
+        test_assert(ms[0] == 0);
+        test_assert(ms[1] == 1);
+        test_assert(ms[2] == 0);
+        test_assert(qdd_equivalent(q, qPM, 3, false, false));
+        test_assert(qdd_equivalent(q, qPM, 3, true, false));
+        test_assert(q == qPM);
+
+        // |011>
+        x3[2]=0; x3[1]=1; x3[0]=1;
+        q   = qdd_create_basis_state(3, x3);
+        qPM = qdd_measure_all(q, 3, ms);
+        test_assert(ms[0] == 1);
+        test_assert(ms[1] == 1);
+        test_assert(ms[2] == 0);
+        test_assert(qdd_equivalent(q, qPM, 3, false, false));
+        test_assert(qdd_equivalent(q, qPM, 3, true, false));
+        test_assert(q == qPM);
+
+       // |00+>
+        x3[2]=0; x3[1]=0; x3[0]=0;
+        q   = qdd_create_basis_state(3, x3);
+        q   = qdd_gate(q, GATEID_H, 0);
+        qPM = qdd_measure_all(q, 3, ms);
+        x3[2]=0; x3[1]=0; x3[0]=ms[0]; // either |000> or |001> depending on m
+        q = qdd_create_basis_state(3, x3); 
+        test_assert(qdd_equivalent(q, qPM, 3, false, true));
+        test_assert(qdd_equivalent(q, qPM, 3, true, false));
+        test_assert(q == qPM);
+        if (ms[0] == 0) m_zer[0] += 1;
+
+         // |0+0>
+        x3[2]=0; x3[1]=0; x3[0]=0;
+        q   = qdd_create_basis_state(3, x3);
+        q   = qdd_gate(q, GATEID_H, 1);
+        qPM = qdd_measure_all(q, 3, ms);
+        x3[2]=0; x3[1]=ms[1]; x3[0]=0; // either |000> or |010> depending on m
+        q = qdd_create_basis_state(3, x3);
+        test_assert(qdd_equivalent(q, qPM, 3, false, true));
+        test_assert(qdd_equivalent(q, qPM, 3, true, false));
+        test_assert(q == qPM);
+        if (ms[1] == 0) m_zer[1] += 1;
+
+        // |+00>
+        x3[2]=0; x3[1]=0; x3[0]=0;
+        q   = qdd_create_basis_state(3, x3);
+        q   = qdd_gate(q, GATEID_H, 2);
+        qPM = qdd_measure_all(q, 3, ms);
+        x3[2]=ms[2]; x3[1]=0; x3[0]=0; // either |000> or |100> depending on m
+        q = qdd_create_basis_state(3, x3);
+        test_assert(qdd_equivalent(q, qPM, 3, false, true));
+        test_assert(qdd_equivalent(q, qPM, 3, true, false));
+        test_assert(q == qPM);
+        if (ms[2] == 0) m_zer[2] += 1;
+    }
+    // test having measured |0> and |1> at least once each for |00+>, |0+0> and 
+    // |+00>. (the probability that that doesn't happen is about 99.7% for 
+    // repeat = 10)
+    test_assert(m_zer[0] > 0);  test_assert(m_zer[0] < repeat);
+    test_assert(m_zer[1] > 0);  test_assert(m_zer[1] < repeat);
+    test_assert(m_zer[2] > 0);  test_assert(m_zer[2] < repeat);
+
     
     // TODO: more tests
 
