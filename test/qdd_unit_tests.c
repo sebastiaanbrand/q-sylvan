@@ -923,46 +923,42 @@ int test_QFT()
     x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(-1.4698445030241994e-01,-9.8211869798387752e-02),thres));
     
     // inverse QFT
-    //   the equality checks as done for the 3 qubit  case don't pass here
-    //   (because of float/rounding imprecision?)
     q5 = qdd_circuit(q5, CIRCID_swap_range, 0, 4);
     q5 = qdd_circuit(q5, CIRCID_QFT_inv, 0, 4);
     
+    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
+    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
+    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
+    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
+    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
+    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
+    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
+    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
+    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
+    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
+    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
+    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
+    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
+    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
+    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
+    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
+    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
+    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
+    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
+    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
+    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
+    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
+    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(1, 0), thres));
+    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
+    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
+    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
+    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
+    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
+    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
+    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
+    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
+    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
     
-    /*
-    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); Cprint(Cvalue(a)); printf("\n"); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); Cprint(Cvalue(a)); printf("\n"); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); Cprint(Cvalue(a)); printf("\n"); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); Cprint(Cvalue(a)); printf("\n"); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); Cprint(Cvalue(a)); printf("\n"); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); Cprint(Cvalue(a)); printf("\n"); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); Cprint(Cvalue(a)); printf("\n"); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); Cprint(Cvalue(a)); printf("\n"); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); Cprint(Cvalue(a)); printf("\n"); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); Cprint(Cvalue(a)); printf("\n"); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); Cprint(Cvalue(a)); printf("\n"); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); Cprint(Cvalue(a)); printf("\n"); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); Cprint(Cvalue(a)); printf("\n"); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); Cprint(Cvalue(a)); printf("\n"); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); Cprint(Cvalue(a)); printf("\n"); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); Cprint(Cvalue(a)); printf("\n"); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); Cprint(Cvalue(a)); printf("\n"); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); Cprint(Cvalue(a)); printf("\n"); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); Cprint(Cvalue(a)); printf("\n"); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); Cprint(Cvalue(a)); printf("\n"); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); Cprint(Cvalue(a)); printf("\n"); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); Cprint(Cvalue(a)); printf("\n"); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); Cprint(Cvalue(a)); printf("\n"); test_assert(CepsilonClose(Cvalue(a), Cmake(1, 0), thres));
-    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); Cprint(Cvalue(a)); printf("\n"); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); Cprint(Cvalue(a)); printf("\n"); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); Cprint(Cvalue(a)); printf("\n"); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); Cprint(Cvalue(a)); printf("\n"); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); Cprint(Cvalue(a)); printf("\n"); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); Cprint(Cvalue(a)); printf("\n"); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); Cprint(Cvalue(a)); printf("\n"); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); Cprint(Cvalue(a)); printf("\n"); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); Cprint(Cvalue(a)); printf("\n"); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    */
     
     if(VERBOSE) printf("qdd QFT test (tol=%.0e):  ~\n", thres);
     return 0;

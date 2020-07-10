@@ -54,29 +54,41 @@ print_bucket_bits(bucket_t* b)
 }
 
 bool
+complex_close(complex_t *in_table, const complex_t* to_insrt)
+{
+    return ((fabs(in_table->r - in_table->r) < TOLERANCE) && 
+            (fabs(to_insrt->i - to_insrt->i) < TOLERANCE));
+}
+
+bool
 cmap_find_or_put (const cmap_t *cmap, const complex_t *v, ref_t *ret)
 {
-    // TODO: round based on number of significant digits rather than
-    // some absolute value
-    complex_t rounded;
-    rounded.r = round(v->r * INV_TOLERANCE)/INV_TOLERANCE;
-    rounded.i = round(v->i * INV_TOLERANCE)/INV_TOLERANCE;
+    // Round the value to compute the hash with, but store the actual value v
+    complex_t round_v;
+    round_v.r = round(v->r * INV_TOLERANCE)/INV_TOLERANCE;
+    round_v.i = round(v->i * INV_TOLERANCE)/INV_TOLERANCE;
 
     // fix 0 possibly having a sign
-    if(rounded.r == 0.0) rounded.r = 0.0;
-    if(rounded.i == 0.0) rounded.i = 0.0;
+    if(round_v.r == 0.0) round_v.r = 0.0;
+    if(round_v.i == 0.0) round_v.i = 0.0;
 
-    uint32_t            hash = SuperFastHash(&rounded, sizeof(complex_t), 0);
-    uint32_t            prime = odd_primes[hash & PRIME_MASK];
-    bucket_t *val = (bucket_t *) &rounded;
+    uint32_t hash  = SuperFastHash(&round_v, sizeof(complex_t), 0);
+    uint32_t prime = odd_primes[hash & PRIME_MASK];
+    bucket_t *val  = (bucket_t *) v;
+
     assert (val->d[0] != LOCK);
     assert (val->d[0] != EMPTY);
 
+    // Insert/lookup `v`
     for (unsigned int c = 0; c < cmap->threshold; c++) {
         size_t              ref = hash & cmap->mask;
         size_t              line_end = (ref & CL_MASK) + CACHE_LINE_SIZE;
         for (size_t i = 0; i < CACHE_LINE_SIZE; i++) {
-            bucket_t           *bucket = &cmap->table[ref];
+            
+            // 1. Get bucket
+            bucket_t *bucket = &cmap->table[ref];
+
+            // 2. If bucket empty, insert new value here
             if (bucket->d[0] == EMPTY) {
                 if (cas(&bucket->d[0], EMPTY, LOCK)) {
                     *ret = ref;
@@ -85,14 +97,18 @@ cmap_find_or_put (const cmap_t *cmap, const complex_t *v, ref_t *ret)
                     return 0;
                 }
             }
+
+            // 3. Bucket not empty, wait for lock
             while (atomic_read(&bucket->d[0]) == LOCK) {}
 
-            if (    bucket->d[0] == val->d[0] &&
-                    bucket->d[1] == val->d[1]
-                    ) {
+            // 4. Bucket contains some complex value, check if close to `v`
+            complex_t *in_table = (complex_t *)bucket;
+            if (complex_close(in_table, v)) {
                 *ret = ref;
                 return 1;
             }
+
+            // If unsuccessful, try next
             ref += 1;
             ref = ref == line_end ? line_end - CACHE_LINE_SIZE : ref;
         }
