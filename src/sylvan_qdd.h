@@ -224,11 +224,11 @@ QDD qdd_grover(BDDVAR n, bool* flag);
 QDD qdd_phi_add(QDD qdd, BDDVAR first, BDDVAR last, bool* a); // Fig. 3
 QDD qdd_phi_add_inv(QDD qdd, BDDVAR first, BDDVAR last, bool* a);
 QDD qdd_phi_add_mod(QDD qdd, BDDVAR* cs, uint64_t a, uint64_t N); // Fig. 5
-QDD qdd_phi_add_mod_inv();
+QDD qdd_phi_add_mod_inv(QDD qdd, BDDVAR* cs, uint64_t a, uint64_t N);
 QDD qdd_cmult(QDD qdd, uint64_t a, uint64_t N); // Fig. 6
 QDD qdd_cmult_inv(QDD qdd, uint64_t a, uint64_t N);
 QDD qdd_shor_ua(QDD qdd, uint64_t a, uint64_t N); // Fig. 7
-uint32_t shor_period_finding(uint64_t a, uint64_t N); // Fig. 8
+uint64_t shor_period_finding(uint64_t a, uint64_t N); // Fig. 8
 void shor_set_globals(uint64_t a, uint64_t N);
 void run_shor();
 // global vars for Shor (not ideal but it is difficult enough as it is)

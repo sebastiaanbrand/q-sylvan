@@ -1011,20 +1011,21 @@ qdd_phi_add_mod(QDD qdd, BDDVAR* cs, uint64_t a, uint64_t N)
 
     
     // 1.  controlled(c1,c2) phi_add(a)
-    qdd = qdd_ccircuit(qdd, CIRCID_phi_add_a, cs, t1, t2); 
+    qdd = qdd_ccircuit(qdd, CIRCID_phi_add_a, cs, t1, t2);
     // 2.  phi_add_inv(N)
-    qdd = qdd_circuit(qdd, CIRCID_phi_add_N_inv, t1, t2); 
+    qdd = qdd_circuit(qdd, CIRCID_phi_add_N_inv, t1, t2);
     // 3.  QFT_inv
-    qdd = qdd_circuit(qdd, CIRCID_QFT_inv, t1, qft_ex);  
+    qdd = qdd_circuit(qdd, CIRCID_QFT_inv, t1, qft_ex);
     // 4.  CNOT (target "bottom" qubit)
-    qdd = qdd_cgate(qdd, GATEID_X, qft_ex, bottom); /*
+    qdd = qdd_cgate(qdd, GATEID_X, qft_ex, bottom);
     // 5.  QFT
     qdd = qdd_circuit(qdd, CIRCID_QFT, t1, qft_ex);
     // 6.  controlled phi_add(N) (control "bottom" target)
         // 6a. swap
-        qdd = qdd_circuit(qdd, CIRCID_swap, b4_t1, bottom);
+        qdd = qdd_circuit(qdd, CIRCID_swap, b4_t1, bottom); 
         // 6b. controlled phi_add(N) with control above target
-        qdd = qdd_ccircuit(qdd, CIRCID_phi_add_N, b4_t1, t1, t2);
+        BDDVAR controls[] = {b4_t1, QDD_INVALID_VAR, QDD_INVALID_VAR};
+        qdd = qdd_ccircuit(qdd, CIRCID_phi_add_N, controls, t1, t2);
         // 6c. swap back
         qdd = qdd_circuit(qdd, CIRCID_swap, b4_t1, bottom);
     // 7. controlled(c1, c2) phi_add_inv(a)
@@ -1039,22 +1040,62 @@ qdd_phi_add_mod(QDD qdd, BDDVAR* cs, uint64_t a, uint64_t N)
     qdd = qdd_gate(qdd, GATEID_X, qft_ex);
     // 12. QFT
     qdd = qdd_circuit(qdd, CIRCID_QFT, t1, qft_ex); 
-    // 13. phi_add(a)
+    // 13. controlled(c1,c2) phi_add(a)
     qdd = qdd_ccircuit(qdd, CIRCID_phi_add_a, cs, t1, t2); 
-    */
 
     return qdd;
 }
 
 QDD
-qdd_phi_add_mod_inv(QDD qdd, BDDVAR* cs)
+qdd_phi_add_mod_inv(QDD qdd, BDDVAR* cs, uint64_t a, uint64_t N)
 {
     // Inverse of function above
-    QDD res = qdd;
+    BDDVAR b4_t1  = 0;
+    BDDVAR t1     = shor_n + 1;
+    BDDVAR t2     = 2*shor_n;
+    BDDVAR qft_ex = 2*shor_n + 1;
+    BDDVAR bottom = 2*shor_n + 2;
 
-    // TODO
+    LACE_ME;
+    // clear cache (this function is called with different a, and cached results
+    // are not parameterized on a)
+    sylvan_clear_cache();
+    shor_set_globals(a, N); // set bitvalues of a/N (N says the same though)
 
-    return res;
+    // 13. controlled(c1,c2) phi_add_inv(a)
+    qdd = qdd_ccircuit(qdd, CIRCID_phi_add_a_inv, cs, t1, t2);
+    // 12. QFT^-1
+    qdd = qdd_circuit(qdd, CIRCID_QFT_inv, t1, qft_ex);
+    // 11. X^-1 = X
+    qdd = qdd_gate(qdd, GATEID_X, qft_ex);
+    // 10. CNOT^-1 = CNOT
+    qdd = qdd_cgate(qdd, GATEID_X, qft_ex, bottom);
+    // 9.  X^-1 = X
+    qdd = qdd_gate(qdd, GATEID_X, qft_ex);
+    // 8.  (QFT^-1)^-1 = QFT
+    qdd = qdd_circuit(qdd, CIRCID_QFT, t1, qft_ex);
+    // 7.  controlled(c1, c2) phi_add(a)
+    qdd = qdd_ccircuit(qdd, CIRCID_phi_add_a, cs, t1, t2);
+    // 6.  controlled phi_add_inv(N) (control "bottom" target)
+        // 6a. swap
+        qdd = qdd_circuit(qdd, CIRCID_swap, b4_t1, bottom); 
+        // 6b. controlled phi_add_inv(N) with control above target
+        BDDVAR controls[] = {b4_t1, QDD_INVALID_VAR, QDD_INVALID_VAR};
+        qdd = qdd_ccircuit(qdd, CIRCID_phi_add_N_inv, controls, t1, t2);
+        // 6c. swap back
+        qdd = qdd_circuit(qdd, CIRCID_swap, b4_t1, bottom);
+    // 5.  QFT^-1
+    qdd = qdd_circuit(qdd, CIRCID_QFT_inv, t1, t2);
+    // 4. CNOT^-1 = CNOT (target "bottom" qubit)
+    qdd = qdd_cgate(qdd, GATEID_X, qft_ex, bottom);
+    // 3. (QFT^-1)^-1 = QFT
+    qdd = qdd_circuit(qdd, CIRCID_QFT, t1, qft_ex);
+    // 2.  phi_add(N)
+    qdd = qdd_circuit(qdd, CIRCID_phi_add_N, t1, t2);
+    // 1.  controlled(c1,c2) phi_add_inv(a)
+    qdd = qdd_ccircuit(qdd, CIRCID_phi_add_a_inv, cs, t1, t2);
+
+    return qdd;
 }
 
 
@@ -1090,6 +1131,23 @@ QDD
 qdd_cmult_inv(QDD qdd, uint64_t a, uint64_t N)
 {
     // inverse of above
+    BDDVAR qft_t1 = shor_n + 1;
+    BDDVAR qft_t2 = 2*shor_n; // + 1?
+
+    // 3. (QFT^-1)^-1 = QFT on bottom register
+    qdd = qdd_circuit(qdd, CIRCID_QFT_inv, qft_t1, qft_t2);
+    
+    // 2. same loop over k but with phi_add_mod_inv
+    uint64_t t = a;
+    BDDVAR cs[] = {0, QDD_INVALID_VAR, QDD_INVALID_VAR};
+    for (BDDVAR i = 1; i <= shor_n; i++) { // loop the other way in QMDD imp?
+        // 2a. double controlled phi_add_mod_inv(a* 2^k)
+        cs[1] = i;
+        qdd = qdd_phi_add_mod_inv(qdd, cs, t, N);
+    }
+
+    // 1. QFT^-1 on bottom register
+    qdd = qdd_circuit(qdd, CIRCID_QFT, qft_t1, qft_t2);
 
     return qdd;
 }
@@ -1121,7 +1179,7 @@ qdd_shor_ua(QDD qdd,  uint64_t a, uint64_t N)
     return qdd;
 }
 
-uint32_t
+uint64_t
 shor_period_finding(uint64_t a, uint64_t N)
 {
     // TODO: circuit (quantum period finding of f(x) = a^x mod N)
@@ -1174,8 +1232,18 @@ shor_period_finding(uint64_t a, uint64_t N)
         //sylvan_clear_cache();
         //QDD qdds[1]; qdds[0] = qdd;
         //clean_amplitude_table(qdds, 1);
+        //break; // TODO: this break is for testing, remove later
     }
-    
+
+    // turn measurement outcomes into an integer
+    uint64_t res = 0;
+    for (int i = 0; i < 2*shor_n; i++) {
+        int index = 2*shor_n-1-i;
+        int mmm = m_outcomes[index];
+        printf("m_outcomes[%d] = %d\n", index, mmm);
+        res = (res << 1) + m_outcomes[index];
+    }
+    return res;
 }
 
 void
@@ -1214,7 +1282,8 @@ run_shor(uint64_t N)
     printf("n (bits for N) = %d\n",  shor_n);
     printf("random a       = %ld\n", a);
 
-    uint32_t r = shor_period_finding(a, N);
+    uint64_t r = shor_period_finding(a, N);
+    printf("r = %ld\n", r);
 
     // TODO: post processing
 }
