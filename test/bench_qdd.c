@@ -12,11 +12,8 @@ int bench_25qubit_circuit()
     QDD q;
     uint64_t node_count;
     bool x25[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-    time_t t_start, t_end, runtime;
 
     LACE_ME;
-
-    t_start = time(NULL);
 
     // 25 qubit state
     q = qdd_create_basis_state(25, x25);
@@ -147,12 +144,9 @@ int bench_25qubit_circuit()
     q = qdd_cgate(q, GATEID_Z, 20, 24);	q = qdd_cgate(q, GATEID_X, 9, 14);	q = qdd_cgate(q, GATEID_Z, 8, 18);	q = qdd_cgate(q, GATEID_X, 2, 14);
     q = qdd_cgate(q, GATEID_Z, 15, 20);	q = qdd_cgate(q, GATEID_X, 19, 24);	q = qdd_cgate(q, GATEID_X, 2, 20);	q = qdd_gate(q, GATEID_H, 15);    
     q = qdd_cgate(q, GATEID_Z, 2, 13);	q = qdd_gate(q, GATEID_H, 0);    	q = qdd_gate(q, GATEID_S, 13);    	q = qdd_gate(q, GATEID_H, 24);    
-    t_end = time(NULL);
     node_count = qdd_countnodes(q);
 
-
-    runtime = (t_end - t_start);
-    if(VERBOSE) printf("qdd 25 qubit circuit:     (%ld nodes, %ld sec)\n", node_count, runtime);
+    if(VERBOSE) printf("qdd 25 qubit circuit:     (%ld nodes)\n", node_count);
     return 0;
 }
 
@@ -160,7 +154,6 @@ int bench_grover(int num_qubits)
 {
     QDD grov;
     bool flag[num_qubits];
-    time_t t_start, t_end, runtime;
     uint64_t node_count;
 
     // init random flag
@@ -172,13 +165,10 @@ int bench_grover(int num_qubits)
     }
     printf("\n");
 
-    t_start = time(NULL);
     grov = qdd_grover(num_qubits, flag);
-    t_end = time(NULL);
     node_count = qdd_countnodes(grov);
 
-    runtime = (t_end - t_start);
-    if(VERBOSE) printf("grover(%d) circuit:     (%ld, %ld sec)\n", num_qubits, node_count, runtime);
+    if(VERBOSE) printf("grover(%d) circuit:     (%ld nodes)\n", num_qubits, node_count);
     return 0;
 }
 
@@ -405,10 +395,17 @@ int bench_supremacy_5_4(uint32_t depth)
 
 int runbench()
 {
+    time_t t_start, t_end, runtime;
+    t_start = time(NULL);
+
     //if (bench_25qubit_circuit()) return 1;
-    //if (bench_grover(10)) return 1;
+    //if (bench_grover(40)) return 1;
     //if (bench_supremacy_5_1(20)) return 1;
-    if (bench_supremacy_5_4(8)) return 1;
+    if (bench_supremacy_5_4(20)) return 1;
+
+    t_end = time(NULL);
+    runtime = (t_end - t_start);
+    printf("time = %ld sec\n", runtime);
 
     return 0;
 }
@@ -423,7 +420,7 @@ int main()
     lace_startup(0, NULL, NULL);
 
     // Simple Sylvan initialization
-    sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
+    sylvan_set_sizes(1LL<<30, 1LL<<30, 1LL<<16, 1LL<<16);
     sylvan_init_package();
     // we also need init_bdd() because some qdd functions 
     // rely on bdd stuff (like cache)
