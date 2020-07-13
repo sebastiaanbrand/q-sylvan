@@ -1231,6 +1231,7 @@ qdd_measure_q0(QDD qdd, int *m, double *p)
     LACE_ME;
 
     // get probabilities for q0 = |0> and q0 = |1>
+    double prob_low, prob_high, prob_sum;
     qddnode_t node;
     bool skipped = false;
     if (QDD_PTR(qdd) == QDD_TERMINAL) {
@@ -1252,14 +1253,14 @@ qdd_measure_q0(QDD qdd, int *m, double *p)
         low  = qddnode_getlow(node);
         high = qddnode_gethigh(node);
     }
-    double prob_low  = _qdd_unnormed_prob(low);
-    double prob_high = _qdd_unnormed_prob(high);
-    double prob_root = _prob(QDD_AMP(qdd));
-    prob_low  *= prob_root; // printf("p low  = %.60f\n", prob_low);
-    prob_high *= prob_root; // printf("p high = %.60f\n", prob_high);
+    prob_low  = _qdd_unnormed_prob(low);
+    prob_high = _qdd_unnormed_prob(high);
+    prob_sum  = prob_low + prob_high;
+    prob_low  /= prob_sum; // printf("p low  = %.60f\n", prob_low);
+    prob_high /= prob_sum; // printf("p high = %.60f\n", prob_high);
     if (fabs(prob_low + prob_high - 1.0) > TOLERANCE) {
         printf("prob sum = %.55lf \n", prob_low + prob_high);
-        assert("probabilies don't sum to 1" && false);
+        assert("probabilities don't sum to 1" && false);
     }
     
 
@@ -1269,23 +1270,21 @@ qdd_measure_q0(QDD qdd, int *m, double *p)
     *p = prob_low;
 
     // produce post-measurement state
-    AMP norm, normalized;
+    AMP norm;
     if (*m == 0) {
-        high       = QDD_TERMINAL;
-        norm       = Clookup(Cmake(sqrt(prob_low), 0.0));
-        normalized = Cdiv(QDD_AMP(low), norm);
-        low        = qdd_bundle_ptr_amp(QDD_PTR(low), normalized);
+        high = QDD_TERMINAL;
+        low  = qdd_bundle_ptr_amp(QDD_PTR(low), C_ONE);
+        norm = Clookup(Cmake(sqrt(prob_low), 0.0));
     }
     else {
-        low        = QDD_TERMINAL;
-        norm       = Clookup(Cmake(sqrt(prob_high), 0.0));
-        normalized = Cdiv(QDD_AMP(high), norm);
-        high       = qdd_bundle_ptr_amp(QDD_PTR(high), normalized);
+        low  = QDD_TERMINAL;
+        high = qdd_bundle_ptr_amp(QDD_PTR(high), C_ONE);
+        norm = Clookup(Cmake(sqrt(prob_high), 0.0));
     }
 
     QDD res = qdd_makenode(0, low, high);
-    AMP new_root_amp = Cmul(QDD_AMP(qdd), QDD_AMP(res));
-    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
+    AMP normalized = Cdiv(QDD_AMP(qdd), norm);
+    res = qdd_bundle_ptr_amp(QDD_PTR(res), normalized);
     return res;
 }
 
@@ -1340,7 +1339,7 @@ qdd_measure_all(QDD qdd, BDDVAR n, bool* ms)
 
         if (fabs(prob_low + prob_high - 1.0) > TOLERANCE) {
             printf("prob sum = %.55lf \n", prob_low + prob_high);
-            assert("probabilies don't sum to 1" && false);
+            assert("probabilities don't sum to 1" && false);
         }
 
         // flip a coin

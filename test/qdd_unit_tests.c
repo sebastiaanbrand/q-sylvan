@@ -766,7 +766,7 @@ int test_cswap_circuit()
     return 0;
 }
 
-int test_measurement()
+int test_measurements()
 {
     QDD q, qPM;
     bool x3[] = {0,0,0};
@@ -841,6 +841,18 @@ int test_measurement()
         test_assert(abs(prob - 0.5) < TOLERANCE);
         x3[2]=m; x3[1]=0; x3[0]=0; // either |000> or |100> depending on m
         q = qdd_create_basis_state(3, x3);
+        test_assert(qdd_equivalent(q, qPM, 3, false, true));
+        test_assert(qdd_equivalent(q, qPM, 3, true, false));
+        test_assert(q == qPM);
+
+        // |00->
+        x3[2]=0; x3[1]=0; x3[0]=1;
+        q   = qdd_create_basis_state(3, x3);
+        q   = qdd_gate(q, GATEID_H, 0);
+        qPM = qdd_measure_qubit(q, 0, &m, &prob);
+        test_assert(abs(prob - 0.5) < TOLERANCE);
+        x3[2]=0; x3[1]=0; x3[0]=m; // either |000> or |001> depending on m
+        q = qdd_create_basis_state(3, x3); 
         test_assert(qdd_equivalent(q, qPM, 3, false, true));
         test_assert(qdd_equivalent(q, qPM, 3, true, false));
         test_assert(q == qPM);
@@ -1351,7 +1363,7 @@ int runtests()
     if (test_ccz_gate()) return 1;
     if (test_swap_circuit()) return 1;
     if (test_cswap_circuit()) return 1;
-    if (test_measurement()) return 1;
+    if (test_measurements()) return 1;
     if (test_QFT()) return 1;
     if (test_grover()) return 1;
     if (test_shor()) return 1;
