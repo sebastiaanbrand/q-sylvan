@@ -1171,9 +1171,9 @@ shor_period_finding(uint64_t a, uint64_t N)
         if (m_outcome == 1) qdd = qdd_gate(qdd, GATEID_X, 0);
 
         // reset cache, clean amp table
-        sylvan_clear_cache();
-        QDD qdds[1]; qdds[0] = qdd;
-        clean_amplitude_table(qdds, 1);
+        //sylvan_clear_cache();
+        //QDD qdds[1]; qdds[0] = qdd;
+        //clean_amplitude_table(qdds, 1);
     }
     
 }
