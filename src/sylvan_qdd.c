@@ -1005,9 +1005,9 @@ qdd_phi_add_mod(QDD qdd, BDDVAR* cs, uint64_t a, uint64_t N)
     qdd = qdd_circuit(qdd, CIRCID_phi_add_N_inv, shor_wires.targ_first, shor_wires.targ_last);
     // 3.  QFT_inv
     qdd = qdd_circuit(qdd, CIRCID_QFT_inv, shor_wires.targ_first, shor_wires.targ_last);
-    // 4.  CNOT (control = first/last ? of QFT/phi ADD, target = helper)
+    // 4.  CNOT (control = carry wire? = first of phi ADD, target = helper)
     qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
-    qdd = qdd_cgate(qdd, GATEID_Z, shor_wires.helper, shor_wires.targ_last)
+    qdd = qdd_cgate(qdd, GATEID_Z, shor_wires.helper, shor_wires.targ_first)
     qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
     // 5.  QFT
     qdd = qdd_circuit(qdd, CIRCID_QFT, shor_wires.targ_first, shor_wires.targ_last);
@@ -1019,13 +1019,13 @@ qdd_phi_add_mod(QDD qdd, BDDVAR* cs, uint64_t a, uint64_t N)
     // 8.  QFT_inv
     qdd = qdd_circuit(qdd, CIRCID_QFT_inv, shor_wires.targ_first, shor_wires.targ_last);
     // 9.  X on same wire as control of CNOT in 4/10
-    qdd = qdd_gate(qdd, GATEID_X, shor_wires.targ_last);
+    qdd = qdd_gate(qdd, GATEID_X, shor_wires.targ_first);
     // 10. CNOT
     qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
-    qdd = qdd_cgate(qdd, GATEID_Z, shor_wires.helper, shor_wires.targ_last)
+    qdd = qdd_cgate(qdd, GATEID_Z, shor_wires.helper, shor_wires.targ_first)
     qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
     // 11. X on same wire as control of CNOT in 4/10
-    qdd = qdd_gate(qdd, GATEID_X, shor_wires.targ_last);
+    qdd = qdd_gate(qdd, GATEID_X, shor_wires.targ_first);
     // 12. QFT
     qdd = qdd_circuit(qdd, CIRCID_QFT, shor_wires.targ_first, shor_wires.targ_last); 
     // 13. controlled(c1,c2) phi_add(a)
@@ -1049,13 +1049,13 @@ qdd_phi_add_mod_inv(QDD qdd, BDDVAR* cs, uint64_t a, uint64_t N)
     // 12. QFT^-1
     qdd = qdd_circuit(qdd, CIRCID_QFT_inv, shor_wires.targ_first, shor_wires.targ_last);
     // 11. X^-1 = X
-    qdd = qdd_gate(qdd, GATEID_X, shor_wires.targ_last);
+    qdd = qdd_gate(qdd, GATEID_X, shor_wires.targ_first);
     // 10. CNOT^-1 = CNOT
     qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
-    qdd = qdd_cgate(qdd, GATEID_Z, shor_wires.helper, shor_wires.targ_last)
+    qdd = qdd_cgate(qdd, GATEID_Z, shor_wires.helper, shor_wires.targ_first)
     qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
     // 9.  X^-1 = X
-    qdd = qdd_gate(qdd, GATEID_X, shor_wires.targ_last);
+    qdd = qdd_gate(qdd, GATEID_X, shor_wires.targ_first);
     // 8.  (QFT^-1)^-1 = QFT
     qdd = qdd_circuit(qdd, CIRCID_QFT, shor_wires.targ_first, shor_wires.targ_last);
     // 7.  controlled(c1, c2) phi_add(a)
@@ -1065,9 +1065,9 @@ qdd_phi_add_mod_inv(QDD qdd, BDDVAR* cs, uint64_t a, uint64_t N)
     qdd = qdd_ccircuit(qdd, CIRCID_phi_add_N_inv, controls, shor_wires.targ_first, shor_wires.targ_last);
     // 5.  QFT^-1
     qdd = qdd_circuit(qdd, CIRCID_QFT_inv, shor_wires.targ_first, shor_wires.targ_last);
-    // 4. CNOT^-1 = CNOT (control = targ_first/_last, target = helper)
+    // 4. CNOT^-1 = CNOT (control = carry wire? = first of phi ADD, target = helper)
     qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
-    qdd = qdd_cgate(qdd, GATEID_Z, shor_wires.helper, shor_wires.targ_last)
+    qdd = qdd_cgate(qdd, GATEID_Z, shor_wires.helper, shor_wires.targ_first)
     qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
     // 3. (QFT^-1)^-1 = QFT
     qdd = qdd_circuit(qdd, CIRCID_QFT, shor_wires.targ_first, shor_wires.targ_last);
@@ -1253,9 +1253,13 @@ run_shor(uint64_t N)
 
     shor_set_globals(a, N);
     
-    printf("input N        = %ld\n", N);
+    printf("input N        = %ld [", N);
+    for (uint32_t i=0; i<shor_n; i++) printf("%d,", shor_bits_N[i]);
+    printf("]\n");
     printf("n (bits for N) = %d\n",  shor_n);
-    printf("random a       = %ld\n\n", a);
+    printf("random a       = %ld [", a);
+    for (uint32_t i=0; i<shor_n; i++) printf("%d,", shor_bits_a[i]);
+    printf("]\n\n");
 
     printf("wires:\n");
     printf("top:        %d\n", shor_wires.top);
