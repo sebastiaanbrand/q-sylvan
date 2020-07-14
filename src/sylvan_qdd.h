@@ -232,9 +232,18 @@ uint64_t shor_period_finding(uint64_t a, uint64_t N); // Fig. 8
 void shor_set_globals(uint64_t a, uint64_t N);
 void run_shor();
 // global vars for Shor (not ideal but it is difficult enough as it is)
+// TODO: move shor to separate file, not in qdd source code
 uint32_t  shor_n;
 bool shor_bits_a[64];
 bool shor_bits_N[64];
+struct shor_wires_s {
+    BDDVAR top;
+    BDDVAR ctrl_first;
+    BDDVAR ctrl_last;
+    BDDVAR helper;
+    BDDVAR targ_first;
+    BDDVAR targ_last;
+} shor_wires;
 
 
 /**
