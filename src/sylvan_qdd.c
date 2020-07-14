@@ -1007,7 +1007,7 @@ qdd_phi_add_mod(QDD qdd, BDDVAR* cs, uint64_t a, uint64_t N)
     qdd = qdd_circuit(qdd, CIRCID_QFT_inv, shor_wires.targ_first, shor_wires.targ_last);
     // 4.  CNOT (control = first/last ? of QFT/phi ADD, target = helper)
     qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
-    qdd = qdd_cgate(qdd, GATEID_Z, shor_wires.helper, shor_wires.targ_first)
+    qdd = qdd_cgate(qdd, GATEID_Z, shor_wires.helper, shor_wires.targ_last)
     qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
     // 5.  QFT
     qdd = qdd_circuit(qdd, CIRCID_QFT, shor_wires.targ_first, shor_wires.targ_last);
@@ -1019,13 +1019,13 @@ qdd_phi_add_mod(QDD qdd, BDDVAR* cs, uint64_t a, uint64_t N)
     // 8.  QFT_inv
     qdd = qdd_circuit(qdd, CIRCID_QFT_inv, shor_wires.targ_first, shor_wires.targ_last);
     // 9.  X on same wire as control of CNOT in 4/10
-    qdd = qdd_gate(qdd, GATEID_X, shor_wires.targ_first);
+    qdd = qdd_gate(qdd, GATEID_X, shor_wires.targ_last);
     // 10. CNOT
     qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
-    qdd = qdd_cgate(qdd, GATEID_Z, shor_wires.helper, shor_wires.targ_first)
+    qdd = qdd_cgate(qdd, GATEID_Z, shor_wires.helper, shor_wires.targ_last)
     qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
     // 11. X on same wire as control of CNOT in 4/10
-    qdd = qdd_gate(qdd, GATEID_X, shor_wires.targ_first);
+    qdd = qdd_gate(qdd, GATEID_X, shor_wires.targ_last);
     // 12. QFT
     qdd = qdd_circuit(qdd, CIRCID_QFT, shor_wires.targ_first, shor_wires.targ_last); 
     // 13. controlled(c1,c2) phi_add(a)
@@ -1049,13 +1049,13 @@ qdd_phi_add_mod_inv(QDD qdd, BDDVAR* cs, uint64_t a, uint64_t N)
     // 12. QFT^-1
     qdd = qdd_circuit(qdd, CIRCID_QFT_inv, shor_wires.targ_first, shor_wires.targ_last);
     // 11. X^-1 = X
-    qdd = qdd_gate(qdd, GATEID_X, shor_wires.targ_first);
+    qdd = qdd_gate(qdd, GATEID_X, shor_wires.targ_last);
     // 10. CNOT^-1 = CNOT
     qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
-    qdd = qdd_cgate(qdd, GATEID_Z, shor_wires.helper, shor_wires.targ_first)
+    qdd = qdd_cgate(qdd, GATEID_Z, shor_wires.helper, shor_wires.targ_last)
     qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
     // 9.  X^-1 = X
-    qdd = qdd_gate(qdd, GATEID_X, shor_wires.targ_first);
+    qdd = qdd_gate(qdd, GATEID_X, shor_wires.targ_last);
     // 8.  (QFT^-1)^-1 = QFT
     qdd = qdd_circuit(qdd, CIRCID_QFT, shor_wires.targ_first, shor_wires.targ_last);
     // 7.  controlled(c1, c2) phi_add(a)
@@ -1067,7 +1067,7 @@ qdd_phi_add_mod_inv(QDD qdd, BDDVAR* cs, uint64_t a, uint64_t N)
     qdd = qdd_circuit(qdd, CIRCID_QFT_inv, shor_wires.targ_first, shor_wires.targ_last);
     // 4. CNOT^-1 = CNOT (control = targ_first/_last, target = helper)
     qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
-    qdd = qdd_cgate(qdd, GATEID_Z, shor_wires.helper, shor_wires.targ_first)
+    qdd = qdd_cgate(qdd, GATEID_Z, shor_wires.helper, shor_wires.targ_last)
     qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
     // 3. (QFT^-1)^-1 = QFT
     qdd = qdd_circuit(qdd, CIRCID_QFT, shor_wires.targ_first, shor_wires.targ_last);
@@ -1087,7 +1087,7 @@ qdd_cmult(QDD qdd, uint64_t a, uint64_t N)
     // 1. QFT on bottom register
     qdd = qdd_circuit(qdd, CIRCID_QFT, shor_wires.targ_first, shor_wires.targ_last);
 
-    // 2. loop over k
+    // 2. loop over k = {0, n-1}
     uint64_t t = a;
     BDDVAR cs[] = {shor_wires.top, QDD_INVALID_VAR, QDD_INVALID_VAR};
     for (BDDVAR i = shor_wires.ctrl_first; i <= shor_wires.ctrl_last; i++) { // loop the other way in QMDD imp?
@@ -1106,9 +1106,9 @@ qdd_cmult(QDD qdd, uint64_t a, uint64_t N)
 QDD
 qdd_cmult_inv(QDD qdd, uint64_t a, uint64_t N)
 {
-    // inverse of above
-    // 3. (QFT^-1)^-1 = QFT on bottom register
-    qdd = qdd_circuit(qdd, CIRCID_QFT_inv, shor_wires.targ_first, shor_wires.targ_last);
+    // not quite inverse of above
+    // 1. QFT on bottom register
+    qdd = qdd_circuit(qdd, CIRCID_QFT, shor_wires.targ_first, shor_wires.targ_last);
     
     // 2. same loop over k but with phi_add_mod_inv
     uint64_t t = a;
@@ -1117,10 +1117,11 @@ qdd_cmult_inv(QDD qdd, uint64_t a, uint64_t N)
         // 2a. double controlled phi_add_mod_inv(a* 2^k)
         cs[1] = i;
         qdd = qdd_phi_add_mod_inv(qdd, cs, t, N);
+        t = (2*t) % N;
     }
 
-    // 1. QFT^-1 on bottom register
-    qdd = qdd_circuit(qdd, CIRCID_QFT, shor_wires.targ_first, shor_wires.targ_last);
+    // 3. QFT^-1 on bottom register
+    qdd = qdd_circuit(qdd, CIRCID_QFT_inv, shor_wires.targ_first, shor_wires.targ_last);
 
     return qdd;
 }
@@ -1135,8 +1136,8 @@ qdd_shor_ua(QDD qdd,  uint64_t a, uint64_t N)
 
     // 2. controlled swap top/bottom registers
     BDDVAR cs[] = {shor_wires.top, QDD_INVALID_VAR, QDD_INVALID_VAR};
-    for (uint32_t i = 1; i <= shor_n; i++) {
-        qdd = qdd_ccircuit(qdd, CIRCID_swap, cs, i, shor_n+i)
+    for (uint32_t i = shor_wires.ctrl_first; i <= shor_wires.ctrl_last; i++) {
+        qdd = qdd_ccircuit(qdd, CIRCID_swap, cs, i, shor_wires.targ_first+i); // maybe +i-1
     }
 
     // 3. controlled Cmult_inv(a^-1)
