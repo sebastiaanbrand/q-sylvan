@@ -956,7 +956,7 @@ qdd_phi_add(QDD qdd, BDDVAR first, BDDVAR last, bool* a)
     BDDVAR qubit;
     for (int i = 0; i < num_qubits; i++) {
         qubit = first + i;
-        for (int j = i; j <= num_qubits; j++){
+        for (int j = i; j < num_qubits; j++){
             if (a[j] == 1) {
                 k = (j - i) + 1;
                 res = qdd_gate(res, GATEID_Rk(k), qubit);
@@ -980,7 +980,7 @@ qdd_phi_add_inv(QDD qdd, BDDVAR first, BDDVAR last, bool* a)
     BDDVAR qubit;
     for (int i = 0; i < num_qubits; i++) {
         qubit = first + i;
-        for (int j = i; j <= num_qubits; j++){
+        for (int j = i; j < num_qubits; j++){
             if (a[j] == 1) {
                 k = (j - i) + 1;
                 res = qdd_gate(res, GATEID_Rk_dag(k), qubit);
@@ -1184,10 +1184,10 @@ shor_period_finding(uint64_t a, uint64_t N)
         qdd = qdd_shor_ua(qdd, as[i], N);
 
         // phase gates based on previous measurement
-        int k = 1; // maybe this needs to start at 2
+        int k = 2; // First gate needs to be R^dag(2) = S^dag
         for (int j = i-1; j >= 0; j--) {
             if (m_outcomes[j] == 1)
-                qdd = qdd_gate(qdd, GATEID_Rk_dag(k), shor_wires.top); // maybe Rk instead
+                qdd = qdd_gate(qdd, GATEID_Rk_dag(k), shor_wires.top);
             k = k << 1; // 2^(iteration)
         }
 
