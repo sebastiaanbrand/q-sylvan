@@ -341,7 +341,7 @@ TASK_DECL_1(QDD, _fill_new_amp_table, QDD);
 /**
  * Write a .dot representation of a given QDD
  */
-void qdd_fprintdot(FILE *out, QDD qdd);
+void qdd_fprintdot(FILE *out, QDD qdd, bool draw_zeros);
 
 
 // debug stuff

@@ -1177,7 +1177,10 @@ shor_period_finding(uint64_t a, uint64_t N)
     int m_outcome;
     double m_prob;
 
+    FILE *fp;
+
     for (uint32_t i = 0; i < 2*shor_n; i++) {
+        printf("shor it = %d/%d\n", i+1, 2*shor_n);
         // H on top wire
         qdd = qdd_gate(qdd, GATEID_H, shor_wires.top);
         // controlled Ua^...
@@ -1193,9 +1196,18 @@ shor_period_finding(uint64_t a, uint64_t N)
 
         // H on top wire
         qdd = qdd_gate(qdd, GATEID_H, shor_wires.top);
+
+        fp = fopen("shor_it.dot", "w");
+        qdd_fprintdot(fp, qdd, false);
+        fclose(fp);
+
         // measure q0
+        assert(qdd_is_unitvector(qdd, num_qubits));
         qdd = qdd_measure_qubit(qdd, shor_wires.top, num_qubits, &m_outcome, &m_prob);
         m_outcomes[i] = m_outcome;
+        assert(qdd_is_unitvector(qdd, num_qubits));
+        
+
         // make sure q0 is in the |0> state
         if (m_outcome == 1) qdd = qdd_gate(qdd, GATEID_X, shor_wires.top);
     }
@@ -1709,7 +1721,7 @@ qdd_fprintdot_label(FILE *out, AMP a)
 }
 
 static void
-qdd_fprintdot_rec(FILE *out, QDD qdd)
+qdd_fprintdot_rec(FILE *out, QDD qdd, bool draw_zeros)
 {
     // terminal node
     if(QDD_PTR(qdd) == QDD_TERMINAL) return;
@@ -1724,22 +1736,26 @@ qdd_fprintdot_rec(FILE *out, QDD qdd)
 
     
     // children of this node
-    qdd_fprintdot_rec(out, qddnode_getlow(n));
-    qdd_fprintdot_rec(out, qddnode_gethigh(n));
+    qdd_fprintdot_rec(out, qddnode_getlow(n), draw_zeros);
+    qdd_fprintdot_rec(out, qddnode_gethigh(n), draw_zeros);
 
-    // add edge from this node to each child
-    fprintf(out, "%" PRIu64 " -> %" PRIu64 " [style=dashed",
-                QDD_PTR(qdd), qddnode_getptrlow(n));
-    qdd_fprintdot_label(out, qddnode_getamplow(n));
-    fprintf(out, "];\n");
-    fprintf(out, "%" PRIu64 " -> %" PRIu64 " [style=solid",
-                QDD_PTR(qdd), qddnode_getptrhigh(n));
-    qdd_fprintdot_label(out, qddnode_getamphigh(n));
-    fprintf(out, "];\n");
+    // add edge from this node to each child (unless weight 0)
+    if (draw_zeros || qddnode_getamplow(n) != C_ZERO) {
+        fprintf(out, "%" PRIu64 " -> %" PRIu64 " [style=dashed",
+                    QDD_PTR(qdd), qddnode_getptrlow(n));
+        qdd_fprintdot_label(out, qddnode_getamplow(n));
+        fprintf(out, "];\n");
+    }
+    if (draw_zeros || qddnode_getamphigh(n) != C_ZERO) {
+        fprintf(out, "%" PRIu64 " -> %" PRIu64 " [style=solid",
+                    QDD_PTR(qdd), qddnode_getptrhigh(n));
+        qdd_fprintdot_label(out, qddnode_getamphigh(n));
+        fprintf(out, "];\n");
+    }
 }
 
 void
-qdd_fprintdot(FILE *out, QDD qdd)
+qdd_fprintdot(FILE *out, QDD qdd, bool draw_zeros)
 {
     fprintf(out, "digraph \"DD\" {\n");
     fprintf(out, "center = true;\n");
@@ -1753,7 +1769,7 @@ qdd_fprintdot(FILE *out, QDD qdd)
     fprintf(out, "%lu [shape=box, label=\"T\"];\n", QDD_TERMINAL);
 
     // recursively add nodes
-    qdd_fprintdot_rec(out, qdd);
+    qdd_fprintdot_rec(out, qdd, draw_zeros);
     qdd_unmark_rec(qdd);
 
     fprintf(out, "}\n");

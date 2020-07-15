@@ -1202,9 +1202,9 @@ int test_shor()
     x3[0]=1; x3[1]=1; x3[2]=1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     // </Test qdd_phi_add>
 
-    //printf("\n");
-    //run_shor(15);
-    //printf("\n\n");
+    printf("\n");
+    run_shor(15);
+    printf("\n\n");
 
     if(VERBOSE) printf("qdd Shor:                 TODO\n");
     return 0;
@@ -1266,7 +1266,7 @@ int test_5qubit_circuit()
     test_assert(q == qref);
 
     fp = fopen("5_qubit_res.dot", "w");
-    qdd_fprintdot(fp, q);
+    qdd_fprintdot(fp, q, true);
     fclose(fp);
 
     if(VERBOSE) printf("qdd 5 qubit circuit:      ok (%ld nodes)\n", node_count);
