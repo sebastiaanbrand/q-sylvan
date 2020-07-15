@@ -1194,7 +1194,7 @@ shor_period_finding(uint64_t a, uint64_t N)
         // H on top wire
         qdd = qdd_gate(qdd, GATEID_H, shor_wires.top);
         // measure q0
-        qdd = qdd_measure_qubit(qdd, shor_wires.top, &m_outcome, &m_prob);
+        qdd = qdd_measure_qubit(qdd, shor_wires.top, num_qubits, &m_outcome, &m_prob);
         m_outcomes[i] = m_outcome;
         // make sure q0 is in the |0> state
         if (m_outcome == 1) qdd = qdd_gate(qdd, GATEID_X, shor_wires.top);
@@ -1285,12 +1285,12 @@ run_shor(uint64_t N)
 /***********************<measurements and probabilities>***********************/
 
 QDD
-qdd_measure_q0(QDD qdd, int *m, double *p)
+qdd_measure_q0(QDD qdd, BDDVAR nvars, int *m, double *p)
 {  
     LACE_ME;
 
     // get probabilities for q0 = |0> and q0 = |1>
-    double prob_low, prob_high, prob_sum;
+    double prob_low, prob_high, prob_root;
     qddnode_t node;
     bool skipped = false;
     if (QDD_PTR(qdd) == QDD_TERMINAL) {
@@ -1312,16 +1312,15 @@ qdd_measure_q0(QDD qdd, int *m, double *p)
         low  = qddnode_getlow(node);
         high = qddnode_gethigh(node);
     }
-    prob_low  = _qdd_unnormed_prob(low);
-    prob_high = _qdd_unnormed_prob(high);
-    prob_sum  = prob_low + prob_high;
-    prob_low  /= prob_sum; // printf("p low  = %.60f\n", prob_low);
-    prob_high /= prob_sum; // printf("p high = %.60f\n", prob_high);
+    prob_low  = qdd_unnormed_prob(low,  1, nvars);
+    prob_high = qdd_unnormed_prob(high, 1, nvars);
+    prob_root = _prob(QDD_AMP(qdd));
+    prob_low  *= prob_root;
+    prob_high *= prob_root;
     if (fabs(prob_low + prob_high - 1.0) > TOLERANCE) {
         printf("prob sum = %.55lf \n", prob_low + prob_high);
         assert("probabilities don't sum to 1" && false);
     }
-    
 
     // flip a coin
     float rnd = ((float)rand())/RAND_MAX;
@@ -1348,24 +1347,24 @@ qdd_measure_q0(QDD qdd, int *m, double *p)
 }
 
 QDD
-qdd_measure_qubit(QDD qdd, BDDVAR k, int *m, double *p)
+qdd_measure_qubit(QDD qdd, BDDVAR k, BDDVAR nvars, int *m, double *p)
 {
-    if (k == 0) return qdd_measure_q0(qdd, m, p);
+    if (k == 0) return qdd_measure_q0(qdd, nvars, m, p);
     qdd = qdd_circuit_swap(qdd, 0, k);
-    qdd = qdd_measure_q0(qdd, m, p);
+    qdd = qdd_measure_q0(qdd, nvars, m, p);
     qdd = qdd_circuit_swap(qdd, 0, k);
     return qdd;
 }
 
 QDD
-qdd_measure_all(QDD qdd, BDDVAR n, bool* ms)
+qdd_measure_all(QDD qdd, BDDVAR n, bool* ms, double *p)
 {
     LACE_ME;
 
     qddnode_t node;
     bool skipped;
     BDDVAR var;
-    double prob_low, prob_high, prob_sum;
+    double prob_low, prob_high, prob_path = 1.0, prob_roots = 1.0;
 
     for (BDDVAR k=0; k < n; k++) {
         // find relevant node (assuming it should be the next one)
@@ -1390,14 +1389,14 @@ qdd_measure_all(QDD qdd, BDDVAR n, bool* ms)
             high = qddnode_gethigh(node);
         }
 
-        prob_low  = _qdd_unnormed_prob(low);
-        prob_high = _qdd_unnormed_prob(high); // LACE?
-        prob_sum  = prob_low + prob_high;
-        prob_high /= prob_sum;
-        prob_low  /= prob_sum;
+        prob_low  = qdd_unnormed_prob(low,  k+1, n);
+        prob_high = qdd_unnormed_prob(high, k+1, n);
+        prob_roots *= _prob(QDD_AMP(qdd));
+        prob_high = prob_high * prob_roots / prob_path;
+        prob_low  = prob_low  * prob_roots / prob_path;
 
         if (fabs(prob_low + prob_high - 1.0) > TOLERANCE) {
-            printf("prob sum = %.55lf \n", prob_low + prob_high);
+            printf("prob sum = %.10lf\n", prob_low + prob_high);
             assert("probabilities don't sum to 1" && false);
         }
 
@@ -1406,42 +1405,71 @@ qdd_measure_all(QDD qdd, BDDVAR n, bool* ms)
         ms[k] = (rnd < prob_low) ? 0 : 1;
 
         // Get next edge
-        qdd = (ms[k] == 0) ? low : high;
+        qdd        = (ms[k] == 0) ? low : high;
+        prob_path *= (ms[k] == 0) ? prob_low : prob_high;
     }
 
+    *p = prob_path;
     return qdd_create_basis_state(n, ms);
 }
 
-TASK_IMPL_1(QDD, _qdd_unnormed_prob, QDD, qdd)
+TASK_IMPL_3(double, qdd_unnormed_prob, QDD, qdd, BDDVAR, topvar, BDDVAR, nvars)
 {
-    if (QDD_PTR(qdd) == QDD_TERMINAL) return _prob(QDD_AMP(qdd));
+    assert(topvar <= nvars);
 
+    if (topvar == nvars) {
+        assert(QDD_PTR(qdd) == QDD_TERMINAL);
+        return _prob(QDD_AMP(qdd));
+    }
+
+    // Look in cache (TODO)
+    /*
     bool cachenow = 1;
     if (cachenow) {
-        QDD res;
-        // check if this calculation has already been done before for this node/gate
-        if (cache_get3(CACHE_QDD_PROB, 0LL, qdd, 0LL, &res)) {
-            sylvan_stats_count(QDD_GATE_CACHED);
-            return res;
-        }
+        double prob_res;
+        if (cache_get(CACHE_QDD_PROB, qdd, sylvan_false, &prob_res))
+            return prob_res;
+    } */
+
+    // Check if the node we want is being skipped
+    bool skipped = false;
+    qddnode_t node;
+    if (QDD_PTR(qdd) == QDD_TERMINAL) skipped = true;
+    else {
+        node = QDD_GETNODE(QDD_PTR(qdd));
+        BDDVAR var = qddnode_getvar(node);
+        assert (var >= topvar);
+        if (var > topvar) skipped = true;
     }
-    
-    qddnode_t node = QDD_GETNODE(QDD_PTR(qdd));
-    double p_low, p_high, res;
 
-    bdd_refs_spawn(SPAWN(_qdd_unnormed_prob, qddnode_gethigh(node)));
-    p_low = CALL(_qdd_unnormed_prob, qddnode_getlow(node));
-    bdd_refs_push(p_low); // Q: this is not a bdd/qdd node, do we need to protect this?
-    p_high = bdd_refs_sync(SYNC(_qdd_unnormed_prob)); // syncs SPAWN
-    bdd_refs_pop(1);
+    // get low and high
+    QDD low, high;
+    if (skipped) {
+        low  = qdd_bundle_ptr_amp(QDD_PTR(qdd), C_ONE);
+        high = qdd_bundle_ptr_amp(QDD_PTR(qdd), C_ONE);
+    }
+    else {
+        low  = qddnode_getlow(node);
+        high = qddnode_gethigh(node);
+    }
 
-    res = (p_low + p_high) * _prob(QDD_AMP(qdd));
+    double prob_low, prob_high, prob_root, prob_res; // "prob" = absolute amps squared
+    BDDVAR nextvar = topvar + 1;
 
+    // these are not q/bdds, so no need to protect from gc right?
+    SPAWN(qdd_unnormed_prob, high, nextvar, nvars);
+    prob_low = CALL(qdd_unnormed_prob, low, nextvar, nvars);
+    prob_high = SYNC(qdd_unnormed_prob);
+    prob_root = _prob(QDD_AMP(qdd));
+    prob_res = prob_root * (prob_low + prob_high);
+
+    // Put in cache (TODO) and return
+    /*
     if (cachenow) {
-        if (cache_put3(CACHE_QDD_PROB, 0LL, qdd, 0LL, res)) sylvan_stats_count(QDD_PROB_CACHEDPUT);
-    }
-
-    return res;
+        if (cache_put(CACHE_QDD_PROB, qdd, sylvan_false, prob_res))
+            sylvan_stats_count(QDD_PROB_CACHEDPUT);
+    } */
+    return prob_res;
 }
 
 AMP
@@ -1471,7 +1499,7 @@ qdd_get_amplitude(QDD q, bool* basis_state)
 }
 
 double
-_prob(AMP a) 
+_prob(AMP a) // TODO: rename to "abs_squared"
 {
     // move to qdd_int file?
     complex_t c = Cvalue(a);

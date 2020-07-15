@@ -769,6 +769,8 @@ int test_cswap_circuit()
 int test_measurements()
 {
     QDD q, qPM;
+    AMP a;
+    bool x2[] = {0,0};
     bool x3[] = {0,0,0};
     int m;
     int repeat = 10;
@@ -782,7 +784,7 @@ int test_measurements()
         // |000> 
         x3[2]=0; x3[1]=0; x3[0]=0;
         q   = qdd_create_basis_state(3, x3);
-        qPM = qdd_measure_qubit(q, 0, &m, &prob);
+        qPM = qdd_measure_qubit(q, 0, 3, &m, &prob);
         test_assert(m == 0);
         test_assert(prob == 1.0);
         test_assert(qdd_equivalent(q, qPM, 3, false, false));
@@ -792,7 +794,7 @@ int test_measurements()
         // |010>
         x3[2]=0; x3[1]=1; x3[0]=0;
         q   = qdd_create_basis_state(3, x3);
-        qPM = qdd_measure_qubit(q, 0, &m, &prob);
+        qPM = qdd_measure_qubit(q, 0, 3, &m, &prob);
         test_assert(m == 0);
         test_assert(prob == 1.0);
         test_assert(qdd_equivalent(q, qPM, 3, false, false));
@@ -802,7 +804,7 @@ int test_measurements()
         // |011>
         x3[2]=0; x3[1]=1; x3[0]=1;
         q   = qdd_create_basis_state(3, x3);
-        qPM = qdd_measure_qubit(q, 0, &m, &prob);
+        qPM = qdd_measure_qubit(q, 0, 3, &m, &prob);
         test_assert(m == 1);
         test_assert(prob == 0.0);
         test_assert(qdd_equivalent(q, qPM, 3, false, false));
@@ -813,7 +815,7 @@ int test_measurements()
         x3[2]=0; x3[1]=0; x3[0]=0;
         q   = qdd_create_basis_state(3, x3);
         q   = qdd_gate(q, GATEID_H, 0);
-        qPM = qdd_measure_qubit(q, 0, &m, &prob);
+        qPM = qdd_measure_qubit(q, 0, 3, &m, &prob);
         test_assert(abs(prob - 0.5) < TOLERANCE);
         x3[2]=0; x3[1]=0; x3[0]=m; // either |000> or |001> depending on m
         q = qdd_create_basis_state(3, x3); 
@@ -825,7 +827,7 @@ int test_measurements()
         x3[2]=0; x3[1]=0; x3[0]=0;
         q   = qdd_create_basis_state(3, x3);
         q   = qdd_gate(q, GATEID_H, 1);
-        qPM = qdd_measure_qubit(q, 1, &m, &prob);
+        qPM = qdd_measure_qubit(q, 1, 3, &m, &prob);
         test_assert(abs(prob - 0.5) < TOLERANCE);
         x3[2]=0; x3[1]=m; x3[0]=0; // either |000> or |010> depending on m
         q = qdd_create_basis_state(3, x3);
@@ -837,7 +839,7 @@ int test_measurements()
         x3[2]=0; x3[1]=0; x3[0]=0;
         q   = qdd_create_basis_state(3, x3);
         q   = qdd_gate(q, GATEID_H, 2);
-        qPM = qdd_measure_qubit(q, 2, &m, &prob);
+        qPM = qdd_measure_qubit(q, 2, 3, &m, &prob);
         test_assert(abs(prob - 0.5) < TOLERANCE);
         x3[2]=m; x3[1]=0; x3[0]=0; // either |000> or |100> depending on m
         q = qdd_create_basis_state(3, x3);
@@ -849,13 +851,38 @@ int test_measurements()
         x3[2]=0; x3[1]=0; x3[0]=1;
         q   = qdd_create_basis_state(3, x3);
         q   = qdd_gate(q, GATEID_H, 0);
-        qPM = qdd_measure_qubit(q, 0, &m, &prob);
+        qPM = qdd_measure_qubit(q, 0, 3, &m, &prob);
         test_assert(abs(prob - 0.5) < TOLERANCE);
         x3[2]=0; x3[1]=0; x3[0]=m; // either |000> or |001> depending on m
         q = qdd_create_basis_state(3, x3); 
         test_assert(qdd_equivalent(q, qPM, 3, false, true));
         test_assert(qdd_equivalent(q, qPM, 3, true, false));
         test_assert(q == qPM);
+
+        // [1/2, 1/2, 1/2, -1/2] = 1/2(|00> + |01> + |10> - |11>)_(q1, q0)
+        x2[1]=0; x2[0]=0;
+        q   = qdd_create_basis_state(2, x2);
+        q   = qdd_gate(q, GATEID_H, 0);
+        q   = qdd_gate(q, GATEID_H, 1);
+        q   = qdd_cgate(q,GATEID_Z, 0, 1);
+        x2[1]=0; x2[0]=0; a = qdd_get_amplitude(q, x2); test_assert(a == Clookup(Cmake(0.5,0)));
+        x2[1]=0; x2[0]=1; a = qdd_get_amplitude(q, x2); test_assert(a == Clookup(Cmake(0.5,0)));
+        x2[1]=1; x2[0]=0; a = qdd_get_amplitude(q, x2); test_assert(a == Clookup(Cmake(0.5,0)));
+        x2[1]=1; x2[0]=1; a = qdd_get_amplitude(q, x2); test_assert(a == Clookup(Cmake(-0.5,0)));
+        qPM = qdd_measure_qubit(q, 0, 2, &m, &prob);
+        test_assert(abs(prob - 0.5) < TOLERANCE);
+        if (m == 0) { // expect 1/sqrt(2)(|00> + |10>)
+            x2[1]=0; x2[0]=0; a = qdd_get_amplitude(qPM, x2); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
+            x2[1]=0; x2[0]=1; a = qdd_get_amplitude(qPM, x2); test_assert(a == C_ZERO);
+            x2[1]=1; x2[0]=0; a = qdd_get_amplitude(qPM, x2); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
+            x2[1]=1; x2[0]=1; a = qdd_get_amplitude(qPM, x2); test_assert(a == C_ZERO);
+        }
+        if (m == 1) { // expect 1/sqrt(2)(|01> - |11>)
+            x2[1]=0; x2[0]=0; a = qdd_get_amplitude(qPM, x2); test_assert(a == C_ZERO);
+            x2[1]=0; x2[0]=1; a = qdd_get_amplitude(qPM, x2); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
+            x2[1]=1; x2[0]=0; a = qdd_get_amplitude(qPM, x2); test_assert(a == C_ZERO);
+            x2[1]=1; x2[0]=1; a = qdd_get_amplitude(qPM, x2); test_assert(a == Clookup(Cmake(Qmake(0,-1,2),0)));
+        }
     }
 
     // Test measure all
@@ -866,21 +893,23 @@ int test_measurements()
         // |000>  
         x3[2]=0; x3[1]=0; x3[0]=0;
         q   = qdd_create_basis_state(3, x3);
-        qPM = qdd_measure_all(q, 3, ms);
+        qPM = qdd_measure_all(q, 3, ms, &prob);
         test_assert(ms[0] == 0);
         test_assert(ms[1] == 0);
         test_assert(ms[2] == 0);
+        test_assert(prob == 1.0);
         test_assert(qdd_equivalent(q, qPM, 3, false, false));
         test_assert(qdd_equivalent(q, qPM, 3, true, false));
         test_assert(q == qPM);
 
         // |010>
-        x3[2]=0; x3[1]=1; x3[0]=0;
+         x3[2]=0; x3[1]=1; x3[0]=0;
         q   = qdd_create_basis_state(3, x3);
-        qPM = qdd_measure_all(q, 3, ms);
+        qPM = qdd_measure_all(q, 3, ms, &prob);
         test_assert(ms[0] == 0);
         test_assert(ms[1] == 1);
         test_assert(ms[2] == 0);
+        test_assert(prob == 1.0);
         test_assert(qdd_equivalent(q, qPM, 3, false, false));
         test_assert(qdd_equivalent(q, qPM, 3, true, false));
         test_assert(q == qPM);
@@ -888,10 +917,11 @@ int test_measurements()
         // |011>
         x3[2]=0; x3[1]=1; x3[0]=1;
         q   = qdd_create_basis_state(3, x3);
-        qPM = qdd_measure_all(q, 3, ms);
+        qPM = qdd_measure_all(q, 3, ms, &prob);
         test_assert(ms[0] == 1);
         test_assert(ms[1] == 1);
         test_assert(ms[2] == 0);
+        test_assert(prob == 1.0);
         test_assert(qdd_equivalent(q, qPM, 3, false, false));
         test_assert(qdd_equivalent(q, qPM, 3, true, false));
         test_assert(q == qPM);
@@ -900,7 +930,8 @@ int test_measurements()
         x3[2]=0; x3[1]=0; x3[0]=0;
         q   = qdd_create_basis_state(3, x3);
         q   = qdd_gate(q, GATEID_H, 0);
-        qPM = qdd_measure_all(q, 3, ms);
+        qPM = qdd_measure_all(q, 3, ms, &prob);
+        test_assert(abs(prob - 0.5) < TOLERANCE);
         x3[2]=0; x3[1]=0; x3[0]=ms[0]; // either |000> or |001> depending on m
         q = qdd_create_basis_state(3, x3); 
         test_assert(qdd_equivalent(q, qPM, 3, false, true));
@@ -908,11 +939,12 @@ int test_measurements()
         test_assert(q == qPM);
         if (ms[0] == 0) m_zer[0] += 1;
 
-         // |0+0>
+        // |0+0>
         x3[2]=0; x3[1]=0; x3[0]=0;
         q   = qdd_create_basis_state(3, x3);
         q   = qdd_gate(q, GATEID_H, 1);
-        qPM = qdd_measure_all(q, 3, ms);
+        qPM = qdd_measure_all(q, 3, ms, &prob);
+        test_assert(abs(prob - 0.5) < TOLERANCE);
         x3[2]=0; x3[1]=ms[1]; x3[0]=0; // either |000> or |010> depending on m
         q = qdd_create_basis_state(3, x3);
         test_assert(qdd_equivalent(q, qPM, 3, false, true));
@@ -924,7 +956,8 @@ int test_measurements()
         x3[2]=0; x3[1]=0; x3[0]=0;
         q   = qdd_create_basis_state(3, x3);
         q   = qdd_gate(q, GATEID_H, 2);
-        qPM = qdd_measure_all(q, 3, ms);
+        qPM = qdd_measure_all(q, 3, ms, &prob);
+        test_assert(abs(prob - 0.5) < TOLERANCE);
         x3[2]=ms[2]; x3[1]=0; x3[0]=0; // either |000> or |100> depending on m
         q = qdd_create_basis_state(3, x3);
         test_assert(qdd_equivalent(q, qPM, 3, false, true));
@@ -1161,9 +1194,9 @@ int test_shor()
     x3[0]=1; x3[1]=1; x3[2]=1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     // </Test qdd_phi_add>
 
-    printf("\n");
-    run_shor(15);
-    printf("\n\n");
+    //printf("\n");
+    //run_shor(15);
+    //printf("\n\n");
 
     if(VERBOSE) printf("qdd Shor:                 TODO\n");
     return 0;
@@ -1377,7 +1410,7 @@ int runtests()
 int main()
 {
     // Standard Lace initialization
-    int workers = 1;
+    int workers = 8;
     lace_init(workers, 0);
     printf("%d worker(s)\n", workers);
     lace_startup(0, NULL, NULL);

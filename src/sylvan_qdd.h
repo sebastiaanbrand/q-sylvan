@@ -256,15 +256,15 @@ struct shor_wires_s {
  * 
  * @return QDD of post-measurement state corresponding to measurement outcome.
  */
-QDD qdd_measure_qubit(QDD qqd, BDDVAR k, int *m, double *p);
+QDD qdd_measure_qubit(QDD qqd, BDDVAR k, BDDVAR nvars, int *m, double *p);
 
-QDD qdd_measure_all(QDD qdd, BDDVAR n, bool* ms);
+QDD qdd_measure_all(QDD qdd, BDDVAR n, bool* ms, double *p);
 
 /**
  * (Recursive) helper function for obtaining probabilities for measurements
  */
-#define _qdd_unnormed_prob(qdd) (CALL(_qdd_unnormed_prob, qdd));
-TASK_DECL_1(QDD, _qdd_unnormed_prob, QDD);
+#define qdd_unnormed_prob(qdd, topvar, nvars) (CALL(qdd_unnormed_prob,qdd,topvar,nvars));
+TASK_DECL_3(double, qdd_unnormed_prob, QDD, BDDVAR, BDDVAR);
 
 /**
  * Get amplitude of given basis state.
