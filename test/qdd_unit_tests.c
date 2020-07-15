@@ -985,7 +985,7 @@ int test_measurements()
 
 int test_QFT()
 {
-    QDD q3, q5, qref3;
+    QDD q3, q5, qref3, qref5;
     AMP a;
 
     // 3 qubit QFT
@@ -1017,84 +1017,54 @@ int test_QFT()
     // 5 qubit QFT
     bool x5[] = {0,1,1,0,1};
     q5 = qdd_create_basis_state(5, x5);
+    qref5 = qdd_create_basis_state(5, x5);
     q5 = qdd_circuit(q5, CIRCID_QFT, 0, 4);
     q5 = qdd_circuit(q5, CIRCID_swap_range, 0, 4);
 
     // check approx equal against output from qiskit
-    double thres = 1e-9;
-    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(1.7677669529663692e-01,-6.4946704217662027e-17),thres));
-    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(-1.7677669529663692e-01,6.4946704217662027e-17),thres));
-    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(7.5771154920605696e-17,1.7677669529663692e-01),thres));
-    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(-7.5771154920605696e-17,-1.7677669529663692e-01),thres));
-    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(-1.2500000000000011e-01,-1.2499999999999999e-01),thres));
-    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(1.2500000000000011e-01,1.2499999999999999e-01),thres));
-    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(1.2499999999999999e-01,-1.2500000000000011e-01),thres));
-    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(-1.2499999999999999e-01,1.2500000000000011e-01),thres));
-    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(6.7649512518274585e-02,-1.6332037060954713e-01),thres));
-    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(-6.7649512518274585e-02,1.6332037060954713e-01),thres));
-    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(1.6332037060954713e-01,6.7649512518274571e-02),thres));
-    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(-1.6332037060954713e-01,-6.7649512518274571e-02),thres));
-    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(-1.6332037060954710e-01,6.7649512518274696e-02),thres));
-    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(1.6332037060954710e-01,-6.7649512518274696e-02),thres));
-    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(-6.7649512518274710e-02,-1.6332037060954710e-01),thres));
-    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(6.7649512518274710e-02,1.6332037060954710e-01),thres));
-    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(-1.4698445030241986e-01,9.8211869798387877e-02),thres));
-    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(1.4698445030241986e-01,-9.8211869798387877e-02),thres));
-    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(-9.8211869798387877e-02,-1.4698445030241986e-01),thres));
-    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(9.8211869798387877e-02,1.4698445030241986e-01),thres));
-    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(1.7337998066526852e-01,3.4487422410367806e-02),thres));
-    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(-1.7337998066526852e-01,-3.4487422410367806e-02),thres));
-    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(-3.4487422410367799e-02,1.7337998066526852e-01),thres));
-    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(3.4487422410367799e-02,-1.7337998066526852e-01),thres));
-    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(3.4487422410367972e-02,1.7337998066526850e-01),thres));
-    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(-3.4487422410367972e-02,-1.7337998066526850e-01),thres));
-    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(-1.7337998066526850e-01,3.4487422410367986e-02),thres));
-    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(1.7337998066526850e-01,-3.4487422410367986e-02),thres));
-    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(9.8211869798387752e-02,-1.4698445030241994e-01),thres));
-    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(-9.8211869798387752e-02,1.4698445030241994e-01),thres));
-    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(1.4698445030241994e-01,9.8211869798387752e-02),thres));
-    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(-1.4698445030241994e-01,-9.8211869798387752e-02),thres));
+    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(1.7677669529663692e-01,-6.4946704217662027e-17)));
+    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(-1.7677669529663692e-01,6.4946704217662027e-17)));
+    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(7.5771154920605696e-17,1.7677669529663692e-01)));
+    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(-7.5771154920605696e-17,-1.7677669529663692e-01)));
+    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(-1.2500000000000011e-01,-1.2499999999999999e-01)));
+    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(1.2500000000000011e-01,1.2499999999999999e-01)));
+    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(1.2499999999999999e-01,-1.2500000000000011e-01)));
+    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(-1.2499999999999999e-01,1.2500000000000011e-01)));
+    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(6.7649512518274585e-02,-1.6332037060954713e-01)));
+    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(-6.7649512518274585e-02,1.6332037060954713e-01)));
+    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(1.6332037060954713e-01,6.7649512518274571e-02)));
+    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(-1.6332037060954713e-01,-6.7649512518274571e-02)));
+    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(-1.6332037060954710e-01,6.7649512518274696e-02)));
+    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(1.6332037060954710e-01,-6.7649512518274696e-02)));
+    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(-6.7649512518274710e-02,-1.6332037060954710e-01)));
+    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(6.7649512518274710e-02,1.6332037060954710e-01)));
+    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(-1.4698445030241986e-01,9.8211869798387877e-02)));
+    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(1.4698445030241986e-01,-9.8211869798387877e-02)));
+    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(-9.8211869798387877e-02,-1.4698445030241986e-01)));
+    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(9.8211869798387877e-02,1.4698445030241986e-01)));
+    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(1.7337998066526852e-01,3.4487422410367806e-02)));
+    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(-1.7337998066526852e-01,-3.4487422410367806e-02)));
+    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(-3.4487422410367799e-02,1.7337998066526852e-01)));
+    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(3.4487422410367799e-02,-1.7337998066526852e-01)));
+    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(3.4487422410367972e-02,1.7337998066526850e-01)));
+    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(-3.4487422410367972e-02,-1.7337998066526850e-01)));
+    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(-1.7337998066526850e-01,3.4487422410367986e-02)));
+    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(1.7337998066526850e-01,-3.4487422410367986e-02)));
+    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(9.8211869798387752e-02,-1.4698445030241994e-01)));
+    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(-9.8211869798387752e-02,1.4698445030241994e-01)));
+    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(1.4698445030241994e-01,9.8211869798387752e-02)));
+    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(-1.4698445030241994e-01,-9.8211869798387752e-02)));
     test_assert(qdd_is_unitvector(q5, 5));
 
     // inverse QFT
     q5 = qdd_circuit(q5, CIRCID_swap_range, 0, 4);
     q5 = qdd_circuit(q5, CIRCID_QFT_inv, 0, 4);
-    
-    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(1, 0), thres));
-    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
-    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(0, 0), thres));
+    test_assert(qdd_equivalent(q5, qref5, 5, false, false));
+    test_assert(qdd_equivalent(q5, qref5, 5, true, false));
+    test_assert(q5 == qref5);
     
     
-    if(VERBOSE) printf("qdd QFT test (tol=%.0e):  ~\n", thres);
+    if(VERBOSE) printf("qdd QFT test:             ok\n");
     return 0;
 }
 
