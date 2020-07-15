@@ -146,6 +146,8 @@ int test_basis_state_creation()
     x[0] = 1; q1 = qdd_create_basis_state(1, x);
     test_assert(qdd_countnodes(q0) == 2);
     test_assert(qdd_countnodes(q1) == 2);
+    test_assert(qdd_is_unitvector(q0, 1));
+    test_assert(qdd_is_unitvector(q1, 1));
 
     AMP a;
     x[0] = 0; a = qdd_get_amplitude(q0, x); test_assert(a == C_ONE);
@@ -159,6 +161,8 @@ int test_basis_state_creation()
     x3[2] = 1; x3[1] = 0; x3[0] = 1; q3 = qdd_create_basis_state(3, x3);
     test_assert(qdd_countnodes(q2) == 4);
     test_assert(qdd_countnodes(q3) == 4);
+    test_assert(qdd_is_unitvector(q2, 3));
+    test_assert(qdd_is_unitvector(q3, 3));
 
     x3[2] = 0; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q2, x3); test_assert(a == C_ONE);
     x3[2] = 0; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q2, x3); test_assert(a == C_ZERO);
@@ -376,12 +380,12 @@ int test_x_gate()
     x3[2] = 0; x3[1] = 1; x3[0] = 0; q4 = qdd_create_basis_state(3, x3);
     x3[2] = 0; x3[1] = 1; x3[0] = 1; q5 = qdd_create_basis_state(3, x3);
 
-    q3 = qdd_gate(q3, GATEID_sqrtX, 1);
-    q3 = qdd_gate(q3, GATEID_sqrtX, 1); 
+    q3 = qdd_gate(q3, GATEID_sqrtX, 1); test_assert(qdd_is_unitvector(q3, 3));
+    q3 = qdd_gate(q3, GATEID_sqrtX, 1); test_assert(qdd_is_unitvector(q3, 3));
     test_assert(q3 == q4);
 
-    q3 = qdd_gate(q3, GATEID_sqrtX, 0);
-    q3 = qdd_gate(q3, GATEID_sqrtX, 0); 
+    q3 = qdd_gate(q3, GATEID_sqrtX, 0); test_assert(qdd_is_unitvector(q3, 3));
+    q3 = qdd_gate(q3, GATEID_sqrtX, 0); test_assert(qdd_is_unitvector(q3, 3));
     test_assert(q3 == q5);
     
     test_assert(qdd_countnodes(q3) == 4);
@@ -1000,6 +1004,7 @@ int test_QFT()
     x3[2]=1; x3[1]=0; x3[0]=1; a = qdd_get_amplitude(q3, x3); test_assert(CapproxEqual(Cvalue(a),Cmake(2.5000000000000000e-01,-2.5000000000000017e-01)));
     x3[2]=1; x3[1]=1; x3[0]=0; a = qdd_get_amplitude(q3, x3); test_assert(CapproxEqual(Cvalue(a),Cmake(2.5000000000000017e-01,2.5000000000000000e-01)));
     x3[2]=1; x3[1]=1; x3[0]=1; a = qdd_get_amplitude(q3, x3); test_assert(CapproxEqual(Cvalue(a),Cmake(-2.5000000000000017e-01,-2.5000000000000000e-01)));
+    test_assert(qdd_is_unitvector(q3, 3));
 
     // inverse QFT
     q3 = qdd_circuit(q3, CIRCID_swap_range, 0, 2);
@@ -1049,7 +1054,8 @@ int test_QFT()
     x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(-9.8211869798387752e-02,1.4698445030241994e-01),thres));
     x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(1.4698445030241994e-01,9.8211869798387752e-02),thres));
     x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CepsilonClose(Cvalue(a), Cmake(-1.4698445030241994e-01,-9.8211869798387752e-02),thres));
-    
+    test_assert(qdd_is_unitvector(q5, 5));
+
     // inverse QFT
     q5 = qdd_circuit(q5, CIRCID_swap_range, 0, 4);
     q5 = qdd_circuit(q5, CIRCID_QFT_inv, 0, 4);
@@ -1103,6 +1109,7 @@ int test_grover()
     x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(grov, x2); test_assert(a == C_ZERO);
     x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(grov, x2); test_assert(a == C_ONE);
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(grov, x2); test_assert(a == C_ZERO);
+    test_assert(qdd_is_unitvector(grov, 2));
 
     
     bool x3[] = {1,1,0}; // "flagged" entry
@@ -1115,6 +1122,7 @@ int test_grover()
     x3[2] = 1; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(grov, x3); test_assert(_prob(a) < 0.008);
     x3[2] = 1; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(grov, x3); test_assert(_prob(a) < 0.008);
     x3[2] = 1; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(grov, x3); test_assert(_prob(a) < 0.008);
+    test_assert(qdd_is_unitvector(grov, 3));
 
     // TODO: bigger tests?
 
@@ -1218,24 +1226,40 @@ int test_5qubit_circuit()
     q    = qdd_create_basis_state(n_qubits, x5);
 
     // 32 gates 
-    q = qdd_cgate(q, GATEID_Z, 1, 2);       q = qdd_gate(q, GATEID_X, 2);           q = qdd_cgate(q, GATEID_Z, 3, 4);       q = qdd_cgate(q, GATEID_X, 1, 3);
-    q = qdd_gate(q, GATEID_Z, 1);           q = qdd_gate(q, GATEID_H, 4);           q = qdd_gate(q, GATEID_H, 0);           q = qdd_cgate(q, GATEID_X, 1, 3);
-    q = qdd_gate(q, GATEID_H, 3);           q = qdd_gate(q, GATEID_H, 0);           q = qdd_gate(q, GATEID_Z, 1);           q = qdd_cgate(q, GATEID_X, 1, 2);
-    q = qdd_gate(q, GATEID_X, 1);           q = qdd_cgate(q, GATEID_X, 0, 4);       q = qdd_gate(q, GATEID_H, 4);           q = qdd_cgate(q, GATEID_X, 0, 1);
-    q = qdd_cgate(q, GATEID_Z, 0, 4);       q = qdd_cgate(q, GATEID_Z, 0, 4);       q = qdd_cgate(q, GATEID_Z, 2, 3);       q = qdd_gate(q, GATEID_Z, 0);
-    q = qdd_cgate(q, GATEID_X, 3, 4);       q = qdd_cgate(q, GATEID_Z, 0, 2);       q = qdd_gate(q, GATEID_Z, 3);           q = qdd_cgate(q, GATEID_Z, 1, 3);
-    q = qdd_cgate(q, GATEID_X, 0, 3);       q = qdd_cgate(q, GATEID_Z, 0, 4);       q = qdd_cgate(q, GATEID_Z, 0, 4);       q = qdd_gate(q, GATEID_H, 1);
-    q = qdd_gate(q, GATEID_H, 3);           q = qdd_gate(q, GATEID_X, 1);           q = qdd_cgate(q, GATEID_Z, 1, 2);       q = qdd_gate(q, GATEID_Z, 1);
+    q = qdd_cgate(q, GATEID_Z, 1, 2);       q = qdd_gate(q, GATEID_X, 2);       test_assert(qdd_is_unitvector(q, 5));
+    q = qdd_cgate(q, GATEID_Z, 3, 4);       q = qdd_cgate(q, GATEID_X, 1, 3);   test_assert(qdd_is_unitvector(q, 5));
+    q = qdd_gate(q, GATEID_Z, 1);           q = qdd_gate(q, GATEID_H, 4);       test_assert(qdd_is_unitvector(q, 5));
+    q = qdd_gate(q, GATEID_H, 0);           q = qdd_cgate(q, GATEID_X, 1, 3);   test_assert(qdd_is_unitvector(q, 5));
+    q = qdd_gate(q, GATEID_H, 3);           q = qdd_gate(q, GATEID_H, 0);       test_assert(qdd_is_unitvector(q, 5));
+    q = qdd_gate(q, GATEID_Z, 1);           q = qdd_cgate(q, GATEID_X, 1, 2);   test_assert(qdd_is_unitvector(q, 5));
+    q = qdd_gate(q, GATEID_X, 1);           q = qdd_cgate(q, GATEID_X, 0, 4);   test_assert(qdd_is_unitvector(q, 5));
+    q = qdd_gate(q, GATEID_H, 4);           q = qdd_cgate(q, GATEID_X, 0, 1);   test_assert(qdd_is_unitvector(q, 5));
+    q = qdd_cgate(q, GATEID_Z, 0, 4);       q = qdd_cgate(q, GATEID_Z, 0, 4);   test_assert(qdd_is_unitvector(q, 5));
+    q = qdd_cgate(q, GATEID_Z, 2, 3);       q = qdd_gate(q, GATEID_Z, 0);       test_assert(qdd_is_unitvector(q, 5));
+    q = qdd_cgate(q, GATEID_X, 3, 4);       q = qdd_cgate(q, GATEID_Z, 0, 2);   test_assert(qdd_is_unitvector(q, 5));
+    q = qdd_gate(q, GATEID_Z, 3);           q = qdd_cgate(q, GATEID_Z, 1, 3);   test_assert(qdd_is_unitvector(q, 5));
+    q = qdd_cgate(q, GATEID_X, 0, 3);       q = qdd_cgate(q, GATEID_Z, 0, 4);   test_assert(qdd_is_unitvector(q, 5));
+    q = qdd_cgate(q, GATEID_Z, 0, 4);       q = qdd_gate(q, GATEID_H, 1);       test_assert(qdd_is_unitvector(q, 5));
+    q = qdd_gate(q, GATEID_H, 3);           q = qdd_gate(q, GATEID_X, 1);       test_assert(qdd_is_unitvector(q, 5));
+    q = qdd_cgate(q, GATEID_Z, 1, 2);       q = qdd_gate(q, GATEID_Z, 1);       test_assert(qdd_is_unitvector(q, 5));
     node_count = qdd_countnodes(q);
     // inverse
-    q = qdd_gate(q, GATEID_Z, 1);           q = qdd_cgate(q, GATEID_Z, 1, 2);       q = qdd_gate(q, GATEID_X, 1);           q = qdd_gate(q, GATEID_H, 3);
-    q = qdd_gate(q, GATEID_H, 1);           q = qdd_cgate(q, GATEID_Z, 0, 4);       q = qdd_cgate(q, GATEID_Z, 0, 4);       q = qdd_cgate(q, GATEID_X, 0, 3);
-    q = qdd_cgate(q, GATEID_Z, 1, 3);       q = qdd_gate(q, GATEID_Z, 3);           q = qdd_cgate(q, GATEID_Z, 0, 2);       q = qdd_cgate(q, GATEID_X, 3, 4);
-    q = qdd_gate(q, GATEID_Z, 0);           q = qdd_cgate(q, GATEID_Z, 2, 3);       q = qdd_cgate(q, GATEID_Z, 0, 4);       q = qdd_cgate(q, GATEID_Z, 0, 4);
-    q = qdd_cgate(q, GATEID_X, 0, 1);       q = qdd_gate(q, GATEID_H, 4);           q = qdd_cgate(q, GATEID_X, 0, 4);       q = qdd_gate(q, GATEID_X, 1);
-    q = qdd_cgate(q, GATEID_X, 1, 2);       q = qdd_gate(q, GATEID_Z, 1);           q = qdd_gate(q, GATEID_H, 0);           q = qdd_gate(q, GATEID_H, 3);
-    q = qdd_cgate(q, GATEID_X, 1, 3);       q = qdd_gate(q, GATEID_H, 0);           q = qdd_gate(q, GATEID_H, 4);           q = qdd_gate(q, GATEID_Z, 1);
-    q = qdd_cgate(q, GATEID_X, 1, 3);       q = qdd_cgate(q, GATEID_Z, 3, 4);       q = qdd_gate(q, GATEID_X, 2);           q = qdd_cgate(q, GATEID_Z, 1, 2);
+    q = qdd_gate(q, GATEID_Z, 1);           q = qdd_cgate(q, GATEID_Z, 1, 2);   test_assert(qdd_is_unitvector(q, 5));
+    q = qdd_gate(q, GATEID_X, 1);           q = qdd_gate(q, GATEID_H, 3);       test_assert(qdd_is_unitvector(q, 5));
+    q = qdd_gate(q, GATEID_H, 1);           q = qdd_cgate(q, GATEID_Z, 0, 4);   test_assert(qdd_is_unitvector(q, 5));
+    q = qdd_cgate(q, GATEID_Z, 0, 4);       q = qdd_cgate(q, GATEID_X, 0, 3);   test_assert(qdd_is_unitvector(q, 5));
+    q = qdd_cgate(q, GATEID_Z, 1, 3);       q = qdd_gate(q, GATEID_Z, 3);       test_assert(qdd_is_unitvector(q, 5));
+    q = qdd_cgate(q, GATEID_Z, 0, 2);       q = qdd_cgate(q, GATEID_X, 3, 4);   test_assert(qdd_is_unitvector(q, 5));
+    q = qdd_gate(q, GATEID_Z, 0);           q = qdd_cgate(q, GATEID_Z, 2, 3);   test_assert(qdd_is_unitvector(q, 5));
+    q = qdd_cgate(q, GATEID_Z, 0, 4);       q = qdd_cgate(q, GATEID_Z, 0, 4);   test_assert(qdd_is_unitvector(q, 5));
+    q = qdd_cgate(q, GATEID_X, 0, 1);       q = qdd_gate(q, GATEID_H, 4);       test_assert(qdd_is_unitvector(q, 5));
+    q = qdd_cgate(q, GATEID_X, 0, 4);       q = qdd_gate(q, GATEID_X, 1);       test_assert(qdd_is_unitvector(q, 5));
+    q = qdd_cgate(q, GATEID_X, 1, 2);       q = qdd_gate(q, GATEID_Z, 1);       test_assert(qdd_is_unitvector(q, 5));
+    q = qdd_gate(q, GATEID_H, 0);           q = qdd_gate(q, GATEID_H, 3);       test_assert(qdd_is_unitvector(q, 5));
+    q = qdd_cgate(q, GATEID_X, 1, 3);       q = qdd_gate(q, GATEID_H, 0);       test_assert(qdd_is_unitvector(q, 5));
+    q = qdd_gate(q, GATEID_H, 4);           q = qdd_gate(q, GATEID_Z, 1);       test_assert(qdd_is_unitvector(q, 5));
+    q = qdd_cgate(q, GATEID_X, 1, 3);       q = qdd_cgate(q, GATEID_Z, 3, 4);   test_assert(qdd_is_unitvector(q, 5));
+    q = qdd_gate(q, GATEID_X, 2);           q = qdd_cgate(q, GATEID_Z, 1, 2);   test_assert(qdd_is_unitvector(q, 5));
 
     test_assert(qdd_equivalent(q, qref, n_qubits, false, VERBOSE)); // check approx equiv
     test_assert(qdd_equivalent(q, qref, n_qubits, true,  VERBOSE)); // check exact equiv
@@ -1262,38 +1286,38 @@ int test_10qubit_circuit()
     q    = qdd_create_basis_state(10, x10);
 
     // 30 random* Clifford gates            *chosen by a fair dice roll
-    q = qdd_cgate(q, GATEID_X, 1, 3);       q = qdd_gate(q, GATEID_H, 0);
-    q = qdd_gate(q, GATEID_X, 6);           q = qdd_cgate(q, GATEID_X, 6, 9);
-    q = qdd_gate(q, GATEID_H, 4);           q = qdd_cgate(q, GATEID_X, 3, 5);
-    q = qdd_gate(q, GATEID_H, 1);           q = qdd_gate(q, GATEID_X, 1);
-    q = qdd_cgate(q, GATEID_X, 3, 8);       q = qdd_cgate(q, GATEID_Z, 3, 6);
-    q = qdd_gate(q, GATEID_Z, 3);           q = qdd_cgate(q, GATEID_X, 0, 7);
-    q = qdd_cgate(q, GATEID_X, 1, 9);       q = qdd_gate(q, GATEID_H, 4);
-    q = qdd_cgate(q, GATEID_X, 0, 2);       q = qdd_gate(q, GATEID_X, 2);
-    q = qdd_cgate(q, GATEID_X, 5, 8);       q = qdd_cgate(q, GATEID_X, 0, 4);
-    q = qdd_cgate(q, GATEID_X, 0, 8);       q = qdd_cgate(q, GATEID_X, 6, 9);
-    q = qdd_cgate(q, GATEID_X, 0, 9);       q = qdd_gate(q, GATEID_X, 9);
-    q = qdd_cgate(q, GATEID_X, 4, 9);       q = qdd_cgate(q, GATEID_Z, 2, 7);
-    q = qdd_cgate(q, GATEID_Z, 7, 8);       q = qdd_gate(q, GATEID_X, 7);
-    q = qdd_gate(q, GATEID_Z, 2);           q = qdd_gate(q, GATEID_Z, 7);
-    q = qdd_gate(q, GATEID_X, 6);           q = qdd_gate(q, GATEID_X, 1);
+    q = qdd_cgate(q, GATEID_X, 1, 3);       q = qdd_gate(q, GATEID_H, 0);       test_assert(qdd_is_unitvector(q, 10));
+    q = qdd_gate(q, GATEID_X, 6);           q = qdd_cgate(q, GATEID_X, 6, 9);   test_assert(qdd_is_unitvector(q, 10));
+    q = qdd_gate(q, GATEID_H, 4);           q = qdd_cgate(q, GATEID_X, 3, 5);   test_assert(qdd_is_unitvector(q, 10));
+    q = qdd_gate(q, GATEID_H, 1);           q = qdd_gate(q, GATEID_X, 1);       test_assert(qdd_is_unitvector(q, 10));
+    q = qdd_cgate(q, GATEID_X, 3, 8);       q = qdd_cgate(q, GATEID_Z, 3, 6);   test_assert(qdd_is_unitvector(q, 10));
+    q = qdd_gate(q, GATEID_Z, 3);           q = qdd_cgate(q, GATEID_X, 0, 7);   test_assert(qdd_is_unitvector(q, 10));
+    q = qdd_cgate(q, GATEID_X, 1, 9);       q = qdd_gate(q, GATEID_H, 4);       test_assert(qdd_is_unitvector(q, 10));
+    q = qdd_cgate(q, GATEID_X, 0, 2);       q = qdd_gate(q, GATEID_X, 2);       test_assert(qdd_is_unitvector(q, 10));
+    q = qdd_cgate(q, GATEID_X, 5, 8);       q = qdd_cgate(q, GATEID_X, 0, 4);   test_assert(qdd_is_unitvector(q, 10));
+    q = qdd_cgate(q, GATEID_X, 0, 8);       q = qdd_cgate(q, GATEID_X, 6, 9);   test_assert(qdd_is_unitvector(q, 10));
+    q = qdd_cgate(q, GATEID_X, 0, 9);       q = qdd_gate(q, GATEID_X, 9);       test_assert(qdd_is_unitvector(q, 10));
+    q = qdd_cgate(q, GATEID_X, 4, 9);       q = qdd_cgate(q, GATEID_Z, 2, 7);   test_assert(qdd_is_unitvector(q, 10));
+    q = qdd_cgate(q, GATEID_Z, 7, 8);       q = qdd_gate(q, GATEID_X, 7);       test_assert(qdd_is_unitvector(q, 10));
+    q = qdd_gate(q, GATEID_Z, 2);           q = qdd_gate(q, GATEID_Z, 7);       test_assert(qdd_is_unitvector(q, 10));
+    q = qdd_gate(q, GATEID_X, 6);           q = qdd_gate(q, GATEID_X, 1);       test_assert(qdd_is_unitvector(q, 10));
     node_count = qdd_countnodes(q);
     // inverse
-    q = qdd_gate(q, GATEID_X, 1);           q = qdd_gate(q, GATEID_X, 6);
-    q = qdd_gate(q, GATEID_Z, 7);           q = qdd_gate(q, GATEID_Z, 2);
-    q = qdd_gate(q, GATEID_X, 7);           q = qdd_cgate(q, GATEID_Z, 7, 8);
-    q = qdd_cgate(q, GATEID_Z, 2, 7);       q = qdd_cgate(q, GATEID_X, 4, 9);
-    q = qdd_gate(q, GATEID_X, 9);           q = qdd_cgate(q, GATEID_X, 0, 9);
-    q = qdd_cgate(q, GATEID_X, 6, 9);       q = qdd_cgate(q, GATEID_X, 0, 8);
-    q = qdd_cgate(q, GATEID_X, 0, 4);       q = qdd_cgate(q, GATEID_X, 5, 8);
-    q = qdd_gate(q, GATEID_X, 2);           q = qdd_cgate(q, GATEID_X, 0, 2);
-    q = qdd_gate(q, GATEID_H, 4);           q = qdd_cgate(q, GATEID_X, 1, 9);
-    q = qdd_cgate(q, GATEID_X, 0, 7);       q = qdd_gate(q, GATEID_Z, 3);
-    q = qdd_cgate(q, GATEID_Z, 3, 6);       q = qdd_cgate(q, GATEID_X, 3, 8);
-    q = qdd_gate(q, GATEID_X, 1);           q = qdd_gate(q, GATEID_H, 1);
-    q = qdd_cgate(q, GATEID_X, 3, 5);       q = qdd_gate(q, GATEID_H, 4);
-    q = qdd_cgate(q, GATEID_X, 6, 9);       q = qdd_gate(q, GATEID_X, 6);
-    q = qdd_gate(q, GATEID_H, 0);           q = qdd_cgate(q, GATEID_X, 1, 3);
+    q = qdd_gate(q, GATEID_X, 1);           q = qdd_gate(q, GATEID_X, 6);       test_assert(qdd_is_unitvector(q, 10));
+    q = qdd_gate(q, GATEID_Z, 7);           q = qdd_gate(q, GATEID_Z, 2);       test_assert(qdd_is_unitvector(q, 10));
+    q = qdd_gate(q, GATEID_X, 7);           q = qdd_cgate(q, GATEID_Z, 7, 8);   test_assert(qdd_is_unitvector(q, 10));
+    q = qdd_cgate(q, GATEID_Z, 2, 7);       q = qdd_cgate(q, GATEID_X, 4, 9);   test_assert(qdd_is_unitvector(q, 10));
+    q = qdd_gate(q, GATEID_X, 9);           q = qdd_cgate(q, GATEID_X, 0, 9);   test_assert(qdd_is_unitvector(q, 10));
+    q = qdd_cgate(q, GATEID_X, 6, 9);       q = qdd_cgate(q, GATEID_X, 0, 8);   test_assert(qdd_is_unitvector(q, 10));
+    q = qdd_cgate(q, GATEID_X, 0, 4);       q = qdd_cgate(q, GATEID_X, 5, 8);   test_assert(qdd_is_unitvector(q, 10));
+    q = qdd_gate(q, GATEID_X, 2);           q = qdd_cgate(q, GATEID_X, 0, 2);   test_assert(qdd_is_unitvector(q, 10));
+    q = qdd_gate(q, GATEID_H, 4);           q = qdd_cgate(q, GATEID_X, 1, 9);   test_assert(qdd_is_unitvector(q, 10));
+    q = qdd_cgate(q, GATEID_X, 0, 7);       q = qdd_gate(q, GATEID_Z, 3);       test_assert(qdd_is_unitvector(q, 10));
+    q = qdd_cgate(q, GATEID_Z, 3, 6);       q = qdd_cgate(q, GATEID_X, 3, 8);   test_assert(qdd_is_unitvector(q, 10));
+    q = qdd_gate(q, GATEID_X, 1);           q = qdd_gate(q, GATEID_H, 1);       test_assert(qdd_is_unitvector(q, 10));
+    q = qdd_cgate(q, GATEID_X, 3, 5);       q = qdd_gate(q, GATEID_H, 4);       test_assert(qdd_is_unitvector(q, 10));
+    q = qdd_cgate(q, GATEID_X, 6, 9);       q = qdd_gate(q, GATEID_X, 6);       test_assert(qdd_is_unitvector(q, 10));
+    q = qdd_gate(q, GATEID_H, 0);           q = qdd_cgate(q, GATEID_X, 1, 3);   test_assert(qdd_is_unitvector(q, 10));
 
     test_assert(qdd_equivalent(q, qref, 10, false, VERBOSE)); // check approx equiv
     test_assert(qdd_equivalent(q, qref, 10, true,  VERBOSE)); // check exact equiv
@@ -1342,6 +1366,7 @@ int test_20qubit_circuit()
     q = qdd_cgate(q, GATEID_Z, 5, 15);      q = qdd_cgate(q, GATEID_X, 0, 15);      q = qdd_cgate(q, GATEID_X, 1, 6);       q = qdd_cgate(q, GATEID_X, 8, 16);
     q = qdd_cgate(q, GATEID_X, 5, 19);      q = qdd_cgate(q, GATEID_Z, 3, 18);      q = qdd_cgate(q, GATEID_X, 5, 8);       q = qdd_cgate(q, GATEID_Z, 14, 18);
     node_count = qdd_countnodes(q);
+    test_assert(qdd_is_unitvector(q, 20));
     // inverse
     q = qdd_cgate(q, GATEID_Z, 14, 18);     q = qdd_cgate(q, GATEID_X, 5, 8);       q = qdd_cgate(q, GATEID_Z, 3, 18);      q = qdd_cgate(q, GATEID_X, 5, 19);
     q = qdd_cgate(q, GATEID_X, 8, 16);      q = qdd_cgate(q, GATEID_X, 1, 6);       q = qdd_cgate(q, GATEID_X, 0, 15);      q = qdd_cgate(q, GATEID_Z, 5, 15);

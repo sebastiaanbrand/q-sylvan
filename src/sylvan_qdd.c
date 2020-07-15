@@ -1591,6 +1591,27 @@ qdd_equivalent(QDD a, QDD b, int n, bool exact, bool verbose)
 }
 
 bool
+qdd_is_unitvector(QDD qdd, BDDVAR n)
+{
+    bool has_next = true;
+    AMP a;
+    bool x[n];
+    for(BDDVAR k=0; k<n; k++) x[k] = 0;
+
+    double sum_abs_squares = 0.0;
+    while(has_next){
+        a = qdd_get_amplitude(qdd, x);
+        sum_abs_squares += _prob(a);
+        has_next = _next_bitstring(x, n);
+    }
+
+    if (abs(sum_abs_squares - 1.0) < TOLERANCE)
+        return true;
+    else
+        return false;
+}
+
+bool
 _next_bitstring(bool *x, int n)
 {
     // binary add 1

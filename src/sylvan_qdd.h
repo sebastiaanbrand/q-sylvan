@@ -284,7 +284,7 @@ TASK_DECL_3(double, qdd_unnormed_prob, QDD, BDDVAR, BDDVAR);
  * 
  * @return The amplitude <x|\psi>.
  */
-extern AMP qdd_get_amplitude(QDD qdd, bool* basis_state);
+AMP qdd_get_amplitude(QDD qdd, bool* basis_state);
 
 double _prob(AMP a);
 
@@ -295,7 +295,7 @@ double _prob(AMP a);
  * 
  * @return A QDD encoding the n-qubit state |00..0>.
  */
-extern QDD qdd_create_all_zero_state(BDDVAR n);
+QDD qdd_create_all_zero_state(BDDVAR n);
 
 /**
  * Creates a QDD for an n-qubit state |x>.
@@ -305,7 +305,7 @@ extern QDD qdd_create_all_zero_state(BDDVAR n);
  * 
  * @return A QDD encoding of the n-qubit state |x>.
  */
-extern QDD qdd_create_basis_state(BDDVAR n, bool* x);
+QDD qdd_create_basis_state(BDDVAR n, bool* x);
 
 
 /**
@@ -321,11 +321,15 @@ extern QDD qdd_create_basis_state(BDDVAR n, bool* x);
  * 
  * @returns True iff |\psi> == |\phi>.
  */
-extern bool qdd_equivalent(QDD a, QDD b, int n, bool exact, bool verbose);
+bool qdd_equivalent(QDD a, QDD b, int n, bool exact, bool verbose);
 
+/**
+ * Brute force sanity check to verify a given QDD encodes a unit vector.
+ */
+bool qdd_is_unitvector(QDD qdd, BDDVAR n);
 
 // counts the nodes by recursively marking them (and unmarks when done)
-extern uint64_t qdd_countnodes(QDD qdd);
+uint64_t qdd_countnodes(QDD qdd);
 
 void clean_amplitude_table(QDD qdds[], int n_qdds);
 /**
@@ -341,7 +345,7 @@ void qdd_fprintdot(FILE *out, QDD qdd);
 
 
 // debug stuff
-extern void qdd_printnodes(QDD q);
+void qdd_printnodes(QDD q);
 bool _next_bitstring(bool *x, int n);
 void _print_bitstring(bool *x, int n, bool backwards);
 
