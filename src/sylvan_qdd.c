@@ -73,6 +73,15 @@ QDD_PTR(QDD q)
 }
 
 /**
+ * 2 BDDVARs (assumed max 8 bits each)
+ */
+static inline uint32_t
+QDD_PARAM_PACK_16(BDDVAR a, BDDVAR b) 
+{
+    return b<<8 | a;
+}
+
+/**
  *  24 bit gateid, 2 possible qubit parameters (e.g. control/target)
  */
 static inline uint64_t
@@ -1254,7 +1263,7 @@ void
 run_shor(uint64_t N)
 {
     // The classical part
-    srand(time(NULL));
+    srand(42);
     uint64_t a;
 	do {
 		a = rand() % N;
@@ -1336,7 +1345,7 @@ qdd_measure_q0(QDD qdd, BDDVAR nvars, int *m, double *p)
     prob_low  *= prob_root;
     prob_high *= prob_root;
     if (fabs(prob_low + prob_high - 1.0) > TOLERANCE) {
-        printf("prob sum = %.55lf \n", prob_low + prob_high);
+        printf("prob sum = %.5lf\n", prob_low + prob_high);
         assert("probabilities don't sum to 1" && false);
     }
 
@@ -1444,7 +1453,7 @@ TASK_IMPL_3(double, qdd_unnormed_prob, QDD, qdd, BDDVAR, topvar, BDDVAR, nvars)
     bool cachenow = 1;
     if (cachenow) {
         uint64_t prob_bits;
-        if (cache_get(CACHE_QDD_PROB, qdd, topvar, &prob_bits)) {
+        if (cache_get(CACHE_QDD_PROB, qdd, QDD_PARAM_PACK_16(topvar, nvars), &prob_bits)) {
             sylvan_stats_count(QDD_PROB_CACHED);
             prob_container_t container = (prob_container_t) prob_bits;
             return container.as_double;
@@ -1483,10 +1492,10 @@ TASK_IMPL_3(double, qdd_unnormed_prob, QDD, qdd, BDDVAR, topvar, BDDVAR, nvars)
     prob_root = _prob(QDD_AMP(qdd));
     prob_res = prob_root * (prob_low + prob_high);
 
-    // Put in cache (TODO) and return
+    // Put in cache and return
     if (cachenow) {
         prob_container_t container = (prob_container_t) prob_res;
-        if (cache_put(CACHE_QDD_PROB, qdd, topvar, container.as_int))
+        if (cache_put(CACHE_QDD_PROB, qdd, QDD_PARAM_PACK_16(topvar, nvars), container.as_int))
             sylvan_stats_count(QDD_PROB_CACHEDPUT);
     }
     return prob_res;

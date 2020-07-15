@@ -862,6 +862,38 @@ int test_measurements()
         test_assert(qdd_equivalent(q, qPM, 3, false, true));
         test_assert(qdd_equivalent(q, qPM, 3, true, false));
         test_assert(q == qPM);
+        
+        // |+++>, measure q0
+        x3[2]=0; x3[1]=0; x3[0]=0;
+        q   = qdd_create_basis_state(3, x3);
+        q   = qdd_gate(q, GATEID_H, 0);
+        q   = qdd_gate(q, GATEID_H, 1);
+        q   = qdd_gate(q, GATEID_H, 2);
+        qPM = qdd_measure_qubit(q, 0, 3, &m, &prob); 
+        test_assert(abs(prob - 0.5) < TOLERANCE);
+        x3[2]=0; x3[1]=0; x3[0]=m; // either |++0> or |++1> depending on m
+        q = qdd_create_basis_state(3, x3); 
+        q = qdd_gate(q, GATEID_H, 1);
+        q = qdd_gate(q, GATEID_H, 2);
+        test_assert(qdd_equivalent(q, qPM, 3, false, true));
+        test_assert(qdd_equivalent(q, qPM, 3, true, false));
+        test_assert(q == qPM); 
+
+        // |+++>, measure q1
+        x3[2]=0; x3[1]=0; x3[0]=0;
+        q   = qdd_create_basis_state(3, x3);
+        q   = qdd_gate(q, GATEID_H, 0);
+        q   = qdd_gate(q, GATEID_H, 1);
+        q   = qdd_gate(q, GATEID_H, 2);
+        qPM = qdd_measure_qubit(q, 1, 3, &m, &prob);
+        test_assert(abs(prob - 0.5) < TOLERANCE);
+        x3[2]=0; x3[1]=m; x3[0]=0; // either |+0+> or |+1+> depending on m
+        q = qdd_create_basis_state(3, x3); 
+        q = qdd_gate(q, GATEID_H, 0);
+        q = qdd_gate(q, GATEID_H, 2);
+        test_assert(qdd_equivalent(q, qPM, 3, false, true));
+        test_assert(qdd_equivalent(q, qPM, 3, true, false));
+        test_assert(q == qPM);
 
         // [1/2, 1/2, 1/2, -1/2] = 1/2(|00> + |01> + |10> - |11>)_(q1, q0)
         x2[1]=0; x2[0]=0;
@@ -1064,7 +1096,7 @@ int test_QFT()
     test_assert(q5 == qref5);
     
     
-    if(VERBOSE) printf("qdd QFT test:             ok\n");
+    if(VERBOSE) printf("qdd QFT:                  ok\n");
     return 0;
 }
 
@@ -1172,9 +1204,9 @@ int test_shor()
     x3[0]=1; x3[1]=1; x3[2]=1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     // </Test qdd_phi_add>
 
-    printf("\n");
-    run_shor(15);
-    printf("\n\n");
+    //printf("\n");
+    //run_shor(15);
+    //printf("\n\n");
 
     if(VERBOSE) printf("qdd Shor:                 TODO\n");
     return 0;
@@ -1405,7 +1437,7 @@ int runtests()
 int main()
 {
     // Standard Lace initialization
-    int workers = 8;
+    int workers = 1;
     lace_init(workers, 0);
     printf("%d worker(s)\n", workers);
     lace_startup(0, NULL, NULL);
