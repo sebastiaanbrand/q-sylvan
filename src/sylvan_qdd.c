@@ -1284,6 +1284,12 @@ run_shor(uint64_t N)
 
 /***********************<measurements and probabilities>***********************/
 
+// Container for disguising doubles as ints so they can go in Sylvan's cache
+typedef union {
+    double   as_double;
+    uint64_t as_int;
+} prob_container_t;
+
 QDD
 qdd_measure_q0(QDD qdd, BDDVAR nvars, int *m, double *p)
 {  
@@ -1422,14 +1428,16 @@ TASK_IMPL_3(double, qdd_unnormed_prob, QDD, qdd, BDDVAR, topvar, BDDVAR, nvars)
         return _prob(QDD_AMP(qdd));
     }
 
-    // Look in cache (TODO)
-    /*
+    // Look in cache
     bool cachenow = 1;
     if (cachenow) {
-        double prob_res;
-        if (cache_get(CACHE_QDD_PROB, qdd, sylvan_false, &prob_res))
-            return prob_res;
-    } */
+        uint64_t prob_bits;
+        if (cache_get(CACHE_QDD_PROB, qdd, topvar, &prob_bits)) {
+            sylvan_stats_count(QDD_PROB_CACHED);
+            prob_container_t container = (prob_container_t) prob_bits;
+            return container.as_double;
+        }
+    }
 
     // Check if the node we want is being skipped
     bool skipped = false;
@@ -1464,11 +1472,11 @@ TASK_IMPL_3(double, qdd_unnormed_prob, QDD, qdd, BDDVAR, topvar, BDDVAR, nvars)
     prob_res = prob_root * (prob_low + prob_high);
 
     // Put in cache (TODO) and return
-    /*
     if (cachenow) {
-        if (cache_put(CACHE_QDD_PROB, qdd, sylvan_false, prob_res))
+        prob_container_t container = (prob_container_t) prob_res;
+        if (cache_put(CACHE_QDD_PROB, qdd, topvar, container.as_int))
             sylvan_stats_count(QDD_PROB_CACHEDPUT);
-    } */
+    }
     return prob_res;
 }
 

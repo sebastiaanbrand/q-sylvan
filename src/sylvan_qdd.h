@@ -258,6 +258,16 @@ struct shor_wires_s {
  */
 QDD qdd_measure_qubit(QDD qqd, BDDVAR k, BDDVAR nvars, int *m, double *p);
 
+/**
+ * Computational basis measurement of all n qubits in the qdd.
+ * 
+ * @param qdd A QDD encoding an n qubit state |\psi>.
+ * @param n Number of qubits.
+ * @param ms Array of lenght n where the measurement outcomes are put.
+ * @param p Return of measurement probability |<\psi|ms>|^2.
+ * 
+ * @return QDD of post-measurement state (computational basis state |ms>).
+ */
 QDD qdd_measure_all(QDD qdd, BDDVAR n, bool* ms, double *p);
 
 /**
