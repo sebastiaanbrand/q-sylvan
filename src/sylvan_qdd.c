@@ -1626,7 +1626,7 @@ qdd_is_unitvector(QDD qdd, BDDVAR n)
         has_next = _next_bitstring(x, n);
     }
 
-    if (abs(sum_abs_squares - 1.0) < TOLERANCE)
+    if (fabs(sum_abs_squares - 1.0) < TOLERANCE)
         return true;
     else
         return false;
