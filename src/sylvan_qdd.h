@@ -257,6 +257,7 @@ struct shor_wires_s {
  * @return QDD of post-measurement state corresponding to measurement outcome.
  */
 QDD qdd_measure_qubit(QDD qqd, BDDVAR k, BDDVAR nvars, int *m, double *p);
+QDD qdd_measure_q0(QDD qdd, BDDVAR nvars, int *m, double *p);
 
 /**
  * Computational basis measurement of all n qubits in the qdd.

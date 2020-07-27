@@ -218,6 +218,7 @@ int test_vector_addition()
     x[0] = 0; a = qdd_get_amplitude(q11, x); test_assert(a == C_ZERO);
     x[0] = 1; a = qdd_get_amplitude(q11, x); test_assert(a == Clookup(Cmake(2.0, 0.0)));
     test_assert(q01 == q10);
+    test_assert(!qdd_is_unitvector(q01, 1));
 
     x[0] = 0; a = qdd_get_amplitude(q000, x); test_assert(a == Clookup(Cmake(3.0, 0.0)));
     x[0] = 1; a = qdd_get_amplitude(q000, x); test_assert(a == C_ZERO);
@@ -229,6 +230,7 @@ int test_vector_addition()
     x[0] = 1; a = qdd_get_amplitude(q100, x); test_assert(a == C_ONE);
     test_assert(q001 == q010);
     test_assert(q001 == q100);
+    test_assert(!qdd_is_unitvector(q001, 1));
     
 
 
@@ -263,6 +265,7 @@ int test_vector_addition()
     x4[3] = 1; x4[2] = 1; x4[1] = 0; x4[0] = 1; a = qdd_get_amplitude(q00, x4); test_assert(a == C_ZERO);
     x4[3] = 1; x4[2] = 1; x4[1] = 1; x4[0] = 0; a = qdd_get_amplitude(q00, x4); test_assert(a == C_ZERO);
     x4[3] = 1; x4[2] = 1; x4[1] = 1; x4[0] = 1; a = qdd_get_amplitude(q00, x4); test_assert(a == C_ZERO);
+    test_assert(!qdd_is_unitvector(q00, 4));
 
     // q0 + q1 / q1 + q0
     x4[3] = 0; x4[2] = 0; x4[1] = 0; x4[0] = 1; a = qdd_get_amplitude(q01, x4); test_assert(a == C_ZERO);
@@ -282,6 +285,7 @@ int test_vector_addition()
     x4[3] = 1; x4[2] = 1; x4[1] = 1; x4[0] = 0; a = qdd_get_amplitude(q01, x4); test_assert(a == C_ZERO);
     x4[3] = 1; x4[2] = 1; x4[1] = 1; x4[0] = 1; a = qdd_get_amplitude(q01, x4); test_assert(a == C_ZERO);
     assert(q01 == q10);
+    test_assert(!qdd_is_unitvector(q01, 4));
 
     // q1 + q1
     x4[3] = 0; x4[2] = 0; x4[1] = 0; x4[0] = 1; a = qdd_get_amplitude(q11, x4); test_assert(a == C_ZERO);
@@ -300,6 +304,7 @@ int test_vector_addition()
     x4[3] = 1; x4[2] = 1; x4[1] = 0; x4[0] = 1; a = qdd_get_amplitude(q11, x4); test_assert(a == C_ZERO);
     x4[3] = 1; x4[2] = 1; x4[1] = 1; x4[0] = 0; a = qdd_get_amplitude(q11, x4); test_assert(a == C_ZERO);
     x4[3] = 1; x4[2] = 1; x4[1] = 1; x4[0] = 1; a = qdd_get_amplitude(q11, x4); test_assert(a == C_ZERO);
+    test_assert(!qdd_is_unitvector(q11, 4));
 
     // q0 + q0 + q0
     x4[3] = 0; x4[2] = 0; x4[1] = 0; x4[0] = 0; a = qdd_get_amplitude(q000, x4); test_assert(a == C_ZERO);
@@ -318,6 +323,7 @@ int test_vector_addition()
     x4[3] = 1; x4[2] = 1; x4[1] = 0; x4[0] = 1; a = qdd_get_amplitude(q000, x4); test_assert(a == C_ZERO);
     x4[3] = 1; x4[2] = 1; x4[1] = 1; x4[0] = 0; a = qdd_get_amplitude(q000, x4); test_assert(a == C_ZERO);
     x4[3] = 1; x4[2] = 1; x4[1] = 1; x4[0] = 1; a = qdd_get_amplitude(q000, x4); test_assert(a == C_ZERO);
+    test_assert(!qdd_is_unitvector(q000, 4));
 
     // q0 + q0 + q1 / q0 + q1 + q0 / q1 + q0 + q0
     x4[3] = 0; x4[2] = 0; x4[1] = 0; x4[0] = 1; a = qdd_get_amplitude(q001, x4); test_assert(a == C_ZERO);
@@ -338,6 +344,7 @@ int test_vector_addition()
     x4[3] = 1; x4[2] = 1; x4[1] = 1; x4[0] = 1; a = qdd_get_amplitude(q001, x4); test_assert(a == C_ZERO);
     assert(q001 == q010);
     assert(q001 == q100);
+    test_assert(!qdd_is_unitvector(q001, 4));
 
     if(VERBOSE) printf("qdd vector addition:      ok\n");
     return 0;
@@ -767,6 +774,26 @@ int test_cswap_circuit()
     // TODO: more tests
 
     if(VERBOSE) printf("qdd c-swap gates:         ok\n");
+    return 0;
+}
+
+// measurement of q0 + sanity checks
+int test_measure_random_state(QDD qdd, BDDVAR nvars)
+{
+    QDD qm;
+    int m; double p;
+
+    test_assert(qdd_is_unitvector(qdd, nvars));
+    qm = qdd_measure_q0(qdd, nvars, &m, &p);
+    test_assert(qdd_is_unitvector(qm, nvars));
+    if ((fabs(p - 1.0) < TOLERANCE) || (fabs(p - 0.0) < TOLERANCE)){
+        test_assert(qdd_equivalent(qdd, qm, nvars, false, false));
+        test_assert(qdd_equivalent(qdd, qm, nvars, true,  false));
+        test_assert(qm == qdd);
+    } else {
+        test_assert(qdd_countnodes(qm) < qdd_countnodes(qdd));
+    }
+
     return 0;
 }
 
@@ -1245,6 +1272,8 @@ int test_5qubit_circuit()
     q = qdd_gate(q, GATEID_H, 3);           q = qdd_gate(q, GATEID_X, 1);       test_assert(qdd_is_unitvector(q, 5));
     q = qdd_cgate(q, GATEID_Z, 1, 2);       q = qdd_gate(q, GATEID_Z, 1);       test_assert(qdd_is_unitvector(q, 5));
     node_count = qdd_countnodes(q);
+    if (test_measure_random_state(q, n_qubits)) return 1;
+
     // inverse
     q = qdd_gate(q, GATEID_Z, 1);           q = qdd_cgate(q, GATEID_Z, 1, 2);   test_assert(qdd_is_unitvector(q, 5));
     q = qdd_gate(q, GATEID_X, 1);           q = qdd_gate(q, GATEID_H, 3);       test_assert(qdd_is_unitvector(q, 5));
@@ -1304,6 +1333,8 @@ int test_10qubit_circuit()
     q = qdd_gate(q, GATEID_Z, 2);           q = qdd_gate(q, GATEID_Z, 7);       test_assert(qdd_is_unitvector(q, 10));
     q = qdd_gate(q, GATEID_X, 6);           q = qdd_gate(q, GATEID_X, 1);       test_assert(qdd_is_unitvector(q, 10));
     node_count = qdd_countnodes(q);
+    if (test_measure_random_state(q, 10)) return 1;
+
     // inverse
     q = qdd_gate(q, GATEID_X, 1);           q = qdd_gate(q, GATEID_X, 6);       test_assert(qdd_is_unitvector(q, 10));
     q = qdd_gate(q, GATEID_Z, 7);           q = qdd_gate(q, GATEID_Z, 2);       test_assert(qdd_is_unitvector(q, 10));
@@ -1368,7 +1399,8 @@ int test_20qubit_circuit()
     q = qdd_cgate(q, GATEID_Z, 5, 15);      q = qdd_cgate(q, GATEID_X, 0, 15);      q = qdd_cgate(q, GATEID_X, 1, 6);       q = qdd_cgate(q, GATEID_X, 8, 16);
     q = qdd_cgate(q, GATEID_X, 5, 19);      q = qdd_cgate(q, GATEID_Z, 3, 18);      q = qdd_cgate(q, GATEID_X, 5, 8);       q = qdd_cgate(q, GATEID_Z, 14, 18);
     node_count = qdd_countnodes(q);
-    test_assert(qdd_is_unitvector(q, 20));
+    if (test_measure_random_state(q, 20)) return 1;
+
     // inverse
     q = qdd_cgate(q, GATEID_Z, 14, 18);     q = qdd_cgate(q, GATEID_X, 5, 8);       q = qdd_cgate(q, GATEID_Z, 3, 18);      q = qdd_cgate(q, GATEID_X, 5, 19);
     q = qdd_cgate(q, GATEID_X, 8, 16);      q = qdd_cgate(q, GATEID_X, 1, 6);       q = qdd_cgate(q, GATEID_X, 0, 15);      q = qdd_cgate(q, GATEID_Z, 5, 15);
