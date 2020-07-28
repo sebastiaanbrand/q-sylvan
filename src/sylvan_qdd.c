@@ -753,8 +753,10 @@ TASK_IMPL_6(QDD, qdd_ccircuit, QDD, qdd, uint32_t, circ_id, BDDVAR*, cs, uint32_
     BDDVAR c = cs[ci];
 
     // If no more control qubits, apply sub-circ here
-    if (c == UINT8_MAX || ci > MAX_CONTROLS) {
+    if (c == QDD_INVALID_VAR || ci > MAX_CONTROLS) {
         res = qdd_circuit(qdd, circ_id, t1, t2);
+        // the gates in qdd_circuit already took care of multiplying the input 
+        // root amp with normalization, so no need to do that here again
     }
     else {
         // Check if skipped control node
@@ -796,12 +798,15 @@ TASK_IMPL_6(QDD, qdd_ccircuit, QDD, qdd, uint32_t, circ_id, BDDVAR*, cs, uint32_
             high = bdd_refs_sync(SYNC(qdd_ccircuit));
             bdd_refs_pop(1);
         }
-        res = qdd_makenode(var, low, high); 
+        res = qdd_makenode(var, low, high);
+        // Multiply root amp of sum with input root amp 
+        // (I guess this needs to be done every time after makenode, so maybe
+        // put this functionality in makenode function?)
+        AMP new_root_amp = Cmul(QDD_AMP(qdd), QDD_AMP(res));
+        res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     }
-
-    // Multiply root amp of sum with input root amp, add to cache, return
-    AMP new_root_amp = Cmul(QDD_AMP(qdd), QDD_AMP(res));
-    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
+    
+    // Add to cache, return
     if (cachenow) {
         cache_put3(CACHE_QDD_SUBCIRC, sylvan_false, qdd, 
                    GATE_OPID_64(CIRCID_swap, cs[0], cs[1], cs[2], t1, t2), 
