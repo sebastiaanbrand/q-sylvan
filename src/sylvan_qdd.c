@@ -1222,7 +1222,7 @@ shor_period_finding(uint64_t a, uint64_t N)
     int m_outcome;
     double m_prob;
 
-    FILE *fp;
+    //FILE *fp;
 
     for (uint32_t i = 0; i < 2*shor_n; i++) {
         printf("shor it = %d/%d\n", i+1, 2*shor_n);
@@ -1242,16 +1242,10 @@ shor_period_finding(uint64_t a, uint64_t N)
         // H on top wire
         qdd = qdd_gate(qdd, GATEID_H, shor_wires.top);
 
-        fp = fopen("shor_it.dot", "w");
-        qdd_fprintdot(fp, qdd, false);
-        fclose(fp);
-
         // measure q0
-        assert(qdd_is_unitvector(qdd, num_qubits));
+        //sylvan_clear_cache();
         qdd = qdd_measure_qubit(qdd, shor_wires.top, num_qubits, &m_outcome, &m_prob);
         m_outcomes[i] = m_outcome;
-        assert(qdd_is_unitvector(qdd, num_qubits));
-        
 
         // make sure q0 is in the |0> state
         if (m_outcome == 1) qdd = qdd_gate(qdd, GATEID_X, shor_wires.top);
@@ -1342,6 +1336,7 @@ run_shor(uint64_t N)
 /***********************<measurements and probabilities>***********************/
 
 // Container for disguising doubles as ints so they can go in Sylvan's cache
+// mtbdd_satcount calls a union like this "hack"
 typedef union {
     double   as_double;
     uint64_t as_int;
@@ -1381,7 +1376,7 @@ qdd_measure_q0(QDD qdd, BDDVAR nvars, int *m, double *p)
     prob_low  *= prob_root;
     prob_high *= prob_root;
     if (fabs(prob_low + prob_high - 1.0) > TOLERANCE) {
-        printf("prob sum = %.5lf\n", prob_low + prob_high);
+        //printf("prob sum = %.5lf\n", prob_low + prob_high);
         assert("probabilities don't sum to 1" && false);
     }
 
@@ -1523,10 +1518,10 @@ TASK_IMPL_3(double, qdd_unnormed_prob, QDD, qdd, BDDVAR, topvar, BDDVAR, nvars)
 
     // these are not q/bdds, so no need to protect from gc right?
     SPAWN(qdd_unnormed_prob, high, nextvar, nvars);
-    prob_low = CALL(qdd_unnormed_prob, low, nextvar, nvars);
+    prob_low  = CALL(qdd_unnormed_prob, low, nextvar, nvars);
     prob_high = SYNC(qdd_unnormed_prob);
     prob_root = _prob(QDD_AMP(qdd));
-    prob_res = prob_root * (prob_low + prob_high);
+    prob_res  = prob_root * (prob_low + prob_high);
 
     // Put in cache and return
     if (cachenow) {
@@ -1650,6 +1645,7 @@ qdd_equivalent(QDD a, QDD b, int n, bool exact, bool verbose)
 bool
 qdd_is_unitvector(QDD qdd, BDDVAR n)
 {
+    bool WRITE_TO_FILE = false;
     bool has_next = true;
     AMP a;
     bool x[n];
@@ -1662,10 +1658,24 @@ qdd_is_unitvector(QDD qdd, BDDVAR n)
         has_next = _next_bitstring(x, n);
     }
 
-    if (fabs(sum_abs_squares - 1.0) < TOLERANCE)
+    if (fabs(sum_abs_squares - 1.0) < TOLERANCE*10) {
+        if (WRITE_TO_FILE) {
+            FILE *fp;
+            fp = fopen("is_unitvector_true.dot", "w");
+            qdd_fprintdot(fp, qdd, false);
+            fclose(fp);
+        }
         return true;
-    else
+    }
+    else {
+        if (WRITE_TO_FILE) {
+            FILE *fp;
+            fp = fopen("is_unitvector_false.dot", "w");
+            qdd_fprintdot(fp, qdd, false);
+            fclose(fp);
+        }
         return false;
+    }
 }
 
 bool
@@ -1760,7 +1770,7 @@ qdd_fprintdot_label(FILE *out, AMP a)
         complex_t val = Cvalue(a);
         if (val.r != 0.0) fprintf(out, "%.3lf", val.r);
         if (val.i > 0.0) fprintf(out, "+%.3lfi", val.i);
-        else if (val.i < 0.0) fprintf(out, "-%.3lfi", val.i);
+        else if (val.i < 0.0) fprintf(out, "%.3lfi", val.i);
     }
     fprintf(out, "\"");
 }
