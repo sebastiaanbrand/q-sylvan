@@ -63,6 +63,8 @@ complex_close(complex_t *in_table, const complex_t* to_insrt)
 bool
 cmap_find_or_put (const cmap_t *cmap, const complex_t *v, ref_t *ret)
 {
+    bucket_t *val  = (bucket_t *) v;
+
     // Round the value to compute the hash with, but store the actual value v
     complex_t round_v;
     round_v.r = round(v->r * INV_TOLERANCE)/INV_TOLERANCE;
@@ -71,10 +73,9 @@ cmap_find_or_put (const cmap_t *cmap, const complex_t *v, ref_t *ret)
     // fix 0 possibly having a sign
     if(round_v.r == 0.0) round_v.r = 0.0;
     if(round_v.i == 0.0) round_v.i = 0.0;
-
+    
     uint32_t hash  = SuperFastHash(&round_v, sizeof(complex_t), 0);
     uint32_t prime = odd_primes[hash & PRIME_MASK];
-    bucket_t *val  = (bucket_t *) v;
 
     assert (val->d[0] != LOCK);
     assert (val->d[0] != EMPTY);

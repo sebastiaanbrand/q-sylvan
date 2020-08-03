@@ -26,8 +26,8 @@
 #include <string.h>
 
 // float "equality" tolerance
-static const double TOLERANCE = 1e-12f; // 1.16415321826934814453125e-10;
-static const double INV_TOLERANCE = 1e12f; // 8589934592
+static const double TOLERANCE = 1e-14f; // 1.16415321826934814453125e-10;
+static const double INV_TOLERANCE = 1e14f; // 8589934592
 
 typedef struct complex_s {
   double r,i;

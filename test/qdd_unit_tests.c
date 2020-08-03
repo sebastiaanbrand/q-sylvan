@@ -34,10 +34,25 @@ int test_cmap()
     found = cmap_find_or_put(ctable, &val1, &index1); test_assert(found == 0);
     found = cmap_find_or_put(ctable, &val2, &index2); test_assert(found == 1);
     test_assert(index1 == index2);
-
     val3 = *cmap_get(ctable, index1);
     test_assert(fabs(val3.r - val1.r) < TOLERANCE);
     test_assert(fabs(val3.i - val1.i) < TOLERANCE);
+
+    val1 = Cmake(2.99999999999999855, 0.0);
+    val2 = Cmake(3.00000000000000123, 0.0);
+    found = cmap_find_or_put(ctable, &val1, &index1); test_assert(found == 0);
+    found = cmap_find_or_put(ctable, &val2, &index2); test_assert(found == 1);
+    test_assert(index1 == index2);
+    val3 = *cmap_get(ctable, index1);
+    test_assert(val3.r == val1.r && val3.i == val1.i);
+
+    val1 = Cmake(0.0005000000000000012, 0.0);
+    val2 = Cmake(0.0004999999999999954, 0.0);
+    found = cmap_find_or_put(ctable, &val1, &index1); test_assert(found == 0);
+    found = cmap_find_or_put(ctable, &val2, &index2); test_assert(found == 1);
+    test_assert(index1 == index2);
+    val3 = *cmap_get(ctable, index1);
+    test_assert(val3.r == val1.r && val3.i == val1.i);
     
     if(VERBOSE) printf("cmap tests:               ok\n");
     cmap_free(ctable);
@@ -55,8 +70,8 @@ int test_complex_operations()
     test_assert(CapproxEqual(ref1, ref2));
     test_assert(!CexactEqual(ref1, ref2));
 
-    ref1 = Cmake(1.0, 2.999999999999855);
-    ref2 = Cmake(1.0, 3.000000000000123);
+    ref1 = Cmake(1.0, 2.99999999999999855);
+    ref2 = Cmake(1.0, 3.00000000000000123);
     test_assert(CapproxEqual(ref1, ref2));
     test_assert(!CexactEqual(ref1, ref2));
 

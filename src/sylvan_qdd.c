@@ -186,8 +186,8 @@ qddnode_getmark(qddnode_t n)
 static inline void
 qddnode_setmark(qddnode_t n, bool mark)
 {
-    if (mark) n->high |= 0x8000000000000000; // set 1th bit from left to 1
-    else      n->high &= 0x7fffffffffffffff; // set 1th bit from left to 0
+    if (mark) n->high |= 0x8000000000000000; // set 1st bit from left to 1
+    else      n->high &= 0x7fffffffffffffff; // set 1st bit from left to 0
 }
 
 /**
