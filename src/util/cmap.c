@@ -54,10 +54,10 @@ print_bucket_bits(bucket_t* b)
 }
 
 bool
-complex_close(complex_t *in_table, const complex_t* to_insrt)
+complex_close(complex_t *in_table, const complex_t* to_insert)
 {
-    return ((fabs(in_table->r - in_table->r) < TOLERANCE) && 
-            (fabs(to_insrt->i - to_insrt->i) < TOLERANCE));
+    return ((fabs(in_table->r - to_insert->r) < TOLERANCE) && 
+            (fabs(in_table->i - to_insert->i) < TOLERANCE));
 }
 
 bool
