@@ -308,6 +308,10 @@ QDD qdd_create_all_zero_state(BDDVAR n);
  */
 QDD qdd_create_basis_state(BDDVAR n, bool* x);
 
+/**
+ * Removes any global phase from state vector, assumes `qdd` is the root edge.
+ */
+QDD qdd_remove_global_phase(QDD qdd);
 
 /**
  * Checks if the states represented by two QDDs are the same. In principle the

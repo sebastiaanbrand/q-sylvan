@@ -1388,19 +1388,19 @@ qdd_measure_q0(QDD qdd, BDDVAR nvars, int *m, double *p)
     // produce post-measurement state
     AMP norm;
     if (*m == 0) {
-        high = QDD_TERMINAL;
-        low  = qdd_bundle_ptr_amp(QDD_PTR(low), C_ONE);
+        high = qdd_bundle_ptr_amp(QDD_TERMINAL, C_ZERO);
         norm = Clookup(Cmake(sqrt(prob_low), 0.0));
     }
     else {
-        low  = QDD_TERMINAL;
-        high = qdd_bundle_ptr_amp(QDD_PTR(high), C_ONE);
+        low  = qdd_bundle_ptr_amp(QDD_TERMINAL, C_ZERO);
         norm = Clookup(Cmake(sqrt(prob_high), 0.0));
     }
 
     QDD res = qdd_makenode(0, low, high);
-    AMP normalized = Cdiv(QDD_AMP(qdd), norm);
-    res = qdd_bundle_ptr_amp(QDD_PTR(res), normalized);
+    AMP new_root_amp = Cmul(QDD_AMP(qdd), QDD_AMP(res));
+    new_root_amp = Cdiv(new_root_amp, norm);
+    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
+    res = qdd_remove_global_phase(res);
     return res;
 }
 
@@ -1604,6 +1604,17 @@ qdd_create_basis_state(BDDVAR n, bool* x)
 
 /**************************</Initial state creation>***************************/
 
+QDD
+qdd_remove_global_phase(QDD qdd)
+{
+    // remove global phase by replacing amp of qdd with absolute value of amp
+    complex_t c = Cvalue(QDD_AMP(qdd));
+    c.r = sqrt(c.r*c.r + c.i*c.i);
+    c.i = 0.0;
+    AMP new_root_amp = Clookup(c);
+    QDD res = qdd_bundle_ptr_amp(QDD_PTR(qdd), new_root_amp);
+    return res;
+}
 
 bool
 qdd_equivalent(QDD a, QDD b, int n, bool exact, bool verbose)

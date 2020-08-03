@@ -845,6 +845,7 @@ int test_measure_random_state(QDD qdd, BDDVAR nvars)
     qm = qdd_measure_q0(qdd, nvars, &m, &p);
     test_assert(qdd_is_unitvector(qm, nvars));
     if ((fabs(p - 1.0) < TOLERANCE) || (fabs(p - 0.0) < TOLERANCE)){
+        qdd = qdd_remove_global_phase(qdd); // measurement removes global phase
         test_assert(qdd_equivalent(qdd, qm, nvars, false, false));
         test_assert(qdd_equivalent(qdd, qm, nvars, true,  false));
         test_assert(qm == qdd);
