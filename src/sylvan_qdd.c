@@ -276,8 +276,8 @@ _qdd_makenode(BDDVAR var, PTR low, PTR high, AMP a, AMP b)
     return result;
 }
 
-static AMP 
-qdd_amp_normalize(AMP *low, AMP *high)
+static AMP __attribute__((unused))
+qdd_amp_normalize_low(AMP *low, AMP *high)
 {
     // Normalize using low if low != 0
     AMP norm;
@@ -286,9 +286,36 @@ qdd_amp_normalize(AMP *low, AMP *high)
         *low = C_ONE;
         *high = Cdiv(*high, norm);
     }
-    else{
+    else {
         norm  = *high;
         *high = C_ONE;
+    }
+    return norm;
+}
+
+static AMP __attribute__((unused))
+qdd_amp_normalize_largest(AMP *low, AMP *high)
+{
+    AMP norm;
+    if (*low == *high) {
+        norm  = *low;
+        *low  = C_ONE;
+        *high = C_ONE;
+        return norm;
+    }
+
+    // Normalize using the absolute greatest value
+    complex_t cl = Cvalue(*low);
+    complex_t ch = Cvalue(*high);
+    if ( (cl.r*cl.r + cl.i*cl.i)  >=  (ch.r*ch.r + ch.i*ch.i) ) {
+        norm = *low;
+        *low = C_ONE;
+        *high = Cdiv(*high, norm);
+    }
+    else {
+        norm  = *high;
+        *high = C_ONE;
+        *low  = Cdiv(*low, norm);
     }
     return norm;
 }
@@ -311,7 +338,7 @@ qdd_makenode(BDDVAR var, QDD low_edge, QDD high_edge)
     }
     else{
         // If the edges are not the same
-        AMP norm = qdd_amp_normalize(&low_amp, &high_amp);
+        AMP norm = qdd_amp_normalize_largest(&low_amp, &high_amp);
         PTR p = _qdd_makenode(var, low_ptr, high_ptr, low_amp, high_amp);
         return qdd_bundle_ptr_amp(p, norm);
     }
