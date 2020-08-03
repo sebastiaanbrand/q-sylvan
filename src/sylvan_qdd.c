@@ -274,7 +274,24 @@ _qdd_makenode(BDDVAR var, PTR low, PTR high, AMP a, AMP b)
 
     result = index;
     return result;
-} 
+}
+
+static AMP 
+qdd_amp_normalize(AMP *low, AMP *high)
+{
+    // Normalize using low if low != 0
+    AMP norm;
+    if(*low != C_ZERO){
+        norm = *low;
+        *low = C_ONE;
+        *high = Cdiv(*high, norm);
+    }
+    else{
+        norm  = *high;
+        *high = C_ONE;
+    }
+    return norm;
+}
 
 static QDD // (PTR and AMP, but the amp is the norm weight from below)
 qdd_makenode(BDDVAR var, QDD low_edge, QDD high_edge)
@@ -283,9 +300,6 @@ qdd_makenode(BDDVAR var, QDD low_edge, QDD high_edge)
     AMP low_amp  = QDD_AMP(low_edge);
     PTR high_ptr = QDD_PTR(high_edge);
     AMP high_amp = QDD_AMP(high_edge);
-
-    PTR p;
-    AMP norm;
 
     // Edges with weight 0 should point straight to terminal.
     if(low_amp  == C_ZERO) low_ptr  = QDD_TERMINAL;
@@ -297,18 +311,8 @@ qdd_makenode(BDDVAR var, QDD low_edge, QDD high_edge)
     }
     else{
         // If the edges are not the same
-        if(low_amp != C_ZERO){
-            // Normalize using low
-            norm     = low_amp;
-            low_amp  = C_ONE;
-            high_amp = Cdiv(high_amp, norm);
-        }
-        else{
-            // Unless low amp is 0, then norm using high
-            norm     = high_amp;
-            high_amp = C_ONE;
-        }
-        p = _qdd_makenode(var, low_ptr, high_ptr, low_amp, high_amp);
+        AMP norm = qdd_amp_normalize(&low_amp, &high_amp);
+        PTR p = _qdd_makenode(var, low_ptr, high_ptr, low_amp, high_amp);
         return qdd_bundle_ptr_amp(p, norm);
     }
 }
