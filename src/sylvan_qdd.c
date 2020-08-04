@@ -1072,9 +1072,9 @@ qdd_phi_add_mod(QDD qdd, BDDVAR* cs, uint64_t a, uint64_t N)
     // 11. X on same wire as control of CNOT in 4/10
     qdd = qdd_gate(qdd, GATEID_X, shor_wires.targ_first);
     // 12. QFT
-    qdd = qdd_circuit(qdd, CIRCID_QFT, shor_wires.targ_first, shor_wires.targ_last); 
+    qdd = qdd_circuit(qdd, CIRCID_QFT, shor_wires.targ_first, shor_wires.targ_last);
     // 13. controlled(c1,c2) phi_add(a)
-    qdd = qdd_ccircuit(qdd, CIRCID_phi_add_a, cs, shor_wires.targ_first, shor_wires.targ_last); 
+    qdd = qdd_ccircuit(qdd, CIRCID_phi_add_a, cs, shor_wires.targ_first, shor_wires.targ_last);
 
     return qdd;
 }
@@ -1222,12 +1222,13 @@ shor_period_finding(uint64_t a, uint64_t N)
     int m_outcome;
     double m_prob;
 
-    //FILE *fp;
-
     for (uint32_t i = 0; i < 2*shor_n; i++) {
-        printf("shor it = %d/%d\n", i+1, 2*shor_n);
+        //printf("shor it = %d/%d\n", i+1, 2*shor_n);
+        assert(qdd_is_unitvector(qdd, num_qubits));
+
         // H on top wire
         qdd = qdd_gate(qdd, GATEID_H, shor_wires.top);
+
         // controlled Ua^...
         qdd = qdd_shor_ua(qdd, as[i], N);
 
@@ -1255,8 +1256,6 @@ shor_period_finding(uint64_t a, uint64_t N)
     uint64_t res = 0;
     for (uint32_t i = 0; i < 2*shor_n; i++) {
         int index = 2*shor_n-1-i;
-        int mmm = m_outcomes[index];
-        printf("m_outcomes[%d] = %d\n", index, mmm);
         res = (res << 1) + m_outcomes[index];
     }
     return res;
@@ -1290,26 +1289,28 @@ my_gcd (uint64_t a, uint64_t b) // clash with gcd in sylvan_mtbdd.c ...
 }
 
 void
-run_shor(uint64_t N)
+run_shor(uint64_t N, uint64_t a)
 {
     // The classical part
-    srand(42);
-    uint64_t a;
-	do {
-		a = rand() % N;
-	} while (my_gcd(a, N) != 1 || a == 1);
-    // for testing, fix a
-    a = 7;  // for a = 11, m=0 or m=8 (?)
-            // for a = 7,  m=0, 64, 128, 192
+    srand(time(NULL));
+
+
+    if (a == 0) {
+        do {
+		    a = rand() % N;
+	    } while (my_gcd(a, N) != 1 || a == 1);
+    }
+    // for a = 11, (QMDD: 0, 128, )
+    // for a = 7,  m=0, 64, 128, 192 (confirmed by QMDD code)
 
     shor_set_globals(a, N);
     
     printf("input N        = %ld [", N);
-    for (uint32_t i=0; i<shor_n; i++) printf("%d,", shor_bits_N[i]);
+    for (uint32_t i=0; i<shor_n; i++) printf("%d", shor_bits_N[i]);
     printf("]\n");
     printf("n (bits for N) = %d\n",  shor_n);
     printf("random a       = %ld [", a);
-    for (uint32_t i=0; i<shor_n; i++) printf("%d,", shor_bits_a[i]);
+    for (uint32_t i=0; i<shor_n; i++) printf("%d", shor_bits_a[i]);
     printf("]\n\n");
 
     printf("wires:\n");
@@ -1325,6 +1326,9 @@ run_shor(uint64_t N)
     // for b the following is true: 
     // b/2^l = x/r, 
     // where l = the number of bits required for N, r = the period we want
+    uint64_t denom = 1 << (2*shor_n);
+
+    printf("fraction: %ld/%ld\n", b, denom);
 
     // TODO: post processing
 }

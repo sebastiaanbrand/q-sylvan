@@ -219,7 +219,7 @@ QDD qdd_grover(BDDVAR n, bool* flag);
  * @param qdd A QDD encoding a state |phi(x)> = QFT|x> with |x> a z-basis state.
  * @param a A big-endian (MSB first) encoding of some integer.
  * 
- * Returns A QDD encoding |phi(x + a)>, with (x+a)
+ * @return A QDD encoding |phi(x + a)>, with (x+a)
  */
 QDD qdd_phi_add(QDD qdd, BDDVAR first, BDDVAR last, bool* a); // Fig. 3
 QDD qdd_phi_add_inv(QDD qdd, BDDVAR first, BDDVAR last, bool* a);
@@ -230,7 +230,12 @@ QDD qdd_cmult_inv(QDD qdd, uint64_t a, uint64_t N);
 QDD qdd_shor_ua(QDD qdd, uint64_t a, uint64_t N); // Fig. 7
 uint64_t shor_period_finding(uint64_t a, uint64_t N); // Fig. 8
 void shor_set_globals(uint64_t a, uint64_t N);
-void run_shor();
+
+/**
+ * N is the number to factor, and 'a' is the value to use in a^x mod N. 
+ * If 'a' is set to 0 a random 'a' is chosen.
+ */
+void run_shor(uint64_t N, uint64_t a);
 // global vars for Shor (not ideal but it is difficult enough as it is)
 // TODO: move shor to separate file, not in qdd source code
 uint32_t  shor_n;

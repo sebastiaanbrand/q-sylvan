@@ -1291,7 +1291,7 @@ int test_shor()
     // </Test qdd_phi_add>
 
     printf("\n");
-    run_shor(15);
+    run_shor(15, 7);
     printf("\n\n");
 
     if(VERBOSE) printf("qdd Shor:                 TODO\n");
