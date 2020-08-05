@@ -208,13 +208,13 @@ QDD qdd_grover(BDDVAR n, bool* flag);
  */
 /**
  * Implements circuit in Fig. 3.
- * Addition in Fourier space. Important here to note is the endianess (which I 
- * often struggel with to get the right way around). If |x> is a basis state
- * written like |q0, q1, q2>, and a is a bit-vector a[0], a[1], a[2], both are/ 
- * should be encoded with the MSB in the q0/a[0] position. That way, if we index
- * x/a "forwards" we have the "normal" binary representation of an integer.
- * Carries happen from q(k) -> q(k-1) (so e.g. from q1 to q0), so if we write
- * the state as |q0, q1, q2> carries go to the left (as normal).
+ * Addition in Fourier space. Important here to note is the endianess:
+ * - Input/output statevector |x> = |q0, q1, q2>, then q0 contains the MSB.
+ * - Classical bit-array a has a[0] as LSB. This is done to easier allow for 
+ *   leading zeros (in a[] now trailing zeros) when enoding the number in more 
+ *   bits than it needs.
+ * - Carries happen from q(k) -> q(k-1), i.e. towards the MSB, so if we write
+ *   the state as |q0, q1, q2> carries go to the left (as normal).
  * 
  * @param qdd A QDD encoding a state |phi(x)> = QFT|x> with |x> a z-basis state.
  * @param a A big-endian (MSB first) encoding of some integer.

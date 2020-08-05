@@ -1001,9 +1001,9 @@ qdd_phi_add(QDD qdd, BDDVAR first, BDDVAR last, bool* a)
     BDDVAR qubit;
     for (int i = 0; i < num_qubits; i++) {
         qubit = first + i;
-        for (int j = i; j < num_qubits; j++){
+        for (int j = 0; j < (num_qubits-i); j++) {
             if (a[j] == 1) {
-                k = (j - i) + 1;
+                k = num_qubits-j-i; // Rk = 2pi/2^k rotation
                 res = qdd_gate(res, GATEID_Rk(k), qubit);
             }
         }
@@ -1025,9 +1025,9 @@ qdd_phi_add_inv(QDD qdd, BDDVAR first, BDDVAR last, bool* a)
     BDDVAR qubit;
     for (int i = 0; i < num_qubits; i++) {
         qubit = first + i;
-        for (int j = i; j < num_qubits; j++){
+        for (int j = 0; j < (num_qubits-i); j++) {
             if (a[j] == 1) {
-                k = (j - i) + 1;
+                k = num_qubits-j-i; // Rk_dag = -2pi/2^k rotation
                 res = qdd_gate(res, GATEID_Rk_dag(k), qubit);
             }
         }
@@ -1052,7 +1052,7 @@ qdd_phi_add_mod(QDD qdd, BDDVAR* cs, uint64_t a, uint64_t N)
     qdd = qdd_circuit(qdd, CIRCID_QFT_inv, shor_wires.targ_first, shor_wires.targ_last);
     // 4.  CNOT (control = carry wire? = first of phi ADD, target = helper)
     qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
-    qdd = qdd_cgate(qdd, GATEID_Z, shor_wires.helper, shor_wires.targ_first)
+    qdd = qdd_cgate(qdd, GATEID_Z, shor_wires.helper, shor_wires.targ_last)
     qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
     // 5.  QFT
     qdd = qdd_circuit(qdd, CIRCID_QFT, shor_wires.targ_first, shor_wires.targ_last);
@@ -1064,13 +1064,13 @@ qdd_phi_add_mod(QDD qdd, BDDVAR* cs, uint64_t a, uint64_t N)
     // 8.  QFT_inv
     qdd = qdd_circuit(qdd, CIRCID_QFT_inv, shor_wires.targ_first, shor_wires.targ_last);
     // 9.  X on same wire as control of CNOT in 4/10
-    qdd = qdd_gate(qdd, GATEID_X, shor_wires.targ_first);
+    qdd = qdd_gate(qdd, GATEID_X, shor_wires.targ_last);
     // 10. CNOT
     qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
-    qdd = qdd_cgate(qdd, GATEID_Z, shor_wires.helper, shor_wires.targ_first)
+    qdd = qdd_cgate(qdd, GATEID_Z, shor_wires.helper, shor_wires.targ_last)
     qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
     // 11. X on same wire as control of CNOT in 4/10
-    qdd = qdd_gate(qdd, GATEID_X, shor_wires.targ_first);
+    qdd = qdd_gate(qdd, GATEID_X, shor_wires.targ_last);
     // 12. QFT
     qdd = qdd_circuit(qdd, CIRCID_QFT, shor_wires.targ_first, shor_wires.targ_last);
     // 13. controlled(c1,c2) phi_add(a)
@@ -1094,13 +1094,13 @@ qdd_phi_add_mod_inv(QDD qdd, BDDVAR* cs, uint64_t a, uint64_t N)
     // 12. QFT^-1
     qdd = qdd_circuit(qdd, CIRCID_QFT_inv, shor_wires.targ_first, shor_wires.targ_last);
     // 11. X^-1 = X
-    qdd = qdd_gate(qdd, GATEID_X, shor_wires.targ_first);
+    qdd = qdd_gate(qdd, GATEID_X, shor_wires.targ_last);
     // 10. CNOT^-1 = CNOT
     qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
-    qdd = qdd_cgate(qdd, GATEID_Z, shor_wires.helper, shor_wires.targ_first)
+    qdd = qdd_cgate(qdd, GATEID_Z, shor_wires.helper, shor_wires.targ_last)
     qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
     // 9.  X^-1 = X
-    qdd = qdd_gate(qdd, GATEID_X, shor_wires.targ_first);
+    qdd = qdd_gate(qdd, GATEID_X, shor_wires.targ_last);
     // 8.  (QFT^-1)^-1 = QFT
     qdd = qdd_circuit(qdd, CIRCID_QFT, shor_wires.targ_first, shor_wires.targ_last);
     // 7.  controlled(c1, c2) phi_add(a)
@@ -1112,7 +1112,7 @@ qdd_phi_add_mod_inv(QDD qdd, BDDVAR* cs, uint64_t a, uint64_t N)
     qdd = qdd_circuit(qdd, CIRCID_QFT_inv, shor_wires.targ_first, shor_wires.targ_last);
     // 4. CNOT^-1 = CNOT (control = carry wire? = first of phi ADD, target = helper)
     qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
-    qdd = qdd_cgate(qdd, GATEID_Z, shor_wires.helper, shor_wires.targ_first)
+    qdd = qdd_cgate(qdd, GATEID_Z, shor_wires.helper, shor_wires.targ_last)
     qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
     // 3. (QFT^-1)^-1 = QFT
     qdd = qdd_circuit(qdd, CIRCID_QFT, shor_wires.targ_first, shor_wires.targ_last);
@@ -1351,6 +1351,7 @@ typedef union {
 QDD
 qdd_measure_q0(QDD qdd, BDDVAR nvars, int *m, double *p)
 {  
+    printf("Measure q0: ");
     LACE_ME;
 
     // get probabilities for q0 = |0> and q0 = |1>
@@ -1390,6 +1391,8 @@ qdd_measure_q0(QDD qdd, BDDVAR nvars, int *m, double *p)
     float rnd = ((float)rand())/RAND_MAX;
     *m = (rnd < prob_low) ? 0 : 1;
     *p = prob_low;
+
+    printf("Pr(0) = %lf, Pr(1) = %lf, outcome = %d\n", prob_low, prob_high, *m);
 
     // produce post-measurement state
     AMP norm;
