@@ -126,7 +126,7 @@ TASK_DECL_4(QDD, qdd_cgate, QDD, uint32_t, BDDVAR, BDDVAR);
 
 // Circuit IDs
 #define CIRCID_swap          0
-#define CIRCID_swap_range    1
+#define CIRCID_reverse_range 1
 #define CIRCID_QFT           2
 #define CIRCID_QFT_inv       3
 #define CIRCID_phi_add_a     4 // call phi_add(shor_bits_a)
@@ -143,9 +143,9 @@ static const uint32_t MAX_CONTROLS = 3;
 QDD qdd_circuit_swap(QDD qdd, BDDVAR qubit1, BDDVAR qubit2);
 
 /**
- * Circuit which swaps the order of the qubits from `first` to `last`.
+ * Circuit which reverses the order of the qubits in the given range.
  */
-QDD qdd_circuit_swap_range(QDD qdd, BDDVAR first, BDDVAR last);
+QDD qdd_circuit_reverse_range(QDD qdd, BDDVAR first, BDDVAR last);
 
 /**
  * Executes the QFT circuit on qubits `first` through `last`.
@@ -210,7 +210,7 @@ QDD qdd_grover(BDDVAR n, bool* flag);
  * Implements circuit in Fig. 3.
  * Addition in Fourier space. Important here to note is the endianess (which I 
  * often struggel with to get the right way around). If |x> is a basis state
- * written like |q0, q1, q2>, and a is a bit-vector a[0], a[1], a[1], both are/ 
+ * written like |q0, q1, q2>, and a is a bit-vector a[0], a[1], a[2], both are/ 
  * should be encoded with the MSB in the q0/a[0] position. That way, if we index
  * x/a "forwards" we have the "normal" binary representation of an integer.
  * Carries happen from q(k) -> q(k-1) (so e.g. from q1 to q0), so if we write
@@ -358,7 +358,8 @@ void qdd_fprintdot(FILE *out, QDD qdd, bool draw_zeros);
 void qdd_printnodes(QDD q);
 bool _next_bitstring(bool *x, int n);
 void _print_bitstring(bool *x, int n, bool backwards);
-
+uint64_t bitarray_to_int(bool *x, int n, bool MSB_first);
+bool bit_from_int(uint64_t a, uint8_t index);
 
 #ifdef __cplusplus
 }

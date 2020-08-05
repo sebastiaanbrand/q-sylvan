@@ -685,7 +685,7 @@ qdd_circuit_swap(QDD qdd, BDDVAR qubit1, BDDVAR qubit2)
 }
 
 QDD
-qdd_circuit_swap_range(QDD qdd, BDDVAR first, BDDVAR last)
+qdd_circuit_reverse_range(QDD qdd, BDDVAR first, BDDVAR last)
 {
     QDD res = qdd;
     BDDVAR a, b;
@@ -755,7 +755,7 @@ qdd_circuit(QDD qdd, uint32_t circ_id, BDDVAR t1, BDDVAR t2)
 {
     switch (circ_id) {  // don't judge me please
         case CIRCID_swap          : return qdd_circuit_swap(qdd, t1, t2);
-        case CIRCID_swap_range    : return qdd_circuit_swap_range(qdd, t1, t2);
+        case CIRCID_reverse_range : return qdd_circuit_reverse_range(qdd, t1, t2);
         case CIRCID_QFT           : return qdd_circuit_QFT(qdd, t1, t2);
         case CIRCID_QFT_inv       : return qdd_circuit_QFT_inv(qdd, t1, t2);
         case CIRCID_phi_add_a     : return qdd_phi_add(qdd, t1, t2, shor_bits_a);
@@ -1250,6 +1250,8 @@ shor_period_finding(uint64_t a, uint64_t N)
 
         // make sure q0 is in the |0> state
         if (m_outcome == 1) qdd = qdd_gate(qdd, GATEID_X, shor_wires.top);
+        qddnode_t node = QDD_GETNODE(QDD_PTR(qdd));
+        assert(qddnode_gethigh(node) == QDD_TERMINAL);
     }
 
     // turn measurement outcomes into an integer
@@ -1720,6 +1722,34 @@ _print_bitstring(bool *x, int n, bool backwards)
         for(int k=0; k<n; k++) printf("%d", x[k]);
 }
 
+uint64_t
+bitarray_to_int(bool *x, int n, bool MSB_first)
+{
+    uint64_t res = 0, k = 1;
+    if (MSB_first) {
+        for (int i = n-1; i >= 0; i--) {
+            if (x[i] == 1) res |= k;
+            k = k<<1;
+        }
+    }
+    else {
+        for (int i = 0; i < n; i++) {
+            if (x[i] == 1) res |= k;
+            k = k<<1;
+        }
+    }
+    return res;
+}
+
+bool
+bit_from_int(uint64_t a, uint8_t index)
+{
+    // assumes index=0 is the LSB
+    uint64_t mask = 1<<index;
+    uint64_t res = a & mask;
+    res = res>>index;
+    return (bool) res;
+}
 
 
 /**************************<printing & file writing>***************************/

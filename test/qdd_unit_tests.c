@@ -1111,7 +1111,7 @@ int test_QFT()
     q3 = qdd_create_basis_state(3, x3);
     qref3 = qdd_create_basis_state(3, x3);
     q3 = qdd_circuit(q3, CIRCID_QFT, 0, 2);
-    q3 = qdd_circuit(q3, CIRCID_swap_range, 0, 2);
+    q3 = qdd_circuit(q3, CIRCID_reverse_range, 0, 2);
 
     // check approx equal against output from qiskit
     x3[2]=0; x3[1]=0; x3[0]=0; a = qdd_get_amplitude(q3, x3); test_assert(CapproxEqual(Cvalue(a),Cmake(3.5355339059327384e-01,-8.6595605623549353e-17)));
@@ -1125,7 +1125,7 @@ int test_QFT()
     test_assert(qdd_is_unitvector(q3, 3));
 
     // inverse QFT
-    q3 = qdd_circuit(q3, CIRCID_swap_range, 0, 2);
+    q3 = qdd_circuit(q3, CIRCID_reverse_range, 0, 2);
     q3 = qdd_circuit(q3, CIRCID_QFT_inv, 0, 2);
     test_assert(qdd_equivalent(q3, qref3, 3, false, false));
     test_assert(qdd_equivalent(q3, qref3, 3, true, false));
@@ -1137,7 +1137,7 @@ int test_QFT()
     q5 = qdd_create_basis_state(5, x5);
     qref5 = qdd_create_basis_state(5, x5);
     q5 = qdd_circuit(q5, CIRCID_QFT, 0, 4);
-    q5 = qdd_circuit(q5, CIRCID_swap_range, 0, 4);
+    q5 = qdd_circuit(q5, CIRCID_reverse_range, 0, 4);
 
     // check approx equal against output from qiskit
     x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(1.7677669529663692e-01,-6.4946704217662027e-17)));
@@ -1175,7 +1175,7 @@ int test_QFT()
     test_assert(qdd_is_unitvector(q5, 5));
 
     // inverse QFT
-    q5 = qdd_circuit(q5, CIRCID_swap_range, 0, 4);
+    q5 = qdd_circuit(q5, CIRCID_reverse_range, 0, 4);
     q5 = qdd_circuit(q5, CIRCID_QFT_inv, 0, 4);
     test_assert(qdd_equivalent(q5, qref5, 5, false, false));
     test_assert(qdd_equivalent(q5, qref5, 5, true, false));
