@@ -840,7 +840,7 @@ TASK_IMPL_6(QDD, qdd_ccircuit, QDD, qdd, uint32_t, circ_id, BDDVAR*, cs, uint32_
     // Add to cache, return
     if (cachenow) {
         cache_put3(CACHE_QDD_SUBCIRC, sylvan_false, qdd, 
-                   GATE_OPID_64(CIRCID_swap, cs[0], cs[1], cs[2], t1, t2), 
+                   GATE_OPID_64(circ_id, cs[0], cs[1], cs[2], t1, t2), 
                    res);
     }
     return res;
