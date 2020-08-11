@@ -1292,6 +1292,96 @@ my_gcd (uint64_t a, uint64_t b) // clash with gcd in sylvan_mtbdd.c ...
   return b;
 }
 
+uint64_t modpow(uint64_t base, uint64_t exp, uint64_t modulus) {
+  base %= modulus;
+  uint64_t result = 1;
+  while (exp > 0) {
+    if (exp & 1) result = (result * base) % modulus;
+    base = (base * base) % modulus;
+    exp >>= 1;
+  }
+  return result;
+}
+
+void
+shor_post_process(uint64_t N, uint64_t a, uint64_t b, uint64_t denom)
+{
+    // For b the following is true:
+    // b/denom = x/r, where denom = 2^num bits, and r = the period we want.
+    // This function tries to find that r.
+    // Implementation from [zulehner2018advanced]
+    if (b == 0) {
+        printf("Factorization failed (measured 0)\n");
+        return;
+    }
+    
+    printf("Continued fraction expansion of %ld/%ld = ", b, denom);
+    
+    int cf_max_size = 100;
+    int cf_entries = 0;
+    uint64_t cf[cf_max_size];
+    uint64_t old_b = b;
+	uint64_t old_denom = denom;
+	while(b != 0) {
+        if (cf_entries >= cf_max_size) {
+            printf("please hardcode cf_max_size to something bigger\n"); // I'm sorry
+            exit(1);
+        }
+        cf[cf_entries] = (denom/b);
+        cf_entries++;
+		uint64_t tmp = denom % b;
+		denom = b;
+		b = tmp;
+	}
+
+	for(int i = 0; i < cf_entries; i++) printf("%ld ", cf[i]);
+    printf("\n");
+
+	for(int i=0; i < cf_entries; i++) {
+		//determine candidate
+		uint64_t denominator = cf[i];
+		uint64_t numerator = 1;
+
+		for(int j=i-1; j >= 0; j--) {
+			uint64_t tmp = numerator + cf[j]*denominator;
+			numerator = denominator;
+			denominator = tmp;
+		}
+        printf(" Candidate %ld/%ld: ", numerator, denominator);
+		if(denominator > N) {
+            printf(" denominator too large (greater than %ld)\n", N);
+			printf("Factorization failed\n");
+            return;
+		} else {
+			double delta = (double)old_b / (double)old_denom - (double)numerator / (double) denominator;
+			if(fabs(delta) < 1.0/(2.0*old_denom)) {
+				if(modpow(a, denominator, N) == 1) {
+                    printf("found period = %ld\n", denominator);
+					if(denominator & 1) {
+                        printf("Factorization failed (period is odd)\n");
+					} else {
+						printf("Factorization succeeded! Non-trivial factors are:\n");
+						uint64_t f1, f2;
+						f1 = modpow(a, denominator>>1, N);
+						f2 = (f1+1)%N;
+						f1 = (f1 == 0) ? N-1 : f1-1;
+						f1 = my_gcd(f1, N);
+						f2 = my_gcd(f2, N);
+                        printf(" -- gcd(%ld^(%ld/2)-1,%ld)=%ld\n", N, denominator, N, f1);
+                        printf(" -- gcd(%ld^(%ld/2)+1,%ld)=%ld\n", N, denominator, N, f2);
+					}
+					break;
+				} else {
+                    printf("failed\n");
+				}
+			} else {
+                printf("delta is too big (%lf)\n", delta);
+			}
+		}
+	}
+    return;
+}
+
 void
 run_shor(uint64_t N, uint64_t a)
 {
@@ -1326,15 +1416,9 @@ run_shor(uint64_t N, uint64_t a)
     printf("targ_last:  %d\n\n", shor_wires.targ_last);
 
     uint64_t b = shor_period_finding(a, N);
-    printf("b = %ld\n", b);
-    // for b the following is true: 
-    // b/2^l = x/r, 
-    // where l = the number of bits required for N, r = the period we want
     uint64_t denom = 1 << (2*shor_n);
 
-    printf("fraction: %ld/%ld\n", b, denom);
-
-    // TODO: post processing
+    shor_post_process(N, a, b, denom);
 }
 
 /******************************</Shor components>******************************/
