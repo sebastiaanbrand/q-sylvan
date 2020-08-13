@@ -35,6 +35,14 @@
 // consistent with for example the equivalent mtbdd files.
 
 
+void
+sylvan_init_qdd(size_t amptable_size)
+{
+    sylvan_init_mtbdd();
+    init_amplitude_table(amptable_size);
+}
+
+
 /****************< (bit level) manipulation of QDD / qddnode_t >***************/
 /**
  * QDD node structure (128 bits)
@@ -1214,10 +1222,6 @@ shor_period_finding(uint64_t a, uint64_t N)
         as[i] = new_a;
     }
 
-    printf("as:[");
-    for (uint32_t i = 0; i < 2*shor_n; i++) printf("%ld, ", as[i]);
-    printf("]\n");
-
     LACE_ME;
 
     int m_outcomes[2*shor_n];
@@ -1303,20 +1307,19 @@ uint64_t modpow(uint64_t base, uint64_t exp, uint64_t modulus) {
   return result;
 }
 
-void
-shor_post_process(uint64_t N, uint64_t a, uint64_t b, uint64_t denom)
+uint64_t
+shor_post_process(uint64_t N, uint64_t a, uint64_t b, uint64_t denom, bool verbose)
 {
     // For b the following is true:
     // b/denom = x/r, where denom = 2^num bits, and r = the period we want.
     // This function tries to find that r.
     // Implementation from [zulehner2018advanced]
     if (b == 0) {
-        printf("Factorization failed (measured 0)\n");
-        return;
+        if (verbose)
+            printf("Factorization failed (measured 0)\n");
+        return 0;
     }
-    
-    printf("Continued fraction expansion of %ld/%ld = ", b, denom);
-    
+
     int cf_max_size = 100;
     int cf_entries = 0;
     uint64_t cf[cf_max_size];
@@ -1334,8 +1337,11 @@ shor_post_process(uint64_t N, uint64_t a, uint64_t b, uint64_t denom)
 		b = tmp;
 	}
 
-	for(int i = 0; i < cf_entries; i++) printf("%ld ", cf[i]);
-    printf("\n");
+    if (verbose) {
+        printf("Continued fraction expansion of %ld/%ld = ", b, denom);
+        for(int i = 0; i < cf_entries; i++) printf("%ld ", cf[i]);
+        printf("\n");
+    }
 
 	for(int i=0; i < cf_entries; i++) {
 		//determine candidate
@@ -1347,78 +1353,92 @@ shor_post_process(uint64_t N, uint64_t a, uint64_t b, uint64_t denom)
 			numerator = denominator;
 			denominator = tmp;
 		}
-        printf(" Candidate %ld/%ld: ", numerator, denominator);
+        if (verbose)
+            printf(" Candidate %ld/%ld: ", numerator, denominator);
 		if(denominator > N) {
-            printf(" denominator too large (greater than %ld)\n", N);
-			printf("Factorization failed\n");
-            return;
+            if (verbose) {
+                printf(" denominator too large (greater than %ld)\n", N);
+                printf("Factorization failed\n");
+            }
+            return 0;
 		} else {
 			double delta = (double)old_b / (double)old_denom - (double)numerator / (double) denominator;
 			if(fabs(delta) < 1.0/(2.0*old_denom)) {
 				if(modpow(a, denominator, N) == 1) {
-                    printf("found period = %ld\n", denominator);
+                    if (verbose)
+                        printf("found period = %ld\n", denominator);
 					if(denominator & 1) {
-                        printf("Factorization failed (period is odd)\n");
+                        if (verbose)
+                            printf("Factorization failed (period is odd)\n");
+                        return 0;
 					} else {
-						printf("Factorization succeeded! Non-trivial factors are:\n");
 						uint64_t f1, f2;
 						f1 = modpow(a, denominator>>1, N);
 						f2 = (f1+1)%N;
 						f1 = (f1 == 0) ? N-1 : f1-1;
 						f1 = my_gcd(f1, N);
 						f2 = my_gcd(f2, N);
-                        printf(" -- gcd(%ld^(%ld/2)-1,%ld)=%ld\n", N, denominator, N, f1);
-                        printf(" -- gcd(%ld^(%ld/2)+1,%ld)=%ld\n", N, denominator, N, f2);
+                        if (f1 == 1 || f1 == N) {
+                            if (verbose)
+                                printf("Factorization found trivial factor\n");
+                            return 0;
+                        }
+                        if (verbose) {
+                            printf("Factorization succeeded! Non-trivial factors are:\n");
+                            printf(" -- gcd(%ld^(%ld/2)-1,%ld)=%ld\n", N, denominator, N, f1);
+                            printf(" -- gcd(%ld^(%ld/2)+1,%ld)=%ld\n", N, denominator, N, f2);
+                        }
+                        return f1;
 					}
 					break;
 				} else {
-                    printf("failed\n");
+                    if (verbose)
+                        printf("failed\n");
 				}
 			} else {
-                printf("delta is too big (%lf)\n", delta);
+                if (verbose)
+                    printf("delta is too big (%lf)\n", delta);
 			}
 		}
 	}
-    return;
+    return 0;
 }
 
-void
-run_shor(uint64_t N, uint64_t a)
+uint64_t
+run_shor(uint64_t N, uint64_t a, bool verbose)
 {
     // The classical part
-    srand(time(NULL));
-
 
     if (a == 0) {
         do {
             a = rand() % N;
         } while (my_gcd(a, N) != 1 || a == 1);
     }
-    // for a = 11, (QMDD: 0, 128, )
-    // for a = 7,  m=0, 64, 128, 192 (confirmed by QMDD code)
 
     shor_set_globals(a, N);
     
-    printf("input N        = %ld [", N);
-    for (uint32_t i=0; i<shor_n; i++) printf("%d", shor_bits_N[i]);
-    printf("]\n");
-    printf("n (bits for N) = %d\n",  shor_n);
-    printf("random a       = %ld [", a);
-    for (uint32_t i=0; i<shor_n; i++) printf("%d", shor_bits_a[i]);
-    printf("]\n\n");
+    if (verbose) {
+        printf("input N        = %ld [", N);
+        for (uint32_t i=0; i<shor_n; i++) printf("%d", shor_bits_N[i]);
+        printf("]\n");
+        printf("n (bits for N) = %d\n",  shor_n);
+        printf("random a       = %ld [", a);
+        for (uint32_t i=0; i<shor_n; i++) printf("%d", shor_bits_a[i]);
+        printf("]\n\n");
 
-    printf("wires:\n");
-    printf("top:        %d\n", shor_wires.top);
-    printf("ctrl_first: %d\n", shor_wires.ctrl_first);
-    printf("ctrl_last:  %d\n", shor_wires.ctrl_last);
-    printf("helper:     %d\n", shor_wires.helper);
-    printf("targ_first: %d\n", shor_wires.targ_first);
-    printf("targ_last:  %d\n\n", shor_wires.targ_last);
+        printf("wires:\n");
+        printf("top:        %d\n", shor_wires.top);
+        printf("ctrl_first: %d\n", shor_wires.ctrl_first);
+        printf("ctrl_last:  %d\n", shor_wires.ctrl_last);
+        printf("helper:     %d\n", shor_wires.helper);
+        printf("targ_first: %d\n", shor_wires.targ_first);
+        printf("targ_last:  %d\n\n", shor_wires.targ_last);
+    }
 
     uint64_t b = shor_period_finding(a, N);
     uint64_t denom = 1 << (2*shor_n);
 
-    shor_post_process(N, a, b, denom);
+    return shor_post_process(N, a, b, denom, verbose);
 }
 
 /******************************</Shor components>******************************/
@@ -1437,7 +1457,6 @@ typedef union {
 QDD
 qdd_measure_q0(QDD qdd, BDDVAR nvars, int *m, double *p)
 {  
-    printf("Measure q0: ");
     LACE_ME;
 
     // get probabilities for q0 = |0> and q0 = |1>
@@ -1477,8 +1496,6 @@ qdd_measure_q0(QDD qdd, BDDVAR nvars, int *m, double *p)
     float rnd = ((float)rand())/RAND_MAX;
     *m = (rnd < prob_low) ? 0 : 1;
     *p = prob_low;
-
-    printf("Pr(0) = %lf, Pr(1) = %lf, outcome = %d\n", prob_low, prob_high, *m);
 
     // produce post-measurement state
     AMP norm;

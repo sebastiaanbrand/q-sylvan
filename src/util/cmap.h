@@ -45,7 +45,7 @@ typedef size_t ref_t;
 \param len The length of the vectors to be stored here
 \return the hashtable
 */
-extern cmap_t *cmap_create (int size);
+extern cmap_t *cmap_create (uint64_t size);
 
 /**
 \brief Free the memory used by a dbs.

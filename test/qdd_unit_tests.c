@@ -9,7 +9,7 @@ bool VERBOSE = true;
 
 int test_cmap()
 {
-    cmap_t *ctable = cmap_create(10);
+    cmap_t *ctable = cmap_create(1<<10);
 
     ref_t index1, index2;
     complex_t val1, val2, val3;
@@ -1322,11 +1322,18 @@ int test_shor()
     x3[0]=1; x3[1]=1; x3[2]=1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     // </Test qdd_phi_add>
 
-    printf("\n");
-    run_shor(15, 7);
-    printf("\n\n");
+    if(VERBOSE) printf("phi add:                  ok\n");
 
-    if(VERBOSE) printf("qdd Shor:                 TODO\n");
+    int counter = 0;
+    uint64_t factor = 0;
+    uint64_t N = 15;
+    srand(time(NULL));
+    while (!factor) {
+        factor = run_shor(N, 0, false);
+        counter++;
+    }
+
+    if(VERBOSE) printf("qdd Shor:                 ok (found factor %ld of %ld with %d tries)\n", factor, N, counter);
     return 0;
 }
 
@@ -1547,11 +1554,11 @@ int runtests()
     if (test_swap_circuit()) return 1;
     if (test_cswap_circuit()) return 1;
     if (test_measurements()) return 1;
-    if (test_QFT()) return 1;
-    if (test_grover()) return 1;
     if (test_5qubit_circuit()) return 1;
     if (test_10qubit_circuit()) return 1;
     if (test_20qubit_circuit()) return 1;
+    if (test_QFT()) return 1;
+    if (test_grover()) return 1;
     if (test_shor()) return 1;
 
     return 0;
@@ -1568,11 +1575,7 @@ int main()
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    // we also need init_bdd() because some qdd functions 
-    // rely on bdd stuff (like cache)
-    sylvan_init_bdd();
-    // TODO: make sylvan_init_qdd() function and handle stuff there
-    init_amplitude_table(20);
+    sylvan_init_qdd(1LL<<20);
 
     int res = runtests();
 

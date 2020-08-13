@@ -133,10 +133,10 @@ print_bitvalues(const cmap_t *cmap, const ref_t ref)
 }
 
 cmap_t *
-cmap_create (int size)
+cmap_create (uint64_t size)
 {
     cmap_t  *cmap = calloc (1, sizeof(cmap_t));
-    cmap->size = 1ull << size;
+    cmap->size = size;
     cmap->mask = cmap->size - 1;
     cmap->table = calloc (cmap->size, sizeof(bucket_t));
     for (unsigned int c = 0; c < cmap->size; c++) {

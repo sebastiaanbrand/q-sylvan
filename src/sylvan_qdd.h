@@ -87,6 +87,7 @@ And analogously for the high edges.
 extern "C" {
 #endif /* __cplusplus */
 
+
 /**
  * 
  * QDD : essentially an edge, containing [var, amp, pointer]
@@ -105,6 +106,11 @@ typedef uint64_t PTR; // node index
 
 static const PTR        QDD_TERMINAL = 1;
 static const BDDVAR     QDD_INVALID_VAR = UINT8_MAX;
+
+/**
+ * Inits MTBDDs and amplitude table.
+ */
+void sylvan_init_qdd(size_t amptable_size);
 
 
 /*******************************<applying gates>*******************************/
@@ -235,7 +241,7 @@ void shor_set_globals(uint64_t a, uint64_t N);
  * N is the number to factor, and 'a' is the value to use in a^x mod N. 
  * If 'a' is set to 0 a random 'a' is chosen.
  */
-void run_shor(uint64_t N, uint64_t a);
+uint64_t run_shor(uint64_t N, uint64_t a, bool verbose);
 // global vars for Shor (not ideal but it is difficult enough as it is)
 // TODO: move shor to separate file, not in qdd source code
 uint32_t  shor_n;

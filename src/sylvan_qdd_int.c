@@ -29,7 +29,7 @@ Note use of cosl and sinl for long double computation
 static long double Pi;    // set value of global Pi
 
 
-int      LOGSIZE;
+int      SIZE;
 cmap_t * ctable;
 cmap_t * ctable_old;
 
@@ -383,11 +383,10 @@ CUnit (cint a)
 
 
 void
-init_amplitude_table(int logsize)
+init_amplitude_table(size_t size)
 {
-    LOGSIZE = logsize;
-    ctable = cmap_create(logsize);
-
+    SIZE   = size;
+    ctable = cmap_create(size);
     
     // TODO: treat 0 and 1 seperately and don't put them in table.
     C_ONE  = Clookup(CmakeOne());
@@ -486,7 +485,7 @@ init_new_empty_table()
     ctable_old = ctable;
 
     // re-init new (empty) ctable
-    init_amplitude_table(LOGSIZE);
+    init_amplitude_table(SIZE);
 }
 
 void
