@@ -1,19 +1,43 @@
 #include <stdio.h>
-#include <time.h>
+#include <sys/time.h>
 
 #include "sylvan.h"
 #include "test_assert.h"
 #include "sylvan_qdd_int.h"
 
-bool VERBOSE = true;
-
-int bench_25qubit_circuit()
+/**
+ * Obtain current wallclock time
+ */
+static double
+wctime()
 {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return (tv.tv_sec + 1E-6 * tv.tv_usec);
+}
+
+int bench_25qubit_circuit(int workers)
+{
+    printf("qdd 25 qubit circuit: %2d worker(s), ", workers); 
+    fflush(stdout);
+
+    double t_start, t_end, runtime;
+    t_start = wctime();
+
+    // Init Lace
+    lace_init(workers, 0);
+    lace_startup(0, NULL, NULL);
+    LACE_ME;
+
+    // Init Sylvan
+    sylvan_set_limits(4LL<<30, 1, 6);
+    sylvan_init_package();
+    sylvan_init_qdd(1LL<<20);
+
     QDD q;
     uint64_t node_count;
     bool x25[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 
-    LACE_ME;
 
     // 25 qubit state
     q = qdd_create_basis_state(25, x25);
@@ -144,31 +168,60 @@ int bench_25qubit_circuit()
     q = qdd_cgate(q, GATEID_Z, 20, 24);	q = qdd_cgate(q, GATEID_X, 9, 14);	q = qdd_cgate(q, GATEID_Z, 8, 18);	q = qdd_cgate(q, GATEID_X, 2, 14);
     q = qdd_cgate(q, GATEID_Z, 15, 20);	q = qdd_cgate(q, GATEID_X, 19, 24);	q = qdd_cgate(q, GATEID_X, 2, 20);	q = qdd_gate(q, GATEID_H, 15);    
     q = qdd_cgate(q, GATEID_Z, 2, 13);	q = qdd_gate(q, GATEID_H, 0);    	q = qdd_gate(q, GATEID_S, 13);    	q = qdd_gate(q, GATEID_H, 24);    
-    node_count = qdd_countnodes(q);
+    
+    t_end = wctime();
+    runtime = (t_end - t_start);
 
-    if(VERBOSE) printf("qdd 25 qubit circuit:     (%ld nodes)\n", node_count);
+    node_count = qdd_countnodes(q);
+    printf("%ld nodes, %lf sec\n", node_count, runtime);
+
+    // Cleanup
+    free_amplitude_table();
+    sylvan_quit();
+    lace_exit();
+    
     return 0;
 }
 
-int bench_grover(int num_qubits)
+int bench_grover(int num_qubits, bool flag[], int workers)
 {
+    printf("bench grover, %d qubits, %2d worker(s), ", num_qubits, workers); 
+    fflush(stdout);
+
+    double t_start, t_end, runtime;
+    t_start = wctime();
+
+    // Init Lace
+    lace_init(workers, 0);
+    lace_startup(0, NULL, NULL);
+    LACE_ME;
+
+    // Init Sylvan
+    sylvan_set_limits(4LL<<30, 1, 6);
+    sylvan_init_package();
+    sylvan_init_qdd(1LL<<20);
+    sylvan_gc_disable(); // issue with gc, maybe "marked" flag location MTBBD vs QDD
+
+
     QDD grov;
-    bool flag[num_qubits];
     uint64_t node_count;
 
-    // init random flag
-    printf("flag: ");
-    srand(time(NULL));
-    for (int i = 0; i < num_qubits; i++) {
-        flag[i] = (bool)(rand() % 2);
-        printf("%d",flag[i]);
-    }
-    printf("\n");
-
     grov = qdd_grover(num_qubits, flag);
-    node_count = qdd_countnodes(grov);
 
-    if(VERBOSE) printf("grover(%d) circuit:     (%ld nodes)\n", num_qubits, node_count);
+    t_end = wctime();
+    runtime = (t_end - t_start);
+
+    node_count = qdd_countnodes(grov);
+    printf("%ld nodes, %lf sec ", node_count, runtime);
+    printf("(flag = ");
+    for (int i = 0; i < num_qubits; i++)
+        printf("%d",flag[i]);
+    printf(")\n");
+
+    // Cleanup
+    free_amplitude_table();
+    sylvan_quit();
+    lace_exit();
     return 0;
 }
 
@@ -393,45 +446,20 @@ int bench_supremacy_5_4(uint32_t depth)
     return 0;
 }
 
-int runbench()
-{
-    time_t t_start, t_end, runtime;
-    t_start = time(NULL);
-
-    //if (bench_25qubit_circuit()) return 1;
-    //if (bench_grover(40)) return 1;
-    //if (bench_supremacy_5_1(20)) return 1;
-    if (bench_supremacy_5_4(20)) return 1;
-
-    t_end = time(NULL);
-    runtime = (t_end - t_start);
-    printf("time = %ld sec\n", runtime);
-
-    return 0;
-}
-
 
 int main()
 {
-    // Standard Lace initialization
-    int workers = 1;
-    lace_init(workers, 0);
-    printf("%d worker(s)\n", workers);
-    lace_startup(0, NULL, NULL);
+    //bench_25qubit_circuit(1);
+    //bench_25qubit_circuit(8);
+    //bench_25qubit_circuit(16);
 
-    // Simple Sylvan initialization
-    sylvan_set_sizes(1LL<<30, 1LL<<30, 1LL<<16, 1LL<<16);
-    sylvan_init_package();
-    // we also need init_bdd() because some qdd functions 
-    // rely on bdd stuff (like cache)
-    sylvan_init_bdd();
-    // TODO: make sylvan_init_qdd() function and handle stuff there
-    init_amplitude_table(20);
+    int n = 22;
+    bool flag[n];
+    srand(time(NULL));
+    for (int i = 0; i < n; i++) flag[i] = (bool)(rand() % 2);
+    bench_grover(n, flag, 1);
+    bench_grover(n, flag, 8);
+    bench_grover(n, flag, 16);
 
-    int res = runbench();
-
-    free_amplitude_table();
-    sylvan_quit();
-    lace_exit();
-    return res;
+    return 0;
 }
