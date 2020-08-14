@@ -32,7 +32,7 @@ int bench_25qubit_circuit(int workers)
     // Init Sylvan
     sylvan_set_limits(4LL<<30, 1, 6);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<20);
+    sylvan_init_qdd(1LL<<19);
 
     QDD q;
     uint64_t node_count;
