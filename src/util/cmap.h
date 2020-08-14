@@ -64,6 +64,8 @@ extern bool cmap_find_or_put (const cmap_t *dbs, const complex_t *v, ref_t *ret)
 
 extern complex_t *cmap_get (const cmap_t *dbs, const ref_t ref);
 
+extern uint64_t cmap_count_entries (const cmap_t *cmap);
+
 extern void print_bitvalues(const cmap_t *dbs, const ref_t ref);
 
 #endif // CMAP

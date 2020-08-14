@@ -89,6 +89,7 @@ cint Cdiv(cint,cint);
 //bool Ccomp(complex_t x, complex_t y);
 
 void init_amplitude_table(size_t size);
+uint64_t count_amplitude_table_enries();
 void free_amplitude_table();
 void init_new_empty_table();
 void delete_old_table();

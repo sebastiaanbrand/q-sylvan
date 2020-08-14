@@ -472,6 +472,12 @@ init_phase_gates(int n)
     }
 }
 
+uint64_t
+count_amplitude_table_enries()
+{
+    return cmap_count_entries(ctable);
+}
+
 void
 free_amplitude_table()
 {

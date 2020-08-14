@@ -125,6 +125,17 @@ cmap_get (const cmap_t *cmap, const ref_t ref)
     return &cmap->table[ref].c;
 }
 
+uint64_t
+cmap_count_entries (const cmap_t *cmap)
+{
+    uint64_t entries = 0;
+    for (unsigned int c = 0; c < cmap->size; c++) {
+        if (cmap->table[c].d[0] != EMPTY)
+            entries++;
+    }
+    return entries;
+}
+
 void
 print_bitvalues(const cmap_t *cmap, const ref_t ref)
 {
