@@ -199,8 +199,8 @@ int bench_grover(int num_qubits, bool flag[], int workers)
     // Init Sylvan
     sylvan_set_limits(4LL<<30, 1, 6);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<20);
-    sylvan_gc_disable(); // issue with gc, maybe "marked" flag location MTBBD vs QDD
+    sylvan_init_qdd(1LL<<19);
+    //sylvan_gc_disable(); // issue with gc, maybe "marked" flag location MTBBD vs QDD
 
 
     QDD grov;

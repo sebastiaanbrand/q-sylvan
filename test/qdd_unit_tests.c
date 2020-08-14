@@ -1575,7 +1575,7 @@ int main()
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<20);
+    sylvan_init_qdd(1LL<<19);
 
     int res = runtests();
 

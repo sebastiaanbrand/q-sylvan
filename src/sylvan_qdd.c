@@ -48,15 +48,22 @@ sylvan_init_qdd(size_t amptable_size)
  * QDD node structure (128 bits)
  * 
  * 64 bits low:
- *       4 bits: lower 4 bits of 7 bit variable/qubit number of this node
- *      20 bits: index of edge weight of low edge in Ctable (AMP)
+ *       1 bit:  marked/unmarked flag (same place as MTBDD)
+ *       4 bits: lower 4 bits of 8 bit variable/qubit number of this node
+ *      19 bits: index of edge weight of low edge in Ctable (AMP)
  *      40 bits: low edge pointer to next node (PTR)
  * 64 bits high:
- *       1 bit:  marked/unmarked flag (TODO: use first bit of PTR for this? (reserved for sylvan_invalid))
- *       3 bits: upper 3 bits of 7 bit variable/qubit number of this node
- *      20 bits: index of edge weight of high edge in Ctable (AMP)
+ *       1 bit:  marked/unmarked flag (same place as MTBDD)
+ *       4 bits: upper 4 bits of 8 bit variable/qubit number of this node
+ *      19 bits: index of edge weight of high edge in Ctable (AMP)
  *      40 bits: high edge pointer to next node (PTR)
  */
+static const QDD qdd_marked_mask  = 0x8000000000000000LL;
+static const QDD qdd_halfvar_maks = 0x7800000000000000LL;
+static const QDD qdd_amp_mask     = 0x07ffff0000000000LL;
+static const QDD qdd_ptr_mask     = 0x000000ffffffffffLL;
+static const QDD qdd_edge_mask    = 0x07ffffffffffffffLL;
+
 typedef struct __attribute__((packed)) qddnode {
     QDD low, high;
 } *qddnode_t; // 16 bytes
@@ -68,7 +75,7 @@ typedef struct __attribute__((packed)) qddnode {
 static inline AMP
 QDD_AMP(QDD q)
 {
-    return (q & 0x0fffff0000000000) >> 40; // 20 bits
+    return (q & qdd_amp_mask) >> 40; // 19 bits
 }
 
 /**
@@ -77,7 +84,7 @@ QDD_AMP(QDD q)
 static inline PTR
 QDD_PTR(QDD q)
 {
-    return q & 0x000000ffffffffff; // 40 bits
+    return q & qdd_ptr_mask; // 40 bits
 }
 
 /**
@@ -120,7 +127,7 @@ GATE_OPID_64(uint32_t gateid, BDDVAR a, BDDVAR b, BDDVAR c, BDDVAR d, BDDVAR e)
 static inline BDDVAR
 qddnode_getvar(qddnode_t n)
 {
-    return (BDDVAR) ( (n->low >> 60) | ((n->high >> 56) & 0x70) ); // 7 bits
+    return (BDDVAR) ( (n->low >> 59) | ((n->high >> 55) & 0xf0) ); // 8 bits
 }
 
 /**
@@ -130,7 +137,7 @@ qddnode_getvar(qddnode_t n)
 static inline QDD
 qddnode_getlow(qddnode_t n)
 {
-    return (QDD) n->low & 0x0fffffffffffffff; // 60 bits
+    return (QDD) n->low & qdd_edge_mask; // 59 bits
 }
 
 /**
@@ -140,7 +147,7 @@ qddnode_getlow(qddnode_t n)
 static inline QDD
 qddnode_gethigh(qddnode_t n)
 {
-    return (QDD) n->high & 0x0fffffffffffffff; // 60 bits
+    return (QDD) n->high & qdd_edge_mask; // 59 bits
 }
 
 /**
@@ -185,7 +192,7 @@ qddnode_getamphigh(qddnode_t n)
 static inline bool
 qddnode_getmark(qddnode_t n)
 {
-    return n->high & 0x8000000000000000 ? 1 : 0;
+    return n->high & qdd_marked_mask ? 1 : 0;
 }
 
 /**
@@ -194,8 +201,8 @@ qddnode_getmark(qddnode_t n)
 static inline void
 qddnode_setmark(qddnode_t n, bool mark)
 {
-    if (mark) n->high |= 0x8000000000000000; // set 1st bit from left to 1
-    else      n->high &= 0x7fffffffffffffff; // set 1st bit from left to 0
+    if (mark) n->high |=  qdd_marked_mask; // set 1st bit from left to 1
+    else      n->high &= ~qdd_marked_mask; // set 1st bit from left to 0
 }
 
 /**
@@ -215,7 +222,7 @@ static inline QDD
 qdd_bundle_ptr_amp(PTR p, AMP a)
 {
     assert (p <= 0x000000fffffffffe);   // avoid clash with sylvan_invalid
-    assert (a <= 0x00000000000fffff);
+    assert (a <= 0x000000000007ffff);
     return (a << 40 | p);
 }
 
@@ -224,10 +231,10 @@ static inline QDD
 qdd_bundle_low(BDDVAR var, PTR p, AMP a)
 {
     // on the low edge we store the bottom 4 bits of the 8 bit var
-    assert (var <= 0x7f);
+    assert (var <= 0xff);
     QDD q = qdd_bundle_ptr_amp(p, a);
-    q = ((uint64_t)var << 60) | q;
-    return q;
+    uint64_t masked_var = ((uint64_t)var << 59) & qdd_halfvar_maks;
+    return (masked_var | q);
 }
 
 
@@ -235,9 +242,10 @@ static inline QDD
 qdd_bundle_high(BDDVAR var, PTR p, AMP a)
 {
     // on the high edge we store the top 4 bits of the 8 bit var
-    assert (var <= 0x7f);
+    assert (var <= 0xff);
     QDD q = qdd_bundle_ptr_amp(p, a);
-    return (((uint64_t)var & 0x70) << 56) | q;
+    uint64_t masked_var = ((uint64_t)var << 55) & qdd_halfvar_maks;
+    return (masked_var | q);
 }
 
 
