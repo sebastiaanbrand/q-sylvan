@@ -265,6 +265,17 @@ _qdd_makenode(BDDVAR var, PTR low, PTR high, AMP a, AMP b)
 {
     struct qddnode n;
 
+    /*
+    int mark;
+    if (MTBDD_HASMARK(low)) {
+        mark = 1;
+        low = MTBDD_TOGGLEMARK(low);
+        high = MTBDD_TOGGLEMARK(high);
+    } else {
+        mark = 0;
+    }
+    */
+
     qddnode_make(&n, var, low, high, a, b);
 
     PTR result;
@@ -273,22 +284,23 @@ _qdd_makenode(BDDVAR var, PTR low, PTR high, AMP a, AMP b)
     if (index == 0) {
         LACE_ME;
 
-        mtbdd_refs_push(n.low);//mtbdd_refs_push(low);
-        mtbdd_refs_push(n.high);//mtbdd_refs_push(high);
+        mtbdd_refs_push(n.low);
+        mtbdd_refs_push(n.high);
         sylvan_gc();
         mtbdd_refs_pop(2);
 
         index = llmsset_lookup(nodes, n.low, n.high, &created);
         if (index == 0) {
-            fprintf(stderr, "BDD Unique table full, %zu of %zu buckets filled!\n", llmsset_count_marked(nodes), llmsset_get_size(nodes));
+            fprintf(stderr, "QDD/BDD Unique table full, %zu of %zu buckets filled!\n", llmsset_count_marked(nodes), llmsset_get_size(nodes));
             exit(1);
         }
     }
 
-    if (created) sylvan_stats_count(BDD_NODES_CREATED);
+    if (created) sylvan_stats_count(BDD_NODES_CREATED); // TODO: QDD counters
     else sylvan_stats_count(BDD_NODES_REUSED);
 
     result = index;
+    //return mark ? result | qdd_marked_mask : result;
     return result;
 }
 
@@ -415,7 +427,7 @@ clean_amplitude_table(QDD qdds[], int n_qdds)
 
     // 4. Any cache we migh have is now invalid because the same amplitudes 
     //    might now have different indices in the amp table
-    cache_clear();
+    sylvan_clear_cache();
 }
 
 TASK_IMPL_1(QDD, _fill_new_amp_table, QDD, qdd)
@@ -973,7 +985,27 @@ qdd_grover(BDDVAR n, bool* flag)
     for (BDDVAR k = 0; k < n; k++) qdd = qdd_gate(qdd, GATEID_H, k);
 
     // Grover iterations
-    for (uint32_t i = 0; i < R; i++) qdd = _qdd_grover_iteration(qdd, n, flag);
+    QDD qdds[1];
+    for (uint32_t i = 1; i <= R; i++) {
+        qdd = _qdd_grover_iteration(qdd, n, flag);
+
+        // temp workaround for gc issue
+        if (i % 100 == 0) {
+            uint64_t num_amps = count_amplitude_table_enries();
+            printf("%4d num amps = %ld\n", i, num_amps);
+            printf("manually trigger gc...\n");
+            mtbdd_refs_push(qdd);
+            sylvan_gc();
+            mtbdd_refs_pop(1);
+        }
+        
+        // TODO: call clean_amp_table only when amp table is full
+        if (i % 2 == 0){
+            qdds[0] = qdd;
+            clean_amplitude_table(qdds, 1);
+            qdd = qdds[0];
+        }
+    }
 
     return qdd;
 }
@@ -1636,10 +1668,11 @@ TASK_IMPL_3(double, qdd_unnormed_prob, QDD, qdd, BDDVAR, topvar, BDDVAR, nvars)
     double prob_low, prob_high, prob_root, prob_res; // "prob" = absolute amps squared
     BDDVAR nextvar = topvar + 1;
 
-    // these are not q/bdds, so no need to protect from gc right?
-    SPAWN(qdd_unnormed_prob, high, nextvar, nvars);
+    // the results are not q/bdds, so no need to protect from gc, the tasks 
+    // do take q/bdds
+    bdd_refs_spawn(SPAWN(qdd_unnormed_prob, high, nextvar, nvars));
     prob_low  = CALL(qdd_unnormed_prob, low, nextvar, nvars);
-    prob_high = SYNC(qdd_unnormed_prob);
+    prob_high = bdd_refs_sync(SYNC(qdd_unnormed_prob));
     prob_root = _prob(QDD_AMP(qdd));
     prob_res  = prob_root * (prob_low + prob_high);
 
