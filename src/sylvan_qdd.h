@@ -320,6 +320,28 @@ QDD qdd_create_all_zero_state(BDDVAR n);
 QDD qdd_create_basis_state(BDDVAR n, bool* x);
 
 /**
+ * Creates a QDD representing the matrix I \tensor I \tensor ... \tensor I.
+ * 
+ * @param n Number of qubits.
+ * 
+ * @return A QDD encoding of I \tensor I \tensor ... \tensor I
+ */
+QDD qdd_create_all_identity_matrix(BDDVAR n);
+
+
+/**
+ * Creates a QDD matrix which applies gate U to qubit t and I to all others.
+ * 
+ * @param n Number of qubits.
+ * @param t Target qubit for given gate.
+ * @param gateid Gate ID of predefined single qubit gate U.
+ * 
+ * @return A QDD encoding of I_0 \tensor ... U_t ... \tensor I_{n-1}
+ */
+QDD qdd_create_single_qubit_gate(BDDVAR n, BDDVAR t, uint32_t gateid);
+
+
+/**
  * Removes any global phase from state vector, assumes `qdd` is the root edge.
  */
 QDD qdd_remove_global_phase(QDD qdd);

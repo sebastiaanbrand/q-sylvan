@@ -1713,7 +1713,7 @@ QDD
 qdd_create_all_zero_state(BDDVAR n)
 {
     bool x[n];
-    for(BDDVAR k=0; k<n; k++) x[k] = 0;
+    for (BDDVAR k=0; k<n; k++) x[k] = 0;
     return qdd_create_basis_state(n, x);
 }
 
@@ -1723,17 +1723,64 @@ qdd_create_basis_state(BDDVAR n, bool* x)
     // start at terminal, and build backwards
     QDD low, high, prev = QDD_TERMINAL;
 
-    for(int k = n-1; k >=0; k--){
-        if(x[k] == 0){
+    for (int k = n-1; k >= 0; k--) {
+        if (x[k] == 0) {
             low = qdd_bundle_ptr_amp(QDD_PTR(prev), C_ONE);
             high = qdd_bundle_ptr_amp(QDD_TERMINAL, C_ZERO);
         }
-        else if(x[k] == 1){
+        else if (x[k] == 1) {
             low = qdd_bundle_ptr_amp(QDD_TERMINAL, C_ZERO);
             high = qdd_bundle_ptr_amp(QDD_PTR(prev), C_ONE);
         }
         // add node to unique table
         prev = qdd_makenode(k, low, high);
+    }
+    return prev;
+}
+
+QDD
+qdd_stack_matrix(QDD below, BDDVAR k, uint32_t gateid)
+{
+    BDDVAR s, t;
+    QDD u00, u01, u10, u11, low, high, res;
+
+    // even + uneven variable are used to encode the 4 values
+    s = 2*k;
+    t = s + 1;
+
+    // matrix U = [u00 u01
+    //             u10 u11] endoded in a small tree
+    u00 = qdd_bundle_ptr_amp(QDD_PTR(below), gates[gateid][0]);
+    u10 = qdd_bundle_ptr_amp(QDD_PTR(below), gates[gateid][2]);
+    u01 = qdd_bundle_ptr_amp(QDD_PTR(below), gates[gateid][1]);
+    u11 = qdd_bundle_ptr_amp(QDD_PTR(below), gates[gateid][3]);
+    low  = qdd_makenode(t, u00, u10);
+    high = qdd_makenode(t, u01, u11);
+    res  = qdd_makenode(s, low, high);
+    return res;
+}
+
+QDD
+qdd_create_all_identity_matrix(BDDVAR n)
+{
+    // start at terminal and build backwards
+    QDD prev = QDD_TERMINAL;
+    for (int k = n-1; k >= 0; k--) {
+        prev = qdd_stack_matrix(prev, k, GATEID_I);
+    }
+    return prev;
+}
+
+QDD
+qdd_create_single_qubit_gate(BDDVAR n, BDDVAR t, uint32_t gateid)
+{
+    // start at terminal and build backwards
+    QDD prev = QDD_TERMINAL;
+    for (int k = n-1; k >= 0; k--) {
+        if ((unsigned int)k == t)
+            prev = qdd_stack_matrix(prev, k, gateid);
+        else
+            prev = qdd_stack_matrix(prev, k, GATEID_I);
     }
     return prev;
 }
