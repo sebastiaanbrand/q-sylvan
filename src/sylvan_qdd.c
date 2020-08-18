@@ -249,8 +249,8 @@ qdd_bundle_high(BDDVAR var, PTR p, AMP a)
 }
 
 
-static inline void 
-qddnode_make(qddnode_t n, BDDVAR var, PTR low, PTR high, AMP a, AMP b)
+static inline void
+qdd_packnode(qddnode_t n, BDDVAR var, PTR low, PTR high, AMP a, AMP b)
 {
     n->low  = qdd_bundle_low(var, low, a);
     n->high = qdd_bundle_high(var, high, b);
@@ -259,6 +259,31 @@ qddnode_make(qddnode_t n, BDDVAR var, PTR low, PTR high, AMP a, AMP b)
 
 /***************</ (bit level) manipulation of QDD / qddnode_t >***************/
 
+
+static void
+qdd_get_topvar(QDD qdd, BDDVAR t, BDDVAR *topvar, QDD *low, QDD *high)
+{
+    bool skipped = false;
+    if(QDD_PTR(qdd) == QDD_TERMINAL) {
+        skipped = true;
+    }
+    else {
+        qddnode_t node = QDD_GETNODE(QDD_PTR(qdd));
+        *topvar = qddnode_getvar(node);
+        if (*topvar >  t) skipped = true;
+    }
+
+    if (skipped) {
+        *low  = qdd_bundle_ptr_amp(QDD_PTR(qdd), C_ONE);
+        *high = qdd_bundle_ptr_amp(QDD_PTR(qdd), C_ONE);
+        *topvar  = t;
+    }
+    else {
+        qddnode_t node = QDD_GETNODE(QDD_PTR(qdd));
+        *low  = qddnode_getlow(node);
+        *high = qddnode_gethigh(node);
+    }
+}
 
 static PTR
 _qdd_makenode(BDDVAR var, PTR low, PTR high, AMP a, AMP b)
@@ -276,7 +301,7 @@ _qdd_makenode(BDDVAR var, PTR low, PTR high, AMP a, AMP b)
     }
     */
 
-    qddnode_make(&n, var, low, high, a, b);
+    qdd_packnode(&n, var, low, high, a, b);
 
     PTR result;
     int created;
@@ -568,33 +593,12 @@ TASK_IMPL_3(QDD, qdd_gate, QDD, q, uint32_t, gate, BDDVAR, target)
         }
     }
 
-    // TODO: make has_skipped(BDDVAR target) function
-    bool skipped = false;
-    bool at_targ = false;
     BDDVAR var;
-    if(QDD_PTR(q) == QDD_TERMINAL) {
-        skipped = true;
-    }
-    else {
-        qddnode_t node = QDD_GETNODE(QDD_PTR(q));
-        var = qddnode_getvar(node);
-        if (var >  target) skipped = true;
-        if (var == target) at_targ = true;
-    }
-
     QDD low, high;
-    if (skipped) {
-        low  = qdd_bundle_ptr_amp(QDD_PTR(q), C_ONE);
-        high = qdd_bundle_ptr_amp(QDD_PTR(q), C_ONE);
-        var  = target;
-    }
-    else {
-        qddnode_t node = QDD_GETNODE(QDD_PTR(q));
-        low  = qddnode_getlow(node);
-        high = qddnode_gethigh(node);
-    } // has_skipped(BDDVAR target) function could do all this work
+    qdd_get_topvar(q, target, &var, &low, &high);
+    assert(var <= target);
 
-    if (skipped || at_targ) { // apply gate here
+    if (var == target) {
         AMP a_u00 = Cmul(QDD_AMP(low), gates[gate][0]);
         AMP a_u10 = Cmul(QDD_AMP(low), gates[gate][2]);
         AMP b_u01 = Cmul(QDD_AMP(high), gates[gate][1]);
@@ -605,7 +609,7 @@ TASK_IMPL_3(QDD, qdd_gate, QDD, q, uint32_t, gate, BDDVAR, target)
                                         qdd_bundle_ptr_amp(QDD_PTR(high),b_u11));
         res = qdd_plus(qdd1, qdd2);
     }
-    else { // not at target qubit yet, recursive calls down
+    else { // var < target: not at target qubit yet, recursive calls down
         bdd_refs_spawn(SPAWN(qdd_gate, high, gate, target));
         low = CALL(qdd_gate, low, gate, target);
         bdd_refs_push(low);
@@ -638,33 +642,12 @@ TASK_IMPL_4(QDD, qdd_cgate, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t)
         }
     }
 
-    // TODO: make has_skipped(BDDVAR target) function
-    bool skipped = false;
-    bool at_targ = false;
     BDDVAR var;
-    if(QDD_PTR(q) == QDD_TERMINAL) {
-        skipped = true;
-    }
-    else {
-        qddnode_t node = QDD_GETNODE(QDD_PTR(q));
-        var = qddnode_getvar(node);
-        if (var >  c) skipped = true;
-        if (var == c) at_targ = true;
-    }
-
     QDD low, high;
-    if (skipped) {
-        low  = qdd_bundle_ptr_amp(QDD_PTR(q), C_ONE);
-        high = qdd_bundle_ptr_amp(QDD_PTR(q), C_ONE);
-        var  = c;
-    }
-    else {
-        qddnode_t node = QDD_GETNODE(QDD_PTR(q));
-        low  = qddnode_getlow(node);
-        high = qddnode_gethigh(node);
-    }// has_skipped(BDDVAR target) function could do all this work
+    qdd_get_topvar(q, c, &var, &low, &high);
+    assert(var <= t);
 
-    if (skipped || at_targ) { // apply gate to high, leave low unchanged
+    if (var == c) { // apply gate to high, leave low unchanged
         high = qdd_gate(high, gate, t);
     }
     else { // not at target qubit yet, recursive calls down
