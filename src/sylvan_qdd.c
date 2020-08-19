@@ -669,6 +669,74 @@ TASK_IMPL_4(QDD, qdd_cgate, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t)
     return res;
 }
 
+TASK_IMPL_4(QDD, qdd_matvec_mult, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR, nextvar)
+{
+    // Trivial case: either one is all 0
+    if (QDD_AMP(mat) == C_ZERO || QDD_AMP(vec) == C_ZERO)
+        return qdd_bundle_ptr_amp(QDD_TERMINAL, C_ZERO);
+    
+    // Terminal case: past last variable
+    if (nextvar == nvars) {
+        assert(QDD_PTR(mat) == QDD_TERMINAL);
+        assert(QDD_PTR(vec) == QDD_TERMINAL);
+        AMP prod = Cmul(QDD_AMP(mat), QDD_AMP(vec));
+        return qdd_bundle_ptr_amp(QDD_TERMINAL, prod);
+    }
+
+    // TODO: cache lookup
+
+    // Recursive multiplication
+    // 1. get relevant nodes for both QDDS
+    BDDVAR var;
+    QDD vec_low, vec_high, mat_low, mat_high, u00, u10, u01, u11;
+    qdd_get_topvar(vec, nextvar, &var, &vec_low, &vec_high);
+    qdd_get_topvar(mat, 2*nextvar, &var, &mat_low, &mat_high);
+    qdd_get_topvar(mat_low, 2*nextvar+1, &var, &u00, &u10);
+    qdd_get_topvar(mat_high,2*nextvar+1, &var, &u01, &u11);
+
+    // 2. pass weights of current edges down
+    AMP amp_vec_low, amp_vec_high, amp_u00, amp_u10, amp_u01, amp_u11;
+    amp_vec_low  = Cmul(QDD_AMP(vec), QDD_AMP(vec_low));
+    amp_vec_high = Cmul(QDD_AMP(vec), QDD_AMP(vec_high));
+    amp_u00      = Cmul(Cmul(QDD_AMP(mat), QDD_AMP(mat_low)), QDD_AMP(u00));
+    amp_u10      = Cmul(Cmul(QDD_AMP(mat), QDD_AMP(mat_low)), QDD_AMP(u10));
+    amp_u01      = Cmul(Cmul(QDD_AMP(mat), QDD_AMP(mat_high)),QDD_AMP(u01));
+    amp_u11      = Cmul(Cmul(QDD_AMP(mat), QDD_AMP(mat_high)),QDD_AMP(u11));
+    vec_low  = qdd_bundle_ptr_amp(QDD_PTR(vec_low), amp_vec_low);
+    vec_high = qdd_bundle_ptr_amp(QDD_PTR(vec_high),amp_vec_high);
+    u00      = qdd_bundle_ptr_amp(QDD_PTR(u00), amp_u00);
+    u10      = qdd_bundle_ptr_amp(QDD_PTR(u10), amp_u10);
+    u01      = qdd_bundle_ptr_amp(QDD_PTR(u01), amp_u01);
+    u11      = qdd_bundle_ptr_amp(QDD_PTR(u11), amp_u11);
+
+    // 3. recursive calls
+    QDD res_low00, res_low10, res_high01, res_high11;
+    nextvar++;
+    res_low00  = CALL(qdd_matvec_mult, u00, vec_low,  nvars, nextvar);
+    res_low10  = CALL(qdd_matvec_mult, u10, vec_low,  nvars, nextvar);
+    res_high01 = CALL(qdd_matvec_mult, u01, vec_high, nvars, nextvar);
+    res_high11 = CALL(qdd_matvec_mult, u11, vec_high, nvars, nextvar);
+    nextvar--;
+
+    // 4. gather results of multiplication
+    QDD res_low, res_high;
+    res_low  = qdd_makenode(nextvar, res_low00,  res_low10);
+    res_high = qdd_makenode(nextvar, res_high01, res_high11);
+    // mult w/ root amp?
+
+    // 5. add resulting qdds
+    QDD res;
+    res = CALL(qdd_plus, res_low, res_high);
+    // or mult w/ root amp here?
+
+
+    // TODO: cache inserts
+
+
+    return res;
+}
+
+
 /******************************</applying gates>*******************************/
 
 

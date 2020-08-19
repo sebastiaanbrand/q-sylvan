@@ -124,6 +124,9 @@ TASK_DECL_3(QDD, qdd_gate, QDD, uint32_t, BDDVAR);
 #define qdd_cgate(q,gate,c,t) (CALL(qdd_cgate,q,gate,c,t));
 TASK_DECL_4(QDD, qdd_cgate, QDD, uint32_t, BDDVAR, BDDVAR);
 
+#define qdd_matvec_mult(mat,vec,nvars) (CALL(qdd_matvec_mult,mat,vec,nvars,0));
+TASK_DECL_4(QDD, qdd_matvec_mult, QDD, QDD, BDDVAR, BDDVAR);
+
 /******************************</applying gates>*******************************/
 
 
