@@ -421,7 +421,7 @@ int test_x_gate()
 
 int test_h_gate()
 {
-     QDD q0, q1, q2, q3, q4, q5;
+    QDD q0, q1, q2, q3, q4, q5;
     bool x[] = {0};
     bool x2[] = {0,0};
     AMP a;
@@ -465,11 +465,6 @@ int test_h_gate()
     x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q3, x2); test_assert(a == C_ZERO);
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q3, x2); test_assert(a == C_ZERO);
     test_assert(qdd_countnodes(q3) == 3);
-
-    //FILE *fp;
-    //fp = fopen("test.dot", "w");
-    //qdd_fprintdot(fp, q3);
-    //fclose(fp);
 
     // q4 = |+0>
     x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q4, x2); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));

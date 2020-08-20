@@ -722,16 +722,11 @@ TASK_IMPL_4(QDD, qdd_matvec_mult, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR, nex
     QDD res_low, res_high;
     res_low  = qdd_makenode(nextvar, res_low00,  res_low10);
     res_high = qdd_makenode(nextvar, res_high01, res_high11);
-    // mult w/ root amp?
 
     // 5. add resulting qdds
-    QDD res;
-    res = CALL(qdd_plus, res_low, res_high);
-    // or mult w/ root amp here?
-
+    QDD res = CALL(qdd_plus, res_low, res_high);
 
     // TODO: cache inserts
-
 
     return res;
 }
@@ -1809,14 +1804,15 @@ qdd_create_basis_state(BDDVAR n, bool* x)
 QDD
 qdd_stack_matrix(QDD below, BDDVAR k, uint32_t gateid)
 {
+    // This function is effectively does a Kronecker product
     BDDVAR s, t;
     QDD u00, u01, u10, u11, low, high, res;
 
-    // even + uneven variable are used to encode the 4 values
+    // Even + uneven variable are used to encode the 4 values
     s = 2*k;
     t = s + 1;
 
-    // matrix U = [u00 u01
+    // Matrix U = [u00 u01
     //             u10 u11] endoded in a small tree
     u00 = qdd_bundle_ptr_amp(QDD_PTR(below), gates[gateid][0]);
     u10 = qdd_bundle_ptr_amp(QDD_PTR(below), gates[gateid][2]);
@@ -1825,14 +1821,18 @@ qdd_stack_matrix(QDD below, BDDVAR k, uint32_t gateid)
     low  = qdd_makenode(t, u00, u10);
     high = qdd_makenode(t, u01, u11);
     res  = qdd_makenode(s, low, high);
+
+    // Propagate common factor on previous root amp to new root amp
+    AMP new_root_amp = Cmul(QDD_AMP(below), QDD_AMP(res));
+    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     return res;
 }
 
 QDD
 qdd_create_all_identity_matrix(BDDVAR n)
 {
-    // start at terminal and build backwards
-    QDD prev = QDD_TERMINAL;
+    // Start at terminal and build backwards
+    QDD prev = qdd_bundle_ptr_amp(QDD_TERMINAL, C_ONE);
     for (int k = n-1; k >= 0; k--) {
         prev = qdd_stack_matrix(prev, k, GATEID_I);
     }
@@ -1843,7 +1843,7 @@ QDD
 qdd_create_single_qubit_gate(BDDVAR n, BDDVAR t, uint32_t gateid)
 {
     // start at terminal and build backwards
-    QDD prev = QDD_TERMINAL;
+    QDD prev = qdd_bundle_ptr_amp(QDD_TERMINAL, C_ONE);
     for (int k = n-1; k >= 0; k--) {
         if ((unsigned int)k == t)
             prev = qdd_stack_matrix(prev, k, gateid);

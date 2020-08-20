@@ -21,8 +21,8 @@
 
 typedef uint64_t cint;
 
-cint C_ZERO; // TODO: don't hashed
-cint C_ONE; // TODO: don't hashed
+cint C_ZERO;
+cint C_ONE;
 
 // GATE_ID's (gates are initialized in qdd_complex_init)
 // currently 24 bits available for this number (see GATE_OPID)

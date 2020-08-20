@@ -60,9 +60,74 @@ int test_x_gate()
 
 int test_h_gate()
 {
+    BDDVAR nqubits;
+    QDD v0, v1, v2, v3, v4, v5, mH, mH0, mH1;
+    bool x[] = {0};
+    bool x2[] = {0,0};
+    AMP a;
+
+    LACE_ME;
+
+    // Single qubit test
+    nqubits = 1;
+    x[0] = 0; v0 = qdd_create_basis_state(nqubits, x);
+    x[0] = 1; v1 = qdd_create_basis_state(nqubits, x);
+    mH = qdd_create_single_qubit_gate(nqubits, 0, GATEID_H);
+
+    v0 = qdd_matvec_mult(mH, v0, nqubits);
+    v1 = qdd_matvec_mult(mH, v1, nqubits);
+
+    x[0] = 1; a = qdd_get_amplitude(v0, x); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
+    x[0] = 0; a = qdd_get_amplitude(v0, x); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
+    x[0] = 0; a = qdd_get_amplitude(v1, x); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
+    x[0] = 1; a = qdd_get_amplitude(v1, x); test_assert(a == Clookup(Cmake(Qmake(0,-1,2),0)));
 
 
-    if(VERBOSE) printf("matrix qdd z gates:         TODO\n");
+    // Two qubit test
+    nqubits = 2;
+    x2[1] = 0; x2[0] = 0; v2 = qdd_create_basis_state(nqubits, x2); // |00>
+    x2[1] = 0; x2[0] = 1; v3 = qdd_create_basis_state(nqubits, x2); // |01>
+    x2[1] = 0; x2[0] = 0; v4 = qdd_create_basis_state(nqubits, x2); // |00>
+    x2[1] = 0; x2[0] = 0; v5 = qdd_create_basis_state(nqubits, x2); // |00>
+    mH0 = qdd_create_single_qubit_gate(nqubits, 0, GATEID_H);
+    mH1 = qdd_create_single_qubit_gate(nqubits, 1, GATEID_H);
+
+    v2 = qdd_matvec_mult(mH0, v2, nqubits); // v2 = |0+>
+    v3 = qdd_matvec_mult(mH0, v3, nqubits); // v3 = |0->
+    v4 = qdd_matvec_mult(mH1, v4, nqubits); // v4 = |+0>
+    v5 = qdd_matvec_mult(mH0, v5, nqubits);
+    v5 = qdd_matvec_mult(mH1, v5, nqubits); // v5 = |++>
+
+    // v2 = |0+>
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(v2, x2); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(v2, x2); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
+    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(v2, x2); test_assert(a == C_ZERO);
+    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(v2, x2); test_assert(a == C_ZERO);
+    test_assert(qdd_countnodes(v2) == 2);
+
+    // v3 = |0->
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(v3, x2); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(v3, x2); test_assert(a == Clookup(Cmake(Qmake(0,-1,2),0)));
+    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(v3, x2); test_assert(a == C_ZERO);
+    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(v3, x2); test_assert(a == C_ZERO);
+    test_assert(qdd_countnodes(v3) == 3);
+
+    // v4 = |+0>
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(v4, x2); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(v4, x2); test_assert(a == C_ZERO);
+    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(v4, x2); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
+    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(v4, x2); test_assert(a == C_ZERO);
+    test_assert(qdd_countnodes(v4) == 2);
+
+    // v5 = |++>
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(v5, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(v5, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(v5, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(v5, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+    test_assert(qdd_countnodes(v5) == 1);
+
+
+    if(VERBOSE) printf("matrix qdd h gates:         ok\n");
     return 0;
 }
 
