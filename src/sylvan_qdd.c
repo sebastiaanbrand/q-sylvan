@@ -1842,7 +1842,7 @@ qdd_create_all_identity_matrix(BDDVAR n)
 QDD
 qdd_create_single_qubit_gate(BDDVAR n, BDDVAR t, uint32_t gateid)
 {
-    // start at terminal and build backwards
+    // Start at terminal and build backwards
     QDD prev = qdd_bundle_ptr_amp(QDD_TERMINAL, C_ONE);
     for (int k = n-1; k >= 0; k--) {
         if ((unsigned int)k == t)
@@ -1858,7 +1858,7 @@ qdd_create_single_qubit_gate(BDDVAR n, BDDVAR t, uint32_t gateid)
 QDD
 qdd_remove_global_phase(QDD qdd)
 {
-    // remove global phase by replacing amp of qdd with absolute value of amp
+    // Remove global phase by replacing amp of qdd with absolute value of amp
     complex_t c = Cvalue(QDD_AMP(qdd));
     c.r = sqrt(c.r*c.r + c.i*c.i);
     c.i = 0.0;

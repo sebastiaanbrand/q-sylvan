@@ -133,9 +133,107 @@ int test_h_gate()
 
 int test_phase_gates()
 {
+    BDDVAR nqubits;
+    QDD v0, vZ, vS, vSS, vT, vTT, vTTTT, vTTdag, vTdagT;
+    QDD mH0, mH1, mZ0, mZ1, mS0, mT0, mT1, mTdag0, mTdag1;
+    bool x2[] = {0, 0};
+    AMP a;
 
+    LACE_ME;
 
-    if(VERBOSE) printf("matrix qdd phase gates:     TODO\n");
+    // simple 2 qubit test
+    nqubits = 2;
+    x2[1] = 0; x2[0] = 0; v0 = qdd_create_basis_state(nqubits, x2);
+    mH0    = qdd_create_single_qubit_gate(nqubits, 0, GATEID_H);
+    mH1    = qdd_create_single_qubit_gate(nqubits, 1, GATEID_H);
+    mZ0    = qdd_create_single_qubit_gate(nqubits, 0, GATEID_Z);
+    mZ1    = qdd_create_single_qubit_gate(nqubits, 1, GATEID_Z);
+    mS0    = qdd_create_single_qubit_gate(nqubits, 0, GATEID_S);
+    mT0    = qdd_create_single_qubit_gate(nqubits, 0, GATEID_T);
+    mT1    = qdd_create_single_qubit_gate(nqubits, 1, GATEID_T);
+    mTdag0 = qdd_create_single_qubit_gate(nqubits, 0, GATEID_Tdag);
+    mTdag1 = qdd_create_single_qubit_gate(nqubits, 1, GATEID_Tdag);
+    v0 = qdd_matvec_mult(mH0, v0, nqubits);
+    v0 = qdd_matvec_mult(mH1, v0, nqubits); // start with v0 = |++>
+
+    vZ     = qdd_matvec_mult(mZ0, v0, nqubits);
+    vS     = qdd_matvec_mult(mS0, v0, nqubits);
+    vSS    = qdd_matvec_mult(mS0, vS, nqubits);
+    vT     = qdd_matvec_mult(mT0, v0, nqubits);
+    vTT    = qdd_matvec_mult(mT0, vT, nqubits);
+    vTTTT  = qdd_matvec_mult(mT0, vTT, nqubits);
+    vTTTT  = qdd_matvec_mult(mT0, vTTTT, nqubits);
+    vTTdag = qdd_matvec_mult(mT0, v0, nqubits);
+    vTTdag = qdd_matvec_mult(mTdag0, vTTdag, nqubits);
+    vTdagT = qdd_matvec_mult(mTdag0, v0, nqubits);
+    vTdagT = qdd_matvec_mult(mT0, vTdagT, nqubits);
+
+    test_assert(vZ == vSS);
+    test_assert(vS == vTT);
+    test_assert(vZ == vTTTT);
+    test_assert(v0 == vTTdag);
+    test_assert(v0 == vTdagT);
+
+    
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(v0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(v0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(v0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(v0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+    test_assert(qdd_countnodes(v0) == 1);
+
+    v0 = qdd_matvec_mult(mZ0, v0, nqubits);
+
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(v0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(v0, x2); test_assert(a == Clookup(Cmake(-0.5,0)));
+    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(v0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(v0, x2); test_assert(a == Clookup(Cmake(-0.5,0)));
+    test_assert(qdd_countnodes(v0) == 2);
+
+    v0 = qdd_matvec_mult(mZ0, v0, nqubits);
+    v0 = qdd_matvec_mult(mZ1, v0, nqubits);
+
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(v0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(v0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(v0, x2); test_assert(a == Clookup(Cmake(-0.5,0)));
+    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(v0, x2); test_assert(a == Clookup(Cmake(-0.5,0)));
+    test_assert(qdd_countnodes(v0) == 2);
+
+    v0 = qdd_matvec_mult(mZ1, v0, nqubits);
+    v0 = qdd_matvec_mult(mS0, v0, nqubits);
+    v0 = qdd_matvec_mult(mS0, v0, nqubits);
+
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(v0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(v0, x2); test_assert(a == Clookup(Cmake(-0.5,0)));
+    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(v0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(v0, x2); test_assert(a == Clookup(Cmake(-0.5,0)));
+    test_assert(qdd_countnodes(v0) == 2);
+
+    v0 = qdd_matvec_mult(mZ0, v0, nqubits);
+    v0 = qdd_matvec_mult(mT1, v0, nqubits);
+    v0 = qdd_matvec_mult(mT1, v0, nqubits);
+    v0 = qdd_matvec_mult(mT1, v0, nqubits);
+    v0 = qdd_matvec_mult(mT1, v0, nqubits);
+
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(v0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(v0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(v0, x2); test_assert(a == Clookup(Cmake(-0.5,0)));
+    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(v0, x2); test_assert(a == Clookup(Cmake(-0.5,0)));
+    test_assert(qdd_countnodes(v0) == 2);
+
+    v0 = qdd_matvec_mult(mZ1, v0, nqubits);
+    v0 = qdd_matvec_mult(mTdag1, v0, nqubits);
+    v0 = qdd_matvec_mult(mTdag1, v0, nqubits);
+    v0 = qdd_matvec_mult(mTdag1, v0, nqubits);
+    v0 = qdd_matvec_mult(mTdag1, v0, nqubits)
+
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(v0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(v0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
+    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(v0, x2); test_assert(a == Clookup(Cmake(-0.5,0)));
+    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(v0, x2); test_assert(a == Clookup(Cmake(-0.5,0)));
+    test_assert(qdd_countnodes(v0) == 2);
+    
+
+    if(VERBOSE) printf("matrix qdd phase gates:     ok\n");
     return 0;
 }
 
