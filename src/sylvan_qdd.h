@@ -335,7 +335,7 @@ QDD qdd_create_all_identity_matrix(BDDVAR n);
 /**
  * Creates a QDD matrix which applies gate U to qubit t and I to all others.
  * 
- * @param n Number of qubits.
+ * @param n Total number of qubits.
  * @param t Target qubit for given gate.
  * @param gateid Gate ID of predefined single qubit gate U.
  * 
@@ -343,6 +343,17 @@ QDD qdd_create_all_identity_matrix(BDDVAR n);
  */
 QDD qdd_create_single_qubit_gate(BDDVAR n, BDDVAR t, uint32_t gateid);
 
+/**
+ * Creates a QDD matrix which does gateid(c,t) and I on all other qubits.
+ * 
+ * @param n Total number of qubits.
+ * @param c Control qubit (for now we assume/need that c < t).
+ * @param t Target qubit for given gate.
+ * @param gateid Gate ID of predefined single qubit gate U.
+ * 
+ * @return A  matrix QDD endoding of the controlled gate on given qubits.
+ */
+QDD qdd_create_controlled_gate(BDDVAR n, BDDVAR c, BDDVAR t, uint32_t gateid);
 
 /**
  * Removes any global phase from state vector, assumes `qdd` is the root edge.

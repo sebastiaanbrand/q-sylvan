@@ -1829,6 +1829,28 @@ qdd_stack_matrix(QDD below, BDDVAR k, uint32_t gateid)
 }
 
 QDD
+qdd_stack_control(QDD case0, QDD case1, BDDVAR k)
+{
+    // Effectively does |0><0| \tensor case0 + |1><1| \tensor case1
+    BDDVAR s, t;
+    QDD u00, u01, u10, u11, low, high, res;
+
+    s = 2*k;
+    t = s + 1;
+
+    u00 = case0;
+    u10 = qdd_bundle_ptr_amp(QDD_TERMINAL, C_ZERO);
+    u01 = qdd_bundle_ptr_amp(QDD_TERMINAL, C_ZERO);
+    u11 = case1;
+    low  = qdd_makenode(t, u00, u10);
+    high = qdd_makenode(t, u01, u11);
+    res  = qdd_makenode(s, low, high);
+
+    // Weights of case0/case1 already dealt with by qdd_makenode
+    return res;
+}
+
+QDD
 qdd_create_all_identity_matrix(BDDVAR n)
 {
     // Start at terminal and build backwards
@@ -1849,6 +1871,36 @@ qdd_create_single_qubit_gate(BDDVAR n, BDDVAR t, uint32_t gateid)
             prev = qdd_stack_matrix(prev, k, gateid);
         else
             prev = qdd_stack_matrix(prev, k, GATEID_I);
+    }
+    return prev;
+}
+
+QDD
+qdd_create_controlled_gate(BDDVAR n, BDDVAR c, BDDVAR t, uint32_t gateid)
+{
+    // for now, assume t > c
+    assert(t > c);
+    // Start at terminal and build backwards
+    QDD prev = qdd_bundle_ptr_amp(QDD_TERMINAL, C_ONE);
+    QDD branch0 = QDD_TERMINAL, branch1 = QDD_TERMINAL;
+    for (int k = n-1; k>= 0; k--) {
+        if ((unsigned int)k > t || (unsigned int) k < c) {
+            prev = qdd_stack_matrix(prev, k, GATEID_I);
+        }
+        else if ((unsigned int) k == t) {
+            branch0 = qdd_stack_matrix(prev, k, GATEID_I);
+            branch1 = qdd_stack_matrix(prev, k, gateid);
+        }
+        else if ((unsigned int) k < t && (unsigned int) k > c) {
+            branch0 = qdd_stack_matrix(branch0, k, GATEID_I);
+            branch1 = qdd_stack_matrix(branch1, k, GATEID_I);
+        }
+        else if ((unsigned int) k == c) {
+            prev = qdd_stack_control(branch0, branch1, k);
+        }
+        else {
+            assert("all cases should have been covered" && false);
+        }
     }
     return prev;
 }
