@@ -359,9 +359,20 @@ QDD qdd_create_single_qubit_gate(BDDVAR n, BDDVAR t, uint32_t gateid);
  * @param t Target qubit for given gate.
  * @param gateid Gate ID of predefined single qubit gate U.
  * 
- * @return A  matrix QDD endoding of the controlled gate on given qubits.
+ * @return A matrix QDD encoding of the controlled gate on given qubits.
  */
 QDD qdd_create_controlled_gate(BDDVAR n, BDDVAR c, BDDVAR t, uint32_t gateid);
+
+/**
+ * Creates an n-qubit controlled Z gate, controlled on all qubits. 
+ * 
+ * @param n Number of qubits.
+ * @param x A bitstring x whether to control qubit k on x[k] = 0 or x[k] = 1.
+ * 
+ * @return A matrix QDD encoding of an n-qubit controlled Z gate.
+ */
+QDD qdd_create_all_control_phase(BDDVAR n, bool *x);
+
 
 /**
  * Removes any global phase from state vector, assumes `qdd` is the root edge.

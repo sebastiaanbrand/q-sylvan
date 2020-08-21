@@ -1988,6 +1988,36 @@ qdd_create_controlled_gate(BDDVAR n, BDDVAR c, BDDVAR t, uint32_t gateid)
     return prev;
 }
 
+QDD
+qdd_create_all_control_phase(BDDVAR n, bool *x)
+{
+    QDD identity = qdd_bundle_ptr_amp(QDD_TERMINAL, C_ONE);
+    QDD ccphase  = qdd_bundle_ptr_amp(QDD_TERMINAL, C_ONE);
+
+    // Start with (-1)Z gate on last qubit. Z if control on 1 and -Z if 0.
+    if (x[n-1] == 1) {
+        ccphase = qdd_stack_matrix(ccphase, n-1, GATEID_Z);
+    }
+    else if (x[n-1] == 0) {
+        ccphase = qdd_stack_matrix(ccphase, n-1, GATEID_Z);
+        ccphase = qdd_bundle_ptr_amp(QDD_PTR(ccphase),Clookup(Cmake(-1.0,0.0)));
+    }
+
+    // Stack remaining controls
+    for (int k = n-2; k >= 0; k--) {
+        // "Identity stack" for doing nothing on each qubit's non-control branch
+        identity = qdd_stack_matrix(identity, k+1, GATEID_I);
+
+        // Check if this qubit should be controlled on 0 or 1
+        if (x[k] == 1)
+            ccphase = qdd_stack_control(identity, ccphase, k);
+        else if (x[k] == 0)
+            ccphase = qdd_stack_control(ccphase, identity, k);
+    }
+
+    return ccphase;
+}
+
 /**************************</Initial state creation>***************************/
 
 QDD

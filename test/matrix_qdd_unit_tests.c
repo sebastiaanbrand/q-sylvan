@@ -418,9 +418,71 @@ int test_cz_gate()
 
 int test_ccz_gate()
 {
+    BDDVAR nqubits;
+    QDD v3, vTemp, mCCZ, mH0, mH1, mH2;
+    bool x3[] = {0,0,0};
+    //bool x5[] = {0,0,0,0,0};
+    AMP a, aRef;
+
+    LACE_ME;
+
+    
+    //FILE *fp;
+    //fp = fopen("temp_ccz.dot", "w");
+    //qdd_fprintdot(fp, ccz, false);
+    //fclose(fp);
+
+    // 3 qubit test
+    nqubits = 3;
+    v3 = qdd_create_basis_state(nqubits, x3);
+    mH0  = qdd_create_single_qubit_gate(nqubits, 0, GATEID_H);
+    mH1  = qdd_create_single_qubit_gate(nqubits, 1, GATEID_H);
+    mH2  = qdd_create_single_qubit_gate(nqubits, 2, GATEID_H);
+
+    v3 = qdd_matvec_mult(mH0, v3, nqubits);
+    v3 = qdd_matvec_mult(mH1, v3, nqubits);
+    v3 = qdd_matvec_mult(mH2, v3, nqubits);
+    aRef = qdd_get_amplitude(v3, x3);
+    test_assert(qdd_is_unitvector(v3, nqubits));
+
+    x3[2]=1; x3[1]=1; x3[0]=1;
+    mCCZ = qdd_create_all_control_phase(nqubits, x3);
+    vTemp = qdd_matvec_mult(mCCZ, v3, nqubits);
+    x3[2] = 0; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(vTemp, x3); test_assert(a == aRef);
+    x3[2] = 0; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(vTemp, x3); test_assert(a == aRef);
+    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(vTemp, x3); test_assert(a == aRef);
+    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(vTemp, x3); test_assert(a == aRef);
+    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(vTemp, x3); test_assert(a == aRef);
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(vTemp, x3); test_assert(a == aRef);
+    x3[2] = 1; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(vTemp, x3); test_assert(a == aRef);
+    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(vTemp, x3); test_assert(a == Cmul(aRef,Clookup(Cmake(-1.0,0.0))));
+
+    x3[2]=0; x3[1]=1; x3[0]=1;
+    mCCZ = qdd_create_all_control_phase(nqubits, x3);
+    vTemp = qdd_matvec_mult(mCCZ, v3, nqubits);
+    x3[2] = 0; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(vTemp, x3); test_assert(a == aRef);
+    x3[2] = 0; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(vTemp, x3); test_assert(a == aRef);
+    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(vTemp, x3); test_assert(a == aRef);
+    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(vTemp, x3); test_assert(a == Cmul(aRef,Clookup(Cmake(-1.0,0.0))));
+    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(vTemp, x3); test_assert(a == aRef);
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(vTemp, x3); test_assert(a == aRef);
+    x3[2] = 1; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(vTemp, x3); test_assert(a == aRef);
+    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(vTemp, x3); test_assert(a == aRef);
+
+    x3[2]=0; x3[1]=1; x3[0]=0;
+    mCCZ = qdd_create_all_control_phase(nqubits, x3);
+    vTemp = qdd_matvec_mult(mCCZ, v3, nqubits);
+    x3[2] = 0; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(vTemp, x3); test_assert(a == aRef);
+    x3[2] = 0; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(vTemp, x3); test_assert(a == aRef);
+    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(vTemp, x3); test_assert(a == Cmul(aRef,Clookup(Cmake(-1.0,0.0))));
+    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(vTemp, x3); test_assert(a == aRef);
+    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(vTemp, x3); test_assert(a == aRef);
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(vTemp, x3); test_assert(a == aRef);
+    x3[2] = 1; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(vTemp, x3); test_assert(a == aRef);
+    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(vTemp, x3); test_assert(a == aRef);
 
 
-    if(VERBOSE) printf("matrix qdd all-control cz:  TODO\n");
+    if(VERBOSE) printf("matrix qdd all-control z:   TODO\n");
     return 0;
 }
 
