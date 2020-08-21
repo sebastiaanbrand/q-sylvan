@@ -421,16 +421,9 @@ int test_ccz_gate()
     BDDVAR nqubits;
     QDD v3, vTemp, mCCZ, mH0, mH1, mH2;
     bool x3[] = {0,0,0};
-    //bool x5[] = {0,0,0,0,0};
     AMP a, aRef;
 
     LACE_ME;
-
-    
-    //FILE *fp;
-    //fp = fopen("temp_ccz.dot", "w");
-    //qdd_fprintdot(fp, ccz, false);
-    //fclose(fp);
 
     // 3 qubit test
     nqubits = 3;
@@ -482,7 +475,7 @@ int test_ccz_gate()
     x3[2] = 1; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(vTemp, x3); test_assert(a == aRef);
 
 
-    if(VERBOSE) printf("matrix qdd all-control z:   TODO\n");
+    if(VERBOSE) printf("matrix qdd all-control z:   ok\n");
     return 0;
 }
 
