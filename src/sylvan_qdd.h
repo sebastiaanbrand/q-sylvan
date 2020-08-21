@@ -115,18 +115,23 @@ void sylvan_init_qdd(size_t amptable_size);
 
 /*******************************<applying gates>*******************************/
 
+// Computes |a> + |b>
 #define qdd_plus(a,b) (CALL(qdd_plus,a,b));
 TASK_DECL_2(QDD, qdd_plus, QDD, QDD);
 
+// Applies given (single qubit) gate to |q>
 #define qdd_gate(q,gate,target) (CALL(qdd_gate,q,gate,target));
 TASK_DECL_3(QDD, qdd_gate, QDD, uint32_t, BDDVAR);
 
+// Applies given controlled gate to |q>
 #define qdd_cgate(q,gate,c,t) (CALL(qdd_cgate,q,gate,c,t));
 TASK_DECL_4(QDD, qdd_cgate, QDD, uint32_t, BDDVAR, BDDVAR);
 
+// Computes Mat * |vec>
 #define qdd_matvec_mult(mat,vec,nvars) (CALL(qdd_matvec_mult,mat,vec,nvars,0));
 TASK_DECL_4(QDD, qdd_matvec_mult, QDD, QDD, BDDVAR, BDDVAR);
 
+// Computes A*B (note that matrix multiplication does not generally commute)
 #define qdd_matmat_mult(a,b,nvars) (CALL(qdd_matmat_mult,a,b,nvars,0));
 TASK_DECL_4(QDD, qdd_matmat_mult, QDD, QDD, BDDVAR, BDDVAR);
 

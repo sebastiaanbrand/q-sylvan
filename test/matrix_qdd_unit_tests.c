@@ -41,7 +41,9 @@ int test_x_gate()
 
     // matrix-matrix mult
     mTemp = qdd_matmat_mult(mI, mX, nqubits); test_assert(mTemp == mX);
+    mTemp = qdd_matmat_mult(mX, mI, nqubits); test_assert(mTemp == mX);
     mTemp = qdd_matmat_mult(mX, mX, nqubits); test_assert(mTemp == mI);
+
 
     // 3 qubit test
     nqubits = 3;
@@ -65,6 +67,8 @@ int test_x_gate()
     // matrix-matrix mult
     mTemp = qdd_matmat_mult(mI, mX0, nqubits); test_assert(mTemp == mX0);
     mTemp = qdd_matmat_mult(mI, mX1, nqubits); test_assert(mTemp == mX1);
+    mTemp = qdd_matmat_mult(mX0, mI, nqubits); test_assert(mTemp == mX0);
+    mTemp = qdd_matmat_mult(mX1, mI, nqubits); test_assert(mTemp == mX1);
     mTemp = qdd_matmat_mult(mX0,mX0, nqubits); test_assert(mTemp == mI);
     mTemp = qdd_matmat_mult(mX1,mX1, nqubits); test_assert(mTemp == mI);
 
@@ -83,7 +87,7 @@ int test_x_gate()
 int test_h_gate()
 {
     BDDVAR nqubits;
-    QDD v0, v1, v2, v3, v4, v5, mH, mH0, mH1;
+    QDD v0, v1, v2, v3, v4, v5, v6, mI, mH, mH0, mH1, mTemp;
     bool x[] = {0};
     bool x2[] = {0,0};
     AMP a;
@@ -94,8 +98,10 @@ int test_h_gate()
     nqubits = 1;
     x[0] = 0; v0 = qdd_create_basis_state(nqubits, x);
     x[0] = 1; v1 = qdd_create_basis_state(nqubits, x);
+    mI = qdd_create_all_identity_matrix(nqubits);
     mH = qdd_create_single_qubit_gate(nqubits, 0, GATEID_H);
 
+    // matrix-vector mult
     v0 = qdd_matvec_mult(mH, v0, nqubits);
     v1 = qdd_matvec_mult(mH, v1, nqubits);
 
@@ -104,6 +110,11 @@ int test_h_gate()
     x[0] = 0; a = qdd_get_amplitude(v1, x); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
     x[0] = 1; a = qdd_get_amplitude(v1, x); test_assert(a == Clookup(Cmake(Qmake(0,-1,2),0)));
 
+    // matrix-matrix mult
+    mTemp = qdd_matmat_mult(mI, mH, nqubits); test_assert(mTemp == mH);
+    mTemp = qdd_matmat_mult(mH, mI, nqubits); test_assert(mTemp == mH);
+    mTemp = qdd_matmat_mult(mH, mH, nqubits); test_assert(mTemp == mI);
+
 
     // Two qubit test
     nqubits = 2;
@@ -111,9 +122,11 @@ int test_h_gate()
     x2[1] = 0; x2[0] = 1; v3 = qdd_create_basis_state(nqubits, x2); // |01>
     x2[1] = 0; x2[0] = 0; v4 = qdd_create_basis_state(nqubits, x2); // |00>
     x2[1] = 0; x2[0] = 0; v5 = qdd_create_basis_state(nqubits, x2); // |00>
+    mI  = qdd_create_all_identity_matrix(nqubits);
     mH0 = qdd_create_single_qubit_gate(nqubits, 0, GATEID_H);
     mH1 = qdd_create_single_qubit_gate(nqubits, 1, GATEID_H);
 
+    // matrix-vector mult
     v2 = qdd_matvec_mult(mH0, v2, nqubits); // v2 = |0+>
     v3 = qdd_matvec_mult(mH0, v3, nqubits); // v3 = |0->
     v4 = qdd_matvec_mult(mH1, v4, nqubits); // v4 = |+0>
@@ -148,6 +161,20 @@ int test_h_gate()
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(v5, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
     test_assert(qdd_countnodes(v5) == 1);
 
+    // matrix-matrix mult
+    mTemp = qdd_matmat_mult(mI, mH0, nqubits); test_assert(mTemp == mH0);
+    mTemp = qdd_matmat_mult(mI, mH1, nqubits); test_assert(mTemp == mH1);
+    mTemp = qdd_matmat_mult(mH0, mI, nqubits); test_assert(mTemp == mH0);
+    mTemp = qdd_matmat_mult(mH1, mI, nqubits); test_assert(mTemp == mH1);
+    mTemp = qdd_matmat_mult(mH0,mH0, nqubits); test_assert(mTemp == mI);
+    mTemp = qdd_matmat_mult(mH1,mH1, nqubits); test_assert(mTemp == mI);
+
+    // calculate (H0 H1)|00> by multiplying H0 and H1 first
+    mTemp = qdd_matmat_mult(mH0,mH1, nqubits);
+    v6 = qdd_create_all_zero_state(nqubits);
+    v6 = qdd_matvec_mult(mTemp, v6, nqubits);
+    test_assert(v6 == v5);
+
 
     if(VERBOSE) printf("matrix qdd h gates:         ok\n");
     return 0;
@@ -157,7 +184,7 @@ int test_phase_gates()
 {
     BDDVAR nqubits;
     QDD v0, vZ, vS, vSS, vT, vTT, vTTTT, vTTdag, vTdagT;
-    QDD mH0, mH1, mZ0, mZ1, mS0, mT0, mT1, mTdag0, mTdag1;
+    QDD mI, mH0, mH1, mZ0, mZ1, mS0, mT0, mT1, mTdag0, mTdag1, mTemp;
     bool x2[] = {0, 0};
     AMP a;
 
@@ -166,6 +193,7 @@ int test_phase_gates()
     // simple 2 qubit test
     nqubits = 2;
     x2[1] = 0; x2[0] = 0; v0 = qdd_create_basis_state(nqubits, x2);
+    mI     = qdd_create_all_identity_matrix(nqubits);
     mH0    = qdd_create_single_qubit_gate(nqubits, 0, GATEID_H);
     mH1    = qdd_create_single_qubit_gate(nqubits, 1, GATEID_H);
     mZ0    = qdd_create_single_qubit_gate(nqubits, 0, GATEID_Z);
@@ -178,6 +206,7 @@ int test_phase_gates()
     v0 = qdd_matvec_mult(mH0, v0, nqubits);
     v0 = qdd_matvec_mult(mH1, v0, nqubits); // start with v0 = |++>
 
+    // matrix-vector mult
     vZ     = qdd_matvec_mult(mZ0, v0, nqubits);
     vS     = qdd_matvec_mult(mS0, v0, nqubits);
     vSS    = qdd_matvec_mult(mS0, vS, nqubits);
@@ -189,14 +218,34 @@ int test_phase_gates()
     vTTdag = qdd_matvec_mult(mTdag0, vTTdag, nqubits);
     vTdagT = qdd_matvec_mult(mTdag0, v0, nqubits);
     vTdagT = qdd_matvec_mult(mT0, vTdagT, nqubits);
-
     test_assert(vZ == vSS);
     test_assert(vS == vTT);
     test_assert(vZ == vTTTT);
     test_assert(v0 == vTTdag);
     test_assert(v0 == vTdagT);
 
-    
+    // matrix-matrix mult
+    mTemp = qdd_matmat_mult(mI,     mZ0,    nqubits); test_assert(mTemp == mZ0);
+    mTemp = qdd_matmat_mult(mZ0,    mI,     nqubits); test_assert(mTemp == mZ0);
+    mTemp = qdd_matmat_mult(mI,     mZ1,    nqubits); test_assert(mTemp == mZ1);
+    mTemp = qdd_matmat_mult(mZ1,    mI,     nqubits); test_assert(mTemp == mZ1);
+    mTemp = qdd_matmat_mult(mI,     mS0,    nqubits); test_assert(mTemp == mS0);
+    mTemp = qdd_matmat_mult(mS0,    mI,     nqubits); test_assert(mTemp == mS0);
+    mTemp = qdd_matmat_mult(mI,     mT0,    nqubits); test_assert(mTemp == mT0);
+    mTemp = qdd_matmat_mult(mT0,    mI,     nqubits); test_assert(mTemp == mT0);
+    mTemp = qdd_matmat_mult(mS0,    mS0,    nqubits); test_assert(mTemp == mZ0);
+    mTemp = qdd_matmat_mult(mT0,    mT0,    nqubits); test_assert(mTemp == mS0);
+    mTemp = qdd_matmat_mult(mT1,    mTdag1, nqubits); test_assert(mTemp == mI);
+    mTemp = qdd_matmat_mult(mTdag1, mT1,    nqubits); test_assert(mTemp == mI);
+
+    // T^7 == Tdag
+    mTemp = qdd_create_all_identity_matrix(nqubits);
+    for (int k = 0; k < 7; k++) 
+        mTemp = qdd_matmat_mult(mTemp, mT0, nqubits);
+    test_assert(mTemp == mTdag0);
+
+
+    // more matrix-vector mult    
     x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(v0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
     x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(v0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
     x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(v0, x2); test_assert(a == Clookup(Cmake(0.5, 0)));
@@ -262,7 +311,7 @@ int test_phase_gates()
 int test_cx_gate()
 {
     BDDVAR nqubits;
-    QDD v0, mH, mCNOT;
+    QDD v0, mI, mH, mCNOT, mTemp;
     bool x2[] = {0,0};
     AMP a;
 
@@ -271,11 +320,19 @@ int test_cx_gate()
     // Test Bell state
     nqubits = 2;
     x2[1] = 0; x2[0] = 0; v0 = qdd_create_basis_state(nqubits, x2);
+    mI    = qdd_create_all_identity_matrix(nqubits);
     mH    = qdd_create_single_qubit_gate(nqubits, 0, GATEID_H);
     mCNOT = qdd_create_controlled_gate(nqubits, 0, 1, GATEID_X);
 
-    v0 = qdd_matvec_mult(mH, v0, nqubits);
+    // matrix-matrix mult
+    mTemp = qdd_matmat_mult(mI,    mH,    nqubits); test_assert(mTemp == mH);
+    mTemp = qdd_matmat_mult(mH,    mH,    nqubits); test_assert(mTemp == mI);
+    mTemp = qdd_matmat_mult(mI,    mCNOT, nqubits); test_assert(mTemp == mCNOT);
+    mTemp = qdd_matmat_mult(mCNOT, mI,    nqubits); test_assert(mTemp == mCNOT);
+    mTemp = qdd_matmat_mult(mCNOT, mCNOT, nqubits); test_assert(mTemp == mI);
 
+    // matrix-vector mult
+    v0 = qdd_matvec_mult(mH, v0, nqubits);
     x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(v0, x2); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
     x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(v0, x2); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
     x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(v0, x2); test_assert(a == C_ZERO);
@@ -283,12 +340,36 @@ int test_cx_gate()
     test_assert(qdd_countnodes(v0) == 2);
 
     v0 = qdd_matvec_mult(mCNOT, v0, nqubits);
-
     x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(v0, x2); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
     x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(v0, x2); test_assert(a == C_ZERO);
     x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(v0, x2); test_assert(a == C_ZERO);
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(v0, x2); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
     test_assert(qdd_countnodes(v0) == 4);
+
+    // same as above but multiplies H CNOT first before applying to the state
+    // note that we apply the H first, so it is on the right: CNOT H0 |00>
+    mTemp = qdd_matmat_mult(mCNOT, mH, nqubits);
+    v0 = qdd_create_all_zero_state(nqubits);
+    v0 = qdd_matvec_mult(mTemp, v0, nqubits);
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(v0, x2); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(v0, x2); test_assert(a == C_ZERO);
+    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(v0, x2); test_assert(a == C_ZERO);
+    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(v0, x2); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
+    test_assert(qdd_countnodes(v0) == 4);
+
+    // If we did H0 CNOT |00> instead then the CNOT would not have an effect, 
+    // and we'd just be left with H on qubit 0. This is also an example where
+    // computing the circuit matrix first does a bunch of extra work if we
+    // apply it on a state which is unaffected by (some of) the circuit.
+    mTemp = qdd_matmat_mult(mH, mCNOT, nqubits);
+    v0 = qdd_create_all_zero_state(nqubits);
+    v0 = qdd_matvec_mult(mTemp, v0, nqubits);
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(v0, x2); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(v0, x2); test_assert(a == Clookup(Cmake(Qmake(0,1,2),0)));
+    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(v0, x2); test_assert(a == C_ZERO);
+    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(v0, x2); test_assert(a == C_ZERO);
+    test_assert(qdd_countnodes(v0) == 2);
+
 
     // TODO: test with slightly more qubits
 

@@ -780,7 +780,6 @@ TASK_IMPL_4(QDD, qdd_matmat_mult, QDD, a, QDD, b, BDDVAR, nvars, BDDVAR, nextvar
     b11 = qdd_bundle_ptr_amp(QDD_PTR(b11), amp_b11);
 
     // 3. recursive calls TODO: SPAWN tasks
-    // TODO: need testing if this is also correct for non-commuting A and B.
     // |a00 a01| |b00 b01| = b00|a00| + b10|a01| , b01|a00| + b11|a01|
     // |a10 a11| |b10 b11|      |a10|      |a11|      |a10|      |a11|
     QDD a00_b00, a00_b01, a10_b00, a10_b01, a01_b10, a01_b11, a11_b10, a11_b11;
