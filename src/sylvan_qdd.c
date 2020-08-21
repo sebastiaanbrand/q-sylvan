@@ -717,15 +717,20 @@ TASK_IMPL_4(QDD, qdd_matvec_mult, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR, nex
     u01      = qdd_bundle_ptr_amp(QDD_PTR(u01), amp_u01);
     u11      = qdd_bundle_ptr_amp(QDD_PTR(u11), amp_u11);
 
-    // 3. recursive calls TODO: SPAWN tasks
+    // 3. recursive calls (4 tasks: SPAWN 3, CALL 1)
     // |u00 u01| |vec_low | = vec_low|u00| + vec_high|u01|
     // |u10 u11| |vec_high|          |u10|           |u11|
     QDD res_low00, res_low10, res_high01, res_high11;
     nextvar++;
-    res_low00  = CALL(qdd_matvec_mult, u00, vec_low,  nvars, nextvar);
-    res_low10  = CALL(qdd_matvec_mult, u10, vec_low,  nvars, nextvar);
-    res_high01 = CALL(qdd_matvec_mult, u01, vec_high, nvars, nextvar);
+    bdd_refs_spawn(SPAWN(qdd_matvec_mult, u00, vec_low,  nvars, nextvar)); // 1
+    bdd_refs_spawn(SPAWN(qdd_matvec_mult, u10, vec_low,  nvars, nextvar)); // 2
+    bdd_refs_spawn(SPAWN(qdd_matvec_mult, u01, vec_high, nvars, nextvar)); // 3
     res_high11 = CALL(qdd_matvec_mult, u11, vec_high, nvars, nextvar);
+    bdd_refs_push(res_high11);
+    res_high01 = bdd_refs_sync(SYNC(qdd_matvec_mult)); // 3
+    res_low10  = bdd_refs_sync(SYNC(qdd_matvec_mult)); // 2
+    res_low00  = bdd_refs_sync(SYNC(qdd_matvec_mult)); // 1
+    bdd_refs_pop(1);
     nextvar--;
 
     // 4. gather results of multiplication
@@ -799,19 +804,28 @@ TASK_IMPL_4(QDD, qdd_matmat_mult, QDD, a, QDD, b, BDDVAR, nvars, BDDVAR, nextvar
     b01 = qdd_bundle_ptr_amp(QDD_PTR(b01), amp_b01);
     b11 = qdd_bundle_ptr_amp(QDD_PTR(b11), amp_b11);
 
-    // 3. recursive calls TODO: SPAWN tasks
+    // 3. recursive calls (8 tasks: SPAWN 7, CALL 1)
     // |a00 a01| |b00 b01| = b00|a00| + b10|a01| , b01|a00| + b11|a01|
     // |a10 a11| |b10 b11|      |a10|      |a11|      |a10|      |a11|
     QDD a00_b00, a00_b01, a10_b00, a10_b01, a01_b10, a01_b11, a11_b10, a11_b11;
     nextvar++;
-    a00_b00 = CALL(qdd_matmat_mult, a00, b00, nvars, nextvar);
-    a00_b01 = CALL(qdd_matmat_mult, a00, b01, nvars, nextvar);
-    a10_b00 = CALL(qdd_matmat_mult, a10, b00, nvars, nextvar);
-    a10_b01 = CALL(qdd_matmat_mult, a10, b01, nvars, nextvar);
-    a01_b10 = CALL(qdd_matmat_mult, a01, b10, nvars, nextvar);
-    a01_b11 = CALL(qdd_matmat_mult, a01, b11, nvars, nextvar);
-    a11_b10 = CALL(qdd_matmat_mult, a11, b10, nvars, nextvar);
+    bdd_refs_spawn(SPAWN(qdd_matmat_mult, a00, b00, nvars, nextvar)); // 1
+    bdd_refs_spawn(SPAWN(qdd_matmat_mult, a00, b01, nvars, nextvar)); // 2
+    bdd_refs_spawn(SPAWN(qdd_matmat_mult, a10, b00, nvars, nextvar)); // 3
+    bdd_refs_spawn(SPAWN(qdd_matmat_mult, a10, b01, nvars, nextvar)); // 4
+    bdd_refs_spawn(SPAWN(qdd_matmat_mult, a01, b10, nvars, nextvar)); // 5
+    bdd_refs_spawn(SPAWN(qdd_matmat_mult, a01, b11, nvars, nextvar)); // 6
+    bdd_refs_spawn(SPAWN(qdd_matmat_mult, a11, b10, nvars, nextvar)); // 7
     a11_b11 = CALL(qdd_matmat_mult, a11, b11, nvars, nextvar);
+    bdd_refs_push(a11_b11);
+    a11_b10 = bdd_refs_sync(SYNC(qdd_matmat_mult)); // 7
+    a01_b11 = bdd_refs_sync(SYNC(qdd_matmat_mult)); // 6
+    a01_b10 = bdd_refs_sync(SYNC(qdd_matmat_mult)); // 5
+    a10_b01 = bdd_refs_sync(SYNC(qdd_matmat_mult)); // 4
+    a10_b00 = bdd_refs_sync(SYNC(qdd_matmat_mult)); // 3
+    a00_b01 = bdd_refs_sync(SYNC(qdd_matmat_mult)); // 2
+    a00_b00 = bdd_refs_sync(SYNC(qdd_matmat_mult)); // 1
+    bdd_refs_pop(1);
     nextvar--;
 
     // 4. gather results of multiplication
@@ -823,8 +837,11 @@ TASK_IMPL_4(QDD, qdd_matmat_mult, QDD, a, QDD, b, BDDVAR, nvars, BDDVAR, nextvar
 
     // 5. add resulting qdds TODO: SPAWN tasks
     QDD lh, rh;
-    lh = CALL(qdd_plus, lh1, lh2);
+    bdd_refs_spawn(SPAWN(qdd_plus, lh1, lh2));
     rh = CALL(qdd_plus, rh1, rh2);
+    bdd_refs_push(rh);
+    lh = bdd_refs_sync(SYNC(qdd_plus));
+    bdd_refs_pop(1);
 
     // 6. put left and right halves of matix together
     res = qdd_makenode(2*nextvar, lh, rh);
