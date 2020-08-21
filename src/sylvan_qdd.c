@@ -683,7 +683,15 @@ TASK_IMPL_4(QDD, qdd_matvec_mult, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR, nex
         return qdd_bundle_ptr_amp(QDD_TERMINAL, prod);
     }
 
-    // TODO: cache lookup
+    // Check cache
+    QDD res;
+    bool cachenow = 1;
+    if (cachenow) {
+        if (cache_get3(CACHE_QDD_MATVEC_MULT, sylvan_false, mat, vec, &res)) {
+            sylvan_stats_count(QDD_MULT_CACHED);
+            return res;
+        }
+    }
 
     // Recursive multiplication
     // 1. get relevant nodes for both QDDS
@@ -726,9 +734,13 @@ TASK_IMPL_4(QDD, qdd_matvec_mult, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR, nex
     res_high = qdd_makenode(nextvar, res_high01, res_high11);
 
     // 5. add resulting qdds
-    QDD res = CALL(qdd_plus, res_low, res_high);
+    res = CALL(qdd_plus, res_low, res_high);
 
-    // TODO: cache inserts
+    // Insert in cache
+    if (cachenow) {
+        if (cache_put3(CACHE_QDD_MATVEC_MULT, sylvan_false, mat, vec, res)) 
+            sylvan_stats_count(QDD_MULT_CACHEDPUT);
+    }
 
     return res;
 }
@@ -747,7 +759,15 @@ TASK_IMPL_4(QDD, qdd_matmat_mult, QDD, a, QDD, b, BDDVAR, nvars, BDDVAR, nextvar
         return qdd_bundle_ptr_amp(QDD_TERMINAL, prod);
     }
 
-    // TODO: cache lookup
+    // Check cache
+    QDD res;
+    bool cachenow = 1;
+    if (cachenow) {
+        if (cache_get3(CACHE_QDD_MATMAT_MULT, sylvan_false, a, b, &res)) {
+            sylvan_stats_count(QDD_MULT_CACHED);
+            return res;
+        }
+    }
 
     // Recursive multiplication
     // 1. get relevant nodes for both QDDs
@@ -807,9 +827,13 @@ TASK_IMPL_4(QDD, qdd_matmat_mult, QDD, a, QDD, b, BDDVAR, nvars, BDDVAR, nextvar
     rh = CALL(qdd_plus, rh1, rh2);
 
     // 6. put left and right halves of matix together
-    QDD res = qdd_makenode(2*nextvar, lh, rh);
+    res = qdd_makenode(2*nextvar, lh, rh);
 
-    // TODO: cache insert
+    // Insert in cache
+    if (cachenow) {
+        if (cache_put3(CACHE_QDD_MATMAT_MULT, sylvan_false, a, b, res)) 
+            sylvan_stats_count(QDD_MULT_CACHEDPUT);
+    }
 
     return res;
 }
@@ -1765,7 +1789,7 @@ TASK_IMPL_3(double, qdd_unnormed_prob, QDD, qdd, BDDVAR, topvar, BDDVAR, nvars)
     bool cachenow = 1;
     if (cachenow) {
         uint64_t prob_bits;
-        if (cache_get(CACHE_QDD_PROB, qdd, QDD_PARAM_PACK_16(topvar, nvars), &prob_bits)) {
+        if (cache_get3(CACHE_QDD_PROB, sylvan_false, qdd, QDD_PARAM_PACK_16(topvar, nvars), &prob_bits)) {
             sylvan_stats_count(QDD_PROB_CACHED);
             prob_container_t container = (prob_container_t) prob_bits;
             return container.as_double;
@@ -1808,7 +1832,7 @@ TASK_IMPL_3(double, qdd_unnormed_prob, QDD, qdd, BDDVAR, topvar, BDDVAR, nvars)
     // Put in cache and return
     if (cachenow) {
         prob_container_t container = (prob_container_t) prob_res;
-        if (cache_put(CACHE_QDD_PROB, qdd, QDD_PARAM_PACK_16(topvar, nvars), container.as_int))
+        if (cache_put3(CACHE_QDD_PROB, sylvan_false, qdd, QDD_PARAM_PACK_16(topvar, nvars), container.as_int))
             sylvan_stats_count(QDD_PROB_CACHEDPUT);
     }
     return prob_res;

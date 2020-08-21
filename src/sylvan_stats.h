@@ -89,6 +89,7 @@ typedef enum {
 
     /* QDD operations */
     OPCOUNTER(QDD_PLUS),
+    OPCOUNTER(QDD_MULT),
     OPCOUNTER(QDD_GATE),
     OPCOUNTER(QDD_CGATE),
     OPCOUNTER(QDD_PROB),
