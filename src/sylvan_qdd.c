@@ -709,7 +709,9 @@ TASK_IMPL_4(QDD, qdd_matvec_mult, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR, nex
     u01      = qdd_bundle_ptr_amp(QDD_PTR(u01), amp_u01);
     u11      = qdd_bundle_ptr_amp(QDD_PTR(u11), amp_u11);
 
-    // 3. recursive calls
+    // 3. recursive calls TODO: SPAWN tasks
+    // |u00 u01| |vec_low | = vec_low|u00| + vec_high|u01|
+    // |u10 u11| |vec_high|          |u10|           |u11|
     QDD res_low00, res_low10, res_high01, res_high11;
     nextvar++;
     res_low00  = CALL(qdd_matvec_mult, u00, vec_low,  nvars, nextvar);
@@ -727,6 +729,88 @@ TASK_IMPL_4(QDD, qdd_matvec_mult, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR, nex
     QDD res = CALL(qdd_plus, res_low, res_high);
 
     // TODO: cache inserts
+
+    return res;
+}
+
+TASK_IMPL_4(QDD, qdd_matmat_mult, QDD, a, QDD, b, BDDVAR, nvars, BDDVAR, nextvar)
+{
+    // Trivial case: either one is all 0
+    if (QDD_AMP(a) == C_ZERO || QDD_AMP(b) == C_ZERO)
+        return qdd_bundle_ptr_amp(QDD_TERMINAL, C_ZERO);
+
+    // Terminal case: past last variable
+    if (nextvar == nvars) {
+        assert(QDD_PTR(a) == QDD_TERMINAL);
+        assert(QDD_PTR(b) == QDD_TERMINAL);
+        AMP prod = Cmul(QDD_AMP(a), QDD_AMP(b));
+        return qdd_bundle_ptr_amp(QDD_TERMINAL, prod);
+    }
+
+    // TODO: cache lookup
+
+    // Recursive multiplication
+    // 1. get relevant nodes for both QDDs
+    BDDVAR var;
+    QDD a_low, a_high, a00, a10, a01, a11, b_low, b_high, b00, b10, b01, b11;
+    qdd_get_topvar(a, 2*nextvar, &var, &a_low, &a_high);
+    qdd_get_topvar(b, 2*nextvar, &var, &b_low, &b_high);
+    qdd_get_topvar(a_low, 2*nextvar+1, &var, &a00, &a10);
+    qdd_get_topvar(a_high,2*nextvar+1, &var, &a01, &a11);
+    qdd_get_topvar(b_low, 2*nextvar+1, &var, &b00, &b10);
+    qdd_get_topvar(b_high,2*nextvar+1, &var, &b01, &b11);
+
+    // 2. pass weights of current edges down TODO: use loop
+    AMP amp_a00, amp_a10, amp_a01, amp_a11, amp_b00, amp_b10, amp_b01, amp_b11;
+    amp_a00 = Cmul(Cmul(QDD_AMP(a), QDD_AMP(a_low)), QDD_AMP(a00));
+    amp_a10 = Cmul(Cmul(QDD_AMP(a), QDD_AMP(a_low)), QDD_AMP(a10));
+    amp_a01 = Cmul(Cmul(QDD_AMP(a), QDD_AMP(a_high)),QDD_AMP(a01));
+    amp_a11 = Cmul(Cmul(QDD_AMP(a), QDD_AMP(a_high)),QDD_AMP(a11));
+    amp_b00 = Cmul(Cmul(QDD_AMP(b), QDD_AMP(b_low)), QDD_AMP(b00));
+    amp_b10 = Cmul(Cmul(QDD_AMP(b), QDD_AMP(b_low)), QDD_AMP(b10));
+    amp_b01 = Cmul(Cmul(QDD_AMP(b), QDD_AMP(b_high)),QDD_AMP(b01));
+    amp_b11 = Cmul(Cmul(QDD_AMP(b), QDD_AMP(b_high)),QDD_AMP(b11));
+    a00 = qdd_bundle_ptr_amp(QDD_PTR(a00), amp_a00);
+    a10 = qdd_bundle_ptr_amp(QDD_PTR(a10), amp_a10);
+    a01 = qdd_bundle_ptr_amp(QDD_PTR(a01), amp_a01);
+    a11 = qdd_bundle_ptr_amp(QDD_PTR(a11), amp_a11);
+    b00 = qdd_bundle_ptr_amp(QDD_PTR(b00), amp_b00);
+    b10 = qdd_bundle_ptr_amp(QDD_PTR(b10), amp_b10);
+    b01 = qdd_bundle_ptr_amp(QDD_PTR(b01), amp_b01);
+    b11 = qdd_bundle_ptr_amp(QDD_PTR(b11), amp_b11);
+
+    // 3. recursive calls TODO: SPAWN tasks
+    // TODO: need testing if this is also correct for non-commuting A and B.
+    // |a00 a01| |b00 b01| = b00|a00| + b10|a01| , b01|a00| + b11|a01|
+    // |a10 a11| |b10 b11|      |a10|      |a11|      |a10|      |a11|
+    QDD a00_b00, a00_b01, a10_b00, a10_b01, a01_b10, a01_b11, a11_b10, a11_b11;
+    nextvar++;
+    a00_b00 = CALL(qdd_matmat_mult, a00, b00, nvars, nextvar);
+    a00_b01 = CALL(qdd_matmat_mult, a00, b01, nvars, nextvar);
+    a10_b00 = CALL(qdd_matmat_mult, a10, b00, nvars, nextvar);
+    a10_b01 = CALL(qdd_matmat_mult, a10, b01, nvars, nextvar);
+    a01_b10 = CALL(qdd_matmat_mult, a01, b10, nvars, nextvar);
+    a01_b11 = CALL(qdd_matmat_mult, a01, b11, nvars, nextvar);
+    a11_b10 = CALL(qdd_matmat_mult, a11, b10, nvars, nextvar);
+    a11_b11 = CALL(qdd_matmat_mult, a11, b11, nvars, nextvar);
+    nextvar--;
+
+    // 4. gather results of multiplication
+    QDD lh1, lh2, rh1, rh2;
+    lh1 = qdd_makenode(2*nextvar+1, a00_b00, a10_b00);
+    lh2 = qdd_makenode(2*nextvar+1, a01_b10, a11_b10);
+    rh1 = qdd_makenode(2*nextvar+1, a00_b01, a10_b01);
+    rh2 = qdd_makenode(2*nextvar+1, a01_b11, a11_b11);
+
+    // 5. add resulting qdds TODO: SPAWN tasks
+    QDD lh, rh;
+    lh = CALL(qdd_plus, lh1, lh2);
+    rh = CALL(qdd_plus, rh1, rh2);
+
+    // 6. put left and right halves of matix together
+    QDD res = qdd_makenode(2*nextvar, lh, rh);
+
+    // TODO: cache insert
 
     return res;
 }

@@ -21,7 +21,7 @@ int test_matrix_creation()
 int test_x_gate()
 {
     BDDVAR nqubits;
-    QDD v0, v1, v2, v3, v4, v5, mX, mX1, mX0;
+    QDD v0, v1, v2, v3, v4, v5, mI, mX, mX1, mX0, mTemp;
     bool x[] = {0};
     bool x3[] = {0, 0, 0};
 
@@ -32,27 +32,49 @@ int test_x_gate()
     x[0] = 0; v0 = qdd_create_basis_state(nqubits, x);
     x[0] = 1; v1 = qdd_create_basis_state(nqubits, x);
     x[0] = 0; v2 = qdd_create_basis_state(nqubits, x);
+    mI = qdd_create_all_identity_matrix(nqubits);
     mX = qdd_create_single_qubit_gate(nqubits, 0, GATEID_X);
 
+    // matrix-vector mult
     v0 = qdd_matvec_mult(mX, v0, nqubits); test_assert(v0 == v1);
     v0 = qdd_matvec_mult(mX, v0, nqubits); test_assert(v0 == v2);
+
+    // matrix-matrix mult
+    mTemp = qdd_matmat_mult(mI, mX, nqubits); test_assert(mTemp == mX);
+    mTemp = qdd_matmat_mult(mX, mX, nqubits); test_assert(mTemp == mI);
 
     // 3 qubit test
     nqubits = 3;
     x3[2] = 0; x3[1] = 0; x3[0] = 0; v3 = qdd_create_basis_state(nqubits, x3);
     x3[2] = 0; x3[1] = 1; x3[0] = 0; v4 = qdd_create_basis_state(nqubits, x3);
     x3[2] = 0; x3[1] = 1; x3[0] = 1; v5 = qdd_create_basis_state(nqubits, x3);
+    mI  = qdd_create_all_identity_matrix(nqubits);
     mX1 = qdd_create_single_qubit_gate(nqubits, 1, GATEID_X); // X gate on q1
     mX0 = qdd_create_single_qubit_gate(nqubits, 0, GATEID_X); // X gate on q0
     test_assert(qdd_countnodes(v3) == 4);
     test_assert(qdd_countnodes(v4) == 4);
     test_assert(qdd_countnodes(v5) == 4);
     
+    // matrix-vector mult
     v3 = qdd_matvec_mult(mX1, v3, nqubits); test_assert(v3 == v4);
     v3 = qdd_matvec_mult(mX0, v3, nqubits); test_assert(v3 == v5);
     test_assert(qdd_countnodes(v3) == 4);
     test_assert(qdd_countnodes(v4) == 4);
     test_assert(qdd_countnodes(v5) == 4);
+
+    // matrix-matrix mult
+    mTemp = qdd_matmat_mult(mI, mX0, nqubits); test_assert(mTemp == mX0);
+    mTemp = qdd_matmat_mult(mI, mX1, nqubits); test_assert(mTemp == mX1);
+    mTemp = qdd_matmat_mult(mX0,mX0, nqubits); test_assert(mTemp == mI);
+    mTemp = qdd_matmat_mult(mX1,mX1, nqubits); test_assert(mTemp == mI);
+
+    // calculate (X0 X1)|00> by multiplying X0 and X1 first
+    mTemp = qdd_matmat_mult(mX0,mX1, nqubits);
+    v3 = qdd_create_all_zero_state(nqubits);
+    v3 = qdd_matvec_mult(mTemp, v3, nqubits);
+    test_assert(v3 == v5);
+    test_assert(qdd_countnodes(v5) == 4);
+
 
     if(VERBOSE) printf("matrix qdd x gates:         ok\n");
     return 0;
