@@ -230,11 +230,26 @@ uint32_t random_sqrtXY()
     return ( rand() % 2 ) ? GATEID_sqrtX : GATEID_sqrtY;
 }
 
-int bench_supremacy_5_1(uint32_t depth)
+int bench_supremacy_5_1(uint32_t depth, uint32_t workers)
 {
     // 5x1 "grid" from [Characterizing Quantum Supremacy in Near-Term Devices]
+    printf("bench sup5_1, depth %d, %2d worker(s)\n", depth, workers);
 
+    bool count_nodes = true;
+    uint64_t node_count[depth];
+    double t_start, t_end, runtime;
+    t_start = wctime();
+
+    // Init Lace
+    lace_init(workers, 0);
+    lace_startup(0, NULL, NULL);
     LACE_ME;
+
+    // Init Sylvan
+    sylvan_set_limits(4LL<<30, 1, 6);
+    sylvan_init_package();
+    sylvan_init_qdd(1LL<<19);
+
     BDDVAR n_qubits = 5;
     srand(42);
 
@@ -248,21 +263,26 @@ int bench_supremacy_5_1(uint32_t depth)
     if (depth > 0) {
         qdd = qdd_cgate(qdd, GATEID_Z, 0, 1);
         qdd = qdd_cgate(qdd, GATEID_Z, 3, 4);
+        if (count_nodes) node_count[0] = qdd_countnodes(qdd);
     }
     if (depth > 1) {
         qdd = qdd_cgate(qdd, GATEID_Z, 1, 2);
         qdd = qdd_gate(qdd, GATEID_T, 0);
         qdd = qdd_gate(qdd, GATEID_T, 3);
         qdd = qdd_gate(qdd, GATEID_T, 4);
+        if (count_nodes) node_count[1] = qdd_countnodes(qdd);
     }
+
     if (depth > 2) {
         qdd = qdd_cgate(qdd, GATEID_Z, 2, 3);
         qdd = qdd_gate(qdd, GATEID_T, 1);
+        if (count_nodes) node_count[2] = qdd_countnodes(qdd);
     }
     if (depth > 3) {
         qdd = qdd_cgate(qdd, GATEID_Z, 0, 1);
         qdd = qdd_cgate(qdd, GATEID_Z, 3, 4);
         qdd = qdd_gate(qdd, GATEID_T, 2);
+        if (count_nodes) node_count[3] = qdd_countnodes(qdd);
     }
 
     // Following cycles the single qubit gates are random from {sqrt(X), sqrt(Y)}
@@ -288,22 +308,52 @@ int bench_supremacy_5_1(uint32_t depth)
         default:
             break;
         }
+        if (count_nodes) node_count[d] = qdd_countnodes(qdd);
     }
+
+    t_end = wctime();
+    runtime = (t_end - t_start);
+
+    printf("%lf sec", runtime);
+    if (count_nodes)
+        printf(", %ld nodes", node_count[depth-1]);
+    printf("\n");
+
+    // Cleanup
+    free_amplitude_table();
+    sylvan_quit();
+    lace_exit();
 
     return 0;
 }
 
-int bench_supremacy_5_4(uint32_t depth)
+int bench_supremacy_5_4(uint32_t depth, uint32_t workers)
 {
     // 5x4 "grid" from [Characterizing Quantum Supremacy in Near-Term Devices]
     // (maybe a lot of hard-coded stuff but oh well...)
+    printf("bench sup5_4, depth %d, %2d worker(s)\n", depth, workers);
 
+    bool count_nodes = true;
+    uint64_t node_count[depth];
+    double t_start, t_end, runtime;
+    t_start = wctime();
+
+    // Init Lace
+    lace_init(workers, 0);
+    lace_startup(0, NULL, NULL);
     LACE_ME;
+
+    // Init Sylvan
+    sylvan_set_limits(4LL<<30, 1, 6);
+    sylvan_init_package();
+    sylvan_init_qdd(1LL<<19);
+
     BDDVAR n_qubits = 20;
     srand(66);
 
     // Start with |00...0> state
     QDD qdd = qdd_create_all_zero_state(n_qubits);
+    QDD qdds[1];
 
     // H on all qubits
     for (BDDVAR k=0; k < n_qubits; k++) qdd = qdd_gate(qdd, GATEID_H, k);
@@ -327,6 +377,7 @@ int bench_supremacy_5_4(uint32_t depth)
         qdd = qdd_cgate(qdd, GATEID_Z,  5,  6);    // CZ(5,6)
         qdd = qdd_cgate(qdd, GATEID_Z, 12, 13);    // CZ(12,13)
         qdd = qdd_cgate(qdd, GATEID_Z, 15, 16);    // CZ(15,16)
+        if (count_nodes) node_count[0] = qdd_countnodes(qdd);
     }
     if (depth > 1) {
         qdd = qdd_cgate(qdd, GATEID_Z,  0,  1);    // CZ(0,1)
@@ -336,6 +387,7 @@ int bench_supremacy_5_4(uint32_t depth)
         BDDVAR qubits[8] = {2,3,5,6,12,13,15,16};
         for (int i = 0; i < 8; i++)
             qdd = qdd_gate(qdd, GATEID_T, qubits[i]);
+        if (count_nodes) node_count[1] = qdd_countnodes(qdd);
     }
     if (depth > 2) {
         qdd = qdd_cgate(qdd, GATEID_Z,  6, 11);    // CZ(6,11)
@@ -343,11 +395,13 @@ int bench_supremacy_5_4(uint32_t depth)
         BDDVAR qubits[8] = {0,1,7,8,10,11,17,18};
         for (int i = 0; i < 8; i++)
             qdd = qdd_gate(qdd, GATEID_T, qubits[i]);
+        if (count_nodes) node_count[2] = qdd_countnodes(qdd);
     }
     if (depth > 3) {
         qdd = qdd_cgate(qdd, GATEID_Z,  5, 10);    // CZ(5,10)
         qdd = qdd_cgate(qdd, GATEID_Z,  7, 12);    // CZ(7,12)
         qdd = qdd_cgate(qdd, GATEID_Z,  9, 14);    // CZ(9,14)
+        if (count_nodes) node_count[3] = qdd_countnodes(qdd);
     }
     if (depth > 4) {
         qdd = qdd_cgate(qdd, GATEID_Z,  3,  4);    // CZ(3,4)
@@ -356,6 +410,7 @@ int bench_supremacy_5_4(uint32_t depth)
         qdd = qdd_cgate(qdd, GATEID_Z, 16, 17);    // CZ(16,17)
         qdd = qdd_gate(qdd, GATEID_T,  9);
         qdd = qdd_gate(qdd, GATEID_T, 14);
+        if (count_nodes) node_count[4] = qdd_countnodes(qdd);
     }
     if (depth > 5) {
         qdd = qdd_cgate(qdd, GATEID_Z,  1,  2);    // CZ(1,2)
@@ -363,6 +418,7 @@ int bench_supremacy_5_4(uint32_t depth)
         qdd = qdd_cgate(qdd, GATEID_Z, 11, 12);    // CZ(11,12)
         qdd = qdd_cgate(qdd, GATEID_Z, 18, 19);    // CZ(18,19)
         qdd = qdd_gate(qdd, GATEID_T, 4);
+        if (count_nodes) node_count[5] = qdd_countnodes(qdd);
     }
     if (depth > 6) {
         qdd = qdd_cgate(qdd, GATEID_Z,  0,  5);    // CZ(0,5)
@@ -371,6 +427,7 @@ int bench_supremacy_5_4(uint32_t depth)
         qdd = qdd_cgate(qdd, GATEID_Z, 11, 16);    // CZ(11,16)
         qdd = qdd_cgate(qdd, GATEID_Z, 13, 18);    // CZ(13,18)
         qdd = qdd_gate(qdd, GATEID_T, 19);
+        if (count_nodes) node_count[6] = qdd_countnodes(qdd);
     }
     // Following cycles the single qubit gates are random from {sqrt(X), sqrt(Y)}
     for (uint32_t d = 7; d < depth; d++) {
@@ -441,7 +498,26 @@ int bench_supremacy_5_4(uint32_t depth)
         default:
             break;
         }
+        qdds[0] = qdd;
+        uint64_t namps = count_amplitude_table_enries();
+        printf("%2d - namps = %ld\n", d, namps);
+        clean_amplitude_table(qdds, 1);
+        qdd = qdds[0];
+        if (count_nodes) node_count[d] = qdd_countnodes(qdd);
     }
+
+    t_end = wctime();
+    runtime = (t_end - t_start);
+
+    printf("%lf sec", runtime);
+    if (count_nodes)
+        printf(", %ld nodes", node_count[depth-1]);
+    printf("\n");
+
+    // Cleanup
+    free_amplitude_table();
+    sylvan_quit();
+    lace_exit();
 
     return 0;
 }
@@ -453,6 +529,7 @@ int main()
     //bench_25qubit_circuit(8);
     //bench_25qubit_circuit(16);
 
+    /*
     int n = 22;
     bool flag[n];
     srand(time(NULL));
@@ -460,6 +537,20 @@ int main()
     bench_grover(n, flag, 1);
     bench_grover(n, flag, 8);
     bench_grover(n, flag, 16);
+    */
+
+    /*
+    int depth = 500;
+    bench_supremacy_5_1(depth, 1);
+    bench_supremacy_5_1(depth, 8);
+    bench_supremacy_5_1(depth, 16);
+    */
+
+    int depth = 20;
+    bench_supremacy_5_4(depth, 1);
+    bench_supremacy_5_4(depth, 8);
+    bench_supremacy_5_4(depth, 16);
+
 
     return 0;
 }
