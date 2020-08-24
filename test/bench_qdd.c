@@ -225,6 +225,41 @@ int bench_grover(int num_qubits, bool flag[], int workers)
     return 0;
 }
 
+int bench_shor(uint64_t N, uint64_t a, int workers, int rand_seed)
+{
+    uint32_t num_qubits = (int)ceil(log2(N))*2 + 3;
+    printf("bench shor, factor %ld (%d qubits), %2d worker(s), ", N, num_qubits, workers); 
+    fflush(stdout);
+
+    double t_start, t_end, runtime;
+    t_start = wctime();
+
+    // Init Lace
+    lace_init(workers, 0);
+    lace_startup(0, NULL, NULL);
+    LACE_ME;
+
+    // Init Sylvan
+    sylvan_set_limits(4LL<<30, 1, 6);
+    sylvan_init_package();
+    sylvan_init_qdd(1LL<<19);
+    //sylvan_gc_disable(); // issue with gc, maybe "marked" flag location MTBBD vs QDD
+
+    srand(rand_seed);
+    uint64_t fac = run_shor(N, a, false);
+
+    t_end = wctime();
+    runtime = (t_end - t_start);
+
+    printf("found factor %ld, %lf sec\n", fac, runtime);
+
+    // Cleanup
+    free_amplitude_table();
+    sylvan_quit();
+    lace_exit();
+    return 0;
+}
+
 uint32_t random_sqrtXY()
 {
     return ( rand() % 2 ) ? GATEID_sqrtX : GATEID_sqrtY;
@@ -539,6 +574,17 @@ int main()
     bench_grover(n, flag, 16);
     */
 
+    //   3 x   5 =     15 (11 qubits)
+    //   7 x  11 =     77 (17 qubits)
+    //  17 x  29 =    493 (21 qubits)
+    //  47 x  59 =   2773 (27 qubits)
+    // 701 x 809 = 567109 (43 qubits)
+    uint64_t N = 77;
+    int rand_seed = time(NULL);
+    bench_shor(N, 0, 1,  rand_seed);
+    bench_shor(N, 0, 8,  rand_seed);
+    bench_shor(N, 0, 16, rand_seed);
+
     /*
     int depth = 500;
     bench_supremacy_5_1(depth, 1);
@@ -546,10 +592,12 @@ int main()
     bench_supremacy_5_1(depth, 16);
     */
 
+    /*
     int depth = 20;
     bench_supremacy_5_4(depth, 1);
     bench_supremacy_5_4(depth, 8);
     bench_supremacy_5_4(depth, 16);
+    */
 
 
     return 0;

@@ -1422,6 +1422,7 @@ shor_period_finding(uint64_t a, uint64_t N)
     x[shor_wires.ctrl_last] = 1; // set the input reg. to |0...001> = |1>
 
     QDD qdd = qdd_create_basis_state(num_qubits, x);
+    QDD qdds[1];
 
     uint64_t as[2*shor_n];
     as[2*shor_n-1] = a;
@@ -1468,6 +1469,13 @@ shor_period_finding(uint64_t a, uint64_t N)
         if (m_outcome == 1) qdd = qdd_gate(qdd, GATEID_X, shor_wires.top);
         qddnode_t node = QDD_GETNODE(QDD_PTR(qdd));
         assert(qddnode_gethigh(node) == QDD_TERMINAL);
+        
+
+        // gc amp table
+        qdds[0] = qdd;
+        clean_amplitude_table(qdds, 1);
+        //printf("i = %2d, amps = %ld\n", i, count_amplitude_table_enries());
+        qdd = qdds[0];
     }
 
     // turn measurement outcomes into an integer
