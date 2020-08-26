@@ -1679,34 +1679,20 @@ qdd_measure_q0(QDD qdd, BDDVAR nvars, int *m, double *p)
 
     // get probabilities for q0 = |0> and q0 = |1>
     double prob_low, prob_high, prob_root;
-    qddnode_t node;
-    bool skipped = false;
-    if (QDD_PTR(qdd) == QDD_TERMINAL) {
-        skipped = true;
-    }
-    else {
-        node = QDD_GETNODE(QDD_PTR(qdd));
-        if (qddnode_getvar(node) != 0) {
-            skipped = true;
-        }
-    }
+
     QDD low, high;
-    if (skipped) {
-        // if skipped q0 is a don't care, treat separately?
-        low  = qdd_bundle_ptr_amp(QDD_PTR(qdd), C_ONE);
-        high = qdd_bundle_ptr_amp(QDD_PTR(qdd), C_ONE);
-    }
-    else {
-        low  = qddnode_getlow(node);
-        high = qddnode_gethigh(node);
-    }
+    BDDVAR var;
+    qdd_get_topvar(qdd, 0, &var, &low, &high);
+
+    assert(qdd_is_unitvector(qdd, nvars));
+
     prob_low  = qdd_unnormed_prob(low,  1, nvars);
     prob_high = qdd_unnormed_prob(high, 1, nvars);
     prob_root = _prob(QDD_AMP(qdd));
     prob_low  *= prob_root;
     prob_high *= prob_root;
     if (fabs(prob_low + prob_high - 1.0) > TOLERANCE) {
-        printf("prob sum = %.5lf\n", prob_low + prob_high);
+        printf("prob sum = %.5lf (%.5lf + %.5lf)\n", prob_low + prob_high, prob_low, prob_high);
         assert("probabilities don't sum to 1" && false);
     }
 
@@ -1822,35 +1808,16 @@ TASK_IMPL_3(double, qdd_unnormed_prob, QDD, qdd, BDDVAR, topvar, BDDVAR, nvars)
     }
 
     // Check if the node we want is being skipped
-    bool skipped = false;
-    qddnode_t node;
-    if (QDD_PTR(qdd) == QDD_TERMINAL) skipped = true;
-    else {
-        node = QDD_GETNODE(QDD_PTR(qdd));
-        BDDVAR var = qddnode_getvar(node);
-        assert (var >= topvar);
-        if (var > topvar) skipped = true;
-    }
-
-    // get low and high
+    BDDVAR var;
     QDD low, high;
-    if (skipped) {
-        low  = qdd_bundle_ptr_amp(QDD_PTR(qdd), C_ONE);
-        high = qdd_bundle_ptr_amp(QDD_PTR(qdd), C_ONE);
-    }
-    else {
-        low  = qddnode_getlow(node);
-        high = qddnode_gethigh(node);
-    }
+    qdd_get_topvar(qdd, topvar, &var, &low, &high);
 
     double prob_low, prob_high, prob_root, prob_res; // "prob" = absolute amps squared
     BDDVAR nextvar = topvar + 1;
 
-    // the results are not q/bdds, so no need to protect from gc, the tasks 
-    // do take q/bdds
-    bdd_refs_spawn(SPAWN(qdd_unnormed_prob, high, nextvar, nvars));
+    SPAWN(qdd_unnormed_prob, high, nextvar, nvars);
     prob_low  = CALL(qdd_unnormed_prob, low, nextvar, nvars);
-    prob_high = bdd_refs_sync(SYNC(qdd_unnormed_prob));
+    prob_high = SYNC(qdd_unnormed_prob);
     prob_root = _prob(QDD_AMP(qdd));
     prob_res  = prob_root * (prob_low + prob_high);
 
