@@ -395,8 +395,10 @@ QDD qdd_remove_global_phase(QDD qdd);
 bool qdd_equivalent(QDD a, QDD b, int n, bool exact, bool verbose);
 
 /**
- * Brute force sanity check to verify a given QDD encodes a unit vector.
+ * Brute force sanity check to verify a given QDD encodes (something close to) 
+ * a unit vector.
  */
+bool qdd_is_close_to_unitvector(QDD qdd, BDDVAR n, double tol);
 bool qdd_is_unitvector(QDD qdd, BDDVAR n);
 
 // counts the nodes by recursively marking them (and unmarks when done)

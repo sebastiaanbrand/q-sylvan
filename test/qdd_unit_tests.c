@@ -1183,18 +1183,23 @@ int test_QFT()
 
 int test_grover()
 {
+    BDDVAR nqubits;
     AMP a;
     QDD grov;
 
+    // 2 qubit test
+    nqubits = 2;
     bool x2[] = {0,1}; // "flagged" entry
-    grov = qdd_grover(2, x2);
+    grov = qdd_grover(nqubits, x2);
     x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(grov, x2); test_assert(a == C_ZERO);
     x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(grov, x2); test_assert(a == C_ZERO);
     x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(grov, x2); test_assert(a == C_ONE);
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(grov, x2); test_assert(a == C_ZERO);
-    test_assert(qdd_is_unitvector(grov, 2));
+    test_assert(qdd_is_unitvector(grov, nqubits));
 
-    
+
+    // 3 qubit test
+    nqubits = 3;
     bool x3[] = {1,1,0}; // "flagged" entry
     grov = qdd_grover(3, x3);
     x3[2] = 0; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(grov, x3); test_assert(_prob(a) < 0.008);
@@ -1207,9 +1212,18 @@ int test_grover()
     x3[2] = 1; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(grov, x3); test_assert(_prob(a) < 0.008);
     test_assert(qdd_is_unitvector(grov, 3));
 
-    // TODO: bigger tests?
 
-    if(VERBOSE) printf("qdd Grover:               ok\n");
+    // 10 qubit test
+    nqubits = 10;
+    bool x10[nqubits];
+    srand(time(NULL));
+    for (BDDVAR i = 0; i < nqubits; i++) x10[i] = (bool)(rand() % 2);
+    grov = qdd_grover(nqubits, x10);
+    test_assert(qdd_is_close_to_unitvector(grov, nqubits, TOLERANCE*100));
+    a = qdd_get_amplitude(grov, x10);
+    double prob_flag = _prob(a);
+
+    if(VERBOSE) printf("qdd Grover:               ok (Pr(flag) for 10 qubits = %lf)\n", prob_flag);
     return 0;
 }
 

@@ -1706,7 +1706,7 @@ qdd_measure_q0(QDD qdd, BDDVAR nvars, int *m, double *p)
     prob_low  *= prob_root;
     prob_high *= prob_root;
     if (fabs(prob_low + prob_high - 1.0) > TOLERANCE) {
-        //printf("prob sum = %.5lf\n", prob_low + prob_high);
+        printf("prob sum = %.5lf\n", prob_low + prob_high);
         assert("probabilities don't sum to 1" && false);
     }
 
@@ -2119,7 +2119,7 @@ qdd_equivalent(QDD a, QDD b, int n, bool exact, bool verbose)
 }
 
 bool
-qdd_is_unitvector(QDD qdd, BDDVAR n)
+qdd_is_close_to_unitvector(QDD qdd, BDDVAR n, double tol)
 {
     bool WRITE_TO_FILE = false;
     bool has_next = true;
@@ -2134,7 +2134,7 @@ qdd_is_unitvector(QDD qdd, BDDVAR n)
         has_next = _next_bitstring(x, n);
     }
 
-    if (fabs(sum_abs_squares - 1.0) < TOLERANCE*10) {
+    if (fabs(sum_abs_squares - 1.0) < tol) {
         if (WRITE_TO_FILE) {
             FILE *fp;
             fp = fopen("is_unitvector_true.dot", "w");
@@ -2144,6 +2144,7 @@ qdd_is_unitvector(QDD qdd, BDDVAR n)
         return true;
     }
     else {
+        //printf("probs sum to %.30lf\n", sum_abs_squares);
         if (WRITE_TO_FILE) {
             FILE *fp;
             fp = fopen("is_unitvector_false.dot", "w");
@@ -2152,6 +2153,12 @@ qdd_is_unitvector(QDD qdd, BDDVAR n)
         }
         return false;
     }
+}
+
+bool
+qdd_is_unitvector(QDD qdd, BDDVAR n)
+{
+    return qdd_is_close_to_unitvector(qdd, n, TOLERANCE*10);
 }
 
 bool
