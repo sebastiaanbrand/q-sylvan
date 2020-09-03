@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <sylvan_refs.h>
 #include "sylvan_qdd_int.h"
 
 //static int granularity = 1; // default
@@ -33,14 +34,6 @@
 // - sylvan_qdd_int.h
 // - sylvan_qdd_int.c
 // consistent with for example the equivalent mtbdd files.
-
-
-void
-sylvan_init_qdd(size_t amptable_size)
-{
-    sylvan_init_mtbdd();
-    init_amplitude_table(amptable_size);
-}
 
 
 /****************< (bit level) manipulation of QDD / qddnode_t >***************/
@@ -226,7 +219,6 @@ qdd_bundle_ptr_amp(PTR p, AMP a)
     return (a << 40 | p);
 }
 
-
 static inline QDD
 qdd_bundle_low(BDDVAR var, PTR p, AMP a)
 {
@@ -236,7 +228,6 @@ qdd_bundle_low(BDDVAR var, PTR p, AMP a)
     uint64_t masked_var = ((uint64_t)var << 59) & qdd_halfvar_maks;
     return (masked_var | q);
 }
-
 
 static inline QDD
 qdd_bundle_high(BDDVAR var, PTR p, AMP a)
@@ -248,7 +239,6 @@ qdd_bundle_high(BDDVAR var, PTR p, AMP a)
     return (masked_var | q);
 }
 
-
 static inline void
 qdd_packnode(qddnode_t n, BDDVAR var, PTR low, PTR high, AMP a, AMP b)
 {
@@ -256,9 +246,291 @@ qdd_packnode(qddnode_t n, BDDVAR var, PTR low, PTR high, AMP a, AMP b)
     n->high = qdd_bundle_high(var, high, b);
 }
 
-
 /***************</ (bit level) manipulation of QDD / qddnode_t >***************/
 
+
+
+/*******************<garbage collection, references, marking>******************/
+
+/**
+ * Most of this gc code is copy-paste from sylvan_mtbdd.c, however because the 
+ * bit structure of BDDs and QDDs are a bit different we can't use the mtbdd
+ * code directly. Since the way sylvan_mtbdd/sylvan_common/sylvan_table are
+ * structured we need to copy-paste a few more functions/variables than we 
+ * actually change.
+ */
+
+/* 
+ * Recursively mark QDD nodes as 'in use'.
+ * This is really the only gc function which is different for QDDs vs MTBDDs.
+ */
+VOID_TASK_IMPL_1(qdd_gc_mark_rec, QDD, qdd)
+{
+    if (QDD_PTR(qdd) == QDD_TERMINAL) return;
+
+    if (llmsset_mark(nodes, QDD_PTR(qdd))) {
+        qddnode_t n = QDD_GETNODE(QDD_PTR(qdd));
+        SPAWN(qdd_gc_mark_rec, qddnode_getlow(n));
+        CALL(qdd_gc_mark_rec, qddnode_gethigh(n));
+        SYNC(qdd_gc_mark_rec);
+    }
+}
+
+/**
+ * External references
+ */
+refs_table_t qdd_refs;
+refs_table_t qdd_protected;
+static int qdd_protected_created = 0;
+
+/* Called during garbage collection */
+VOID_TASK_0(qdd_gc_mark_external_refs)
+{
+    // iterate through refs hash table, mark all found
+    size_t count=0;
+    uint64_t *it = refs_iter(&qdd_refs, 0, qdd_refs.refs_size);
+    while (it != NULL) {
+        SPAWN(qdd_gc_mark_rec, refs_next(&qdd_refs, &it, qdd_refs.refs_size));
+        count++;
+    }
+    while (count--) {
+        SYNC(qdd_gc_mark_rec);
+    }
+}
+
+/* Called during garbage collection */
+VOID_TASK_0(qdd_gc_mark_protected)
+{
+    // iterate through refs hash table, mark all found
+    size_t count=0;
+    uint64_t *it = protect_iter(&qdd_protected, 0, qdd_protected.refs_size);
+    while (it != NULL) {
+        QDD *to_mark = (QDD*)protect_next(&qdd_protected, &it, qdd_protected.refs_size);
+        SPAWN(qdd_gc_mark_rec, *to_mark);
+        count++;
+    }
+    while (count--) {
+        SYNC(qdd_gc_mark_rec);
+    }
+}
+
+/* Infrastructure for internal markings */
+typedef struct qdd_refs_task
+{
+    Task *t;
+    void *f;
+} *qdd_refs_task_t;
+
+typedef struct qdd_refs_internal
+{
+    const QDD **pbegin, **pend, **pcur;
+    QDD *rbegin, *rend, *rcur;
+    qdd_refs_task_t sbegin, send, scur;
+} *qdd_refs_internal_t;
+
+DECLARE_THREAD_LOCAL(qdd_refs_key, qdd_refs_internal_t);
+
+VOID_TASK_2(qdd_refs_mark_p_par, const QDD**, begin, size_t, count)
+{
+    if (count < 32) {
+        while (count) {
+            qdd_gc_mark_rec(**(begin++));
+            count--;
+        }
+    } else {
+        SPAWN(qdd_refs_mark_p_par, begin, count / 2);
+        CALL(qdd_refs_mark_p_par, begin + (count / 2), count - count / 2);
+        SYNC(qdd_refs_mark_p_par);
+    }
+}
+
+VOID_TASK_2(qdd_refs_mark_r_par, QDD*, begin, size_t, count)
+{
+    if (count < 32) {
+        while (count) {
+            qdd_gc_mark_rec(*begin++);
+            count--;
+        }
+    } else {
+        SPAWN(qdd_refs_mark_r_par, begin, count / 2);
+        CALL(qdd_refs_mark_r_par, begin + (count / 2), count - count / 2);
+        SYNC(qdd_refs_mark_r_par);
+    }
+}
+
+VOID_TASK_2(qdd_refs_mark_s_par, qdd_refs_task_t, begin, size_t, count)
+{
+    if (count < 32) {
+        while (count > 0) {
+            Task *t = begin->t;
+            if (!TASK_IS_STOLEN(t)) return;
+            if (t->f == begin->f && TASK_IS_COMPLETED(t)) {
+                qdd_gc_mark_rec(*(QDD*)TASK_RESULT(t));
+            }
+            begin += 1;
+            count -= 1;
+        }
+    } else {
+        if (!TASK_IS_STOLEN(begin->t)) return;
+        SPAWN(qdd_refs_mark_s_par, begin, count / 2);
+        CALL(qdd_refs_mark_s_par, begin + (count / 2), count - count / 2);
+        SYNC(qdd_refs_mark_s_par);
+    }
+}
+
+VOID_TASK_0(qdd_refs_mark_task)
+{
+    LOCALIZE_THREAD_LOCAL(qdd_refs_key, qdd_refs_internal_t);
+    SPAWN(qdd_refs_mark_p_par, qdd_refs_key->pbegin, qdd_refs_key->pcur-qdd_refs_key->pbegin);
+    SPAWN(qdd_refs_mark_r_par, qdd_refs_key->rbegin, qdd_refs_key->rcur-qdd_refs_key->rbegin);
+    CALL(qdd_refs_mark_s_par, qdd_refs_key->sbegin, qdd_refs_key->scur-qdd_refs_key->sbegin);
+    SYNC(qdd_refs_mark_r_par);
+    SYNC(qdd_refs_mark_p_par);
+}
+
+/* Called during garbage collection */
+VOID_TASK_0(qdd_refs_mark)
+{
+    TOGETHER(qdd_refs_mark_task);
+}
+
+VOID_TASK_0(qdd_refs_init_task)
+{
+    qdd_refs_internal_t s = (qdd_refs_internal_t)malloc(sizeof(struct qdd_refs_internal));
+    s->pcur = s->pbegin = (const QDD**)malloc(sizeof(QDD*) * 1024);
+    s->pend = s->pbegin + 1024;
+    s->rcur = s->rbegin = (QDD*)malloc(sizeof(QDD) * 1024);
+    s->rend = s->rbegin + 1024;
+    s->scur = s->sbegin = (qdd_refs_task_t)malloc(sizeof(struct qdd_refs_task) * 1024);
+    s->send = s->sbegin + 1024;
+    SET_THREAD_LOCAL(qdd_refs_key, s);
+}
+
+VOID_TASK_0(qdd_refs_init)
+{
+    INIT_THREAD_LOCAL(qdd_refs_key);
+    TOGETHER(qdd_refs_init_task);
+    sylvan_gc_add_mark(TASK(qdd_refs_mark));
+}
+
+/**
+ * Initialize and quit functions
+ */
+static int qdd_initialized = 0;
+
+static void
+qdd_quit()
+{
+    refs_free(&qdd_refs);
+    if (qdd_protected_created) {
+        protect_free(&qdd_protected);
+        qdd_protected_created = 0;
+    }
+    qdd_initialized = 0;
+}
+
+
+void
+sylvan_init_qdd(size_t amptable_size)
+{
+    if (qdd_initialized) return;
+    qdd_initialized = 1;
+
+    sylvan_register_quit(qdd_quit);
+    sylvan_gc_add_mark(TASK(qdd_gc_mark_external_refs));
+    sylvan_gc_add_mark(TASK(qdd_gc_mark_protected));
+
+    refs_create(&qdd_refs, 1024);
+    if (!qdd_protected_created) {
+        protect_create(&qdd_protected, 4096);
+        qdd_protected_created = 1;
+    }
+
+    init_amplitude_table(amptable_size);
+
+    LACE_ME;
+    CALL(qdd_refs_init);
+}
+
+void
+qdd_refs_ptrs_up(qdd_refs_internal_t qdd_refs_key)
+{
+    size_t cur = qdd_refs_key->pcur - qdd_refs_key->pbegin;
+    size_t size = qdd_refs_key->pend - qdd_refs_key->pbegin;
+    qdd_refs_key->pbegin = (const QDD**)realloc(qdd_refs_key->pbegin, sizeof(QDD*) * size * 2);
+    qdd_refs_key->pcur = qdd_refs_key->pbegin + cur;
+    qdd_refs_key->pend = qdd_refs_key->pbegin + (size * 2);
+}
+
+QDD __attribute__((noinline))
+qdd_refs_refs_up(qdd_refs_internal_t qdd_refs_key, QDD res)
+{
+    long size = qdd_refs_key->rend - qdd_refs_key->rbegin;
+    qdd_refs_key->rbegin = (QDD*)realloc(qdd_refs_key->rbegin, sizeof(QDD) * size * 2);
+    qdd_refs_key->rcur = qdd_refs_key->rbegin + size;
+    qdd_refs_key->rend = qdd_refs_key->rbegin + (size * 2);
+    return res;
+}
+
+void __attribute__((noinline))
+qdd_refs_tasks_up(qdd_refs_internal_t qdd_refs_key)
+{
+    long size = qdd_refs_key->send - qdd_refs_key->sbegin;
+    qdd_refs_key->sbegin = (qdd_refs_task_t)realloc(qdd_refs_key->sbegin, sizeof(struct qdd_refs_task) * size * 2);
+    qdd_refs_key->scur = qdd_refs_key->sbegin + size;
+    qdd_refs_key->send = qdd_refs_key->sbegin + (size * 2);
+}
+
+void __attribute__((unused))
+qdd_refs_pushptr(const QDD *ptr)
+{
+    LOCALIZE_THREAD_LOCAL(qdd_refs_key, qdd_refs_internal_t);
+    *qdd_refs_key->pcur++ = ptr;
+    if (qdd_refs_key->pcur == qdd_refs_key->pend) qdd_refs_ptrs_up(qdd_refs_key);
+}
+
+void __attribute__((unused))
+qdd_refs_popptr(size_t amount)
+{
+    LOCALIZE_THREAD_LOCAL(qdd_refs_key, qdd_refs_internal_t);
+    qdd_refs_key->pcur -= amount;
+}
+
+QDD __attribute__((unused))
+qdd_refs_push(QDD qdd)
+{
+    LOCALIZE_THREAD_LOCAL(qdd_refs_key, qdd_refs_internal_t);
+    *(qdd_refs_key->rcur++) = qdd;
+    if (qdd_refs_key->rcur == qdd_refs_key->rend) return qdd_refs_refs_up(qdd_refs_key, qdd);
+    else return qdd;
+}
+
+void __attribute__((unused))
+qdd_refs_pop(long amount)
+{
+    LOCALIZE_THREAD_LOCAL(qdd_refs_key, qdd_refs_internal_t);
+    qdd_refs_key->rcur -= amount;
+}
+
+void
+qdd_refs_spawn(Task *t)
+{
+    LOCALIZE_THREAD_LOCAL(qdd_refs_key, qdd_refs_internal_t);
+    qdd_refs_key->scur->t = t;
+    qdd_refs_key->scur->f = t->f;
+    qdd_refs_key->scur += 1;
+    if (qdd_refs_key->scur == qdd_refs_key->send) qdd_refs_tasks_up(qdd_refs_key);
+}
+
+QDD
+qdd_refs_sync(QDD result)
+{
+    LOCALIZE_THREAD_LOCAL(qdd_refs_key, qdd_refs_internal_t);
+    qdd_refs_key->scur -= 1;
+    return result;
+}
+
+/******************</garbage collection, references, marking>******************/
 
 static void
 qdd_get_topvar(QDD qdd, BDDVAR t, BDDVAR *topvar, QDD *low, QDD *high)
@@ -309,10 +581,10 @@ _qdd_makenode(BDDVAR var, PTR low, PTR high, AMP a, AMP b)
     if (index == 0) {
         LACE_ME;
 
-        mtbdd_refs_push(n.low);
-        mtbdd_refs_push(n.high);
+        qdd_refs_push(low);
+        qdd_refs_push(high);
         sylvan_gc();
-        mtbdd_refs_pop(2);
+        qdd_refs_pop(2);
 
         index = llmsset_lookup(nodes, n.low, n.high, &created);
         if (index == 0) {
@@ -476,11 +748,11 @@ TASK_IMPL_1(QDD, _fill_new_amp_table, QDD, qdd)
     // Recursive for children
     QDD low, high;
     qddnode_t n = QDD_GETNODE(QDD_PTR(qdd));
-    bdd_refs_spawn(SPAWN(_fill_new_amp_table, qddnode_gethigh(n)));
+    qdd_refs_spawn(SPAWN(_fill_new_amp_table, qddnode_gethigh(n)));
     low = CALL(_fill_new_amp_table, qddnode_getlow(n));
-    bdd_refs_push(low);
-    high = bdd_refs_sync(SYNC(_fill_new_amp_table));
-    bdd_refs_pop(1);
+    qdd_refs_push(low);
+    high = qdd_refs_sync(SYNC(_fill_new_amp_table));
+    qdd_refs_pop(1);
 
     // We don't need to use the 'qdd_makenode()' function which normalizes the 
     // amplitudes, because the QDD doesn't actually change, only the AMP indices,
@@ -566,11 +838,11 @@ TASK_IMPL_2(QDD, qdd_plus, QDD, a, QDD, b)
 
     // Recursive calls down
     QDD low, high;
-    bdd_refs_spawn(SPAWN(qdd_plus, high_a, high_b));
+    qdd_refs_spawn(SPAWN(qdd_plus, high_a, high_b));
     low = CALL(qdd_plus, low_a, low_b);
-    bdd_refs_push(low);
-    high = bdd_refs_sync(SYNC(qdd_plus));
-    bdd_refs_pop(1);
+    qdd_refs_push(low);
+    high = qdd_refs_sync(SYNC(qdd_plus));
+    qdd_refs_pop(1);
 
     // Put in cache, return
     res = qdd_makenode(topvar, low, high);
@@ -610,11 +882,11 @@ TASK_IMPL_3(QDD, qdd_gate, QDD, q, uint32_t, gate, BDDVAR, target)
         res = qdd_plus(qdd1, qdd2);
     }
     else { // var < target: not at target qubit yet, recursive calls down
-        bdd_refs_spawn(SPAWN(qdd_gate, high, gate, target));
+        qdd_refs_spawn(SPAWN(qdd_gate, high, gate, target));
         low = CALL(qdd_gate, low, gate, target);
-        bdd_refs_push(low);
-        high = bdd_refs_sync(SYNC(qdd_gate));
-        bdd_refs_pop(1);
+        qdd_refs_push(low);
+        high = qdd_refs_sync(SYNC(qdd_gate));
+        qdd_refs_pop(1);
         res  = qdd_makenode(var, low, high);
     }
 
@@ -651,11 +923,11 @@ TASK_IMPL_4(QDD, qdd_cgate, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t)
         high = qdd_gate(high, gate, t);
     }
     else { // not at target qubit yet, recursive calls down
-        bdd_refs_spawn(SPAWN(qdd_cgate, high, gate, c, t));
+        qdd_refs_spawn(SPAWN(qdd_cgate, high, gate, c, t));
         low = CALL(qdd_cgate, low, gate, c, t);
-        bdd_refs_push(low);
-        high = bdd_refs_sync(SYNC(qdd_cgate));
-        bdd_refs_pop(1);
+        qdd_refs_push(low);
+        high = qdd_refs_sync(SYNC(qdd_cgate));
+        qdd_refs_pop(1);
     }
     res  = qdd_makenode(var, low, high);
 
@@ -722,15 +994,15 @@ TASK_IMPL_4(QDD, qdd_matvec_mult, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR, nex
     // |u10 u11| |vec_high|          |u10|           |u11|
     QDD res_low00, res_low10, res_high01, res_high11;
     nextvar++;
-    bdd_refs_spawn(SPAWN(qdd_matvec_mult, u00, vec_low,  nvars, nextvar)); // 1
-    bdd_refs_spawn(SPAWN(qdd_matvec_mult, u10, vec_low,  nvars, nextvar)); // 2
-    bdd_refs_spawn(SPAWN(qdd_matvec_mult, u01, vec_high, nvars, nextvar)); // 3
+    qdd_refs_spawn(SPAWN(qdd_matvec_mult, u00, vec_low,  nvars, nextvar)); // 1
+    qdd_refs_spawn(SPAWN(qdd_matvec_mult, u10, vec_low,  nvars, nextvar)); // 2
+    qdd_refs_spawn(SPAWN(qdd_matvec_mult, u01, vec_high, nvars, nextvar)); // 3
     res_high11 = CALL(qdd_matvec_mult, u11, vec_high, nvars, nextvar);
-    bdd_refs_push(res_high11);
-    res_high01 = bdd_refs_sync(SYNC(qdd_matvec_mult)); // 3
-    res_low10  = bdd_refs_sync(SYNC(qdd_matvec_mult)); // 2
-    res_low00  = bdd_refs_sync(SYNC(qdd_matvec_mult)); // 1
-    bdd_refs_pop(1);
+    qdd_refs_push(res_high11);
+    res_high01 = qdd_refs_sync(SYNC(qdd_matvec_mult)); // 3
+    res_low10  = qdd_refs_sync(SYNC(qdd_matvec_mult)); // 2
+    res_low00  = qdd_refs_sync(SYNC(qdd_matvec_mult)); // 1
+    qdd_refs_pop(1);
     nextvar--;
 
     // 4. gather results of multiplication
@@ -809,23 +1081,23 @@ TASK_IMPL_4(QDD, qdd_matmat_mult, QDD, a, QDD, b, BDDVAR, nvars, BDDVAR, nextvar
     // |a10 a11| |b10 b11|      |a10|      |a11|      |a10|      |a11|
     QDD a00_b00, a00_b01, a10_b00, a10_b01, a01_b10, a01_b11, a11_b10, a11_b11;
     nextvar++;
-    bdd_refs_spawn(SPAWN(qdd_matmat_mult, a00, b00, nvars, nextvar)); // 1
-    bdd_refs_spawn(SPAWN(qdd_matmat_mult, a00, b01, nvars, nextvar)); // 2
-    bdd_refs_spawn(SPAWN(qdd_matmat_mult, a10, b00, nvars, nextvar)); // 3
-    bdd_refs_spawn(SPAWN(qdd_matmat_mult, a10, b01, nvars, nextvar)); // 4
-    bdd_refs_spawn(SPAWN(qdd_matmat_mult, a01, b10, nvars, nextvar)); // 5
-    bdd_refs_spawn(SPAWN(qdd_matmat_mult, a01, b11, nvars, nextvar)); // 6
-    bdd_refs_spawn(SPAWN(qdd_matmat_mult, a11, b10, nvars, nextvar)); // 7
+    qdd_refs_spawn(SPAWN(qdd_matmat_mult, a00, b00, nvars, nextvar)); // 1
+    qdd_refs_spawn(SPAWN(qdd_matmat_mult, a00, b01, nvars, nextvar)); // 2
+    qdd_refs_spawn(SPAWN(qdd_matmat_mult, a10, b00, nvars, nextvar)); // 3
+    qdd_refs_spawn(SPAWN(qdd_matmat_mult, a10, b01, nvars, nextvar)); // 4
+    qdd_refs_spawn(SPAWN(qdd_matmat_mult, a01, b10, nvars, nextvar)); // 5
+    qdd_refs_spawn(SPAWN(qdd_matmat_mult, a01, b11, nvars, nextvar)); // 6
+    qdd_refs_spawn(SPAWN(qdd_matmat_mult, a11, b10, nvars, nextvar)); // 7
     a11_b11 = CALL(qdd_matmat_mult, a11, b11, nvars, nextvar);
-    bdd_refs_push(a11_b11);
-    a11_b10 = bdd_refs_sync(SYNC(qdd_matmat_mult)); // 7
-    a01_b11 = bdd_refs_sync(SYNC(qdd_matmat_mult)); // 6
-    a01_b10 = bdd_refs_sync(SYNC(qdd_matmat_mult)); // 5
-    a10_b01 = bdd_refs_sync(SYNC(qdd_matmat_mult)); // 4
-    a10_b00 = bdd_refs_sync(SYNC(qdd_matmat_mult)); // 3
-    a00_b01 = bdd_refs_sync(SYNC(qdd_matmat_mult)); // 2
-    a00_b00 = bdd_refs_sync(SYNC(qdd_matmat_mult)); // 1
-    bdd_refs_pop(1);
+    qdd_refs_push(a11_b11);
+    a11_b10 = qdd_refs_sync(SYNC(qdd_matmat_mult)); // 7
+    a01_b11 = qdd_refs_sync(SYNC(qdd_matmat_mult)); // 6
+    a01_b10 = qdd_refs_sync(SYNC(qdd_matmat_mult)); // 5
+    a10_b01 = qdd_refs_sync(SYNC(qdd_matmat_mult)); // 4
+    a10_b00 = qdd_refs_sync(SYNC(qdd_matmat_mult)); // 3
+    a00_b01 = qdd_refs_sync(SYNC(qdd_matmat_mult)); // 2
+    a00_b00 = qdd_refs_sync(SYNC(qdd_matmat_mult)); // 1
+    qdd_refs_pop(1);
     nextvar--;
 
     // 4. gather results of multiplication
@@ -837,11 +1109,11 @@ TASK_IMPL_4(QDD, qdd_matmat_mult, QDD, a, QDD, b, BDDVAR, nvars, BDDVAR, nextvar
 
     // 5. add resulting qdds TODO: SPAWN tasks
     QDD lh, rh;
-    bdd_refs_spawn(SPAWN(qdd_plus, lh1, lh2));
+    qdd_refs_spawn(SPAWN(qdd_plus, lh1, lh2));
     rh = CALL(qdd_plus, rh1, rh2);
-    bdd_refs_push(rh);
-    lh = bdd_refs_sync(SYNC(qdd_plus));
-    bdd_refs_pop(1);
+    qdd_refs_push(rh);
+    lh = qdd_refs_sync(SYNC(qdd_plus));
+    qdd_refs_pop(1);
 
     // 6. put left and right halves of matix together
     res = qdd_makenode(2*nextvar, lh, rh);
@@ -1022,11 +1294,11 @@ TASK_IMPL_6(QDD, qdd_ccircuit, QDD, qdd, uint32_t, circ_id, BDDVAR*, cs, uint32_
         }
         else {
             // recursive call to both children
-            bdd_refs_spawn(SPAWN(qdd_ccircuit, high, circ_id, cs, ci, t1, t2));
+            qdd_refs_spawn(SPAWN(qdd_ccircuit, high, circ_id, cs, ci, t1, t2));
             low = CALL(qdd_ccircuit, low, circ_id, cs, ci, t1, t2);
-            bdd_refs_push(low);
-            high = bdd_refs_sync(SYNC(qdd_ccircuit));
-            bdd_refs_pop(1);
+            qdd_refs_push(low);
+            high = qdd_refs_sync(SYNC(qdd_ccircuit));
+            qdd_refs_pop(1);
         }
         res = qdd_makenode(var, low, high);
         // Multiply root amp of sum with input root amp 
@@ -1159,16 +1431,6 @@ qdd_grover(BDDVAR n, bool* flag)
     for (uint32_t i = 1; i <= R; i++) {
         qdd = _qdd_grover_iteration(qdd, n, flag);
 
-        // temp workaround for gc issue
-        if (i % 100 == 0) {
-            uint64_t num_amps = count_amplitude_table_enries();
-            printf("%4d num amps = %ld\n", i, num_amps);
-            printf("manually trigger gc...\n");
-            mtbdd_refs_push(qdd);
-            sylvan_gc();
-            mtbdd_refs_pop(1);
-        }
-        
         // TODO: call clean_amp_table only when amp table is full
         if (i % 2 == 0){
             qdds[0] = qdd;

@@ -113,6 +113,48 @@ static const BDDVAR     QDD_INVALID_VAR = UINT8_MAX;
 void sylvan_init_qdd(size_t amptable_size);
 
 
+/*******************<garbage collection, references, marking>******************/
+
+VOID_TASK_DECL_1(qdd_gc_mark_rec, QDD);
+#define qdd_gc_mark_rec(qdd) CALL(qdd_gc_mark_rec, qdd)
+
+/**
+ * Push a QDD variable to the pointer reference stack.
+ * During gc the variable will be inspected and the contents will be marked.
+ */
+void qdd_refs_pushptr(const QDD *ptr);
+
+/**
+ * Pop the last <amount> QDD variables from the pointer reference stack.
+ */
+void qdd_refs_popptr(size_t amount);
+
+/**
+ * Push a QDD to the values reference stack.
+ * During garbage collection the references QDD will be marked.
+ */
+QDD qdd_refs_push(QDD qdd);
+
+/**
+ * Pop the last <amount> QDDs from the values reference stack.
+ */
+void qdd_refs_pop(long amount);
+
+/**
+ * Push a Task that returns a QDD to the tasks reference stack.
+ * Usage: qdd_refs_spawn(SPAWN(function, ...));
+ */
+void qdd_refs_spawn(Task *t);
+
+/**
+ * Pop a Task from the task reference stack.
+ * Usage: QDD result = qdd_refs_sync(SYNC(function));
+ */
+QDD qdd_refs_sync(QDD qdd);
+
+/******************</garbage collection, references, marking>******************/
+
+
 /*******************************<applying gates>*******************************/
 
 // Computes |a> + |b>

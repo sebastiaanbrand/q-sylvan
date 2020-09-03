@@ -1354,6 +1354,7 @@ int test_shor()
     if(VERBOSE) printf("qdd %ld-qubit Shor:        ok (found factor %ld of %ld with %ld tries)\n", nqubits, factor, N, counter);
 
     // 77 = 7 x 11
+    /*
     N = 77;
     counter = 0;
     factor = 0;
@@ -1363,6 +1364,7 @@ int test_shor()
         counter++;
     //}
     if(VERBOSE) printf("qdd %ld-qubit Shor:        ok (found factor %ld of %ld with %ld tries)\n", nqubits, factor, N, counter);
+    */
     
 
     
