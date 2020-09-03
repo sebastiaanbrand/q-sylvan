@@ -2165,7 +2165,7 @@ qdd_create_basis_state(BDDVAR n, bool* x)
 QDD
 qdd_stack_matrix(QDD below, BDDVAR k, uint32_t gateid)
 {
-    // This function is effectively does a Kronecker product
+    // This function effectively does a Kronecker product gate \tensor below
     BDDVAR s, t;
     QDD u00, u01, u10, u11, low, high, res;
 
