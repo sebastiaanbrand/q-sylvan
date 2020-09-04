@@ -135,251 +135,143 @@ Cvalue_old (AMP i)
     return *res;
 }
 
-// computes angle for polar coordinate representation of Cvalue(a)
-/*
-long double
-angle (AMP a)
-{
-    complex_t ca;
-    ca = Cvalue (a);
-    if (ca.i >= 0 - Ctol)
-        return (acos (ca.r / ca.m));
-    else return (2 * Pi - acos (ca.r / ca.m));
-} */
 
-/*
-AMP
-Cgt (AMP a, AMP b)
-// returns 1 if |a|>|b|
-// returns 0 if |b|>|a|
-// returns angle(a)<angle(b)
-// where angle is the angle in polar coordinate representation
-{
-    complex_t ca, cb;
-    if (a == b) return 0;
-    ca = Cvalue (a);
-    cb = Cvalue (b);
 
-    /// BETA: 121017
-    // returns the smaller nonzero value
-    if (a == 0) return (1);
-    if (b == 0) return (0);
-
-    //int c=a;
-    // a=b;
-    // b=c;
-
-    // BETA END 
-    if (ca.m > (cb.m + Ctol)) return (1);
-    if (cb.m > (ca.m + Ctol)) return (0);
-
-    //CHANGED by pN 120831
-    return ((ca.a + Ctol) < cb.a);
-    return (0);
-} */
-
-/*
-AMP
-Cgt_new (AMP a, AMP b)
-{
-    complex_t ca, cb;
-    if (a == b) return (0);
-    ca = Cvalue (a);
-    cb = Cvalue (b);
-    if ((ca.a + Ctol) < cb.a) return (1);
-    return (ca.m > (cb.m + Ctol));
-} */
-
-/*
-AMP
-Clt (AMP a, cAMPint b)
-// analogous to Cgt
-{
-    complex_t ca, cb;
-    if (a == b) return (0);
-    ca = Cvalue (a);
-    cb = Cvalue (b);
-    if (ca.m < (cb.m + Ctol)) return (1);
-    if (cb.m < (ca.m + Ctol)) return (0);
-    return ((angle (a) + Ctol) > angle (b));
-} */
-
-bool CexactEqual(complex_t a, complex_t b)
+bool comp_exact_equal(complex_t a, complex_t b)
 {
     return (a.r == b.r && a.i == b.i);
 }
 
-bool CapproxEqual(complex_t a, complex_t b)
+bool comp_approx_equal(complex_t a, complex_t b)
 {
-    return CepsilonClose(a, b, TOLERANCE);
+    return comp_epsilon_close(a, b, TOLERANCE);
 }
 
-bool CepsilonClose(complex_t a, complex_t b, double epsilon)
+bool comp_epsilon_close(complex_t a, complex_t b, double epsilon)
 {
     return ( (fabs(a.r - b.r) < epsilon) && (fabs(a.i - b.i) < epsilon) );
 }
 
 
-// basic operations on complex values
-// meanings are self-evident from the names
-// NOTE arguments are the indices to the values 
-// in the complex value table not the values themselves
+
+/* Arithmetic operations on AMPs */
 
 AMP
-Cnegative (AMP a)
+amp_neg(AMP a)
 {
-    complex_t c = Cvalue (a);
+    // special cases
+    if (a == C_ZERO) return C_ZERO;
+
+    complex_t c = Cvalue(a);
     c.r = -c.r;
     c.i = -c.i;
     return Clookup(c);
 }
 
 AMP
-Cadd (AMP ai, AMP bi)
+amp_add(AMP a, AMP b)
 {
-    complex_t a, b, r;
-    int t;
+    // special cases
+    if (a == C_ZERO) return b;
+    if (b == C_ZERO) return a;
 
-    if (ai == 0) return (bi); // identity cases
-    if (bi == 0) return (ai);
+    complex_t ca, cb, cr;
+    AMP res;
 
-    // TODO: dynamic programming
-//    if (0 <= (t = cta[ai][bi])) return t; // look in computation table
+    ca = Cvalue(a);
+    cb = Cvalue(b);
+    cr.r = ca.r + cb.r;
+    cr.i = ca.i + cb.i;
 
-    a = Cvalue (ai); // if new compute result
-    b = Cvalue (bi);
-    r.r = a.r + b.r;
-    r.i = a.i + b.i;
-
-    t = //cta[ai][bi] = cta[bi][ai] = ///TODO
-                    Clookup (r); // save result
-    return (t);
+    res = Clookup(cr);
+    return res;
 }
 
 AMP
-Csub (AMP ai, AMP bi)
+amp_sub(AMP a, AMP b)
 {
-    complex_t a, b, r;
-    int t;
+    // special cases
+    if (b == C_ZERO) return a;
+    if (a == C_ZERO) return amp_neg(b);
 
-    if (bi == 0) return (ai); // identity case
+    complex_t ca, cb, cr;
+    AMP res;
 
-    // TODO: dynamic programming
-    //if (0 <= (t = cts[ai][bi])) return t; // look in computation table
+    ca = Cvalue(a);
+    cb = Cvalue(b);
+    cr.r = ca.r - cb.r;
+    cr.i = ca.i - cb.i;
 
-    a = Cvalue (ai);  // if new compute result
-    b = Cvalue (bi);
-    r.r = a.r - b.r;
-    r.i = a.i - b.i;
-
-    t //= cts[ai][bi] // TODO
-       = Clookup (r); // save result
-    return t;
+    res = Clookup(cr);
+    return res;
 }
 
 AMP
-Cmul (AMP ai, AMP bi)
+amp_mul(AMP a, AMP b)
 {
-    complex_t a, b, r;
-    int t;
+    // special cases
+    if (a == C_ONE) return b;
+    if (b == C_ONE) return a;
+    if (a == C_ZERO || b == C_ZERO) return C_ZERO;
 
-    // What's best imo is to have these checks as optimization, but have the 
-    // code so that even without treating 0 and 1 as special cases it still
-    // runs correctly.
-    if (ai == C_ONE) return bi; // identity cases
-    if (bi == C_ONE) return ai;
-    if (ai == C_ZERO || bi == C_ZERO) return C_ZERO;
+    complex_t ca, cb, cr;
+    AMP res;
 
-    // TODO: dynamic programming
-    //if (0 <= (t = ctm[ai][bi])) return (t); // look in computation table
+    ca = Cvalue(a);
+    cb = Cvalue(b);
+    cr.r = ca.r * cb.r - ca.i * cb.i;
+    cr.i = ca.r * cb.i + ca.i * cb.r;
 
-    a = Cvalue (ai); // if new compute result
-    b = Cvalue (bi);
-    r.r = a.r * b.r - a.i * b.i;
-    r.i = a.r * b.i + a.i * b.r;
-
-    t //= ctm[ai][bi] = ctm[bi][ai] // TODO
-      = Clookup (r); // save result
-    return t;
+    res = Clookup(cr);
+    return res;
 }
 
 AMP
-CintMul (AMP a, AMP bi)
+amp_div(AMP a, AMP b)
 {
-    complex_t r = Cvalue (bi);
-    r.r *= a;
-    r.i *= a;
-    return Clookup(r);
-}
+    // special cases
+    if (a == b)      return C_ONE;
+    if (a == C_ZERO) return C_ZERO;
+    if (b == C_ONE)  return a;
 
-AMP
-Cdiv (AMP ai, AMP bi)
-{
-    complex_t a, b, r;
-    int t;
-    double d;
+    complex_t ca, cb, cr;
+    AMP res;
+    double denom;
 
-    if (ai == bi)     return C_ONE;
-    if (ai == C_ZERO) return C_ZERO;
-    if (bi == C_ONE)  return ai;
-
-    // TODO: dynamic programming
-    //if (0 <= (t = ctd[ai][bi])) return (t); // check computation table
-
-    a = Cvalue (ai); // if new compute result
-    b = Cvalue (bi);
-    if (b.i == 0.0) {
-        r.r = a.r / b.r;
-        r.i = a.i / b.r;
+    ca = Cvalue(a);
+    cb = Cvalue(b);
+    if (cb.i == 0.0) {
+        cr.r = ca.r / cb.r;
+        cr.i = ca.i / cb.r;
     } else {
-        d = b.r * b.r + b.i * b.i;
-        r.r = (a.r * b.r + a.i * b.i) / d;
-        r.i = (a.i * b.r - a.r * b.i) / d;
+        denom = cb.r * cb.r + cb.i * cb.i;
+        cr.r = (ca.r * cb.r + ca.i * cb.i) / denom;
+        cr.i = (ca.i * cb.r - ca.r * cb.i) / denom;
     }
-    t = ///ctd[ai][bi] = // TODO
-                    Clookup (r); // save result
-    return t;
+
+    res = Clookup(cr);
+    return res;
 }
 
-/// by PN: returns the absolut value of a complex number
-/*
 AMP
-CAbs (AMP a)
+amp_abs(AMP a)
 {
-    int b;
-    complex_t r, s;
+    // special cases
+    if (a == C_ZERO || a == C_ONE) return a;
 
-    if (a < 2) return a; // trivial cases 0/1
+    complex_t ca, cr;
+    AMP res;
 
-    s = Cvalue (a);
-    //printf("CAbs: "); Cprint(s); printf(" is ");
-    r.r = s.m;
-    r.i = 0;
-    b = Clookup (r);
-    //Cprint(r);   printf("\n");
-    return b;
-} */
+    ca = Cvalue(a);
+    cr.r = sqrt( (ca.r*ca.r) + (ca.i*ca.i) );
 
-///by PN: returns whether a complex number has norm 1
-/*
-AMP
-CUnit (AMP a)
-{
-    /// BETA 121017
-
-    if (a < 2) return a;
-
-    complex_t ca = Cvalue (a);
-
-    return !(ca.m < 1 - Ctol);
-} */
+    res = Clookup(cr);
+    return res;
+}
 
 
-// TODO: put in header
-//typedef complex_t qdd_matrix[2][2];
-
-//qdd_matrix Nm, Vm, VPm, Sm, Rm, Hm, Zm, ZEROm, Qm;
-
+/* Arithmetic operations on complex structs */
+// TODO
 
 
 void

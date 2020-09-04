@@ -608,7 +608,7 @@ qdd_amp_normalize_low(AMP *low, AMP *high)
     if(*low != C_ZERO){
         norm = *low;
         *low = C_ONE;
-        *high = Cdiv(*high, norm);
+        *high = amp_div(*high, norm);
     }
     else {
         norm  = *high;
@@ -634,12 +634,12 @@ qdd_amp_normalize_largest(AMP *low, AMP *high)
     if ( (cl.r*cl.r + cl.i*cl.i)  >=  (ch.r*ch.r + ch.i*ch.i) ) {
         norm = *low;
         *low = C_ONE;
-        *high = Cdiv(*high, norm);
+        *high = amp_div(*high, norm);
     }
     else {
         norm  = *high;
         *high = C_ONE;
-        *low  = Cdiv(*low, norm);
+        *low  = amp_div(*low, norm);
     }
     return norm;
 }
@@ -819,17 +819,17 @@ TASK_IMPL_2(QDD, qdd_plus, QDD, a, QDD, b)
 
     // Base/terminal case: same target and same variable
     if(QDD_PTR(a) == QDD_PTR(b) && var_a == var_b){
-        AMP sum = Cadd(QDD_AMP(a), QDD_AMP(b));
+        AMP sum = amp_add(QDD_AMP(a), QDD_AMP(b));
         res = qdd_bundle_ptr_amp(QDD_PTR(a), sum);
         return res;
     }
 
     // If not base/terminal case, pass edge weight of current edge down
     AMP amp_la, amp_ha, amp_lb, amp_hb;
-    amp_la = Cmul(QDD_AMP(a), QDD_AMP(low_a));
-    amp_ha = Cmul(QDD_AMP(a), QDD_AMP(high_a));
-    amp_lb = Cmul(QDD_AMP(b), QDD_AMP(low_b));
-    amp_hb = Cmul(QDD_AMP(b), QDD_AMP(high_b));
+    amp_la = amp_mul(QDD_AMP(a), QDD_AMP(low_a));
+    amp_ha = amp_mul(QDD_AMP(a), QDD_AMP(high_a));
+    amp_lb = amp_mul(QDD_AMP(b), QDD_AMP(low_b));
+    amp_hb = amp_mul(QDD_AMP(b), QDD_AMP(high_b));
     low_a  = qdd_bundle_ptr_amp(QDD_PTR(low_a),  amp_la);
     high_a = qdd_bundle_ptr_amp(QDD_PTR(high_a), amp_ha);
     low_b  = qdd_bundle_ptr_amp(QDD_PTR(low_b),  amp_lb);
@@ -870,10 +870,10 @@ TASK_IMPL_3(QDD, qdd_gate, QDD, q, uint32_t, gate, BDDVAR, target)
     assert(var <= target);
 
     if (var == target) {
-        AMP a_u00 = Cmul(QDD_AMP(low), gates[gate][0]);
-        AMP a_u10 = Cmul(QDD_AMP(low), gates[gate][2]);
-        AMP b_u01 = Cmul(QDD_AMP(high), gates[gate][1]);
-        AMP b_u11 = Cmul(QDD_AMP(high), gates[gate][3]);
+        AMP a_u00 = amp_mul(QDD_AMP(low), gates[gate][0]);
+        AMP a_u10 = amp_mul(QDD_AMP(low), gates[gate][2]);
+        AMP b_u01 = amp_mul(QDD_AMP(high), gates[gate][1]);
+        AMP b_u11 = amp_mul(QDD_AMP(high), gates[gate][3]);
         QDD qdd1 = qdd_makenode(target, qdd_bundle_ptr_amp(QDD_PTR(low), a_u00), 
                                         qdd_bundle_ptr_amp(QDD_PTR(low), a_u10));
         QDD qdd2 = qdd_makenode(target, qdd_bundle_ptr_amp(QDD_PTR(high),b_u01),
@@ -890,7 +890,7 @@ TASK_IMPL_3(QDD, qdd_gate, QDD, q, uint32_t, gate, BDDVAR, target)
     }
 
     // Multiply root amp of sum with input root amp, add to cache, return
-    AMP new_root_amp = Cmul(QDD_AMP(q), QDD_AMP(res));
+    AMP new_root_amp = amp_mul(QDD_AMP(q), QDD_AMP(res));
     res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     if (cachenow) {
         if (cache_put3(CACHE_QDD_GATE, GATE_OPID_40(gate, target, 0), q, sylvan_false, res)) 
@@ -931,7 +931,7 @@ TASK_IMPL_4(QDD, qdd_cgate, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t)
     res  = qdd_makenode(var, low, high);
 
     // Multiply root amp of sum with input root amp, add to cache, return
-    AMP new_root_amp = Cmul(QDD_AMP(q), QDD_AMP(res));
+    AMP new_root_amp = amp_mul(QDD_AMP(q), QDD_AMP(res));
     res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     if (cachenow) {
         if (cache_put3(CACHE_QDD_CGATE, GATE_OPID_40(gate, c, t), q, sylvan_false, res)) 
@@ -950,7 +950,7 @@ TASK_IMPL_4(QDD, qdd_matvec_mult, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR, nex
     if (nextvar == nvars) {
         assert(QDD_PTR(mat) == QDD_TERMINAL);
         assert(QDD_PTR(vec) == QDD_TERMINAL);
-        AMP prod = Cmul(QDD_AMP(mat), QDD_AMP(vec));
+        AMP prod = amp_mul(QDD_AMP(mat), QDD_AMP(vec));
         return qdd_bundle_ptr_amp(QDD_TERMINAL, prod);
     }
 
@@ -975,12 +975,12 @@ TASK_IMPL_4(QDD, qdd_matvec_mult, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR, nex
 
     // 2. pass weights of current edges down
     AMP amp_vec_low, amp_vec_high, amp_u00, amp_u10, amp_u01, amp_u11;
-    amp_vec_low  = Cmul(QDD_AMP(vec), QDD_AMP(vec_low));
-    amp_vec_high = Cmul(QDD_AMP(vec), QDD_AMP(vec_high));
-    amp_u00      = Cmul(Cmul(QDD_AMP(mat), QDD_AMP(mat_low)), QDD_AMP(u00));
-    amp_u10      = Cmul(Cmul(QDD_AMP(mat), QDD_AMP(mat_low)), QDD_AMP(u10));
-    amp_u01      = Cmul(Cmul(QDD_AMP(mat), QDD_AMP(mat_high)),QDD_AMP(u01));
-    amp_u11      = Cmul(Cmul(QDD_AMP(mat), QDD_AMP(mat_high)),QDD_AMP(u11));
+    amp_vec_low  = amp_mul(QDD_AMP(vec), QDD_AMP(vec_low));
+    amp_vec_high = amp_mul(QDD_AMP(vec), QDD_AMP(vec_high));
+    amp_u00      = amp_mul(amp_mul(QDD_AMP(mat), QDD_AMP(mat_low)), QDD_AMP(u00));
+    amp_u10      = amp_mul(amp_mul(QDD_AMP(mat), QDD_AMP(mat_low)), QDD_AMP(u10));
+    amp_u01      = amp_mul(amp_mul(QDD_AMP(mat), QDD_AMP(mat_high)),QDD_AMP(u01));
+    amp_u11      = amp_mul(amp_mul(QDD_AMP(mat), QDD_AMP(mat_high)),QDD_AMP(u11));
     vec_low  = qdd_bundle_ptr_amp(QDD_PTR(vec_low), amp_vec_low);
     vec_high = qdd_bundle_ptr_amp(QDD_PTR(vec_high),amp_vec_high);
     u00      = qdd_bundle_ptr_amp(QDD_PTR(u00), amp_u00);
@@ -1031,7 +1031,7 @@ TASK_IMPL_4(QDD, qdd_matmat_mult, QDD, a, QDD, b, BDDVAR, nvars, BDDVAR, nextvar
     if (nextvar == nvars) {
         assert(QDD_PTR(a) == QDD_TERMINAL);
         assert(QDD_PTR(b) == QDD_TERMINAL);
-        AMP prod = Cmul(QDD_AMP(a), QDD_AMP(b));
+        AMP prod = amp_mul(QDD_AMP(a), QDD_AMP(b));
         return qdd_bundle_ptr_amp(QDD_TERMINAL, prod);
     }
 
@@ -1058,14 +1058,14 @@ TASK_IMPL_4(QDD, qdd_matmat_mult, QDD, a, QDD, b, BDDVAR, nvars, BDDVAR, nextvar
 
     // 2. pass weights of current edges down TODO: use loop
     AMP amp_a00, amp_a10, amp_a01, amp_a11, amp_b00, amp_b10, amp_b01, amp_b11;
-    amp_a00 = Cmul(Cmul(QDD_AMP(a), QDD_AMP(a_low)), QDD_AMP(a00));
-    amp_a10 = Cmul(Cmul(QDD_AMP(a), QDD_AMP(a_low)), QDD_AMP(a10));
-    amp_a01 = Cmul(Cmul(QDD_AMP(a), QDD_AMP(a_high)),QDD_AMP(a01));
-    amp_a11 = Cmul(Cmul(QDD_AMP(a), QDD_AMP(a_high)),QDD_AMP(a11));
-    amp_b00 = Cmul(Cmul(QDD_AMP(b), QDD_AMP(b_low)), QDD_AMP(b00));
-    amp_b10 = Cmul(Cmul(QDD_AMP(b), QDD_AMP(b_low)), QDD_AMP(b10));
-    amp_b01 = Cmul(Cmul(QDD_AMP(b), QDD_AMP(b_high)),QDD_AMP(b01));
-    amp_b11 = Cmul(Cmul(QDD_AMP(b), QDD_AMP(b_high)),QDD_AMP(b11));
+    amp_a00 = amp_mul(amp_mul(QDD_AMP(a), QDD_AMP(a_low)), QDD_AMP(a00));
+    amp_a10 = amp_mul(amp_mul(QDD_AMP(a), QDD_AMP(a_low)), QDD_AMP(a10));
+    amp_a01 = amp_mul(amp_mul(QDD_AMP(a), QDD_AMP(a_high)),QDD_AMP(a01));
+    amp_a11 = amp_mul(amp_mul(QDD_AMP(a), QDD_AMP(a_high)),QDD_AMP(a11));
+    amp_b00 = amp_mul(amp_mul(QDD_AMP(b), QDD_AMP(b_low)), QDD_AMP(b00));
+    amp_b10 = amp_mul(amp_mul(QDD_AMP(b), QDD_AMP(b_low)), QDD_AMP(b10));
+    amp_b01 = amp_mul(amp_mul(QDD_AMP(b), QDD_AMP(b_high)),QDD_AMP(b01));
+    amp_b11 = amp_mul(amp_mul(QDD_AMP(b), QDD_AMP(b_high)),QDD_AMP(b11));
     a00 = qdd_bundle_ptr_amp(QDD_PTR(a00), amp_a00);
     a10 = qdd_bundle_ptr_amp(QDD_PTR(a10), amp_a10);
     a01 = qdd_bundle_ptr_amp(QDD_PTR(a01), amp_a01);
@@ -1303,7 +1303,7 @@ TASK_IMPL_6(QDD, qdd_ccircuit, QDD, qdd, uint32_t, circ_id, BDDVAR*, cs, uint32_
         // Multiply root amp of sum with input root amp 
         // (I guess this needs to be done every time after makenode, so maybe
         // put this functionality in makenode function?)
-        AMP new_root_amp = Cmul(QDD_AMP(qdd), QDD_AMP(res));
+        AMP new_root_amp = amp_mul(QDD_AMP(qdd), QDD_AMP(res));
         res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     }
     
@@ -1349,11 +1349,11 @@ TASK_IMPL_4(QDD, qdd_all_control_phase, QDD, qdd, BDDVAR, k, BDDVAR, n, bool*, x
     // terminal case, apply phase depending on x[k] (control k on 0 or 1)
     if (k == (n-1)) {
         if (x[k] == 1) {
-            AMP new_amp = Cmul(QDD_AMP(high), Clookup(Cmake(-1.0, 0.0)));
+            AMP new_amp = amp_mul(QDD_AMP(high), Clookup(Cmake(-1.0, 0.0)));
             high = qdd_bundle_ptr_amp(QDD_PTR(high), new_amp);
         }
         else {
-            AMP new_amp = Cmul(QDD_AMP(low), Clookup(Cmake(-1.0, 0.0)));
+            AMP new_amp = amp_mul(QDD_AMP(low), Clookup(Cmake(-1.0, 0.0)));
             low = qdd_bundle_ptr_amp(QDD_PTR(low), new_amp);
         }
     }
@@ -1374,7 +1374,7 @@ TASK_IMPL_4(QDD, qdd_all_control_phase, QDD, qdd, BDDVAR, k, BDDVAR, n, bool*, x
     QDD res = qdd_makenode(k, low, high);
 
     // multiply by existing edge weight on qdd
-    AMP new_root_amp = Cmul(QDD_AMP(qdd), QDD_AMP(res));
+    AMP new_root_amp = amp_mul(QDD_AMP(qdd), QDD_AMP(res));
     res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     return res;
 }
@@ -1402,7 +1402,7 @@ _qdd_grover_iteration(QDD qdd, BDDVAR n, bool* flag)
     bool x[n]; 
     for(BDDVAR k = 0; k < n; k++) x[k] = 0;
     qdd = qdd_all_control_phase(qdd, n, x);
-    AMP new_root_amp = Cmul(QDD_AMP(qdd), Clookup(Cmake(-1.0, 0.0)));
+    AMP new_root_amp = amp_mul(QDD_AMP(qdd), Clookup(Cmake(-1.0, 0.0)));
     qdd = qdd_bundle_ptr_amp(QDD_PTR(qdd), new_root_amp);
 
     // H on all qubits
@@ -1974,8 +1974,8 @@ qdd_measure_q0(QDD qdd, BDDVAR nvars, int *m, double *p)
     }
 
     QDD res = qdd_makenode(0, low, high);
-    AMP new_root_amp = Cmul(QDD_AMP(qdd), QDD_AMP(res));
-    new_root_amp = Cdiv(new_root_amp, norm);
+    AMP new_root_amp = amp_mul(QDD_AMP(qdd), QDD_AMP(res));
+    new_root_amp = amp_div(new_root_amp, norm);
     res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     res = qdd_remove_global_phase(res);
     return res;
@@ -2097,7 +2097,7 @@ qdd_get_amplitude(QDD q, bool* basis_state)
 
     AMP a = C_ONE;
     for (;;) {
-        a = Cmul(a, QDD_AMP(q));
+        a = amp_mul(a, QDD_AMP(q));
         
         // if the current edge is pointing to the terminal, we're done.
         if (QDD_PTR(q) == QDD_TERMINAL) break;
@@ -2183,7 +2183,7 @@ qdd_stack_matrix(QDD below, BDDVAR k, uint32_t gateid)
     res  = qdd_makenode(s, low, high);
 
     // Propagate common factor on previous root amp to new root amp
-    AMP new_root_amp = Cmul(QDD_AMP(below), QDD_AMP(res));
+    AMP new_root_amp = amp_mul(QDD_AMP(below), QDD_AMP(res));
     res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     return res;
 }
@@ -2320,7 +2320,7 @@ qdd_equivalent(QDD a, QDD b, int n, bool exact, bool verbose)
         amp_a = qdd_get_amplitude(a, x);
         amp_b = qdd_get_amplitude(b, x);
         if(exact){
-            if(!CexactEqual(Cvalue(amp_a), Cvalue(amp_b))){
+            if(!comp_exact_equal(Cvalue(amp_a), Cvalue(amp_b))){
                 if(verbose){
                     _print_bitstring(x, n, true);
                     printf(", amp a ="); Cprint(Cvalue(amp_a));
@@ -2331,7 +2331,7 @@ qdd_equivalent(QDD a, QDD b, int n, bool exact, bool verbose)
             }
         }
         else{
-            if(!CapproxEqual(Cvalue(amp_a), Cvalue(amp_b))){
+            if(!comp_approx_equal(Cvalue(amp_a), Cvalue(amp_b))){
                 if(verbose){
                     _print_bitstring(x, n, true);
                     printf(", amp a ="); Cprint(Cvalue(amp_a));

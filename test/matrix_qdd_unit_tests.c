@@ -448,7 +448,7 @@ int test_ccz_gate()
     x3[2] = 1; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(vTemp, x3); test_assert(a == aRef);
     x3[2] = 1; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(vTemp, x3); test_assert(a == aRef);
     x3[2] = 1; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(vTemp, x3); test_assert(a == aRef);
-    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(vTemp, x3); test_assert(a == Cmul(aRef,Clookup(Cmake(-1.0,0.0))));
+    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(vTemp, x3); test_assert(a == amp_neg(aRef));
 
     x3[2]=0; x3[1]=1; x3[0]=1;
     mCCZ = qdd_create_all_control_phase(nqubits, x3);
@@ -456,7 +456,7 @@ int test_ccz_gate()
     x3[2] = 0; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(vTemp, x3); test_assert(a == aRef);
     x3[2] = 0; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(vTemp, x3); test_assert(a == aRef);
     x3[2] = 0; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(vTemp, x3); test_assert(a == aRef);
-    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(vTemp, x3); test_assert(a == Cmul(aRef,Clookup(Cmake(-1.0,0.0))));
+    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(vTemp, x3); test_assert(a == amp_neg(aRef));
     x3[2] = 1; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(vTemp, x3); test_assert(a == aRef);
     x3[2] = 1; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(vTemp, x3); test_assert(a == aRef);
     x3[2] = 1; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(vTemp, x3); test_assert(a == aRef);
@@ -467,7 +467,7 @@ int test_ccz_gate()
     vTemp = qdd_matvec_mult(mCCZ, v3, nqubits);
     x3[2] = 0; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(vTemp, x3); test_assert(a == aRef);
     x3[2] = 0; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(vTemp, x3); test_assert(a == aRef);
-    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(vTemp, x3); test_assert(a == Cmul(aRef,Clookup(Cmake(-1.0,0.0))));
+    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(vTemp, x3); test_assert(a == amp_neg(aRef));
     x3[2] = 0; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(vTemp, x3); test_assert(a == aRef);
     x3[2] = 1; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(vTemp, x3); test_assert(a == aRef);
     x3[2] = 1; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(vTemp, x3); test_assert(a == aRef);

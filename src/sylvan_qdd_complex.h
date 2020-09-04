@@ -73,18 +73,22 @@ complex_t Cvalue(AMP);
 void Cprint(complex_t);
 void Cprint_bitvalues(AMP);
 
-bool CexactEqual(complex_t, complex_t);
-bool CapproxEqual(complex_t, complex_t);
-bool CepsilonClose(complex_t, complex_t, double);
+bool comp_exact_equal(complex_t a, complex_t b);
+bool comp_approx_equal(complex_t a, complex_t b);
+bool comp_epsilon_close(complex_t a, complex_t b, double epsilon);
 
-AMP Cnegative(AMP);
-AMP Cadd(AMP,AMP);
-AMP Csub(AMP,AMP);
-AMP Cmul(AMP,AMP);
-AMP CintMul(AMP,AMP); // multiply by an integer
-AMP Cdiv(AMP,AMP);
+
+/* Arithmetic operations on AMPs */
+AMP amp_neg(AMP a);
+AMP amp_add(AMP a, AMP b);
+AMP amp_sub(AMP a, AMP b);
+AMP amp_mul(AMP a, AMP b);
+AMP amp_div(AMP a, AMP b);
 //cint CAbs(cint); /// by PN: returns the absolut value of a complex number
 //cint CUnit(cint a); ///by PN: returns whether a complex number has norm 1
+
+/* Arithmetic operations on complex structs */
+complex_t comp_negative(complex_t a);
 
 //bool Ccomp(complex_t x, complex_t y);
 

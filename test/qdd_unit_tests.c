@@ -64,21 +64,21 @@ int test_complex_operations()
     complex_t ref1, ref2, ref3, ref4, val1, val2, val3, val4;
     AMP index1, index2, index3, index4;
 
-    // CexactEqual / CapproxEqual
+    // comp_exact_equal / comp_approx_equal
     ref1 = Cmake((0.2+0.4), 0.0);
     ref2 = Cmake(0.6, 0.0);
-    test_assert(CapproxEqual(ref1, ref2));
-    test_assert(!CexactEqual(ref1, ref2));
+    test_assert(comp_approx_equal(ref1, ref2));
+    test_assert(!comp_exact_equal(ref1, ref2));
 
     ref1 = Cmake(1.0, 2.99999999999999855);
     ref2 = Cmake(1.0, 3.00000000000000123);
-    test_assert(CapproxEqual(ref1, ref2));
-    test_assert(!CexactEqual(ref1, ref2));
+    test_assert(comp_approx_equal(ref1, ref2));
+    test_assert(!comp_exact_equal(ref1, ref2));
 
     ref1 = Cmake((0.5+0.5), 0.0);
     ref2 = Cmake(1.0, 0.0);
-    test_assert(CapproxEqual(ref1, ref2));
-    test_assert(CexactEqual(ref1, ref2));
+    test_assert(comp_approx_equal(ref1, ref2));
+    test_assert(comp_exact_equal(ref1, ref2));
 
     // test C_ZERO
     ref1 = Cmake(0.0, 0.0);         index1 = Clookup(ref1);
@@ -97,56 +97,56 @@ int test_complex_operations()
     ref2 = Cmake(0.5, 0.0);         index2 = Clookup(ref2);   val2 = Cvalue(index2);
     ref3 = Cmake(Qmake(0,1,2),0);   index3 = Clookup(ref3);   val3 = Cvalue(index3);
     ref4 = Cmake(Qmake(0,1,2),0);   index4 = Clookup(ref4);   val4 = Cvalue(index4);
-    test_assert(index1 == index2);  test_assert(CexactEqual(val1, val2));
-    test_assert(index3 == index4);  test_assert(CexactEqual(val3, val4));
+    test_assert(index1 == index2);  test_assert(comp_exact_equal(val1, val2));
+    test_assert(index3 == index4);  test_assert(comp_exact_equal(val3, val4));
 
-    // Cnegative
+    // amp_neg
     ref1 = Cmake(0.3, 4.2);         index1 = Clookup(ref1);   val1 = Cvalue(index1);
     ref2 = Cmake(-0.3, -4.2);       index2 = Clookup(ref2);   val2 = Cvalue(index2);
-    index3 = Cnegative(index1);     val3 = Cvalue(index3);
-    index4 = Cnegative(index2);     val4 = Cvalue(index4);
-    test_assert(index1 == index4);  test_assert(CexactEqual(val1, val4));
-    test_assert(index2 == index3);  test_assert(CexactEqual(val2, val3));
+    index3 = amp_neg(index1);       val3 = Cvalue(index3);
+    index4 = amp_neg(index2);       val4 = Cvalue(index4);
+    test_assert(index1 == index4);  test_assert(comp_exact_equal(val1, val4));
+    test_assert(index2 == index3);  test_assert(comp_exact_equal(val2, val3));
 
-    // Cadd
+    // amp_add
     ref1 = Cmake(5.2, 1.0);         index1 = Clookup(ref1);   val1 = Cvalue(index1);
     ref2 = Cmake(-0.3,7.0);         index2 = Clookup(ref2);   val2 = Cvalue(index2);
     ref3 = Cmake(4.9, 8.0);         index3 = Clookup(ref3);   val3 = Cvalue(index3);
-    index4 = Cadd(index1, index2);  val4 = Cvalue(index4);
-    test_assert(index3 == index4);  test_assert(CexactEqual(val3, val4));
+    index4=amp_add(index1,index2);  val4 = Cvalue(index4);
+    test_assert(index3 == index4);  test_assert(comp_exact_equal(val3, val4));
 
-    // Csub
+    // amp_sub
     ref1 = Cmake(1/3, 3.5);         index1 = Clookup(ref1);   val1 = Cvalue(index1);
     ref2 = Cmake(1/3,-1.2);         index2 = Clookup(ref2);   val2 = Cvalue(index2);
     ref3 = Cmake(0.0, 4.7);         index3 = Clookup(ref3);   val3 = Cvalue(index3);
-    index4 = Csub(index1, index2);  val4 = Cvalue(index4);
-    test_assert(index3 == index4);  test_assert(CexactEqual(val3, val4));
+    index4=amp_sub(index1,index2);  val4 = Cvalue(index4);
+    test_assert(index3 == index4);  test_assert(comp_exact_equal(val3, val4));
     
-    // Cmul
+    // amp_mul
     ref1 = Cmake(3.0, 5.0);         index1 = Clookup(ref1);   val1 = Cvalue(index1);
     ref2 = Cmake(0.5, 7.0);         index2 = Clookup(ref2);   val2 = Cvalue(index2);
     ref3 = Cmake(-33.5, 23.5);      index3 = Clookup(ref3);   val3 = Cvalue(index3);
-    index4 = Cmul(index1, index2);  val4 = Cvalue(index4);
-    test_assert(index3 == index4);  test_assert(CexactEqual(val3, val4));
+    index4=amp_mul(index1,index2);  val4 = Cvalue(index4);
+    test_assert(index3 == index4);  test_assert(comp_exact_equal(val3, val4));
 
     ref1 = Cmake(Qmake(0,1,2),0);   index1 = Clookup(ref1);   val1 = Cvalue(index1);
     ref2 = Cmake(Qmake(0,1,2),0);   index2 = Clookup(ref2);   val2 = Cvalue(index2);
     ref3 = Cmake(0.5, 0.0);         index3 = Clookup(ref3);   val3 = Cvalue(index3);
-    index4 = Cmul(index1, index2);  val4 = Cvalue(index4);
-    test_assert(index3 == index4);  test_assert(CexactEqual(val3, val4));
+    index4=amp_mul(index1,index2);  val4 = Cvalue(index4);
+    test_assert(index3 == index4);  test_assert(comp_exact_equal(val3, val4));
 
-    // Cdiv
+    // amp_div
     ref1 = Cmake(1.3,-0.7);         index1 = Clookup(ref1);   val1 = Cvalue(index1);
     ref2 = Cmake(1.0, 0.0);         index2 = Clookup(ref2);   val2 = Cvalue(index2);
     ref3 = Cmake(1.3,-0.7);         index3 = Clookup(ref3);   val3 = Cvalue(index3);
-    index4 = Cdiv(index1, index2);  val4 = Cvalue(index4);
-    test_assert(index3 == index4);  test_assert(CexactEqual(val3, val4));
+    index4=amp_div(index1,index2);  val4 = Cvalue(index4);
+    test_assert(index3 == index4);  test_assert(comp_exact_equal(val3, val4));
 
     ref1 = Cmake(5.0, 9.0);         index1 = Clookup(ref1);   val1 = Cvalue(index1);
     ref2 = Cmake(-4.0,7.0);         index2 = Clookup(ref2);   val2 = Cvalue(index2);
-    ref3 = Cmake(43./65., -71./65.);index3 = Clookup(ref3);   val3 = Cvalue(index3);
-    index4 = Cdiv(index1, index2);  val4 = Cvalue(index4);
-    test_assert(index3 == index4);  test_assert(CexactEqual(val3, val4));
+    ref3 = Cmake(43./65.,-71./65.); index3 = Clookup(ref3);   val3 = Cvalue(index3);
+    index4=amp_div(index1, index2); val4 = Cvalue(index4);
+    test_assert(index3 == index4);  test_assert(comp_exact_equal(val3, val4));
 
     if(VERBOSE) printf("complex operations:       ok\n");
     return 0;
@@ -669,7 +669,7 @@ int test_ccz_gate()
     x3[2] = 0; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q3, x3); test_assert(a == aRef);
     x3[2] = 0; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(q3, x3); test_assert(a == aRef);
     x3[2] = 1; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q3, x3); test_assert(a == aRef);    
-    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q3, x3); test_assert(a == Cmul(aRef,Clookup(Cmake(-1.0,0.0))));
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q3, x3); test_assert(a == amp_mul(aRef,Clookup(Cmake(-1.0,0.0))));
     x3[2] = 1; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q3, x3); test_assert(a == aRef);
     x3[2] = 1; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(q3, x3); test_assert(a == aRef);
 
@@ -1109,14 +1109,14 @@ int test_QFT()
     q3 = qdd_circuit(q3, CIRCID_reverse_range, 0, 2);
 
     // check approx equal against output from qiskit
-    x3[2]=0; x3[1]=0; x3[0]=0; a = qdd_get_amplitude(q3, x3); test_assert(CapproxEqual(Cvalue(a),Cmake(3.5355339059327384e-01,-8.6595605623549353e-17)));
-    x3[2]=0; x3[1]=0; x3[0]=1; a = qdd_get_amplitude(q3, x3); test_assert(CapproxEqual(Cvalue(a),Cmake(-3.5355339059327384e-01,8.6595605623549353e-17)));
-    x3[2]=0; x3[1]=1; x3[0]=0; a = qdd_get_amplitude(q3, x3); test_assert(CapproxEqual(Cvalue(a),Cmake(-1.0824450702943669e-16,-3.5355339059327384e-01)));
-    x3[2]=0; x3[1]=1; x3[0]=1; a = qdd_get_amplitude(q3, x3); test_assert(CapproxEqual(Cvalue(a),Cmake(1.0824450702943669e-16,3.5355339059327384e-01)));
-    x3[2]=1; x3[1]=0; x3[0]=0; a = qdd_get_amplitude(q3, x3); test_assert(CapproxEqual(Cvalue(a),Cmake(-2.5000000000000000e-01,2.5000000000000017e-01)));
-    x3[2]=1; x3[1]=0; x3[0]=1; a = qdd_get_amplitude(q3, x3); test_assert(CapproxEqual(Cvalue(a),Cmake(2.5000000000000000e-01,-2.5000000000000017e-01)));
-    x3[2]=1; x3[1]=1; x3[0]=0; a = qdd_get_amplitude(q3, x3); test_assert(CapproxEqual(Cvalue(a),Cmake(2.5000000000000017e-01,2.5000000000000000e-01)));
-    x3[2]=1; x3[1]=1; x3[0]=1; a = qdd_get_amplitude(q3, x3); test_assert(CapproxEqual(Cvalue(a),Cmake(-2.5000000000000017e-01,-2.5000000000000000e-01)));
+    x3[2]=0; x3[1]=0; x3[0]=0; a = qdd_get_amplitude(q3, x3); test_assert(comp_approx_equal(Cvalue(a),Cmake(3.5355339059327384e-01,-8.6595605623549353e-17)));
+    x3[2]=0; x3[1]=0; x3[0]=1; a = qdd_get_amplitude(q3, x3); test_assert(comp_approx_equal(Cvalue(a),Cmake(-3.5355339059327384e-01,8.6595605623549353e-17)));
+    x3[2]=0; x3[1]=1; x3[0]=0; a = qdd_get_amplitude(q3, x3); test_assert(comp_approx_equal(Cvalue(a),Cmake(-1.0824450702943669e-16,-3.5355339059327384e-01)));
+    x3[2]=0; x3[1]=1; x3[0]=1; a = qdd_get_amplitude(q3, x3); test_assert(comp_approx_equal(Cvalue(a),Cmake(1.0824450702943669e-16,3.5355339059327384e-01)));
+    x3[2]=1; x3[1]=0; x3[0]=0; a = qdd_get_amplitude(q3, x3); test_assert(comp_approx_equal(Cvalue(a),Cmake(-2.5000000000000000e-01,2.5000000000000017e-01)));
+    x3[2]=1; x3[1]=0; x3[0]=1; a = qdd_get_amplitude(q3, x3); test_assert(comp_approx_equal(Cvalue(a),Cmake(2.5000000000000000e-01,-2.5000000000000017e-01)));
+    x3[2]=1; x3[1]=1; x3[0]=0; a = qdd_get_amplitude(q3, x3); test_assert(comp_approx_equal(Cvalue(a),Cmake(2.5000000000000017e-01,2.5000000000000000e-01)));
+    x3[2]=1; x3[1]=1; x3[0]=1; a = qdd_get_amplitude(q3, x3); test_assert(comp_approx_equal(Cvalue(a),Cmake(-2.5000000000000017e-01,-2.5000000000000000e-01)));
     test_assert(qdd_is_unitvector(q3, 3));
 
     // inverse QFT
@@ -1135,38 +1135,38 @@ int test_QFT()
     q5 = qdd_circuit(q5, CIRCID_reverse_range, 0, 4);
 
     // check approx equal against output from qiskit
-    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(1.7677669529663692e-01,-6.4946704217662027e-17)));
-    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(-1.7677669529663692e-01,6.4946704217662027e-17)));
-    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(7.5771154920605696e-17,1.7677669529663692e-01)));
-    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(-7.5771154920605696e-17,-1.7677669529663692e-01)));
-    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(-1.2500000000000011e-01,-1.2499999999999999e-01)));
-    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(1.2500000000000011e-01,1.2499999999999999e-01)));
-    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(1.2499999999999999e-01,-1.2500000000000011e-01)));
-    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(-1.2499999999999999e-01,1.2500000000000011e-01)));
-    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(6.7649512518274585e-02,-1.6332037060954713e-01)));
-    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(-6.7649512518274585e-02,1.6332037060954713e-01)));
-    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(1.6332037060954713e-01,6.7649512518274571e-02)));
-    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(-1.6332037060954713e-01,-6.7649512518274571e-02)));
-    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(-1.6332037060954710e-01,6.7649512518274696e-02)));
-    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(1.6332037060954710e-01,-6.7649512518274696e-02)));
-    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(-6.7649512518274710e-02,-1.6332037060954710e-01)));
-    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(6.7649512518274710e-02,1.6332037060954710e-01)));
-    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(-1.4698445030241986e-01,9.8211869798387877e-02)));
-    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(1.4698445030241986e-01,-9.8211869798387877e-02)));
-    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(-9.8211869798387877e-02,-1.4698445030241986e-01)));
-    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(9.8211869798387877e-02,1.4698445030241986e-01)));
-    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(1.7337998066526852e-01,3.4487422410367806e-02)));
-    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(-1.7337998066526852e-01,-3.4487422410367806e-02)));
-    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(-3.4487422410367799e-02,1.7337998066526852e-01)));
-    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(3.4487422410367799e-02,-1.7337998066526852e-01)));
-    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(3.4487422410367972e-02,1.7337998066526850e-01)));
-    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(-3.4487422410367972e-02,-1.7337998066526850e-01)));
-    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(-1.7337998066526850e-01,3.4487422410367986e-02)));
-    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(1.7337998066526850e-01,-3.4487422410367986e-02)));
-    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(9.8211869798387752e-02,-1.4698445030241994e-01)));
-    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(-9.8211869798387752e-02,1.4698445030241994e-01)));
-    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(1.4698445030241994e-01,9.8211869798387752e-02)));
-    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(CapproxEqual(Cvalue(a), Cmake(-1.4698445030241994e-01,-9.8211869798387752e-02)));
+    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(comp_approx_equal(Cvalue(a), Cmake(1.7677669529663692e-01,-6.4946704217662027e-17)));
+    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(comp_approx_equal(Cvalue(a), Cmake(-1.7677669529663692e-01,6.4946704217662027e-17)));
+    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(comp_approx_equal(Cvalue(a), Cmake(7.5771154920605696e-17,1.7677669529663692e-01)));
+    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(comp_approx_equal(Cvalue(a), Cmake(-7.5771154920605696e-17,-1.7677669529663692e-01)));
+    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(comp_approx_equal(Cvalue(a), Cmake(-1.2500000000000011e-01,-1.2499999999999999e-01)));
+    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(comp_approx_equal(Cvalue(a), Cmake(1.2500000000000011e-01,1.2499999999999999e-01)));
+    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(comp_approx_equal(Cvalue(a), Cmake(1.2499999999999999e-01,-1.2500000000000011e-01)));
+    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(comp_approx_equal(Cvalue(a), Cmake(-1.2499999999999999e-01,1.2500000000000011e-01)));
+    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(comp_approx_equal(Cvalue(a), Cmake(6.7649512518274585e-02,-1.6332037060954713e-01)));
+    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(comp_approx_equal(Cvalue(a), Cmake(-6.7649512518274585e-02,1.6332037060954713e-01)));
+    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(comp_approx_equal(Cvalue(a), Cmake(1.6332037060954713e-01,6.7649512518274571e-02)));
+    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(comp_approx_equal(Cvalue(a), Cmake(-1.6332037060954713e-01,-6.7649512518274571e-02)));
+    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(comp_approx_equal(Cvalue(a), Cmake(-1.6332037060954710e-01,6.7649512518274696e-02)));
+    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(comp_approx_equal(Cvalue(a), Cmake(1.6332037060954710e-01,-6.7649512518274696e-02)));
+    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(comp_approx_equal(Cvalue(a), Cmake(-6.7649512518274710e-02,-1.6332037060954710e-01)));
+    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(comp_approx_equal(Cvalue(a), Cmake(6.7649512518274710e-02,1.6332037060954710e-01)));
+    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(comp_approx_equal(Cvalue(a), Cmake(-1.4698445030241986e-01,9.8211869798387877e-02)));
+    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(comp_approx_equal(Cvalue(a), Cmake(1.4698445030241986e-01,-9.8211869798387877e-02)));
+    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(comp_approx_equal(Cvalue(a), Cmake(-9.8211869798387877e-02,-1.4698445030241986e-01)));
+    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(comp_approx_equal(Cvalue(a), Cmake(9.8211869798387877e-02,1.4698445030241986e-01)));
+    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(comp_approx_equal(Cvalue(a), Cmake(1.7337998066526852e-01,3.4487422410367806e-02)));
+    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(comp_approx_equal(Cvalue(a), Cmake(-1.7337998066526852e-01,-3.4487422410367806e-02)));
+    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(comp_approx_equal(Cvalue(a), Cmake(-3.4487422410367799e-02,1.7337998066526852e-01)));
+    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(comp_approx_equal(Cvalue(a), Cmake(3.4487422410367799e-02,-1.7337998066526852e-01)));
+    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(comp_approx_equal(Cvalue(a), Cmake(3.4487422410367972e-02,1.7337998066526850e-01)));
+    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(comp_approx_equal(Cvalue(a), Cmake(-3.4487422410367972e-02,-1.7337998066526850e-01)));
+    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(comp_approx_equal(Cvalue(a), Cmake(-1.7337998066526850e-01,3.4487422410367986e-02)));
+    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(comp_approx_equal(Cvalue(a), Cmake(1.7337998066526850e-01,-3.4487422410367986e-02)));
+    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(comp_approx_equal(Cvalue(a), Cmake(9.8211869798387752e-02,-1.4698445030241994e-01)));
+    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(comp_approx_equal(Cvalue(a), Cmake(-9.8211869798387752e-02,1.4698445030241994e-01)));
+    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(comp_approx_equal(Cvalue(a), Cmake(1.4698445030241994e-01,9.8211869798387752e-02)));
+    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=1; a = qdd_get_amplitude(q5, x5); test_assert(comp_approx_equal(Cvalue(a), Cmake(-1.4698445030241994e-01,-9.8211869798387752e-02)));
     test_assert(qdd_is_unitvector(q5, 5));
 
     // inverse QFT
