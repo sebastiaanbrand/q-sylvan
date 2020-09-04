@@ -157,15 +157,35 @@ bool comp_epsilon_close(complex_t a, complex_t b, double epsilon)
 /* Arithmetic operations on AMPs */
 
 AMP
+amp_abs(AMP a)
+{
+    // special cases
+    if (a == C_ZERO || a == C_ONE) return a;
+
+    complex_t ca, cr;
+    AMP res;
+
+    ca = Cvalue(a);
+    cr = comp_abs(ca);
+
+    res = Clookup(cr);
+    return res;
+}
+
+AMP
 amp_neg(AMP a)
 {
     // special cases
     if (a == C_ZERO) return C_ZERO;
 
-    complex_t c = Cvalue(a);
-    c.r = -c.r;
-    c.i = -c.i;
-    return Clookup(c);
+    complex_t ca, cr;
+    AMP res;
+
+    ca = Cvalue(a);
+    cr = comp_neg(ca);
+
+    res = Clookup(cr);
+    return res;
 }
 
 AMP
@@ -180,8 +200,7 @@ amp_add(AMP a, AMP b)
 
     ca = Cvalue(a);
     cb = Cvalue(b);
-    cr.r = ca.r + cb.r;
-    cr.i = ca.i + cb.i;
+    cr = comp_add(ca, cb);
 
     res = Clookup(cr);
     return res;
@@ -199,8 +218,7 @@ amp_sub(AMP a, AMP b)
 
     ca = Cvalue(a);
     cb = Cvalue(b);
-    cr.r = ca.r - cb.r;
-    cr.i = ca.i - cb.i;
+    cr = comp_sub(ca, cb);
 
     res = Clookup(cr);
     return res;
@@ -219,8 +237,7 @@ amp_mul(AMP a, AMP b)
 
     ca = Cvalue(a);
     cb = Cvalue(b);
-    cr.r = ca.r * cb.r - ca.i * cb.i;
-    cr.i = ca.r * cb.i + ca.i * cb.r;
+    cr = comp_mul(ca, cb);
 
     res = Clookup(cr);
     return res;
@@ -236,42 +253,79 @@ amp_div(AMP a, AMP b)
 
     complex_t ca, cb, cr;
     AMP res;
-    double denom;
 
     ca = Cvalue(a);
     cb = Cvalue(b);
-    if (cb.i == 0.0) {
-        cr.r = ca.r / cb.r;
-        cr.i = ca.i / cb.r;
-    } else {
-        denom = cb.r * cb.r + cb.i * cb.i;
-        cr.r = (ca.r * cb.r + ca.i * cb.i) / denom;
-        cr.i = (ca.i * cb.r - ca.r * cb.i) / denom;
-    }
+    cr = comp_div(ca, cb);
 
     res = Clookup(cr);
     return res;
 }
 
-AMP
-amp_abs(AMP a)
-{
-    // special cases
-    if (a == C_ZERO || a == C_ONE) return a;
-
-    complex_t ca, cr;
-    AMP res;
-
-    ca = Cvalue(a);
-    cr.r = sqrt( (ca.r*ca.r) + (ca.i*ca.i) );
-
-    res = Clookup(cr);
-    return res;
-}
 
 
 /* Arithmetic operations on complex structs */
-// TODO
+
+complex_t
+comp_abs(complex_t a)
+{
+    complex_t res;
+    res.r = sqrt( (a.r*a.r) + (a.i*a.i) );
+    res.i = 0.0;
+    return res;
+}
+
+complex_t
+comp_neg(complex_t a)
+{
+    complex_t res;
+    res.r = -a.r;
+    res.i = -a.i;
+    return res;
+}
+
+complex_t
+comp_add(complex_t a, complex_t b)
+{
+    complex_t res;
+    res.r = a.r + b.r;
+    res.i = a.i + b.i;
+    return res;
+}
+
+complex_t
+comp_sub(complex_t a, complex_t b)
+{
+    complex_t res;
+    res.r = a.r - b.r;
+    res.i = a.i - b.i;
+    return res;
+}
+
+complex_t
+comp_mul(complex_t a, complex_t b)
+{
+    complex_t res;
+    res.r = a.r * b.r - a.i * b.i;
+    res.i = a.r * b.i + a.i * b.r;
+    return res;
+}
+
+complex_t
+comp_div(complex_t a, complex_t b)
+{
+    complex_t res;
+    double denom;
+    if (b.i == 0.0) {
+        res.r = a.r / b.r;
+        res.i = a.i / b.r;
+    } else {
+        denom = b.r * b.r + b.i * b.i;
+        res.r = (a.r * b.r + a.i * b.i) / denom;
+        res.i = (a.i * b.r - a.r * b.i) / denom;
+    }
+    return res;
+}
 
 
 void

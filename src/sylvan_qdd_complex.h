@@ -79,18 +79,21 @@ bool comp_epsilon_close(complex_t a, complex_t b, double epsilon);
 
 
 /* Arithmetic operations on AMPs */
+AMP amp_abs(AMP a);
 AMP amp_neg(AMP a);
 AMP amp_add(AMP a, AMP b);
 AMP amp_sub(AMP a, AMP b);
 AMP amp_mul(AMP a, AMP b);
 AMP amp_div(AMP a, AMP b);
-//cint CAbs(cint); /// by PN: returns the absolut value of a complex number
-//cint CUnit(cint a); ///by PN: returns whether a complex number has norm 1
 
 /* Arithmetic operations on complex structs */
-complex_t comp_negative(complex_t a);
+complex_t comp_abs(complex_t a);
+complex_t comp_neg(complex_t a);
+complex_t comp_add(complex_t a, complex_t b);
+complex_t comp_sub(complex_t a, complex_t b);
+complex_t comp_mul(complex_t a, complex_t b);
+complex_t comp_div(complex_t a, complex_t b);
 
-//bool Ccomp(complex_t x, complex_t y);
 
 void init_amplitude_table(size_t size);
 uint64_t count_amplitude_table_enries();
