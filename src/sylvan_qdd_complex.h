@@ -1,5 +1,5 @@
-#ifndef SYLVAN_QDD_INT_H
-#define SYLVAN_QDD_INT_H
+#ifndef SYLVAN_QDD_COMPLEX_H
+#define SYLVAN_QDD_COMPLEX_H
 
 /**
  * Complex values with lookup table
@@ -7,9 +7,9 @@
  * Based on [1]
  */
 
-
 #include <math.h>
 #include <stdint.h>
+
 #include "util/cmap.h"
 
 
@@ -19,10 +19,10 @@
 //} complex_t;
 
 
-typedef uint64_t cint;
+typedef uint64_t AMP;
 
-cint C_ZERO;
-cint C_ONE;
+AMP C_ZERO;
+AMP C_ONE;
 
 // GATE_ID's (gates are initialized in qdd_complex_init)
 // currently 24 bits available for this number (see GATE_OPID)
@@ -53,7 +53,7 @@ static inline uint32_t GATEID_Rk_dag(int k){ return k + 266; };
 // gates[k][1] = u01 (top right)
 // gates[k][2] = u10 (bottom left)
 // gates[k][3] = u11 (bottom right)
-cint gates[522][4]; // max 2^16 gates atm
+AMP gates[522][4]; // max 2^16 gates atm
 
 
 //uint32_t Ctentries;
@@ -67,22 +67,22 @@ cint gates[522][4]; // max 2^16 gates atm
 // used in the qdd implementation.
 complex_t Cmake (double r, double i);
 double Qmake (int a, int b, int c);
-cint Clookup (complex_t c);
+AMP Clookup (complex_t c);
 
-complex_t Cvalue(cint);
+complex_t Cvalue(AMP);
 void Cprint(complex_t);
-void Cprint_bitvalues(cint);
+void Cprint_bitvalues(AMP);
 
 bool CexactEqual(complex_t, complex_t);
 bool CapproxEqual(complex_t, complex_t);
 bool CepsilonClose(complex_t, complex_t, double);
 
-cint Cnegative(cint);
-cint Cadd(cint,cint);
-cint Csub(cint,cint);
-cint Cmul(cint,cint);
-cint CintMul(cint,cint); // multiply by an integer
-cint Cdiv(cint,cint);
+AMP Cnegative(AMP);
+AMP Cadd(AMP,AMP);
+AMP Csub(AMP,AMP);
+AMP Cmul(AMP,AMP);
+AMP CintMul(AMP,AMP); // multiply by an integer
+AMP Cdiv(AMP,AMP);
 //cint CAbs(cint); /// by PN: returns the absolut value of a complex number
 //cint CUnit(cint a); ///by PN: returns whether a complex number has norm 1
 
@@ -93,7 +93,7 @@ uint64_t count_amplitude_table_enries();
 void free_amplitude_table();
 void init_new_empty_table();
 void delete_old_table();
-cint move_from_old_to_new(cint);
+AMP move_from_old_to_new(AMP);
 
 
 #endif

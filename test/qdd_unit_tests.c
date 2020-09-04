@@ -3,7 +3,7 @@
 
 #include "sylvan.h"
 #include "test_assert.h"
-#include "sylvan_qdd_int.h"
+#include "sylvan_qdd_complex.h"
 
 bool VERBOSE = true;
 
@@ -62,7 +62,7 @@ int test_cmap()
 int test_complex_operations()
 {
     complex_t ref1, ref2, ref3, ref4, val1, val2, val3, val4;
-    cint index1, index2, index3, index4;
+    AMP index1, index2, index3, index4;
 
     // CexactEqual / CapproxEqual
     ref1 = Cmake((0.2+0.4), 0.0);

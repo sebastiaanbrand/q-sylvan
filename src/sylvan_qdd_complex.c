@@ -12,11 +12,11 @@ mmiller@cs.uvic.ca
 
 ****************************************************************/
 
-#include "sylvan_qdd_int.h"
+#include <stdio.h>
+
+#include "sylvan_qdd_complex.h"
 #include "util/cmap.h"
 
-
-#include <stdio.h>
 
 /**********************************************
 Compute trig functions for angle factor*Pi/div
@@ -29,9 +29,9 @@ Note use of cosl and sinl for long double computation
 static long double Pi;    // set value of global Pi
 
 
-int      SIZE;
-cmap_t * ctable;
-cmap_t * ctable_old;
+int     SIZE;
+cmap_t *ctable;
+cmap_t *ctable_old;
 
 
 
@@ -93,7 +93,7 @@ Cprint(complex_t c)
 }
 
 void
-Cprint_bitvalues(cint i)
+Cprint_bitvalues(AMP i)
 {
     print_bitvalues(ctable, i);
 }
@@ -111,16 +111,16 @@ Qmake (int a, int b, int c)
 // lookup a complex value in the complex value table
 // if not found add it
 // this routine uses linear searching
-cint
+AMP
 Clookup (complex_t c)
 {
     uint64_t res;
     cmap_find_or_put(ctable, &c, &res);
-    return (cint) res;
+    return (AMP) res;
 }
 
 complex_t
-Cvalue (cint i)
+Cvalue (AMP i)
 {
     complex_t * res;
     res = cmap_get(ctable, i);
@@ -128,7 +128,7 @@ Cvalue (cint i)
 }
 
 complex_t
-Cvalue_old (cint i)
+Cvalue_old (AMP i)
 {
     complex_t * res;
     res = cmap_get(ctable_old, i);
@@ -138,7 +138,7 @@ Cvalue_old (cint i)
 // computes angle for polar coordinate representation of Cvalue(a)
 /*
 long double
-angle (cint a)
+angle (AMP a)
 {
     complex_t ca;
     ca = Cvalue (a);
@@ -148,8 +148,8 @@ angle (cint a)
 } */
 
 /*
-cint
-Cgt (cint a, cint b)
+AMP
+Cgt (AMP a, AMP b)
 // returns 1 if |a|>|b|
 // returns 0 if |b|>|a|
 // returns angle(a)<angle(b)
@@ -179,8 +179,8 @@ Cgt (cint a, cint b)
 } */
 
 /*
-cint
-Cgt_new (cint a, cint b)
+AMP
+Cgt_new (AMP a, AMP b)
 {
     complex_t ca, cb;
     if (a == b) return (0);
@@ -191,8 +191,8 @@ Cgt_new (cint a, cint b)
 } */
 
 /*
-cint
-Clt (cint a, cint b)
+AMP
+Clt (AMP a, cAMPint b)
 // analogous to Cgt
 {
     complex_t ca, cb;
@@ -225,8 +225,8 @@ bool CepsilonClose(complex_t a, complex_t b, double epsilon)
 // NOTE arguments are the indices to the values 
 // in the complex value table not the values themselves
 
-cint
-Cnegative (cint a)
+AMP
+Cnegative (AMP a)
 {
     complex_t c = Cvalue (a);
     c.r = -c.r;
@@ -234,8 +234,8 @@ Cnegative (cint a)
     return Clookup(c);
 }
 
-cint
-Cadd (cint ai, cint bi)
+AMP
+Cadd (AMP ai, AMP bi)
 {
     complex_t a, b, r;
     int t;
@@ -256,8 +256,8 @@ Cadd (cint ai, cint bi)
     return (t);
 }
 
-cint
-Csub (cint ai, cint bi)
+AMP
+Csub (AMP ai, AMP bi)
 {
     complex_t a, b, r;
     int t;
@@ -277,8 +277,8 @@ Csub (cint ai, cint bi)
     return t;
 }
 
-cint
-Cmul (cint ai, cint bi)
+AMP
+Cmul (AMP ai, AMP bi)
 {
     complex_t a, b, r;
     int t;
@@ -303,8 +303,8 @@ Cmul (cint ai, cint bi)
     return t;
 }
 
-cint
-CintMul (cint a, cint bi)
+AMP
+CintMul (AMP a, AMP bi)
 {
     complex_t r = Cvalue (bi);
     r.r *= a;
@@ -312,8 +312,8 @@ CintMul (cint a, cint bi)
     return Clookup(r);
 }
 
-cint
-Cdiv (cint ai, cint bi)
+AMP
+Cdiv (AMP ai, AMP bi)
 {
     complex_t a, b, r;
     int t;
@@ -343,8 +343,8 @@ Cdiv (cint ai, cint bi)
 
 /// by PN: returns the absolut value of a complex number
 /*
-cint
-CAbs (cint a)
+AMP
+CAbs (AMP a)
 {
     int b;
     complex_t r, s;
@@ -362,8 +362,8 @@ CAbs (cint a)
 
 ///by PN: returns whether a complex number has norm 1
 /*
-cint
-CUnit (cint a)
+AMP
+CUnit (AMP a)
 {
     /// BETA 121017
 
@@ -501,8 +501,8 @@ delete_old_table()
     cmap_free(ctable_old);
 }
 
-cint
-move_from_old_to_new(cint a)
+AMP
+move_from_old_to_new(AMP a)
 {
     complex_t c = Cvalue_old(a);
     return Clookup(c);

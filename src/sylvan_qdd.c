@@ -15,16 +15,15 @@
  * limitations under the License.
  */
 
-#include <sylvan_int.h>
-#include <sylvan_qdd.h>
-
 #include <inttypes.h>
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
 
-#include <sylvan_refs.h>
-#include "sylvan_qdd_int.h"
+#include "sylvan_int.h"
+#include "sylvan_qdd.h"
+#include "sylvan_refs.h"
+#include "sylvan_qdd_complex.h"
 
 //static int granularity = 1; // default
 
@@ -593,8 +592,8 @@ _qdd_makenode(BDDVAR var, PTR low, PTR high, AMP a, AMP b)
         }
     }
 
-    if (created) sylvan_stats_count(BDD_NODES_CREATED); // TODO: QDD counters
-    else sylvan_stats_count(BDD_NODES_REUSED);
+    if (created) sylvan_stats_count(QDD_NODES_CREATED);
+    else sylvan_stats_count(QDD_NODES_REUSED);
 
     result = index;
     //return mark ? result | qdd_marked_mask : result;

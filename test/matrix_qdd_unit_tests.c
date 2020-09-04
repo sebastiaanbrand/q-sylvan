@@ -3,7 +3,7 @@
 
 #include "sylvan.h"
 #include "test_assert.h"
-#include "sylvan_qdd_int.h"
+#include "sylvan_qdd_complex.h"
 
 bool VERBOSE = true;
 

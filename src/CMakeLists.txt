@@ -9,7 +9,7 @@ set(SOURCES
     sylvan_mt.c
     sylvan_mtbdd.c
     sylvan_qdd.c
-    sylvan_qdd_int.c
+    sylvan_qdd_complex.c
     sylvan_obj.cpp
     sylvan_refs.c
     sylvan_sl.c
@@ -32,7 +32,7 @@ set(HEADERS
     sylvan_mtbdd.h
     sylvan_mtbdd_int.h
     sylvan_qdd.h
-    sylvan_qdd_int.h
+    sylvan_qdd_complex.h
     sylvan_obj.hpp
     sylvan_stats.h
     sylvan_table.h

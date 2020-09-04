@@ -32,6 +32,8 @@ typedef enum {
     BDD_NODES_REUSED,
     LDD_NODES_CREATED,
     LDD_NODES_REUSED,
+    QDD_NODES_CREATED,
+    QDD_NODES_REUSED,
 
     /* BDD operations */
     OPCOUNTER(BDD_ITE),
