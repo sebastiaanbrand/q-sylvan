@@ -3,7 +3,12 @@
 
 #include "sylvan.h"
 #include "test_assert.h"
-#include "sylvan_qdd_int.h"
+#include "sylvan_qdd_complex.h"
+
+#ifdef HAVE_PROFILER
+#include <gperftools/profiler.h>
+static char* profile_name = "bench_qdd.prof";
+#endif
 
 /**
  * Obtain current wallclock time
@@ -186,6 +191,10 @@ int bench_25qubit_circuit(int workers)
 int bench_grover(int num_qubits, bool flag[], int workers)
 {
     printf("bench grover, %d qubits, %2d worker(s), ", num_qubits, workers); 
+    printf("flag = [");
+    for (int i = 0; i < num_qubits; i++)
+        printf("%d",flag[i]);
+    printf("], ");
     fflush(stdout);
 
     double t_start, t_end, runtime;
@@ -212,11 +221,7 @@ int bench_grover(int num_qubits, bool flag[], int workers)
     runtime = (t_end - t_start);
 
     node_count = qdd_countnodes(grov);
-    printf("%ld nodes, %lf sec ", node_count, runtime);
-    printf("(flag = ");
-    for (int i = 0; i < num_qubits; i++)
-        printf("%d",flag[i]);
-    printf(")\n");
+    printf("%ld nodes, %lf sec \n", node_count, runtime);
 
     // Cleanup
     free_amplitude_table();
@@ -560,20 +565,28 @@ int bench_supremacy_5_4(uint32_t depth, uint32_t workers)
 
 int main()
 {
+    #ifdef HAVE_PROFILER
+        // TODO: automate file name depending on which circuit / parameteres
+        if (profile_name != NULL) {
+            printf("writing profile to %s\n", profile_name);
+            ProfilerStart(profile_name);
+        }
+    #endif
+
     //bench_25qubit_circuit(1);
     //bench_25qubit_circuit(8);
     //bench_25qubit_circuit(16);
 
-    /*
-    int n = 22;
+    BDDVAR n = 21;
     bool flag[n];
     srand(time(NULL));
-    for (int i = 0; i < n; i++) flag[i] = (bool)(rand() % 2);
+    for (BDDVAR i = 0; i < n; i++) flag[i] = (bool)(rand() % 2);
     bench_grover(n, flag, 1);
-    bench_grover(n, flag, 8);
-    bench_grover(n, flag, 16);
-    */
+    //bench_grover(n, flag, 2);
+    //bench_grover(n, flag, 4);
+    //bench_grover(n, flag, 8);
 
+   /*
     //   3 x   5 =     15 (11 qubits)
     //   7 x  11 =     77 (17 qubits)
     //  17 x  29 =    493 (21 qubits)
@@ -584,6 +597,7 @@ int main()
     bench_shor(N, 0, 1,  rand_seed);
     bench_shor(N, 0, 8,  rand_seed);
     bench_shor(N, 0, 16, rand_seed);
+    */
 
     /*
     int depth = 500;
@@ -598,6 +612,10 @@ int main()
     bench_supremacy_5_4(depth, 8);
     bench_supremacy_5_4(depth, 16);
     */
+
+   #ifdef HAVE_PROFILER
+        if (profile_name != NULL) ProfilerStop();
+    #endif
 
 
     return 0;
