@@ -36,6 +36,7 @@ static const uint32_t GATEID_T = 6;
 static const uint32_t GATEID_Tdag = 7;
 static const uint32_t GATEID_sqrtX = 8;
 static const uint32_t GATEID_sqrtY = 9;
+void init_gates();
 // The next 255 gates are reserved for parameterized phase gates, which are
 // initialized below. (these are GATEIDs 10 265)
 // The reason why these are initialized beforhand instead of on-demand is that 

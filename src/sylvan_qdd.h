@@ -108,9 +108,9 @@ static const PTR        QDD_TERMINAL = 1;
 static const BDDVAR     QDD_INVALID_VAR = UINT8_MAX;
 
 /**
- * Inits MTBDDs and amplitude table.
+ * Similar initialization as for MTBDDs + amplitude table init.
  */
-void sylvan_init_qdd(size_t amptable_size);
+void sylvan_init_qdd(size_t ctable_size);
 
 
 /*******************<garbage collection, references, marking>******************/

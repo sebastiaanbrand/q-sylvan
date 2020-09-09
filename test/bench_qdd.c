@@ -37,7 +37,7 @@ int bench_25qubit_circuit(int workers)
     // Init Sylvan
     sylvan_set_limits(4LL<<30, 1, 6);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<19);
+    sylvan_init_qdd(1LL<<23);
 
     QDD q;
     uint64_t node_count;
@@ -208,7 +208,7 @@ int bench_grover(int num_qubits, bool flag[], int workers)
     // Init Sylvan
     sylvan_set_limits(4LL<<30, 1, 6);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<19);
+    sylvan_init_qdd(1LL<<23);
     //sylvan_gc_disable(); // issue with gc, maybe "marked" flag location MTBBD vs QDD
 
 
@@ -247,7 +247,7 @@ int bench_shor(uint64_t N, uint64_t a, int workers, int rand_seed)
     // Init Sylvan
     sylvan_set_limits(4LL<<30, 1, 6);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<19);
+    sylvan_init_qdd(1LL<<23);
     //sylvan_gc_disable(); // issue with gc, maybe "marked" flag location MTBBD vs QDD
 
     srand(rand_seed);
@@ -288,7 +288,7 @@ int bench_supremacy_5_1(uint32_t depth, uint32_t workers)
     // Init Sylvan
     sylvan_set_limits(4LL<<30, 1, 6);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<19);
+    sylvan_init_qdd(1LL<<23);
 
     BDDVAR n_qubits = 5;
     srand(42);
@@ -386,7 +386,7 @@ int bench_supremacy_5_4(uint32_t depth, uint32_t workers)
     // Init Sylvan
     sylvan_set_limits(4LL<<30, 1, 6);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<19);
+    sylvan_init_qdd(1LL<<23);
 
     BDDVAR n_qubits = 20;
     srand(66);

@@ -1,7 +1,6 @@
 /***************************************************************
 
-Complex number defnitions and routines for QMDD using
-doubles for the real and imaginary part of a complex number.
+Adapted from implementation by:
 
 January 28, 2008
 Michael Miller
@@ -29,7 +28,7 @@ Note use of cosl and sinl for long double computation
 static long double Pi;    // set value of global Pi
 
 
-int     SIZE;
+size_t SIZE;
 cmap_t *ctable;
 cmap_t *ctable_old;
 
@@ -120,10 +119,15 @@ Clookup (complex_t c)
 }
 
 complex_t
-Cvalue (AMP i)
+Cvalue (AMP a)
 {
+    // special cases (lookup is read only so this might make little difference)
+    if (a == C_ZERO) return CmakeZero();
+    if (a == C_ONE)  return CmakeOne();
+
+    // lookup
     complex_t * res;
-    res = cmap_get(ctable, i);
+    res = cmap_get(ctable, a);
     return *res;
 }
 
@@ -331,13 +335,20 @@ comp_div(complex_t a, complex_t b)
 void
 init_amplitude_table(size_t size)
 {
-    SIZE   = size;
-    ctable = cmap_create(size);
-    
-    // TODO: treat 0 and 1 seperately and don't put them in table.
+    SIZE = size;
+    ctable = cmap_create(SIZE);
+
     C_ONE  = Clookup(CmakeOne());
     C_ZERO = Clookup(CmakeZero());
-    
+
+    Pi = 2.0 * acos(0.0);
+
+    init_gates();
+}
+
+void
+init_gates()
+{
     // initialize 2x2 gates (complex values from gates currently stored in 
     // same table as complex amplitude values)
     uint32_t k;
@@ -346,17 +357,14 @@ init_amplitude_table(size_t size)
     gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
     gates[k][2] = C_ZERO; gates[k][3] = C_ONE;
 
-    
     k = GATEID_X;
     gates[k][0] = C_ZERO; gates[k][1] = C_ONE;
     gates[k][2] = C_ONE;  gates[k][3] = C_ZERO;
 
-    
     k = GATEID_Y;
     gates[k][0] = C_ZERO; gates[k][1] = Clookup(Cmake(0.0, -1.0));
     gates[k][2] = Clookup(Cmake(0.0, 1.0));  gates[k][3] = C_ZERO;
 
-    
     k = GATEID_Z;
     gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
     gates[k][2] = C_ZERO; gates[k][3] = Clookup(Cmake(-1.0, 0.0));
@@ -384,9 +392,6 @@ init_amplitude_table(size_t size)
     k = GATEID_sqrtY;
     gates[k][0] = Clookup(Cmake(0.5, 0.5)); gates[k][1] = Clookup(Cmake(-0.5,-0.5));
     gates[k][2] = Clookup(Cmake(0.5, 0.5)); gates[k][3] = Clookup(Cmake(0.5, 0.5));
-
-
-    Pi = 2.0 * acos(0.0);
 
     init_phase_gates(255);
 }

@@ -37,24 +37,35 @@
 
 /****************< (bit level) manipulation of QDD / qddnode_t >***************/
 /**
+ * QDD edge structure (64 bits)
+ *       1 bit:  marked/unmarked flag (same place as MTBDD)
+ *      23 bits: index of edge weight in ctable (AMP)
+ *      40 bits: index of next node in node table (PTR)
+ * 
  * QDD node structure (128 bits)
+ * (note: because of normalization of the amps, we only need 1 amp per node,
+ *  the other will always be 0 or 1)
  * 
  * 64 bits low:
  *       1 bit:  marked/unmarked flag (same place as MTBDD)
- *       4 bits: lower 4 bits of 8 bit variable/qubit number of this node
- *      19 bits: index of edge weight of low edge in Ctable (AMP)
+ *       8 bits: variable/qubit number of this node
+ *       1 bit:  if 0 (1) normalized amp is on low (high)
+ *       1 bit:  if 0 (1) normalized amp is C_ZERO (C_ONE)
+ *      13 bits: unused
  *      40 bits: low edge pointer to next node (PTR)
  * 64 bits high:
  *       1 bit:  marked/unmarked flag (same place as MTBDD)
- *       4 bits: upper 4 bits of 8 bit variable/qubit number of this node
- *      19 bits: index of edge weight of high edge in Ctable (AMP)
+ *      23 bits: index of edge weight of high edge in ctable (AMP)
  *      40 bits: high edge pointer to next node (PTR)
  */
 static const QDD qdd_marked_mask  = 0x8000000000000000LL;
-static const QDD qdd_halfvar_maks = 0x7800000000000000LL;
-static const QDD qdd_amp_mask     = 0x07ffff0000000000LL;
+//static const QDD qdd_halfvar_maks = 0x7800000000000000LL;
+static const QDD qdd_var_mask_low = 0x7f80000000000000LL;
+static const QDD qdd_amp_pos_mask = 0x0040000000000000LL;
+static const QDD qdd_amp_val_mask = 0x0020000000000000LL;
+static const QDD qdd_amp_mask2    = 0x7fffff0000000000LL;
 static const QDD qdd_ptr_mask     = 0x000000ffffffffffLL;
-static const QDD qdd_edge_mask    = 0x07ffffffffffffffLL;
+//static const QDD qdd_edge_mask2   = 0x7fffffffffffffffLL;
 
 typedef struct __attribute__((packed)) qddnode {
     QDD low, high;
@@ -67,7 +78,7 @@ typedef struct __attribute__((packed)) qddnode {
 static inline AMP
 QDD_AMP(QDD q)
 {
-    return (q & qdd_amp_mask) >> 40; // 19 bits
+    return (q & qdd_amp_mask2) >> 40; // 23 bits
 }
 
 /**
@@ -119,27 +130,8 @@ GATE_OPID_64(uint32_t gateid, BDDVAR a, BDDVAR b, BDDVAR c, BDDVAR d, BDDVAR e)
 static inline BDDVAR
 qddnode_getvar(qddnode_t n)
 {
-    return (BDDVAR) ( (n->low >> 59) | ((n->high >> 55) & 0xf0) ); // 8 bits
-}
-
-/**
- * Gets the low edge of `n` with the AMP and PTR information, but without the
- * (halved) variable information.
- */
-static inline QDD
-qddnode_getlow(qddnode_t n)
-{
-    return (QDD) n->low & qdd_edge_mask; // 59 bits
-}
-
-/**
- * Gets the high edge of `n` with the AMP and PTR information, but without the
- * (halved) variable information.
- */
-static inline QDD
-qddnode_gethigh(qddnode_t n)
-{
-    return (QDD) n->high & qdd_edge_mask; // 59 bits
+    return (BDDVAR) ((n->low & qdd_var_mask_low) >> 55 ); // 8 bits
+    //return (BDDVAR) ( (n->low >> 59) | ((n->high >> 55) & 0xf0) ); // 8 bits
 }
 
 /**
@@ -158,24 +150,6 @@ static inline PTR
 qddnode_getptrhigh(qddnode_t n)
 {
     return (PTR) QDD_PTR(n->high);
-}
-
-/**
- * Gets only the AMP of the low edge of `n`.
- */
-static inline AMP
-qddnode_getamplow(qddnode_t n)
-{
-    return (AMP) QDD_AMP(n->low);
-}
-
-/**
- * Gets only the AMP of the high edge of `n`.
- */
-static inline AMP
-qddnode_getamphigh(qddnode_t n)
-{
-    return (AMP) QDD_AMP(n->high);
 }
 
 /**
@@ -214,35 +188,58 @@ static inline QDD
 qdd_bundle_ptr_amp(PTR p, AMP a)
 {
     assert (p <= 0x000000fffffffffe);   // avoid clash with sylvan_invalid
-    assert (a <= 0x000000000007ffff);
+    assert (a <= (1<<23));
     return (a << 40 | p);
 }
 
-static inline QDD
-qdd_bundle_low(BDDVAR var, PTR p, AMP a)
+static void
+qddnode_getchild_ptrs_amps(qddnode_t n, PTR *low, PTR *high, AMP *a, AMP *b)
 {
-    // on the low edge we store the bottom 4 bits of the 8 bit var
-    assert (var <= 0xff);
-    QDD q = qdd_bundle_ptr_amp(p, a);
-    uint64_t masked_var = ((uint64_t)var << 59) & qdd_halfvar_maks;
-    return (masked_var | q);
+    *low  = qddnode_getptrlow(n);
+    *high = qddnode_getptrhigh(n);
+
+    bool norm_pos = (n->low & qdd_amp_pos_mask) >> 54;
+    bool norm_val = (n->low & qdd_amp_val_mask) >> 53;
+    if (norm_pos == 0) { // low amp is C_ZERO or C_ONE, high amp in ctable
+        *a = (norm_val == 0) ? C_ZERO : C_ONE;
+        *b = QDD_AMP(n->high);
+    }
+    else { // high amp is C_ZERO or C_ONE, low amp in ctable
+        *b = (norm_val == 0) ? C_ZERO : C_ONE;
+        *a = QDD_AMP(n->high);
+    }
 }
 
-static inline QDD
-qdd_bundle_high(BDDVAR var, PTR p, AMP a)
+static void
+qddnode_getchilderen(qddnode_t n, QDD *low, QDD *high)
 {
-    // on the high edge we store the top 4 bits of the 8 bit var
-    assert (var <= 0xff);
-    QDD q = qdd_bundle_ptr_amp(p, a);
-    uint64_t masked_var = ((uint64_t)var << 55) & qdd_halfvar_maks;
-    return (masked_var | q);
+    PTR l, h;
+    AMP a, b;
+    qddnode_getchild_ptrs_amps(n, &l, &h, &a, &b);
+    *low  = qdd_bundle_ptr_amp(l, a);
+    *high = qdd_bundle_ptr_amp(h, b);
 }
 
-static inline void
+// TODO: rename qddnode_pack
+static void
 qdd_packnode(qddnode_t n, BDDVAR var, PTR low, PTR high, AMP a, AMP b)
 {
-    n->low  = qdd_bundle_low(var, low, a);
-    n->high = qdd_bundle_high(var, high, b);
+    assert(a == C_ZERO || a == C_ONE || b == C_ZERO || b == C_ONE);
+
+    AMP amp_high;
+    bool norm_pos = (a == C_ZERO || a == C_ONE) ? 0 : 1;
+    bool norm_val;
+    if (norm_pos == 0) {
+        norm_val = (a == C_ZERO) ? 0 : 1;
+        amp_high = b;
+    }
+    else {
+        norm_val = (b == C_ZERO) ? 0 : 1;
+        amp_high = a;
+    }
+
+    n->low  = ((uint64_t)var)<<55 | ((uint64_t)norm_pos)<<54 | ((uint64_t)norm_val)<<53 | low;
+    n->high = amp_high<<40 | high;
 }
 
 /***************</ (bit level) manipulation of QDD / qddnode_t >***************/
@@ -269,8 +266,8 @@ VOID_TASK_IMPL_1(qdd_gc_mark_rec, QDD, qdd)
 
     if (llmsset_mark(nodes, QDD_PTR(qdd))) {
         qddnode_t n = QDD_GETNODE(QDD_PTR(qdd));
-        SPAWN(qdd_gc_mark_rec, qddnode_getlow(n));
-        CALL(qdd_gc_mark_rec, qddnode_gethigh(n));
+        SPAWN(qdd_gc_mark_rec, qddnode_getptrlow(n));
+        CALL(qdd_gc_mark_rec, qddnode_getptrhigh(n));
         SYNC(qdd_gc_mark_rec);
     }
 }
@@ -430,7 +427,7 @@ qdd_quit()
 
 
 void
-sylvan_init_qdd(size_t amptable_size)
+sylvan_init_qdd(size_t ctable_size)
 {
     if (qdd_initialized) return;
     qdd_initialized = 1;
@@ -445,7 +442,7 @@ sylvan_init_qdd(size_t amptable_size)
         qdd_protected_created = 1;
     }
 
-    init_amplitude_table(amptable_size);
+    init_amplitude_table(ctable_size);
 
     LACE_ME;
     CALL(qdd_refs_init);
@@ -551,8 +548,7 @@ qdd_get_topvar(QDD qdd, BDDVAR t, BDDVAR *topvar, QDD *low, QDD *high)
     }
     else {
         qddnode_t node = QDD_GETNODE(QDD_PTR(qdd));
-        *low  = qddnode_getlow(node);
-        *high = qddnode_gethigh(node);
+        qddnode_getchilderen(node, low, high);
     }
 }
 
@@ -679,8 +675,8 @@ qdd_unmark_rec(QDD qdd)
     qddnode_t n = QDD_GETNODE(QDD_PTR(qdd));
     if (!qddnode_getmark(n)) return;
     qddnode_setmark(n, 0);
-    qdd_unmark_rec(qddnode_getlow(n));
-    qdd_unmark_rec(qddnode_gethigh(n));
+    qdd_unmark_rec(qddnode_getptrlow(n));
+    qdd_unmark_rec(qddnode_getptrhigh(n));
 }
 
 
@@ -694,7 +690,7 @@ qdd_nodecount_mark(QDD qdd)
     qddnode_t n = QDD_GETNODE(QDD_PTR(qdd));
     if (qddnode_getmark(n)) return 0;
     qddnode_setmark(n, 1);
-    return 1 + qdd_nodecount_mark(qddnode_getlow(n)) + qdd_nodecount_mark(qddnode_gethigh(n));
+    return 1 + qdd_nodecount_mark(qddnode_getptrlow(n)) + qdd_nodecount_mark(qddnode_getptrhigh(n));
 }
 
 uint64_t
@@ -747,8 +743,9 @@ TASK_IMPL_1(QDD, _fill_new_amp_table, QDD, qdd)
     // Recursive for children
     QDD low, high;
     qddnode_t n = QDD_GETNODE(QDD_PTR(qdd));
-    qdd_refs_spawn(SPAWN(_fill_new_amp_table, qddnode_gethigh(n)));
-    low = CALL(_fill_new_amp_table, qddnode_getlow(n));
+    qddnode_getchilderen(n, &low, &high);
+    qdd_refs_spawn(SPAWN(_fill_new_amp_table, high));
+    low = CALL(_fill_new_amp_table, low);
     qdd_refs_push(low);
     high = qdd_refs_sync(SYNC(_fill_new_amp_table));
     qdd_refs_pop(1);
@@ -806,14 +803,12 @@ TASK_IMPL_2(QDD, qdd_plus, QDD, a, QDD, b)
     high_b = qdd_bundle_ptr_amp(QDD_PTR(b), C_ONE);
     if (var_a <= var_b) { // didn't skip in QDD a
         qddnode_t node = QDD_GETNODE(QDD_PTR(a));
-        low_a  = qddnode_getlow(node);
-        high_a = qddnode_gethigh(node);
+        qddnode_getchilderen(node, &low_a, &high_a);
         topvar = var_a;
     }
     if (var_b <= var_a) { // didn't skip in QDD b
         qddnode_t node = QDD_GETNODE(QDD_PTR(b));
-        low_b  = qddnode_getlow(node);
-        high_b = qddnode_gethigh(node);
+        qddnode_getchilderen(node, &low_b, &high_b);
         topvar = var_b;
     }
 
@@ -1281,9 +1276,8 @@ TASK_IMPL_6(QDD, qdd_ccircuit, QDD, qdd, uint32_t, circ_id, BDDVAR*, cs, uint32_
         else {
             // not skipped, either (var == control) or (var < control)
             qddnode_t node = QDD_GETNODE(QDD_PTR(qdd));
-            var  = qddnode_getvar(node);
-            low  = qddnode_getlow(node);
-            high = qddnode_gethigh(node);
+            var = qddnode_getvar(node);
+            qddnode_getchilderen(node, &low, &high);
             if (var == c) control_here = true;
         }
 
@@ -1342,8 +1336,7 @@ TASK_IMPL_4(QDD, qdd_all_control_phase, QDD, qdd, BDDVAR, k, BDDVAR, n, bool*, x
     }
     else {
         // case var == k (var < k shouldn't happen)
-        low  = qddnode_getlow(node);
-        high = qddnode_gethigh(node);
+        qddnode_getchilderen(node, &low, &high);
     }
 
     // terminal case, apply phase depending on x[k] (control k on 0 or 1)
@@ -1729,7 +1722,7 @@ shor_period_finding(uint64_t a, uint64_t N)
         // make sure q0 is in the |0> state
         if (m_outcome == 1) qdd = qdd_gate(qdd, GATEID_X, shor_wires.top);
         qddnode_t node = QDD_GETNODE(QDD_PTR(qdd));
-        assert(qddnode_gethigh(node) == QDD_TERMINAL);
+        assert(qddnode_getptrhigh(node) == QDD_TERMINAL);
         
 
         // gc amp table
@@ -2020,8 +2013,7 @@ qdd_measure_all(QDD qdd, BDDVAR n, bool* ms, double *p)
             high = qdd_bundle_ptr_amp(QDD_PTR(qdd), C_ONE);
         }
         else {
-            low  = qddnode_getlow(node);
-            high = qddnode_gethigh(node);
+            qddnode_getchilderen(node, &low, &high);
         }
 
         prob_low  = qdd_unnormed_prob(low,  k+1, n);
@@ -2096,6 +2088,7 @@ qdd_get_amplitude(QDD q, bool* basis_state)
 {
 
     AMP a = C_ONE;
+    QDD low, high;
     for (;;) {
         a = amp_mul(a, QDD_AMP(q));
         
@@ -2105,12 +2098,10 @@ qdd_get_amplitude(QDD q, bool* basis_state)
         // now we need to choose low or high edge of next node
         qddnode_t node = QDD_GETNODE(QDD_PTR(q));
         BDDVAR var     = qddnode_getvar(node);
+        qddnode_getchilderen(node, &low, &high);
 
         // Condition low/high choice on basis state vector[var]
-        if (basis_state[var] == 0)
-            q = node->low;
-        else
-            q = node->high;
+        q = (basis_state[var] == 0) ? low : high;
     }
 
     // TODO: return complex struct instead of the index?
@@ -2453,23 +2444,24 @@ bit_from_int(uint64_t a, uint8_t index)
  */
 static void qddnode_pprint(qddnode_t n)
 {
-    AMP amp_low  = qddnode_getamplow(n);
-    AMP amp_high = qddnode_getamphigh(n);
+    BDDVAR var = qddnode_getvar(n);
+    QDD low, high;
+    qddnode_getchilderen(n, &low, &high);
     printf("[var=%d, low=%lx, high=%lx, ", 
-             qddnode_getvar(n),
-             qddnode_getptrlow(n),
-             qddnode_getptrhigh(n));
-    if(amp_low == C_ZERO)      printf("a=C_ZERO, ");
-    else if(amp_low == C_ONE)  printf("a=C_ONE, ");
+             var,
+             QDD_PTR(low),
+             QDD_PTR(high));
+    if(QDD_AMP(low) == C_ZERO)      printf("a=C_ZERO, ");
+    else if(QDD_AMP(high) == C_ONE)  printf("a=C_ONE, ");
     else {
-        printf("a=%lx, ",amp_low);
-        printf("("); Cprint(Cvalue(amp_high)); printf(")");
+        printf("a=%lx, ", QDD_AMP(low));
+        printf("("); Cprint(Cvalue(QDD_AMP(low))); printf(")");
     }                      
-    if(amp_high == C_ZERO)     printf("b=C_ZERO ");
-    else if(amp_high == C_ONE) printf("b=C_ONE, ");
+    if(QDD_AMP(high) == C_ZERO)     printf("b=C_ZERO ");
+    else if(QDD_AMP(high) == C_ONE) printf("b=C_ONE, ");
     else {                     
-        printf("b=%lx", amp_high);
-        printf("("); Cprint(Cvalue(amp_high)); printf(")");
+        printf("b=%lx", QDD_AMP(high));
+        printf("("); Cprint(Cvalue(QDD_AMP(high))); printf(")");
     }
     printf("]\n");
 }
@@ -2483,8 +2475,10 @@ _print_qdd(QDD q)
             qddnode_setmark(node, 1);
             printf("%lx\t", QDD_PTR(q));
             qddnode_pprint(node);
-            _print_qdd(qddnode_getlow(node));
-            _print_qdd(qddnode_gethigh(node));
+            QDD low, high;
+            qddnode_getchilderen(node, &low, &high);
+            _print_qdd(low);
+            _print_qdd(high);
         }
     }
 }
@@ -2530,20 +2524,22 @@ qdd_fprintdot_rec(FILE *out, QDD qdd, bool draw_zeros)
 
     
     // children of this node
-    qdd_fprintdot_rec(out, qddnode_getlow(n), draw_zeros);
-    qdd_fprintdot_rec(out, qddnode_gethigh(n), draw_zeros);
+    QDD low, high;
+    qddnode_getchilderen(n, &low, &high);
+    qdd_fprintdot_rec(out, low, draw_zeros);
+    qdd_fprintdot_rec(out, high, draw_zeros);
 
     // add edge from this node to each child (unless weight 0)
-    if (draw_zeros || qddnode_getamplow(n) != C_ZERO) {
+    if (draw_zeros || QDD_AMP(low) != C_ZERO) {
         fprintf(out, "%" PRIu64 " -> %" PRIu64 " [style=dashed",
-                    QDD_PTR(qdd), qddnode_getptrlow(n));
-        qdd_fprintdot_label(out, qddnode_getamplow(n));
+                    QDD_PTR(qdd), QDD_PTR(low));
+        qdd_fprintdot_label(out, QDD_AMP(low));
         fprintf(out, "];\n");
     }
-    if (draw_zeros || qddnode_getamphigh(n) != C_ZERO) {
+    if (draw_zeros || QDD_AMP(high) != C_ZERO) {
         fprintf(out, "%" PRIu64 " -> %" PRIu64 " [style=solid",
-                    QDD_PTR(qdd), qddnode_getptrhigh(n));
-        qdd_fprintdot_label(out, qddnode_getamphigh(n));
+                    QDD_PTR(qdd), QDD_PTR(high));
+        qdd_fprintdot_label(out, QDD_AMP(high));
         fprintf(out, "];\n");
     }
 }
