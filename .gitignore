@@ -8,6 +8,7 @@
 
 # VS code files
 *.code-workspace
+/.vscode
 
 # Build
 /build
