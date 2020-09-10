@@ -27,14 +27,6 @@
 
 //static int granularity = 1; // default
 
-// TODO: make a cleaner separation between the code in
-// - sylvan_qdd.h
-// - sylvan_qdd.c
-// - sylvan_qdd_int.h
-// - sylvan_qdd_int.c
-// consistent with for example the equivalent mtbdd files.
-
-
 /****************< (bit level) manipulation of QDD / qddnode_t >***************/
 /**
  * QDD edge structure (64 bits)
@@ -59,13 +51,11 @@
  *      40 bits: high edge pointer to next node (PTR)
  */
 static const QDD qdd_marked_mask  = 0x8000000000000000LL;
-//static const QDD qdd_halfvar_maks = 0x7800000000000000LL;
 static const QDD qdd_var_mask_low = 0x7f80000000000000LL;
 static const QDD qdd_amp_pos_mask = 0x0040000000000000LL;
 static const QDD qdd_amp_val_mask = 0x0020000000000000LL;
-static const QDD qdd_amp_mask2    = 0x7fffff0000000000LL;
+static const QDD qdd_amp_mask     = 0x7fffff0000000000LL;
 static const QDD qdd_ptr_mask     = 0x000000ffffffffffLL;
-//static const QDD qdd_edge_mask2   = 0x7fffffffffffffffLL;
 
 typedef struct __attribute__((packed)) qddnode {
     QDD low, high;
@@ -78,7 +68,7 @@ typedef struct __attribute__((packed)) qddnode {
 static inline AMP
 QDD_AMP(QDD q)
 {
-    return (q & qdd_amp_mask2) >> 40; // 23 bits
+    return (q & qdd_amp_mask) >> 40; // 23 bits
 }
 
 /**
@@ -131,7 +121,6 @@ static inline BDDVAR
 qddnode_getvar(qddnode_t n)
 {
     return (BDDVAR) ((n->low & qdd_var_mask_low) >> 55 ); // 8 bits
-    //return (BDDVAR) ( (n->low >> 59) | ((n->high >> 55) & 0xf0) ); // 8 bits
 }
 
 /**
@@ -528,6 +517,7 @@ qdd_refs_sync(QDD result)
 
 /******************</garbage collection, references, marking>******************/
 
+// TODO: rename parms to a, b instead of low/high
 static void
 qdd_get_topvar(QDD qdd, BDDVAR t, BDDVAR *topvar, QDD *low, QDD *high)
 {
@@ -625,8 +615,8 @@ qdd_amp_normalize_largest(AMP *low, AMP *high)
     }
 
     // Normalize using the absolute greatest value
-    complex_t cl = Cvalue(*low);
-    complex_t ch = Cvalue(*high);
+    complex_t cl = comp_value(*low);
+    complex_t ch = comp_value(*high);
     if ( (cl.r*cl.r + cl.i*cl.i)  >=  (ch.r*ch.r + ch.i*ch.i) ) {
         norm = *low;
         *low = C_ONE;
@@ -797,6 +787,7 @@ TASK_IMPL_2(QDD, qdd_plus, QDD, a, QDD, b)
     }
 
     // Check which is topvar, insert node for QDD with skipped case
+    // TODO: use get_topvar() function
     low_a  = qdd_bundle_ptr_amp(QDD_PTR(a), C_ONE);
     high_a = qdd_bundle_ptr_amp(QDD_PTR(a), C_ONE);
     low_b  = qdd_bundle_ptr_amp(QDD_PTR(b), C_ONE);
@@ -873,7 +864,7 @@ TASK_IMPL_3(QDD, qdd_gate, QDD, q, uint32_t, gate, BDDVAR, target)
                                         qdd_bundle_ptr_amp(QDD_PTR(low), a_u10));
         QDD qdd2 = qdd_makenode(target, qdd_bundle_ptr_amp(QDD_PTR(high),b_u01),
                                         qdd_bundle_ptr_amp(QDD_PTR(high),b_u11));
-        res = qdd_plus(qdd1, qdd2);
+        res = qdd_plus(qdd1, qdd2); // TODO: pass current var instead of 0?
     }
     else { // var < target: not at target qubit yet, recursive calls down
         qdd_refs_spawn(SPAWN(qdd_gate, high, gate, target));
@@ -1101,9 +1092,9 @@ TASK_IMPL_4(QDD, qdd_matmat_mult, QDD, a, QDD, b, BDDVAR, nvars, BDDVAR, nextvar
     rh1 = qdd_makenode(2*nextvar+1, a00_b01, a10_b01);
     rh2 = qdd_makenode(2*nextvar+1, a01_b11, a11_b11);
 
-    // 5. add resulting qdds TODO: SPAWN tasks
+    // 5. add resulting qdds
     QDD lh, rh;
-    qdd_refs_spawn(SPAWN(qdd_plus, lh1, lh2));
+    qdd_refs_spawn(SPAWN(qdd_plus, lh1, lh2)); // TODO: use topvar instead of 0?
     rh = CALL(qdd_plus, rh1, rh2);
     qdd_refs_push(rh);
     lh = qdd_refs_sync(SYNC(qdd_plus));
@@ -1342,11 +1333,11 @@ TASK_IMPL_4(QDD, qdd_all_control_phase, QDD, qdd, BDDVAR, k, BDDVAR, n, bool*, x
     // terminal case, apply phase depending on x[k] (control k on 0 or 1)
     if (k == (n-1)) {
         if (x[k] == 1) {
-            AMP new_amp = amp_mul(QDD_AMP(high), Clookup(Cmake(-1.0, 0.0)));
+            AMP new_amp = amp_mul(QDD_AMP(high), C_MIN_ONE);
             high = qdd_bundle_ptr_amp(QDD_PTR(high), new_amp);
         }
         else {
-            AMP new_amp = amp_mul(QDD_AMP(low), Clookup(Cmake(-1.0, 0.0)));
+            AMP new_amp = amp_mul(QDD_AMP(low), C_MIN_ONE);
             low = qdd_bundle_ptr_amp(QDD_PTR(low), new_amp);
         }
     }
@@ -1395,7 +1386,7 @@ _qdd_grover_iteration(QDD qdd, BDDVAR n, bool* flag)
     bool x[n]; 
     for(BDDVAR k = 0; k < n; k++) x[k] = 0;
     qdd = qdd_all_control_phase(qdd, n, x);
-    AMP new_root_amp = amp_mul(QDD_AMP(qdd), Clookup(Cmake(-1.0, 0.0)));
+    AMP new_root_amp = amp_mul(QDD_AMP(qdd), C_MIN_ONE);
     qdd = qdd_bundle_ptr_amp(QDD_PTR(qdd), new_root_amp);
 
     // H on all qubits
@@ -1959,11 +1950,11 @@ qdd_measure_q0(QDD qdd, BDDVAR nvars, int *m, double *p)
     AMP norm;
     if (*m == 0) {
         high = qdd_bundle_ptr_amp(QDD_TERMINAL, C_ZERO);
-        norm = Clookup(Cmake(sqrt(prob_low), 0.0));
+        norm = comp_lookup(comp_make(sqrt(prob_low), 0.0));
     }
     else {
         low  = qdd_bundle_ptr_amp(QDD_TERMINAL, C_ZERO);
-        norm = Clookup(Cmake(sqrt(prob_high), 0.0));
+        norm = comp_lookup(comp_make(sqrt(prob_high), 0.0));
     }
 
     QDD res = qdd_makenode(0, low, high);
@@ -2112,7 +2103,7 @@ double
 _prob(AMP a) // TODO: rename to "abs_squared"
 {
     // move to qdd_int file?
-    complex_t c = Cvalue(a);
+    complex_t c = comp_value(a);
     double abs = sqrt( (c.r*c.r) + (c.i*c.i) );
     return (abs*abs);
 }
@@ -2268,7 +2259,7 @@ qdd_create_all_control_phase(BDDVAR n, bool *x)
     }
     else if (x[n-1] == 0) {
         ccphase = qdd_stack_matrix(ccphase, n-1, GATEID_Z);
-        ccphase = qdd_bundle_ptr_amp(QDD_PTR(ccphase),Clookup(Cmake(-1.0,0.0)));
+        ccphase = qdd_bundle_ptr_amp(QDD_PTR(ccphase), C_MIN_ONE);
     }
 
     // Stack remaining controls
@@ -2292,10 +2283,10 @@ QDD
 qdd_remove_global_phase(QDD qdd)
 {
     // Remove global phase by replacing amp of qdd with absolute value of amp
-    complex_t c = Cvalue(QDD_AMP(qdd));
+    complex_t c = comp_value(QDD_AMP(qdd));
     c.r = sqrt(c.r*c.r + c.i*c.i);
     c.i = 0.0;
-    AMP new_root_amp = Clookup(c);
+    AMP new_root_amp = comp_lookup(c);
     QDD res = qdd_bundle_ptr_amp(QDD_PTR(qdd), new_root_amp);
     return res;
 }
@@ -2311,22 +2302,22 @@ qdd_equivalent(QDD a, QDD b, int n, bool exact, bool verbose)
         amp_a = qdd_get_amplitude(a, x);
         amp_b = qdd_get_amplitude(b, x);
         if(exact){
-            if(!comp_exact_equal(Cvalue(amp_a), Cvalue(amp_b))){
+            if(!comp_exact_equal(comp_value(amp_a), comp_value(amp_b))){
                 if(verbose){
                     _print_bitstring(x, n, true);
-                    printf(", amp a ="); Cprint(Cvalue(amp_a));
-                    printf(" != amp b ="); Cprint(Cvalue(amp_b));
+                    printf(", amp a ="); comp_print(comp_value(amp_a));
+                    printf(" != amp b ="); comp_print(comp_value(amp_b));
                     printf("\n");
                 }
                 return false;
             }
         }
         else{
-            if(!comp_approx_equal(Cvalue(amp_a), Cvalue(amp_b))){
+            if(!comp_approx_equal(comp_value(amp_a), comp_value(amp_b))){
                 if(verbose){
                     _print_bitstring(x, n, true);
-                    printf(", amp a ="); Cprint(Cvalue(amp_a));
-                    printf(" !~= amp b ="); Cprint(Cvalue(amp_b));
+                    printf(", amp a ="); comp_print(comp_value(amp_a));
+                    printf(" !~= amp b ="); comp_print(comp_value(amp_b));
                     printf("\n");
                 }
                 return false;
@@ -2455,13 +2446,13 @@ static void qddnode_pprint(qddnode_t n)
     else if(QDD_AMP(high) == C_ONE)  printf("a=C_ONE, ");
     else {
         printf("a=%lx, ", QDD_AMP(low));
-        printf("("); Cprint(Cvalue(QDD_AMP(low))); printf(")");
+        printf("("); comp_print(comp_value(QDD_AMP(low))); printf(")");
     }                      
     if(QDD_AMP(high) == C_ZERO)     printf("b=C_ZERO ");
     else if(QDD_AMP(high) == C_ONE) printf("b=C_ONE, ");
     else {                     
         printf("b=%lx", QDD_AMP(high));
-        printf("("); Cprint(Cvalue(QDD_AMP(high))); printf(")");
+        printf("("); comp_print(comp_value(QDD_AMP(high))); printf(")");
     }
     printf("]\n");
 }
@@ -2487,7 +2478,7 @@ void
 qdd_printnodes(QDD q)
 {
     printf("root edge: %lx, %lx = ",QDD_PTR(q), QDD_AMP(q));
-    Cprint(Cvalue(QDD_AMP(q)));
+    comp_print(comp_value(QDD_AMP(q)));
     printf("\n");
     _print_qdd(q);
     qdd_unmark_rec(q);
@@ -2500,7 +2491,7 @@ qdd_fprintdot_label(FILE *out, AMP a)
     if (a == C_ONE) {}
     else if (a == C_ZERO) { fprintf(out, "0"); }
     else {
-        complex_t val = Cvalue(a);
+        complex_t val = comp_value(a);
         if (val.r != 0.0) fprintf(out, "%.3lf", val.r);
         if (val.i > 0.0) fprintf(out, "+%.3lfi", val.i);
         else if (val.i < 0.0) fprintf(out, "%.3lfi", val.i);

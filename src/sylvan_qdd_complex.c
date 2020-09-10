@@ -34,26 +34,19 @@ cmap_t *ctable_old;
 
 
 
-// return complex conjugate
-complex_t
-Conj (complex_t c)
-{
-    c.i = -c.i;
-    return c;
-}
+/* Shorthand functions for making complex numbers */
 
-// make a complex value
 complex_t
-Cmake (double r, double i)
+comp_make(double r, double i)
 {
-    complex_t c;
-    c.r = r;
-    c.i = i;
-    return (c);
+    complex_t res;
+    res.r = r;
+    res.i = i;
+    return res;
 }
 
 complex_t
-CmakeAngle (double theta)
+comp_make_angle(double theta)
 {
     complex_t c;
     c.r = cos(theta);
@@ -62,98 +55,29 @@ CmakeAngle (double theta)
 }
 
 complex_t
-CmakeOne (void)
+comp_zero()
 {
-    return Cmake (1.0, 0.0);
+    return comp_make(0.0, 0.0);
 }
 
 complex_t
-CmakeZero (void)
+comp_one()
 {
-    return Cmake (0.0, 0.0);
+    return comp_make(1.0, 0.0);
 }
 
 complex_t
-CmakeMOne (void)
+comp_minus_one()
 {
-    return Cmake (-1.0, 0.0);
+    return comp_make(-1.0, 0.0);
 }
 
-void
-Cprint(complex_t c)
-{
-    if(c.r >= 0)
-        printf(" ");
-    printf("%.60f", c.r);
-    if (c.i > 0)
-        printf("+%fi", c.i);
-    if (c.i < 0)
-        printf("%fi", c.i);
-}
 
-void
-Cprint_bitvalues(AMP i)
-{
-    print_bitvalues(ctable, i);
-}
 
-// returns the complex number equal to (a+b*sqrt(2))/c
-// required to be compatible with quadratic irrational-based
-// complex number package
 double
-Qmake (int a, int b, int c)
+comp_qmake(int a, int b, int c)
 {
-    return (((float) a + ((float) b) * sqrt (2.0)) / (float) (c));
-}
-
-
-// lookup a complex value in the complex value table
-// if not found add it
-// this routine uses linear searching
-AMP
-Clookup (complex_t c)
-{
-    uint64_t res;
-    cmap_find_or_put(ctable, &c, &res);
-    return (AMP) res;
-}
-
-complex_t
-Cvalue (AMP a)
-{
-    // special cases (lookup is read only so this might make little difference)
-    if (a == C_ZERO) return CmakeZero();
-    if (a == C_ONE)  return CmakeOne();
-
-    // lookup
-    complex_t * res;
-    res = cmap_get(ctable, a);
-    return *res;
-}
-
-complex_t
-Cvalue_old (AMP i)
-{
-    complex_t * res;
-    res = cmap_get(ctable_old, i);
-    return *res;
-}
-
-
-
-bool comp_exact_equal(complex_t a, complex_t b)
-{
-    return (a.r == b.r && a.i == b.i);
-}
-
-bool comp_approx_equal(complex_t a, complex_t b)
-{
-    return comp_epsilon_close(a, b, TOLERANCE);
-}
-
-bool comp_epsilon_close(complex_t a, complex_t b, double epsilon)
-{
-    return ( (fabs(a.r - b.r) < epsilon) && (fabs(a.i - b.i) < epsilon) );
+    return (((double) a + ((double) b) * sqrt (2.0)) / (double) (c));
 }
 
 
@@ -169,10 +93,10 @@ amp_abs(AMP a)
     complex_t ca, cr;
     AMP res;
 
-    ca = Cvalue(a);
+    ca = comp_value(a);
     cr = comp_abs(ca);
 
-    res = Clookup(cr);
+    res = comp_lookup(cr);
     return res;
 }
 
@@ -185,10 +109,10 @@ amp_neg(AMP a)
     complex_t ca, cr;
     AMP res;
 
-    ca = Cvalue(a);
+    ca = comp_value(a);
     cr = comp_neg(ca);
 
-    res = Clookup(cr);
+    res = comp_lookup(cr);
     return res;
 }
 
@@ -202,11 +126,11 @@ amp_add(AMP a, AMP b)
     complex_t ca, cb, cr;
     AMP res;
 
-    ca = Cvalue(a);
-    cb = Cvalue(b);
+    ca = comp_value(a);
+    cb = comp_value(b);
     cr = comp_add(ca, cb);
 
-    res = Clookup(cr);
+    res = comp_lookup(cr);
     return res;
 }
 
@@ -220,11 +144,11 @@ amp_sub(AMP a, AMP b)
     complex_t ca, cb, cr;
     AMP res;
 
-    ca = Cvalue(a);
-    cb = Cvalue(b);
+    ca = comp_value(a);
+    cb = comp_value(b);
     cr = comp_sub(ca, cb);
 
-    res = Clookup(cr);
+    res = comp_lookup(cr);
     return res;
 }
 
@@ -239,11 +163,11 @@ amp_mul(AMP a, AMP b)
     complex_t ca, cb, cr;
     AMP res;
 
-    ca = Cvalue(a);
-    cb = Cvalue(b);
+    ca = comp_value(a);
+    cb = comp_value(b);
     cr = comp_mul(ca, cb);
 
-    res = Clookup(cr);
+    res = comp_lookup(cr);
     return res;
 }
 
@@ -258,11 +182,11 @@ amp_div(AMP a, AMP b)
     complex_t ca, cb, cr;
     AMP res;
 
-    ca = Cvalue(a);
-    cb = Cvalue(b);
+    ca = comp_value(a);
+    cb = comp_value(b);
     cr = comp_div(ca, cb);
 
-    res = Clookup(cr);
+    res = comp_lookup(cr);
     return res;
 }
 
@@ -276,6 +200,15 @@ comp_abs(complex_t a)
     complex_t res;
     res.r = sqrt( (a.r*a.r) + (a.i*a.i) );
     res.i = 0.0;
+    return res;
+}
+
+complex_t
+comp_cnj(complex_t a)
+{
+    complex_t res;
+    res.r =  a.r;
+    res.i = -a.i;
     return res;
 }
 
@@ -332,14 +265,122 @@ comp_div(complex_t a, complex_t b)
 }
 
 
+
+/* Comparing complex values */
+
+bool comp_exact_equal(complex_t a, complex_t b)
+{
+    return (a.r == b.r && a.i == b.i);
+}
+
+bool comp_approx_equal(complex_t a, complex_t b)
+{
+    return comp_epsilon_close(a, b, TOLERANCE);
+}
+
+bool comp_epsilon_close(complex_t a, complex_t b, double epsilon)
+{
+    return ( (fabs(a.r - b.r) < epsilon) && (fabs(a.i - b.i) < epsilon) );
+}
+
+
+
+/* Inserting / retrieving complex values from complex table */
+
+AMP
+comp_lookup(complex_t c)
+{
+    uint64_t res;
+    cmap_find_or_put(ctable, &c, &res);
+    return (AMP) res;
+}
+
+complex_t
+comp_value(AMP a)
+{
+    // special cases (lookup is read-only so this might make little/no difference)
+    if (a == C_ZERO)    return comp_zero();
+    if (a == C_ONE)     return comp_one();
+    if (a == C_MIN_ONE) return comp_minus_one();
+
+    // lookup
+    complex_t * res;
+    res = cmap_get(ctable, a);
+    return *res;
+}
+
+/* used for gc of ctable */
+complex_t
+comp_value_old(AMP a)
+{
+    // special cases
+    if (a == C_ZERO)    return comp_zero();
+    if (a == C_ONE)     return comp_one();
+    if (a == C_MIN_ONE) return comp_minus_one();
+
+    complex_t * res;
+    res = cmap_get(ctable_old, a);
+    return *res;
+}
+
+
+/* Printing */
+
+uint32_t comp_digits_print = 3;
+
+void comp_print(complex_t c)
+{
+    comp_print_digits(c, comp_digits_print);
+}
+
+void comp_print_sci(complex_t c)
+{
+    comp_print_digits_sci(c, comp_digits_print);
+}
+
+void
+comp_print_digits(complex_t c, uint32_t digits)
+{
+    if(c.r >= 0)
+        printf(" ");
+    printf("%.*f", digits, c.r);
+    if (c.i > 0)
+        printf("+%.*fi", digits, c.i);
+    if (c.i < 0)
+        printf("%.*fi", digits, c.i);
+}
+
+void
+comp_print_digits_sci(complex_t c, uint32_t digits)
+{
+    if(c.r >= 0)
+        printf(" ");
+    printf("%.*e", digits, c.r);
+    if (c.i > 0)
+        printf("+%.*ei", digits, c.i);
+    if (c.i < 0)
+        printf("%.*ei", digits, c.i);
+}
+
+void
+comp_print_bits(AMP a)
+{
+    print_bitvalues(ctable, a);
+}
+
+
+
+/* Managing the complex value table */
+
 void
 init_amplitude_table(size_t size)
 {
     SIZE = size;
     ctable = cmap_create(SIZE);
 
-    C_ONE  = Clookup(CmakeOne());
-    C_ZERO = Clookup(CmakeZero());
+    C_ONE     = comp_lookup(comp_one());
+    C_ZERO    = comp_lookup(comp_zero());
+    C_MIN_ONE = comp_lookup(comp_minus_one());
 
     Pi = 2.0 * acos(0.0);
 
@@ -362,36 +403,36 @@ init_gates()
     gates[k][2] = C_ONE;  gates[k][3] = C_ZERO;
 
     k = GATEID_Y;
-    gates[k][0] = C_ZERO; gates[k][1] = Clookup(Cmake(0.0, -1.0));
-    gates[k][2] = Clookup(Cmake(0.0, 1.0));  gates[k][3] = C_ZERO;
+    gates[k][0] = C_ZERO; gates[k][1] = comp_lookup(comp_make(0.0, -1.0));
+    gates[k][2] = comp_lookup(comp_make(0.0, 1.0));  gates[k][3] = C_ZERO;
 
     k = GATEID_Z;
     gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
-    gates[k][2] = C_ZERO; gates[k][3] = Clookup(Cmake(-1.0, 0.0));
+    gates[k][2] = C_ZERO; gates[k][3] = C_MIN_ONE;
 
     k = GATEID_H;
-    gates[k][0] = gates[k][1] = gates[k][2] = Clookup(Cmake(Qmake(0,1,2),0));
-    gates[k][3] = Clookup(Cmake(Qmake(0,-1,2),0));
+    gates[k][0] = gates[k][1] = gates[k][2] = comp_lookup(comp_make(1.0/sqrt(2.0),0));
+    gates[k][3] = comp_lookup(comp_make(-1.0/sqrt(2.0),0));
 
     k = GATEID_S;
     gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
-    gates[k][2] = C_ZERO; gates[k][3] = Clookup(Cmake(0.0, 1.0));
+    gates[k][2] = C_ZERO; gates[k][3] = comp_lookup(comp_make(0.0, 1.0));
 
     k = GATEID_T;
     gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
-    gates[k][2] = C_ZERO; gates[k][3] = Clookup(Cmake(1.0/sqrt(2.0), 1.0/sqrt(2.0)));
+    gates[k][2] = C_ZERO; gates[k][3] = comp_lookup(comp_make(1.0/sqrt(2.0), 1.0/sqrt(2.0)));
 
     k = GATEID_Tdag;
     gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
-    gates[k][2] = C_ZERO; gates[k][3] = Clookup(Cmake(1.0/sqrt(2.0), -1.0/sqrt(2.0)));
+    gates[k][2] = C_ZERO; gates[k][3] = comp_lookup(comp_make(1.0/sqrt(2.0), -1.0/sqrt(2.0)));
 
     k = GATEID_sqrtX;
-    gates[k][0] = Clookup(Cmake(0.5, 0.5)); gates[k][1] = Clookup(Cmake(0.5,-0.5));
-    gates[k][2] = Clookup(Cmake(0.5,-0.5)); gates[k][3] = Clookup(Cmake(0.5, 0.5));
+    gates[k][0] = comp_lookup(comp_make(0.5, 0.5)); gates[k][1] = comp_lookup(comp_make(0.5,-0.5));
+    gates[k][2] = comp_lookup(comp_make(0.5,-0.5)); gates[k][3] = comp_lookup(comp_make(0.5, 0.5));
 
     k = GATEID_sqrtY;
-    gates[k][0] = Clookup(Cmake(0.5, 0.5)); gates[k][1] = Clookup(Cmake(-0.5,-0.5));
-    gates[k][2] = Clookup(Cmake(0.5, 0.5)); gates[k][3] = Clookup(Cmake(0.5, 0.5));
+    gates[k][0] = comp_lookup(comp_make(0.5, 0.5)); gates[k][1] = comp_lookup(comp_make(-0.5,-0.5));
+    gates[k][2] = comp_lookup(comp_make(0.5, 0.5)); gates[k][3] = comp_lookup(comp_make(0.5, 0.5));
 
     init_phase_gates(255);
 }
@@ -399,8 +440,6 @@ init_gates()
 void
 init_phase_gates(int n)
 {
-    // amplitude table needs to be initialized already
-    
     // add gate R_k to gates table
     // (note that R_0 = I, R_1 = Z, R_2 = S, R_4 = T)
     uint32_t gate_id;
@@ -409,17 +448,17 @@ init_phase_gates(int n)
     for (int k=0; k<=n; k++) {
         // forward rotation
         angle = 2*Pi / pow(2.0, (double) k);
-        cartesian = CmakeAngle(angle);
+        cartesian = comp_make_angle(angle);
         gate_id = GATEID_Rk(k);
         gates[gate_id][0] = C_ONE;  gates[gate_id][1] = C_ZERO;
-        gates[gate_id][2] = C_ZERO; gates[gate_id][3] = Clookup(cartesian);
+        gates[gate_id][2] = C_ZERO; gates[gate_id][3] = comp_lookup(cartesian);
 
         // backward rotation
         angle = -2*Pi / pow(2.0, (double) k);
-        cartesian = CmakeAngle(angle);
+        cartesian = comp_make_angle(angle);
         gate_id = GATEID_Rk_dag(k);
         gates[gate_id][0] = C_ONE;  gates[gate_id][1] = C_ZERO;
-        gates[gate_id][2] = C_ZERO; gates[gate_id][3] = Clookup(cartesian);
+        gates[gate_id][2] = C_ZERO; gates[gate_id][3] = comp_lookup(cartesian);
     }
 }
 
@@ -455,6 +494,6 @@ delete_old_table()
 AMP
 move_from_old_to_new(AMP a)
 {
-    complex_t c = Cvalue_old(a);
-    return Clookup(c);
+    complex_t c = comp_value_old(a);
+    return comp_lookup(c);
 }

@@ -12,17 +12,11 @@
 
 #include "util/cmap.h"
 
-
-//typedef struct complex_s {
-//   long double r;   // real
-//   long double i;   // imaginary
-//} complex_t;
-
-
 typedef uint64_t AMP;
 
 AMP C_ZERO;
 AMP C_ONE;
+AMP C_MIN_ONE;
 
 // GATE_ID's (gates are initialized in qdd_complex_init)
 // currently 24 bits available for this number (see GATE_OPID)
@@ -57,27 +51,13 @@ static inline uint32_t GATEID_Rk_dag(int k){ return k + 266; };
 AMP gates[522][4]; // max 2^16 gates atm
 
 
-//uint32_t Ctentries;
-
-// basic operations on complex values
-// meanings are self-evident from the names
-// NOTE arguments are the indices to the values 
-// in the complex value table not the values themselves
-
-// Some of these methods are exposed for unit testing, but don't need to be
-// used in the qdd implementation.
-complex_t Cmake (double r, double i);
-double Qmake (int a, int b, int c);
-AMP Clookup (complex_t c);
-
-complex_t Cvalue(AMP);
-void Cprint(complex_t);
-void Cprint_bitvalues(AMP);
-
-bool comp_exact_equal(complex_t a, complex_t b);
-bool comp_approx_equal(complex_t a, complex_t b);
-bool comp_epsilon_close(complex_t a, complex_t b, double epsilon);
-
+/* Shorthand functions for making complex numbers */
+complex_t comp_make(double r, double i);
+complex_t comp_make_angle(double theta);
+complex_t comp_zero();
+complex_t comp_one();
+complex_t comp_minus_one();
+double comp_qmake(int a, int b, int c);
 
 /* Arithmetic operations on AMPs */
 AMP amp_abs(AMP a);
@@ -90,12 +70,29 @@ AMP amp_div(AMP a, AMP b);
 /* Arithmetic operations on complex structs */
 complex_t comp_abs(complex_t a);
 complex_t comp_neg(complex_t a);
+complex_t comp_cnj(complex_t a);
 complex_t comp_add(complex_t a, complex_t b);
 complex_t comp_sub(complex_t a, complex_t b);
 complex_t comp_mul(complex_t a, complex_t b);
 complex_t comp_div(complex_t a, complex_t b);
 
+/* Comparing complex values */
+bool comp_exact_equal(complex_t a, complex_t b);
+bool comp_approx_equal(complex_t a, complex_t b);
+bool comp_epsilon_close(complex_t a, complex_t b, double epsilon);
 
+/* Inserting / retrieving complex values from complex table */
+AMP comp_lookup(complex_t c);
+complex_t comp_value(AMP a);
+
+/* Printing */
+void comp_print(complex_t c);
+void comp_print_sci(complex_t c);
+void comp_print_digits(complex_t c, uint32_t digits);
+void comp_print_digits_sci(complex_t c, uint32_t digits);
+void comp_print_bits(AMP a);
+
+/* Managing the complex value table */
 void init_amplitude_table(size_t size);
 uint64_t count_amplitude_table_enries();
 void free_amplitude_table();
