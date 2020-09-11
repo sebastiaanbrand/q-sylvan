@@ -1699,7 +1699,7 @@ shor_period_finding(uint64_t a, uint64_t N)
         for (int j = i-1; j >= 0; j--) {
             if (m_outcomes[j] == 1)
                 qdd = qdd_gate(qdd, GATEID_Rk_dag(k), shor_wires.top);
-            k = k << 1; // 2^(iteration)
+            k += 1; // R(k) is a (2*pi / 2^k) rotation
         }
 
         // H on top wire
@@ -1868,15 +1868,20 @@ shor_post_process(uint64_t N, uint64_t a, uint64_t b, uint64_t denom, bool verbo
 }
 
 uint64_t
+shor_generate_a(uint64_t N)
+{
+    uint64_t a;
+    do {
+        a = rand() % N;
+    } while (my_gcd(a, N) != 1 || a == 1);
+    return a;
+}
+
+uint64_t
 run_shor(uint64_t N, uint64_t a, bool verbose)
 {
     // The classical part
-
-    if (a == 0) {
-        do {
-            a = rand() % N;
-        } while (my_gcd(a, N) != 1 || a == 1);
-    }
+    if (a == 0) a = shor_generate_a(N);
 
     shor_set_globals(a, N);
     
@@ -1929,7 +1934,7 @@ qdd_measure_q0(QDD qdd, BDDVAR nvars, int *m, double *p)
     BDDVAR var;
     qdd_get_topvar(qdd, 0, &var, &low, &high);
 
-    assert(qdd_is_unitvector(qdd, nvars));
+    assert(qdd_is_unitvector(qdd, nvars)); // TODO: only do this during testing
 
     prob_low  = qdd_unnormed_prob(low,  1, nvars);
     prob_high = qdd_unnormed_prob(high, 1, nvars);

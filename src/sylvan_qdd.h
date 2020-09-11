@@ -288,6 +288,7 @@ QDD qdd_cmult(QDD qdd, uint64_t a, uint64_t N); // Fig. 6
 QDD qdd_cmult_inv(QDD qdd, uint64_t a, uint64_t N);
 QDD qdd_shor_ua(QDD qdd, uint64_t a, uint64_t N); // Fig. 7
 uint64_t shor_period_finding(uint64_t a, uint64_t N); // Fig. 8
+uint64_t shor_generate_a(uint64_t N);
 void shor_set_globals(uint64_t a, uint64_t N);
 
 /**
