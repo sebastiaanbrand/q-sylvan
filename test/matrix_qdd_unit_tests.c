@@ -7,17 +7,6 @@
 
 bool VERBOSE = true;
 
-int test_matrix_creation()
-{
-    QDD matrix = qdd_create_single_qubit_gate(3, 1, GATEID_Z);
-    FILE *fp;
-    fp = fopen("matrix_test.dot", "w");
-    qdd_fprintdot(fp, matrix, false);
-
-    if(VERBOSE) printf("matrix creation:            TODO\n");
-    return 0;
-}
-
 int test_x_gate()
 {
     BDDVAR nqubits;
@@ -484,7 +473,6 @@ int runtests()
     // we are not testing garbage collection
     sylvan_gc_disable();
 
-    if (test_matrix_creation()) return 1;
     if (test_x_gate()) return 1;
     if (test_h_gate()) return 1;
     if (test_phase_gates()) return 1;

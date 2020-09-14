@@ -1342,7 +1342,7 @@ int test_shor()
     srand(time(NULL));
     uint64_t N, factor, counter, nqubits;
 
-    // 15 = 3 x 5
+    // 15 = 3 x 5 (11 qubits)
     N = 15;
     counter = 0;
     factor = 0;
@@ -1353,21 +1353,18 @@ int test_shor()
     }
     if(VERBOSE) printf("qdd %ld-qubit Shor:        ok (found factor %ld of %ld with %ld tries)\n", nqubits, factor, N, counter);
 
-    // 77 = 7 x 11
-    /*
-    N = 77;
+    // 35 = 5 x 7 (15 qubits)
+    N = 35;
     counter = 0;
     factor = 0;
     nqubits = ceil(log2(N))*2 + 3;
-    //while (!factor) {
-        factor = run_shor(N, 12, false);
+    while (!factor) {
+        factor = run_shor(N, 0, false);
         counter++;
-    //}
+    }
     if(VERBOSE) printf("qdd %ld-qubit Shor:        ok (found factor %ld of %ld with %ld tries)\n", nqubits, factor, N, counter);
-    */
-    
 
-    
+
     return 0;
 }
 
