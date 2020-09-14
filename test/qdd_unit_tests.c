@@ -1194,7 +1194,7 @@ int test_grover()
     grov = qdd_grover(nqubits, x2);
     x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(grov, x2); test_assert(a == C_ZERO);
     x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(grov, x2); test_assert(a == C_ZERO);
-    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(grov, x2); test_assert(a == C_ONE);  prob = _prob(a);
+    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(grov, x2); test_assert(a == C_ONE);  prob = comp_to_prob(comp_value(a));
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(grov, x2); test_assert(a == C_ZERO);
     test_assert(qdd_is_unitvector(grov, nqubits));
 
@@ -1205,14 +1205,14 @@ int test_grover()
     nqubits = 3;
     bool x3[] = {1,1,0}; // "flagged" entry
     grov = qdd_grover(3, x3);
-    x3[2] = 0; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(grov, x3); test_assert(_prob(a) < 0.008);
-    x3[2] = 0; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(grov, x3); test_assert(_prob(a) < 0.008);
-    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(grov, x3); test_assert(_prob(a) < 0.008);
-    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(grov, x3); test_assert(_prob(a) > 0.94);  prob = _prob(a);
-    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(grov, x3); test_assert(_prob(a) < 0.008);
-    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(grov, x3); test_assert(_prob(a) < 0.008);
-    x3[2] = 1; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(grov, x3); test_assert(_prob(a) < 0.008);
-    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(grov, x3); test_assert(_prob(a) < 0.008);
+    x3[2] = 0; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
+    x3[2] = 0; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
+    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
+    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) > 0.94);  prob = comp_to_prob(comp_value(a));
+    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
+    x3[2] = 1; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
+    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
     test_assert(qdd_is_unitvector(grov, 3));
 
     if(VERBOSE) printf("qdd %2d-qubit Grover:      ok (Pr(flag) = %lf)\n", nqubits, prob);
@@ -1225,7 +1225,7 @@ int test_grover()
     for (BDDVAR i = 0; i < nqubits; i++) x10[i] = (bool)(rand() % 2);
     grov = qdd_grover(nqubits, x10);
     test_assert(qdd_is_close_to_unitvector(grov, nqubits, TOLERANCE*100));
-    prob = _prob(qdd_get_amplitude(grov, x10));
+    prob = comp_to_prob(comp_value(qdd_get_amplitude(grov, x10)));
 
     if(VERBOSE) printf("qdd %2d-qubit Grover:      ok (Pr(flag) = %lf)\n", nqubits, prob);
     return 0;

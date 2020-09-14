@@ -75,6 +75,7 @@ complex_t comp_add(complex_t a, complex_t b);
 complex_t comp_sub(complex_t a, complex_t b);
 complex_t comp_mul(complex_t a, complex_t b);
 complex_t comp_div(complex_t a, complex_t b);
+double comp_to_prob(complex_t a);
 
 /* Comparing complex values */
 bool comp_exact_equal(complex_t a, complex_t b);

@@ -245,8 +245,7 @@ TASK_DECL_6(QDD, qdd_ccircuit, QDD, uint32_t, BDDVAR*, uint32_t, BDDVAR, BDDVAR)
  * 
  * TODO: generalize this to control on some but not all qubits.
  */
-#define qdd_all_control_phase(qdd, n, x) (CALL(qdd_all_control_phase,qdd,0,n,x));
-TASK_DECL_4(QDD, qdd_all_control_phase, QDD, BDDVAR, BDDVAR, bool*);
+QDD qdd_all_control_phase(QDD qdd, BDDVAR n, bool *x);
 
 /********************</applying (controlled) sub-circuits>*********************/
 
@@ -260,6 +259,8 @@ TASK_DECL_4(QDD, qdd_all_control_phase, QDD, BDDVAR, BDDVAR, bool*);
  * @param flag Binary representation of some integer in [0, 2^n]
  */
 QDD qdd_grover(BDDVAR n, bool* flag);
+#define qdd_grover_iteration(qdd,n,flag) (CALL(qdd_grover_iteration,qdd,n,flag));
+TASK_DECL_3(QDD, qdd_grover_iteration, QDD, BDDVAR, bool*);
 
 /**
  * The flollowing functions are a breakdown of the components needed for Shor
@@ -351,8 +352,6 @@ TASK_DECL_3(double, qdd_unnormed_prob, QDD, BDDVAR, BDDVAR);
  * @return The amplitude <x|\psi>.
  */
 AMP qdd_get_amplitude(QDD qdd, bool* basis_state);
-
-double _prob(AMP a);
 
 /**
  * Creates a QDD for an n-qubit state |00...0>.

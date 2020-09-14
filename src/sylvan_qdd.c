@@ -209,9 +209,8 @@ qddnode_getchilderen(qddnode_t n, QDD *low, QDD *high)
     *high = qdd_bundle_ptr_amp(h, b);
 }
 
-// TODO: rename qddnode_pack
 static void
-qdd_packnode(qddnode_t n, BDDVAR var, PTR low, PTR high, AMP a, AMP b)
+qddnode_pack(qddnode_t n, BDDVAR var, PTR low, PTR high, AMP a, AMP b)
 {
     assert(a == C_ZERO || a == C_ONE || b == C_ZERO || b == C_ONE);
 
@@ -517,9 +516,8 @@ qdd_refs_sync(QDD result)
 
 /******************</garbage collection, references, marking>******************/
 
-// TODO: rename parms to a, b instead of low/high
 static void
-qdd_get_topvar(QDD qdd, BDDVAR t, BDDVAR *topvar, QDD *low, QDD *high)
+qdd_get_topvar(QDD qdd, BDDVAR t, BDDVAR *topvar, QDD *a, QDD *b)
 {
     bool skipped = false;
     if(QDD_PTR(qdd) == QDD_TERMINAL) {
@@ -532,13 +530,13 @@ qdd_get_topvar(QDD qdd, BDDVAR t, BDDVAR *topvar, QDD *low, QDD *high)
     }
 
     if (skipped) {
-        *low  = qdd_bundle_ptr_amp(QDD_PTR(qdd), C_ONE);
-        *high = qdd_bundle_ptr_amp(QDD_PTR(qdd), C_ONE);
+        *a = qdd_bundle_ptr_amp(QDD_PTR(qdd), C_ONE);
+        *b = qdd_bundle_ptr_amp(QDD_PTR(qdd), C_ONE);
         *topvar  = t;
     }
     else {
         qddnode_t node = QDD_GETNODE(QDD_PTR(qdd));
-        qddnode_getchilderen(node, low, high);
+        qddnode_getchilderen(node, a, b);
     }
 }
 
@@ -558,7 +556,7 @@ _qdd_makenode(BDDVAR var, PTR low, PTR high, AMP a, AMP b)
     }
     */
 
-    qdd_packnode(&n, var, low, high, a, b);
+    qddnode_pack(&n, var, low, high, a, b);
 
     PTR result;
     int created;
@@ -864,7 +862,7 @@ TASK_IMPL_3(QDD, qdd_gate, QDD, q, uint32_t, gate, BDDVAR, target)
                                         qdd_bundle_ptr_amp(QDD_PTR(low), a_u10));
         QDD qdd2 = qdd_makenode(target, qdd_bundle_ptr_amp(QDD_PTR(high),b_u01),
                                         qdd_bundle_ptr_amp(QDD_PTR(high),b_u11));
-        res = qdd_plus(qdd1, qdd2); // TODO: pass current var instead of 0?
+        res = qdd_plus(qdd1, qdd2);
     }
     else { // var < target: not at target qubit yet, recursive calls down
         qdd_refs_spawn(SPAWN(qdd_gate, high, gate, target));
@@ -1094,7 +1092,7 @@ TASK_IMPL_4(QDD, qdd_matmat_mult, QDD, a, QDD, b, BDDVAR, nvars, BDDVAR, nextvar
 
     // 5. add resulting qdds
     QDD lh, rh;
-    qdd_refs_spawn(SPAWN(qdd_plus, lh1, lh2)); // TODO: use topvar instead of 0?
+    qdd_refs_spawn(SPAWN(qdd_plus, lh1, lh2));
     rh = CALL(qdd_plus, rh1, rh2);
     qdd_refs_push(rh);
     lh = qdd_refs_sync(SYNC(qdd_plus));
@@ -1301,9 +1299,9 @@ TASK_IMPL_6(QDD, qdd_ccircuit, QDD, qdd, uint32_t, circ_id, BDDVAR*, cs, uint32_
     return res;
 }
 
-TASK_IMPL_4(QDD, qdd_all_control_phase, QDD, qdd, BDDVAR, k, BDDVAR, n, bool*, x)
+QDD
+qdd_all_control_phase_rec(QDD qdd, BDDVAR k, BDDVAR n, bool *x)
 {
-    // TODO: remove LACE, no branching in this function
     assert(k < n);
     
     bool skipped_k = false;
@@ -1345,12 +1343,12 @@ TASK_IMPL_4(QDD, qdd_all_control_phase, QDD, qdd, BDDVAR, k, BDDVAR, n, bool*, x
     else {
         if (x[k] == 1) {
             k++; // next level
-            high = CALL(qdd_all_control_phase, high, k, n, x);
+            high = qdd_all_control_phase_rec(high, k, n, x);
             k--;
         }
         else {
             k++;
-            low = CALL(qdd_all_control_phase, low, k, n, x);
+            low = qdd_all_control_phase_rec(low, k, n, x);
             k--;
         }
     }
@@ -1363,6 +1361,11 @@ TASK_IMPL_4(QDD, qdd_all_control_phase, QDD, qdd, BDDVAR, k, BDDVAR, n, bool*, x
     return res;
 }
 
+QDD
+qdd_all_control_phase(QDD qdd, BDDVAR n, bool *x)
+{
+    return qdd_all_control_phase_rec(qdd, 0, n, x);
+}
 
 
 /********************</applying (controlled) sub-circuits>*********************/
@@ -1371,11 +1374,8 @@ TASK_IMPL_4(QDD, qdd_all_control_phase, QDD, qdd, BDDVAR, k, BDDVAR, n, bool*, x
 
 /***********************************<Grover>***********************************/
 
-QDD 
-_qdd_grover_iteration(QDD qdd, BDDVAR n, bool* flag)
+TASK_IMPL_3(QDD, qdd_grover_iteration, QDD, qdd, BDDVAR, n, bool*, flag)
 {
-    LACE_ME; // TODO: change stuff so we don't need to LACE_ME in every function
-
     // "oracle" call  (apply -1 flag to desired amplitude)
     qdd = qdd_all_control_phase(qdd, n, flag);
 
@@ -1412,7 +1412,7 @@ qdd_grover(BDDVAR n, bool* flag)
     // Grover iterations
     QDD qdds[1];
     for (uint32_t i = 1; i <= R; i++) {
-        qdd = _qdd_grover_iteration(qdd, n, flag);
+        qdd = qdd_grover_iteration(qdd, n, flag);
 
         // TODO: call clean_amp_table only when amp table is full
         if (i % 2 == 0){
@@ -1938,7 +1938,7 @@ qdd_measure_q0(QDD qdd, BDDVAR nvars, int *m, double *p)
 
     prob_low  = qdd_unnormed_prob(low,  1, nvars);
     prob_high = qdd_unnormed_prob(high, 1, nvars);
-    prob_root = _prob(QDD_AMP(qdd));
+    prob_root = comp_to_prob(comp_value(QDD_AMP(qdd)));
     prob_low  *= prob_root;
     prob_high *= prob_root;
     if (fabs(prob_low + prob_high - 1.0) > TOLERANCE) {
@@ -2014,7 +2014,7 @@ qdd_measure_all(QDD qdd, BDDVAR n, bool* ms, double *p)
 
         prob_low  = qdd_unnormed_prob(low,  k+1, n);
         prob_high = qdd_unnormed_prob(high, k+1, n);
-        prob_roots *= _prob(QDD_AMP(qdd));
+        prob_roots *= comp_to_prob(comp_value(QDD_AMP(qdd)));
         prob_high = prob_high * prob_roots / prob_path;
         prob_low  = prob_low  * prob_roots / prob_path;
 
@@ -2042,7 +2042,7 @@ TASK_IMPL_3(double, qdd_unnormed_prob, QDD, qdd, BDDVAR, topvar, BDDVAR, nvars)
 
     if (topvar == nvars) {
         assert(QDD_PTR(qdd) == QDD_TERMINAL);
-        return _prob(QDD_AMP(qdd));
+        return comp_to_prob(comp_value(QDD_AMP(qdd)));
     }
 
     // Look in cache
@@ -2067,7 +2067,7 @@ TASK_IMPL_3(double, qdd_unnormed_prob, QDD, qdd, BDDVAR, topvar, BDDVAR, nvars)
     SPAWN(qdd_unnormed_prob, high, nextvar, nvars);
     prob_low  = CALL(qdd_unnormed_prob, low, nextvar, nvars);
     prob_high = SYNC(qdd_unnormed_prob);
-    prob_root = _prob(QDD_AMP(qdd));
+    prob_root = comp_to_prob(comp_value(QDD_AMP(qdd)));
     prob_res  = prob_root * (prob_low + prob_high);
 
     // Put in cache and return
@@ -2100,18 +2100,9 @@ qdd_get_amplitude(QDD q, bool* basis_state)
         q = (basis_state[var] == 0) ? low : high;
     }
 
-    // TODO: return complex struct instead of the index?
     return a;
 }
 
-double
-_prob(AMP a) // TODO: rename to "abs_squared"
-{
-    // move to qdd_int file?
-    complex_t c = comp_value(a);
-    double abs = sqrt( (c.r*c.r) + (c.i*c.i) );
-    return (abs*abs);
-}
 
 /***********************<measurements and probabilities>***********************/
 
@@ -2345,7 +2336,7 @@ qdd_is_close_to_unitvector(QDD qdd, BDDVAR n, double tol)
     double sum_abs_squares = 0.0;
     while(has_next){
         a = qdd_get_amplitude(qdd, x);
-        sum_abs_squares += _prob(a);
+        sum_abs_squares += comp_to_prob(comp_value(a));
         has_next = _next_bitstring(x, n);
     }
 

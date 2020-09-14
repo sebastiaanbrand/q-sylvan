@@ -264,6 +264,12 @@ comp_div(complex_t a, complex_t b)
     return res;
 }
 
+double
+comp_to_prob(complex_t a)
+{
+    double abs = sqrt( (a.r*a.r) + (a.i*a.i) );
+    return (abs*abs);
+}
 
 
 /* Comparing complex values */
