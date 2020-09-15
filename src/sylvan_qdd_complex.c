@@ -13,6 +13,7 @@ mmiller@cs.uvic.ca
 
 #include <stdio.h>
 
+#include "sylvan_int.h"
 #include "sylvan_qdd_complex.h"
 #include "util/cmap.h"
 
@@ -31,6 +32,7 @@ static long double Pi;    // set value of global Pi
 size_t SIZE;
 cmap_t *ctable;
 cmap_t *ctable_old;
+static bool CACHE_AMP_OPS = true;
 
 
 
@@ -89,6 +91,7 @@ amp_abs(AMP a)
 {
     // special cases
     if (a == C_ZERO || a == C_ONE) return a;
+    if (a == C_MIN_ONE) return C_ONE;
 
     complex_t ca, cr;
     AMP res;
@@ -105,6 +108,8 @@ amp_neg(AMP a)
 {
     // special cases
     if (a == C_ZERO) return C_ZERO;
+    if (a == C_ONE) return C_MIN_ONE;
+    if (a == C_MIN_ONE) return C_ONE;
 
     complex_t ca, cr;
     AMP res;
@@ -123,14 +128,25 @@ amp_add(AMP a, AMP b)
     if (a == C_ZERO) return b;
     if (b == C_ZERO) return a;
 
-    complex_t ca, cb, cr;
+    // check cache
     AMP res;
+    if (CACHE_AMP_OPS) {
+        if (cache_get3(CACHE_AMP_ADD, a, b, sylvan_false, &res)) {
+            return res; // TODO: counters for these cache lookups/puts
+        }
+    }
 
+    // compute and hash result to ctable
+    complex_t ca, cb, cr;
     ca = comp_value(a);
     cb = comp_value(b);
     cr = comp_add(ca, cb);
-
     res = comp_lookup(cr);
+
+    // insert in cache
+    if (CACHE_AMP_OPS) {
+        cache_put3(CACHE_AMP_ADD, a, b, sylvan_false, res);
+    }
     return res;
 }
 
@@ -141,14 +157,25 @@ amp_sub(AMP a, AMP b)
     if (b == C_ZERO) return a;
     if (a == C_ZERO) return amp_neg(b);
 
-    complex_t ca, cb, cr;
+    // check cache
     AMP res;
+    if (CACHE_AMP_OPS) {
+        if (cache_get3(CACHE_AMP_SUB, a, b, sylvan_false, &res)) {
+            return res; // TODO: counters for these cache lookups/puts
+        }
+    }
 
+    // compute and hash result to ctable
+    complex_t ca, cb, cr;
     ca = comp_value(a);
     cb = comp_value(b);
     cr = comp_sub(ca, cb);
-
     res = comp_lookup(cr);
+
+    // insert in cache
+    if (CACHE_AMP_OPS) {
+        cache_put3(CACHE_AMP_SUB, a, b, sylvan_false, res);
+    }
     return res;
 }
 
@@ -160,14 +187,25 @@ amp_mul(AMP a, AMP b)
     if (b == C_ONE) return a;
     if (a == C_ZERO || b == C_ZERO) return C_ZERO;
 
-    complex_t ca, cb, cr;
+    // check cache
     AMP res;
+    if (CACHE_AMP_OPS) {
+        if (cache_get3(CACHE_AMP_MUL, a, b, sylvan_false, &res)) {
+            return res; // TODO: counters for these cache lookups/puts
+        }
+    }
 
+    // compute and hash result to ctable
+    complex_t ca, cb, cr;
     ca = comp_value(a);
     cb = comp_value(b);
     cr = comp_mul(ca, cb);
-
     res = comp_lookup(cr);
+
+    // insert in cache
+    if (CACHE_AMP_OPS) {
+        cache_put3(CACHE_AMP_MUL, a, b, sylvan_false, res);
+    }
     return res;
 }
 
@@ -179,14 +217,25 @@ amp_div(AMP a, AMP b)
     if (a == C_ZERO) return C_ZERO;
     if (b == C_ONE)  return a;
 
-    complex_t ca, cb, cr;
+    // check cache
     AMP res;
+    if (CACHE_AMP_OPS) {
+        if (cache_get3(CACHE_AMP_DIV, a, b, sylvan_false, &res)) {
+            return res; // TODO: counters for these cache lookups/puts
+        }
+    }
 
+    // compute and hash result to ctable
+    complex_t ca, cb, cr;
     ca = comp_value(a);
     cb = comp_value(b);
     cr = comp_div(ca, cb);
-
     res = comp_lookup(cr);
+
+    // insert in cache
+    if (CACHE_AMP_OPS) {
+        cache_put3(CACHE_AMP_DIV, a, b, sylvan_false, res);
+    }
     return res;
 }
 
