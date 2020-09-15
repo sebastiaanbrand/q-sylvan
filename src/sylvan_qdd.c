@@ -784,22 +784,9 @@ TASK_IMPL_2(QDD, qdd_plus, QDD, a, QDD, b)
         var_b  = qddnode_getvar(node);
     }
 
-    // Check which is topvar, insert node for QDD with skipped case
-    // TODO: use get_topvar() function
-    low_a  = qdd_bundle_ptr_amp(QDD_PTR(a), C_ONE);
-    high_a = qdd_bundle_ptr_amp(QDD_PTR(a), C_ONE);
-    low_b  = qdd_bundle_ptr_amp(QDD_PTR(b), C_ONE);
-    high_b = qdd_bundle_ptr_amp(QDD_PTR(b), C_ONE);
-    if (var_a <= var_b) { // didn't skip in QDD a
-        qddnode_t node = QDD_GETNODE(QDD_PTR(a));
-        qddnode_getchilderen(node, &low_a, &high_a);
-        topvar = var_a;
-    }
-    if (var_b <= var_a) { // didn't skip in QDD b
-        qddnode_t node = QDD_GETNODE(QDD_PTR(b));
-        qddnode_getchilderen(node, &low_b, &high_b);
-        topvar = var_b;
-    }
+    // For both a and b, get children of node with var=top{topvar(a),topvar(b)}
+    qdd_get_topvar(a, var_b, &topvar, &low_a, &high_a);
+    qdd_get_topvar(b, var_a, &topvar, &low_b, &high_b);
 
     // Base/terminal case: same target and same variable
     if(QDD_PTR(a) == QDD_PTR(b) && var_a == var_b){
