@@ -345,6 +345,7 @@ bool comp_epsilon_close(complex_t a, complex_t b, double epsilon)
 AMP
 comp_lookup(complex_t c)
 {
+    // TODO: catch comp_zero() / comp_one() here?
     uint64_t res;
     cmap_find_or_put(ctable, &c, &res);
     return (AMP) res;

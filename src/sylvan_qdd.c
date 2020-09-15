@@ -517,7 +517,7 @@ qdd_refs_sync(QDD result)
 /******************</garbage collection, references, marking>******************/
 
 static void
-qdd_get_topvar(QDD qdd, BDDVAR t, BDDVAR *topvar, QDD *a, QDD *b)
+qdd_get_topvar(QDD qdd, BDDVAR t, BDDVAR *topvar, QDD *low, QDD *high)
 {
     bool skipped = false;
     if(QDD_PTR(qdd) == QDD_TERMINAL) {
@@ -526,17 +526,17 @@ qdd_get_topvar(QDD qdd, BDDVAR t, BDDVAR *topvar, QDD *a, QDD *b)
     else {
         qddnode_t node = QDD_GETNODE(QDD_PTR(qdd));
         *topvar = qddnode_getvar(node);
-        if (*topvar >  t) skipped = true;
+        if (*topvar > t) skipped = true;
     }
 
     if (skipped) {
-        *a = qdd_bundle_ptr_amp(QDD_PTR(qdd), C_ONE);
-        *b = qdd_bundle_ptr_amp(QDD_PTR(qdd), C_ONE);
-        *topvar  = t;
+        *low  = qdd_bundle_ptr_amp(QDD_PTR(qdd), C_ONE);
+        *high = qdd_bundle_ptr_amp(QDD_PTR(qdd), C_ONE);
+        *topvar = t;
     }
     else {
         qddnode_t node = QDD_GETNODE(QDD_PTR(qdd));
-        qddnode_getchilderen(node, a, b);
+        qddnode_getchilderen(node, low, high);
     }
 }
 
@@ -820,6 +820,93 @@ TASK_IMPL_2(QDD, qdd_plus, QDD, a, QDD, b)
         if (cache_put3(CACHE_QDD_PLUS, sylvan_false, a, b, res)) 
             sylvan_stats_count(QDD_PLUS_CACHEDPUT);
     }
+    return res;
+}
+
+TASK_IMPL_2(QDD, qdd_plus2, QDD, a, QDD, b)
+{
+    complex_t ca, cb;
+    ca = comp_value(QDD_AMP(a));
+    cb = comp_value(QDD_AMP(b));
+    return CALL(qdd_plus_complex, QDD_PTR(a), QDD_PTR(b), ca, cb);
+}
+
+/**
+ * Version of qdd_plus which propagates complex_t's down instead of first
+ * hashing them into AMPs and now only hash them into the complex table when
+ * nodes are created. The goal of this is to alleviate access to the complex 
+ * table (which is shared between threads). Drawback is that now these complex 
+ * structs (made of floating point values) are keys for the operation cache.
+ */
+TASK_IMPL_4(QDD, qdd_plus_complex, PTR, a, PTR, b, complex_t, ca, complex_t, cb)
+{
+    // Trivial cases (exact equal vs approx equal?)
+    if (comp_exact_equal(ca, comp_zero())) 
+        return qdd_bundle_ptr_amp(b, comp_lookup(cb));
+    if (comp_exact_equal(cb, comp_zero()))
+        return qdd_bundle_ptr_amp(a, comp_lookup(ca));
+
+    // TODO: Check cache
+    // TODO: counters
+    QDD res;
+    /*
+    bool cachenow = 1;
+    if (cachenow) {
+        if (cache_get3(CACHE_QDD_PLUS, sylvan_false, a, b, &res)) {
+            sylvan_stats_count(QDD_PLUS_CACHED);
+            return res;
+        }
+    }*/
+
+    // Get var(a) and var(b)
+    QDD low_a, low_b, high_a, high_b;
+    
+    BDDVAR var_a = UINT32_MAX, var_b = UINT32_MAX, topvar;
+    if (a != QDD_TERMINAL) {
+        qddnode_t node = QDD_GETNODE(a);
+        var_a  = qddnode_getvar(node);
+    }
+    if (b != QDD_TERMINAL) {
+        qddnode_t node = QDD_GETNODE(b);
+        var_b  = qddnode_getvar(node);
+    }
+
+    // For both a and b, get children of node with var=top{topvar(a),topvar(b)}
+    // TODO: maybe make topvar function which doesn't bundle PTR and AMP, atm 
+    // unnecessary bundling/unbundling is happening
+    qdd_get_topvar(a, var_b, &topvar, &low_a, &high_a);
+    qdd_get_topvar(b, var_a, &topvar, &low_b, &high_b);
+
+    // Base/terminal case: same target and same variable
+    if(a == b && var_a == var_b){
+        AMP sum = comp_lookup(comp_add(ca, cb));
+        res = qdd_bundle_ptr_amp(a, sum);
+        return res;
+    }
+
+    // If not base/terminal case, pass edge weight of current edge down
+    complex_t comp_la, comp_ha, comp_lb, comp_hb;
+    comp_la = comp_mul(ca, comp_value(QDD_AMP(low_a)));
+    comp_ha = comp_mul(ca, comp_value(QDD_AMP(high_a)));
+    comp_lb = comp_mul(cb, comp_value(QDD_AMP(low_b)));
+    comp_hb = comp_mul(cb, comp_value(QDD_AMP(high_b)));
+
+    // Recursive calls down
+    QDD low, high;
+    qdd_refs_spawn(SPAWN(qdd_plus_complex, QDD_PTR(high_a), QDD_PTR(high_b), comp_ha, comp_hb));
+    low = CALL(qdd_plus_complex, QDD_PTR(low_a), QDD_PTR(low_b), comp_la, comp_lb);
+    qdd_refs_push(low);
+    high = qdd_refs_sync(SYNC(qdd_plus_complex));
+    qdd_refs_pop(1);
+
+    // TODO: Put in cache, return
+    res = qdd_makenode(topvar, low, high);
+    /*
+    if (cachenow) {
+        if (cache_put3(CACHE_QDD_PLUS, sylvan_false, a, b, res)) 
+            sylvan_stats_count(QDD_PLUS_CACHEDPUT);
+    }*/
+
     return res;
 }
 

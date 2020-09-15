@@ -81,6 +81,7 @@ And analogously for the high edges.
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "util/cmap.h"
 #include "sylvan_mtbdd.h"
 
 #ifdef __cplusplus
@@ -158,8 +159,13 @@ QDD qdd_refs_sync(QDD qdd);
 /*******************************<applying gates>*******************************/
 
 // Computes |a> + |b>
-#define qdd_plus(a,b) (CALL(qdd_plus,a,b));
+#define qdd_plus(a,b) (CALL(qdd_plus2,a,b));
 TASK_DECL_2(QDD, qdd_plus, QDD, QDD);
+
+// Computes |a> + |b> but without intermediate hashing of complex values
+#define qdd_plus2(a,b) (CALL(qdd_plus2,a,b));
+TASK_DECL_2(QDD, qdd_plus2, QDD, QDD);
+TASK_DECL_4(QDD, qdd_plus_complex, PTR, PTR, complex_t, complex_t);
 
 // Applies given (single qubit) gate to |q>
 #define qdd_gate(q,gate,target) (CALL(qdd_gate,q,gate,target));
