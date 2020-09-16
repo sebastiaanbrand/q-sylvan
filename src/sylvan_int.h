@@ -105,13 +105,14 @@ static const uint64_t CACHE_MTBDD_EVAL_COMPOSE      = (56LL<<40);
 
 // QDD operations
 static const uint64_t CACHE_QDD_PLUS                = (60LL<<40);
-static const uint64_t CACHE_QDD_GATE                = (61LL<<40);
-static const uint64_t CACHE_QDD_CGATE               = (62LL<<40);
-static const uint64_t CACHE_QDD_MATVEC_MULT         = (63LL<<40);
-static const uint64_t CACHE_QDD_MATMAT_MULT         = (64LL<<40);
-static const uint64_t CACHE_QDD_SUBCIRC             = (65LL<<40);
-static const uint64_t CACHE_QDD_PROB                = (66LL<<40);
-static const uint64_t CACHE_QDD_CLEAN_AMP_TABLE     = (67LL<<40);
+static const uint64_t CACHE_QDD_PLUS_COMPLEX        = (61LL<<40);
+static const uint64_t CACHE_QDD_GATE                = (62LL<<40);
+static const uint64_t CACHE_QDD_CGATE               = (63LL<<40);
+static const uint64_t CACHE_QDD_MATVEC_MULT         = (64LL<<40);
+static const uint64_t CACHE_QDD_MATMAT_MULT         = (65LL<<40);
+static const uint64_t CACHE_QDD_SUBCIRC             = (66LL<<40);
+static const uint64_t CACHE_QDD_PROB                = (67LL<<40);
+static const uint64_t CACHE_QDD_CLEAN_AMP_TABLE     = (68LL<<40);
 
 // Complex number operations for QDDs
 static const uint64_t CACHE_AMP_ADD                 = (80LL<<40);

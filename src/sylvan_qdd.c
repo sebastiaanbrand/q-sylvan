@@ -230,6 +230,18 @@ qddnode_pack(qddnode_t n, BDDVAR var, PTR low, PTR high, AMP a, AMP b)
     n->high = amp_high<<40 | high;
 }
 
+// Container for disguising doubles as ints so they can go in Sylvan's cache
+// (see also union "hack" in mtbdd_satcount)
+typedef union {
+    double   as_double;
+    uint64_t as_int;
+} double_hack_t;
+
+typedef union {
+    complex_t as_comp;
+    uint64_t  as_int[2];
+} comp_hack_t;
+
 /***************</ (bit level) manipulation of QDD / qddnode_t >***************/
 
 
@@ -846,17 +858,20 @@ TASK_IMPL_4(QDD, qdd_plus_complex, PTR, a, PTR, b, complex_t, ca, complex_t, cb)
     if (comp_exact_equal(cb, comp_zero()))
         return qdd_bundle_ptr_amp(a, comp_lookup(ca));
 
-    // TODO: Check cache
-    // TODO: counters
+    // Check cache
     QDD res;
-    /*
     bool cachenow = 1;
     if (cachenow) {
-        if (cache_get3(CACHE_QDD_PLUS, sylvan_false, a, b, &res)) {
-            sylvan_stats_count(QDD_PLUS_CACHED);
+        QDD blank;
+        comp_hack_t hca = (comp_hack_t) ca;
+        comp_hack_t hcb = (comp_hack_t) cb;
+        if (cache_get6((CACHE_QDD_PLUS_COMPLEX | a), hca.as_int[0], hca.as_int[1],
+                        b, hcb.as_int[0], hcb.as_int[1],
+                        &res, &blank)) {
+            // TODO: counters
             return res;
         }
-    }*/
+    }
 
     // Get var(a) and var(b)
     QDD low_a, low_b, high_a, high_b;
@@ -899,14 +914,15 @@ TASK_IMPL_4(QDD, qdd_plus_complex, PTR, a, PTR, b, complex_t, ca, complex_t, cb)
     high = qdd_refs_sync(SYNC(qdd_plus_complex));
     qdd_refs_pop(1);
 
-    // TODO: Put in cache, return
+    // Put in cache, return
     res = qdd_makenode(topvar, low, high);
-    /*
     if (cachenow) {
-        if (cache_put3(CACHE_QDD_PLUS, sylvan_false, a, b, res)) 
-            sylvan_stats_count(QDD_PLUS_CACHEDPUT);
-    }*/
-
+        comp_hack_t hca = (comp_hack_t) ca;
+        comp_hack_t hcb = (comp_hack_t) cb;
+        cache_put6((CACHE_QDD_PLUS_COMPLEX | a), hca.as_int[0], hca.as_int[1],
+                    b, hcb.as_int[0], hcb.as_int[1],
+                    res, 0LL);
+    }
     return res;
 }
 
@@ -1989,13 +2005,6 @@ run_shor(uint64_t N, uint64_t a, bool verbose)
 
 /***********************<measurements and probabilities>***********************/
 
-// Container for disguising doubles as ints so they can go in Sylvan's cache
-// mtbdd_satcount calls a union like this "hack"
-typedef union {
-    double   as_double;
-    uint64_t as_int;
-} prob_container_t;
-
 QDD
 qdd_measure_q0(QDD qdd, BDDVAR nvars, int *m, double *p)
 {  
@@ -2125,7 +2134,7 @@ TASK_IMPL_3(double, qdd_unnormed_prob, QDD, qdd, BDDVAR, topvar, BDDVAR, nvars)
         uint64_t prob_bits;
         if (cache_get3(CACHE_QDD_PROB, sylvan_false, qdd, QDD_PARAM_PACK_16(topvar, nvars), &prob_bits)) {
             sylvan_stats_count(QDD_PROB_CACHED);
-            prob_container_t container = (prob_container_t) prob_bits;
+            double_hack_t container = (double_hack_t) prob_bits;
             return container.as_double;
         }
     }
@@ -2146,7 +2155,7 @@ TASK_IMPL_3(double, qdd_unnormed_prob, QDD, qdd, BDDVAR, topvar, BDDVAR, nvars)
 
     // Put in cache and return
     if (cachenow) {
-        prob_container_t container = (prob_container_t) prob_res;
+        double_hack_t container = (double_hack_t) prob_res;
         if (cache_put3(CACHE_QDD_PROB, sylvan_false, qdd, QDD_PARAM_PACK_16(topvar, nvars), container.as_int))
             sylvan_stats_count(QDD_PROB_CACHEDPUT);
     }
