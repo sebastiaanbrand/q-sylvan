@@ -348,6 +348,22 @@ comp_lookup(complex_t c)
     // TODO: catch comp_zero() / comp_one() here?
     uint64_t res;
     cmap_find_or_put(ctable, &c, &res);
+    if (res >= SIZE) {
+        printf("Amplitude table full!\n");
+        exit(1);
+    }
+    return (AMP) res;
+}
+
+AMP
+comp_try_lookup(complex_t c, bool *success)
+{
+    uint64_t res;
+    cmap_find_or_put(ctable, &c, &res);
+    if (res >= SIZE) 
+        *success = false;
+    else 
+        *success = true;
     return (AMP) res;
 }
 

@@ -596,15 +596,26 @@ _qdd_makenode(BDDVAR var, PTR low, PTR high, AMP a, AMP b)
     return result;
 }
 
+
+static AMP
+_qdd_comp_lookup(complex_t a)
+{
+    // !! TODO: replace with try_lookup, catch failure, trigger gc amp table
+    return comp_lookup(a);
+}
+
 static AMP __attribute__((unused))
 qdd_amp_normalize_low(AMP *low, AMP *high)
 {
     // Normalize using low if low != 0
     AMP norm;
     if(*low != C_ZERO){
-        norm = *low;
-        *low = C_ONE;
-        *high = amp_div(*high, norm);
+        complex_t cl = comp_value(*low);
+        complex_t ch = comp_value(*high);
+        ch    = comp_div(ch, cl);
+        *high = _qdd_comp_lookup(ch);
+        norm  = *low;
+        *low  = C_ONE;
     }
     else {
         norm  = *high;
@@ -628,39 +639,39 @@ qdd_amp_normalize_largest(AMP *low, AMP *high)
     complex_t cl = comp_value(*low);
     complex_t ch = comp_value(*high);
     if ( (cl.r*cl.r + cl.i*cl.i)  >=  (ch.r*ch.r + ch.i*ch.i) ) {
+        ch = comp_div(ch, cl);
+        *high = _qdd_comp_lookup(ch);
         norm = *low;
-        *low = C_ONE;
-        *high = amp_div(*high, norm);
+        *low  = C_ONE;
     }
     else {
+        cl = comp_div(cl, ch);
+        *low = _qdd_comp_lookup(cl);
         norm  = *high;
         *high = C_ONE;
-        *low  = amp_div(*low, norm);
     }
     return norm;
 }
 
 static QDD // (PTR and AMP, but the amp is the norm weight from below)
-qdd_makenode(BDDVAR var, QDD low_edge, QDD high_edge)
+qdd_makenode(BDDVAR var, QDD low, QDD high)
 { 
-    PTR low_ptr  = QDD_PTR(low_edge);
-    AMP low_amp  = QDD_AMP(low_edge);
-    PTR high_ptr = QDD_PTR(high_edge);
-    AMP high_amp = QDD_AMP(high_edge);
+    PTR low_ptr  = QDD_PTR(low);
+    AMP low_amp  = QDD_AMP(low);
+    PTR high_ptr = QDD_PTR(high);
+    AMP high_amp = QDD_AMP(high);
 
     // Edges with weight 0 should point straight to terminal.
-    if(low_amp  == C_ZERO) low_ptr  = QDD_TERMINAL;
-    if(high_amp == C_ZERO) high_ptr = QDD_TERMINAL;
+    if (low_amp  == C_ZERO) low_ptr  = QDD_TERMINAL;
+    if (high_amp == C_ZERO) high_ptr = QDD_TERMINAL;
 
     // If both low and high are the same (both PTR and AMP) return low
-    if(low_ptr == high_ptr && low_amp == high_amp) {
-        return low_edge;
-    }
-    else{
+    if (low == high) return low;
+    else {
         // If the edges are not the same
         AMP norm = qdd_amp_normalize_largest(&low_amp, &high_amp);
-        PTR p = _qdd_makenode(var, low_ptr, high_ptr, low_amp, high_amp);
-        return qdd_bundle_ptr_amp(p, norm);
+        PTR res  = _qdd_makenode(var, low_ptr, high_ptr, low_amp, high_amp);
+        return qdd_bundle_ptr_amp(res, norm);
     }
 }
 
@@ -852,7 +863,7 @@ TASK_IMPL_2(QDD, qdd_plus2, QDD, a, QDD, b)
  */
 TASK_IMPL_4(QDD, qdd_plus_complex, PTR, a, PTR, b, complex_t, ca, complex_t, cb)
 {
-    // Trivial cases (exact equal vs approx equal?)
+    // Trivial cases // Q: use exact or approx?
     if (comp_exact_equal(ca, comp_zero())) 
         return qdd_bundle_ptr_amp(b, comp_lookup(cb));
     if (comp_exact_equal(cb, comp_zero()))

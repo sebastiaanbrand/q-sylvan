@@ -115,9 +115,8 @@ cmap_find_or_put (const cmap_t *cmap, const complex_t *v, ref_t *ret)
         }
         hash += prime << CACHE_LINE;
     }
-    printf("ERROR: Amplitude table full\n");
-    exit(1);
-    return -1; // (should be) unreachable but deals with compiler warning
+    // amplitude table full, return invalid / value outside size
+    return (cmap->size);
 }
 
 complex_t *
