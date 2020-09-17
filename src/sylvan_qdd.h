@@ -159,17 +159,17 @@ QDD qdd_refs_sync(QDD qdd);
 /*******************************<applying gates>*******************************/
 
 // Computes |a> + |b>
-#define qdd_plus(a,b) (CALL(qdd_plus2,a,b));
+#define qdd_plus(a,b) (CALL(qdd_plus_wrapper,a,b));
 TASK_DECL_2(QDD, qdd_plus, QDD, QDD);
-
-// Computes |a> + |b> but without intermediate hashing of complex values
-#define qdd_plus2(a,b) (CALL(qdd_plus2,a,b));
-TASK_DECL_2(QDD, qdd_plus2, QDD, QDD);
+// Same as above but without intermediate hashing of complex values
+TASK_DECL_2(QDD, qdd_plus_wrapper, QDD, QDD);
 TASK_DECL_4(QDD, qdd_plus_complex, PTR, PTR, complex_t, complex_t);
 
 // Applies given (single qubit) gate to |q>
-#define qdd_gate(q,gate,target) (CALL(qdd_gate,q,gate,target));
+#define qdd_gate(q,gate,target) (CALL(qdd_gate_complex,q,gate,target));
 TASK_DECL_3(QDD, qdd_gate, QDD, uint32_t, BDDVAR);
+// Same as above but without intermediate hashing of complex values
+TASK_DECL_3(QDD, qdd_gate_complex, PTR, uint32_t, BDDVAR);
 
 // Applies given controlled gate to |q>
 #define qdd_cgate(q,gate,c,t) (CALL(qdd_cgate,q,gate,c,t));

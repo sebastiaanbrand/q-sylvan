@@ -598,7 +598,7 @@ _qdd_makenode(BDDVAR var, PTR low, PTR high, AMP a, AMP b)
 
 
 static AMP
-_qdd_comp_lookup(complex_t a)
+qdd_comp_lookup(complex_t a)
 {
     // !! TODO: replace with try_lookup, catch failure, trigger gc amp table
     return comp_lookup(a);
@@ -613,7 +613,7 @@ qdd_amp_normalize_low(AMP *low, AMP *high)
         complex_t cl = comp_value(*low);
         complex_t ch = comp_value(*high);
         ch    = comp_div(ch, cl);
-        *high = _qdd_comp_lookup(ch);
+        *high = qdd_comp_lookup(ch);
         norm  = *low;
         *low  = C_ONE;
     }
@@ -640,13 +640,13 @@ qdd_amp_normalize_largest(AMP *low, AMP *high)
     complex_t ch = comp_value(*high);
     if ( (cl.r*cl.r + cl.i*cl.i)  >=  (ch.r*ch.r + ch.i*ch.i) ) {
         ch = comp_div(ch, cl);
-        *high = _qdd_comp_lookup(ch);
+        *high = qdd_comp_lookup(ch);
         norm = *low;
         *low  = C_ONE;
     }
     else {
         cl = comp_div(cl, ch);
-        *low = _qdd_comp_lookup(cl);
+        *low = qdd_comp_lookup(cl);
         norm  = *high;
         *high = C_ONE;
     }
@@ -846,7 +846,7 @@ TASK_IMPL_2(QDD, qdd_plus, QDD, a, QDD, b)
     return res;
 }
 
-TASK_IMPL_2(QDD, qdd_plus2, QDD, a, QDD, b)
+TASK_IMPL_2(QDD, qdd_plus_wrapper, QDD, a, QDD, b)
 {
     complex_t ca, cb;
     ca = comp_value(QDD_AMP(a));
@@ -865,9 +865,9 @@ TASK_IMPL_4(QDD, qdd_plus_complex, PTR, a, PTR, b, complex_t, ca, complex_t, cb)
 {
     // Trivial cases // Q: use exact or approx?
     if (comp_exact_equal(ca, comp_zero())) 
-        return qdd_bundle_ptr_amp(b, comp_lookup(cb));
+        return qdd_bundle_ptr_amp(b, qdd_comp_lookup(cb));
     if (comp_exact_equal(cb, comp_zero()))
-        return qdd_bundle_ptr_amp(a, comp_lookup(ca));
+        return qdd_bundle_ptr_amp(a, qdd_comp_lookup(ca));
 
     // Check cache
     QDD res;
@@ -905,7 +905,7 @@ TASK_IMPL_4(QDD, qdd_plus_complex, PTR, a, PTR, b, complex_t, ca, complex_t, cb)
 
     // Base/terminal case: same target and same variable
     if(a == b && var_a == var_b){
-        AMP sum = comp_lookup(comp_add(ca, cb));
+        AMP sum = qdd_comp_lookup(comp_add(ca, cb));
         res = qdd_bundle_ptr_amp(a, sum);
         return res;
     }
@@ -959,11 +959,18 @@ TASK_IMPL_3(QDD, qdd_gate, QDD, q, uint32_t, gate, BDDVAR, target)
         AMP a_u10 = amp_mul(QDD_AMP(low), gates[gate][2]);
         AMP b_u01 = amp_mul(QDD_AMP(high), gates[gate][1]);
         AMP b_u11 = amp_mul(QDD_AMP(high), gates[gate][3]);
-        QDD qdd1 = qdd_makenode(target, qdd_bundle_ptr_amp(QDD_PTR(low), a_u00), 
-                                        qdd_bundle_ptr_amp(QDD_PTR(low), a_u10));
-        QDD qdd2 = qdd_makenode(target, qdd_bundle_ptr_amp(QDD_PTR(high),b_u01),
-                                        qdd_bundle_ptr_amp(QDD_PTR(high),b_u11));
-        res = qdd_plus(qdd1, qdd2);
+        QDD low1, low2, high1, high2;
+        low1  = qdd_bundle_ptr_amp(QDD_PTR(low), a_u00);
+        low2  = qdd_bundle_ptr_amp(QDD_PTR(high),b_u01);
+        high1 = qdd_bundle_ptr_amp(QDD_PTR(low), a_u10);
+        high2 = qdd_bundle_ptr_amp(QDD_PTR(high),b_u11);
+        // TODO: use "normal" qdd_plus here and "plus_complex" in "gate_complex"
+        qdd_refs_spawn(SPAWN(qdd_plus_wrapper, high1, high2));
+        low = CALL(qdd_plus_wrapper, low1, low2);
+        qdd_refs_push(low);
+        high = SYNC(qdd_plus_wrapper);
+        res = qdd_makenode(target, low, high);
+       
     }
     else { // var < target: not at target qubit yet, recursive calls down
         qdd_refs_spawn(SPAWN(qdd_gate, high, gate, target));
@@ -980,6 +987,58 @@ TASK_IMPL_3(QDD, qdd_gate, QDD, q, uint32_t, gate, BDDVAR, target)
     if (cachenow) {
         if (cache_put3(CACHE_QDD_GATE, GATE_OPID_40(gate, target, 0), q, sylvan_false, res)) 
             sylvan_stats_count(QDD_GATE_CACHEDPUT);
+    }
+    return res;
+}
+
+TASK_IMPL_3(QDD, qdd_gate_complex, QDD, qdd, uint32_t, gateid, BDDVAR, target)
+{
+    // Check cache
+    QDD res;
+    bool cachenow = 1;
+    if (cachenow) {
+        if (cache_get3(CACHE_QDD_GATE_COMPLEX, GATE_OPID_40(gateid, target, 0), qdd, sylvan_false, &res)) {
+            // TODO: counter
+            return res;
+        }
+    }
+
+    BDDVAR var;
+    QDD low, high;
+    qdd_get_topvar(qdd, target, &var, &low, &high);
+    assert(var <= target);
+    complex_t ca = comp_value(QDD_AMP(low));
+    complex_t cb = comp_value(QDD_AMP(high));
+
+    if (var == target) {
+        complex_t a_u00, a_u10, b_u01, b_u11;
+        a_u00 = comp_mul(ca, comp_value(gates[gateid][0])); // TODO: keep array
+        a_u10 = comp_mul(ca, comp_value(gates[gateid][2])); // of gate values
+        b_u01 = comp_mul(cb, comp_value(gates[gateid][1])); // as complex_t's ?
+        b_u11 = comp_mul(cb, comp_value(gates[gateid][3]));
+        QDD res_low, res_high;
+        qdd_refs_spawn(SPAWN(qdd_plus_complex, QDD_PTR(low), QDD_PTR(high), a_u10, b_u11));
+        res_low = CALL(qdd_plus_complex, QDD_PTR(low), QDD_PTR(high), a_u00, b_u01);
+        qdd_refs_push(low);
+        res_high = SYNC(qdd_plus_complex);
+        res = qdd_makenode(target, res_low, res_high);
+    }
+    else { // var < target: not at target qubit yet, recursive calls down
+        qdd_refs_spawn(SPAWN(qdd_gate_complex, high, gateid, target));
+        low = CALL(qdd_gate_complex, low, gateid, target);
+        qdd_refs_push(low);
+        high = qdd_refs_sync(SYNC(qdd_gate));
+        qdd_refs_pop(1);
+        res  = qdd_makenode(var, low, high);
+    }
+
+    // Multiply root amp of sum with input root amp, add to cache, return
+    complex_t c = comp_mul(comp_value(QDD_AMP(qdd)), comp_value(QDD_AMP(res)));
+    AMP new_root_amp = qdd_comp_lookup(c);
+    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
+    if (cachenow) {
+        cache_put3(CACHE_QDD_GATE_COMPLEX, GATE_OPID_40(gateid, target, 0), qdd, sylvan_false, res);
+            // TODO: counter //sylvan_stats_count(QDD_GATE_CACHEDPUT);
     }
     return res;
 }
@@ -2049,11 +2108,11 @@ qdd_measure_q0(QDD qdd, BDDVAR nvars, int *m, double *p)
     AMP norm;
     if (*m == 0) {
         high = qdd_bundle_ptr_amp(QDD_TERMINAL, C_ZERO);
-        norm = comp_lookup(comp_make(sqrt(prob_low), 0.0));
+        norm = qdd_comp_lookup(comp_make(sqrt(prob_low), 0.0));
     }
     else {
         low  = qdd_bundle_ptr_amp(QDD_TERMINAL, C_ZERO);
-        norm = comp_lookup(comp_make(sqrt(prob_high), 0.0));
+        norm = qdd_comp_lookup(comp_make(sqrt(prob_high), 0.0));
     }
 
     QDD res = qdd_makenode(0, low, high);
@@ -2376,7 +2435,7 @@ qdd_remove_global_phase(QDD qdd)
     complex_t c = comp_value(QDD_AMP(qdd));
     c.r = sqrt(c.r*c.r + c.i*c.i);
     c.i = 0.0;
-    AMP new_root_amp = comp_lookup(c);
+    AMP new_root_amp = qdd_comp_lookup(c);
     QDD res = qdd_bundle_ptr_amp(QDD_PTR(qdd), new_root_amp);
     return res;
 }
