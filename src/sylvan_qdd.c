@@ -883,10 +883,10 @@ TASK_IMPL_4(QDD, qdd_plus_complex, PTR, a, PTR, b, complex_t, ca, complex_t, cb)
         QDD blank;
         comp_hack_t hca = (comp_hack_t) ca;
         comp_hack_t hcb = (comp_hack_t) cb;
-        if (cache_get6((CACHE_QDD_PLUS_COMPLEX | a), hca.as_int[0], hca.as_int[1],
+        if (cache_get6((CACHE_QDD_PLUS | a), hca.as_int[0], hca.as_int[1],
                         b, hcb.as_int[0], hcb.as_int[1],
                         &res, &blank)) {
-            // TODO: counters
+            sylvan_stats_count(QDD_PLUS_CACHED);
             return res;
         }
     }
@@ -937,7 +937,7 @@ TASK_IMPL_4(QDD, qdd_plus_complex, PTR, a, PTR, b, complex_t, ca, complex_t, cb)
     if (cachenow) {
         comp_hack_t hca = (comp_hack_t) ca;
         comp_hack_t hcb = (comp_hack_t) cb;
-        cache_put6((CACHE_QDD_PLUS_COMPLEX | a), hca.as_int[0], hca.as_int[1],
+        cache_put6((CACHE_QDD_PLUS | a), hca.as_int[0], hca.as_int[1],
                     b, hcb.as_int[0], hcb.as_int[1],
                     res, 0LL);
     }
@@ -971,11 +971,10 @@ TASK_IMPL_3(QDD, qdd_gate, QDD, q, uint32_t, gate, BDDVAR, target)
         low2  = qdd_bundle_ptr_amp(QDD_PTR(high),b_u01);
         high1 = qdd_bundle_ptr_amp(QDD_PTR(low), a_u10);
         high2 = qdd_bundle_ptr_amp(QDD_PTR(high),b_u11);
-        // TODO: use "normal" qdd_plus here and "plus_complex" in "gate_complex"
-        qdd_refs_spawn(SPAWN(qdd_plus_wrapper, high1, high2));
-        low = CALL(qdd_plus_wrapper, low1, low2);
+        qdd_refs_spawn(SPAWN(qdd_plus, high1, high2));
+        low = CALL(qdd_plus, low1, low2);
         qdd_refs_push(low);
-        high = SYNC(qdd_plus_wrapper);
+        high = SYNC(qdd_plus);
         res = qdd_makenode(target, low, high);
        
     }
@@ -1004,8 +1003,8 @@ TASK_IMPL_3(QDD, qdd_gate_complex, QDD, qdd, uint32_t, gateid, BDDVAR, target)
     QDD res;
     bool cachenow = 1;
     if (cachenow) {
-        if (cache_get3(CACHE_QDD_GATE_COMPLEX, GATE_OPID_40(gateid, target, 0), qdd, sylvan_false, &res)) {
-            // TODO: counter
+        if (cache_get3(CACHE_QDD_GATE, GATE_OPID_40(gateid, target, 0), qdd, sylvan_false, &res)) {
+            sylvan_stats_count(QDD_GATE_CACHED);
             return res;
         }
     }
@@ -1044,8 +1043,8 @@ TASK_IMPL_3(QDD, qdd_gate_complex, QDD, qdd, uint32_t, gateid, BDDVAR, target)
     AMP new_root_amp = qdd_comp_lookup(c);
     res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     if (cachenow) {
-        cache_put3(CACHE_QDD_GATE_COMPLEX, GATE_OPID_40(gateid, target, 0), qdd, sylvan_false, res);
-            // TODO: counter //sylvan_stats_count(QDD_GATE_CACHEDPUT);
+        if (cache_put3(CACHE_QDD_GATE, GATE_OPID_40(gateid, target, 0), qdd, sylvan_false, res))
+            sylvan_stats_count(QDD_GATE_CACHEDPUT);
     }
     return res;
 }
@@ -1099,8 +1098,8 @@ TASK_IMPL_4(QDD, qdd_cgate_complex, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t
     QDD res;
     bool cachenow = 1;
     if (cachenow) {
-        if (cache_get3(CACHE_QDD_CGATE_COMPLEX, GATE_OPID_40(gate, c, t), q, sylvan_false, &res)) {
-            // TODO: counter //sylvan_stats_count(QDD_CGATE_CACHED);
+        if (cache_get3(CACHE_QDD_CGATE, GATE_OPID_40(gate, c, t), q, sylvan_false, &res)) {
+            sylvan_stats_count(QDD_CGATE_CACHED);
             return res;
         }
     }
@@ -1127,8 +1126,8 @@ TASK_IMPL_4(QDD, qdd_cgate_complex, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t
     AMP new_root_amp = qdd_comp_lookup(comp);
     res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     if (cachenow) {
-        cache_put3(CACHE_QDD_CGATE_COMPLEX, GATE_OPID_40(gate, c, t), q, sylvan_false, res);
-            //TODO: counter //sylvan_stats_count(QDD_CGATE_CACHEDPUT);
+        if (cache_put3(CACHE_QDD_CGATE, GATE_OPID_40(gate, c, t), q, sylvan_false, res))
+            sylvan_stats_count(QDD_CGATE_CACHEDPUT);
     }
     return res;
 }
@@ -1629,10 +1628,10 @@ qdd_grover(BDDVAR n, bool* flag)
     for (uint32_t i = 1; i <= R; i++) {
         qdd = qdd_grover_iteration(qdd, n, flag);
 
-        // WIP: call clean_amp_table only when amp table is full
+        // TODO: call clean_amp_table only when amp table is full
         // we can't auto trigger gc of amplitude table if we're not using the 
         // _complex functions
-        if (!propagate_complex && (i % 2 == 0) ) {
+        if ((i % 4 == 0) ) {
             qdds[0] = qdd;
             clean_amplitude_table(qdds, 1);
             qdd = qdds[0];

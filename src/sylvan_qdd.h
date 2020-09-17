@@ -158,7 +158,9 @@ QDD qdd_refs_sync(QDD qdd);
 
 /*******************************<applying gates>*******************************/
 
-/* propagate complex values in recursion or hash intermediate complex values */
+/**
+ * Propagate complex values in recursion or hash intermediate complex values
+ */
 #define propagate_complex true
 #if propagate_complex
     #define qdd_plus(a,b) (CALL(qdd_plus_wrapper,a,b));
