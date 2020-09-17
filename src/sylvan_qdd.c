@@ -598,10 +598,17 @@ _qdd_makenode(BDDVAR var, PTR low, PTR high, AMP a, AMP b)
 
 
 static AMP
-qdd_comp_lookup(complex_t a)
+qdd_comp_lookup(complex_t c)
 {
     // !! TODO: replace with try_lookup, catch failure, trigger gc amp table
-    return comp_lookup(a);
+    AMP res;
+    bool inserted;
+    res = comp_try_lookup(c, &inserted);
+    if (!inserted) {
+        printf("TODO: GC AMP TABLE\n");
+        exit(1);
+    }
+    return res;
 }
 
 static AMP __attribute__((unused))
@@ -1027,7 +1034,7 @@ TASK_IMPL_3(QDD, qdd_gate_complex, QDD, qdd, uint32_t, gateid, BDDVAR, target)
         qdd_refs_spawn(SPAWN(qdd_gate_complex, high, gateid, target));
         low = CALL(qdd_gate_complex, low, gateid, target);
         qdd_refs_push(low);
-        high = qdd_refs_sync(SYNC(qdd_gate));
+        high = qdd_refs_sync(SYNC(qdd_gate_complex));
         qdd_refs_pop(1);
         res  = qdd_makenode(var, low, high);
     }
@@ -1110,13 +1117,14 @@ TASK_IMPL_4(QDD, qdd_cgate_complex, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t
         qdd_refs_spawn(SPAWN(qdd_cgate_complex, high, gate, c, t));
         low = CALL(qdd_cgate_complex, low, gate, c, t);
         qdd_refs_push(low);
-        high = qdd_refs_sync(SYNC(qdd_cgate));
+        high = qdd_refs_sync(SYNC(qdd_cgate_complex));
         qdd_refs_pop(1);
     }
     res  = qdd_makenode(var, low, high);
 
     // Multiply root amp of sum with input root amp, add to cache, return
-    AMP new_root_amp = amp_mul(QDD_AMP(q), QDD_AMP(res));
+    complex_t comp = comp_mul(comp_value(QDD_AMP(q)), comp_value(QDD_AMP(res)));
+    AMP new_root_amp = qdd_comp_lookup(comp);
     res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     if (cachenow) {
         cache_put3(CACHE_QDD_CGATE_COMPLEX, GATE_OPID_40(gate, c, t), q, sylvan_false, res);
@@ -1485,9 +1493,10 @@ TASK_IMPL_6(QDD, qdd_ccircuit, QDD, qdd, uint32_t, circ_id, BDDVAR*, cs, uint32_
         }
         res = qdd_makenode(var, low, high);
         // Multiply root amp of sum with input root amp 
-        // (I guess this needs to be done every time after makenode, so maybe
-        // put this functionality in makenode function?)
-        AMP new_root_amp = amp_mul(QDD_AMP(qdd), QDD_AMP(res));
+        // TODO: (I guess this needs to be done every time after makenode, 
+        // so maybe put this functionality in makenode function?)
+        complex_t comp = comp_mul(comp_value(QDD_AMP(qdd)), comp_value(QDD_AMP(res)));
+        AMP new_root_amp = qdd_comp_lookup(comp);
         res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     }
     
@@ -1532,11 +1541,13 @@ qdd_all_control_phase_rec(QDD qdd, BDDVAR k, BDDVAR n, bool *x)
     // terminal case, apply phase depending on x[k] (control k on 0 or 1)
     if (k == (n-1)) {
         if (x[k] == 1) {
-            AMP new_amp = amp_mul(QDD_AMP(high), C_MIN_ONE);
+            complex_t c = comp_mul(comp_value(QDD_AMP(high)), comp_minus_one());
+            AMP new_amp = qdd_comp_lookup(c);
             high = qdd_bundle_ptr_amp(QDD_PTR(high), new_amp);
         }
         else {
-            AMP new_amp = amp_mul(QDD_AMP(low), C_MIN_ONE);
+            complex_t c = comp_mul(comp_value(QDD_AMP(low)), comp_minus_one());
+            AMP new_amp = qdd_comp_lookup(c);
             low = qdd_bundle_ptr_amp(QDD_PTR(low), new_amp);
         }
     }
@@ -1557,7 +1568,8 @@ qdd_all_control_phase_rec(QDD qdd, BDDVAR k, BDDVAR n, bool *x)
     QDD res = qdd_makenode(k, low, high);
 
     // multiply by existing edge weight on qdd
-    AMP new_root_amp = amp_mul(QDD_AMP(qdd), QDD_AMP(res));
+    complex_t c = comp_mul(comp_value(QDD_AMP(qdd)), comp_value(QDD_AMP(res)));
+    AMP new_root_amp = qdd_comp_lookup(c);
     res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     return res;
 }
@@ -1587,7 +1599,9 @@ TASK_IMPL_3(QDD, qdd_grover_iteration, QDD, qdd, BDDVAR, n, bool*, flag)
     bool x[n]; 
     for(BDDVAR k = 0; k < n; k++) x[k] = 0;
     qdd = qdd_all_control_phase(qdd, n, x);
-    AMP new_root_amp = amp_mul(QDD_AMP(qdd), C_MIN_ONE);
+
+    complex_t c = comp_mul(comp_value(QDD_AMP(qdd)), comp_minus_one());
+    AMP new_root_amp = qdd_comp_lookup(c);
     qdd = qdd_bundle_ptr_amp(QDD_PTR(qdd), new_root_amp);
 
     // H on all qubits
@@ -1615,8 +1629,10 @@ qdd_grover(BDDVAR n, bool* flag)
     for (uint32_t i = 1; i <= R; i++) {
         qdd = qdd_grover_iteration(qdd, n, flag);
 
-        // TODO: call clean_amp_table only when amp table is full
-        if (i % 2 == 0){
+        // WIP: call clean_amp_table only when amp table is full
+        // we can't auto trigger gc of amplitude table if we're not using the 
+        // _complex functions
+        if (!propagate_complex && (i % 2 == 0) ) {
             qdds[0] = qdd;
             clean_amplitude_table(qdds, 1);
             qdd = qdds[0];
@@ -2146,19 +2162,22 @@ qdd_measure_q0(QDD qdd, BDDVAR nvars, int *m, double *p)
     *p = prob_low;
 
     // produce post-measurement state
-    AMP norm;
+    complex_t norm;
     if (*m == 0) {
         high = qdd_bundle_ptr_amp(QDD_TERMINAL, C_ZERO);
-        norm = qdd_comp_lookup(comp_make(sqrt(prob_low), 0.0));
+        norm = comp_make(sqrt(prob_low), 0.0);
     }
     else {
         low  = qdd_bundle_ptr_amp(QDD_TERMINAL, C_ZERO);
-        norm = qdd_comp_lookup(comp_make(sqrt(prob_high), 0.0));
+        norm = comp_make(sqrt(prob_high), 0.0);
     }
 
     QDD res = qdd_makenode(0, low, high);
-    AMP new_root_amp = amp_mul(QDD_AMP(qdd), QDD_AMP(res));
-    new_root_amp = amp_div(new_root_amp, norm);
+
+    complex_t c = comp_mul(comp_value(QDD_AMP(qdd)), comp_value(QDD_AMP(res)));
+    c = comp_div(c, norm);
+    AMP new_root_amp = qdd_comp_lookup(c);
+
     res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     res = qdd_remove_global_phase(res);
     return res;
@@ -2277,10 +2296,10 @@ AMP
 qdd_get_amplitude(QDD q, bool* basis_state)
 {
 
-    AMP a = C_ONE;
+    complex_t c = comp_one();
     QDD low, high;
     for (;;) {
-        a = amp_mul(a, QDD_AMP(q));
+        c = comp_mul(c, comp_value(QDD_AMP(q)));
         
         // if the current edge is pointing to the terminal, we're done.
         if (QDD_PTR(q) == QDD_TERMINAL) break;
@@ -2294,7 +2313,7 @@ qdd_get_amplitude(QDD q, bool* basis_state)
         q = (basis_state[var] == 0) ? low : high;
     }
 
-    return a;
+    return qdd_comp_lookup(c);
 }
 
 

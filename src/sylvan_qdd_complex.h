@@ -84,6 +84,7 @@ bool comp_epsilon_close(complex_t a, complex_t b, double epsilon);
 
 /* Inserting / retrieving complex values from complex table */
 AMP comp_lookup(complex_t c);
+AMP comp_try_lookup(complex_t c, bool *success);
 complex_t comp_value(AMP a);
 
 /* Printing */
