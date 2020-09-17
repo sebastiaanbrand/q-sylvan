@@ -1084,6 +1084,47 @@ TASK_IMPL_4(QDD, qdd_cgate, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t)
     return res;
 }
 
+TASK_IMPL_4(QDD, qdd_cgate_complex, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t)
+{
+    assert (c < t);
+
+    // Check cache
+    QDD res;
+    bool cachenow = 1;
+    if (cachenow) {
+        if (cache_get3(CACHE_QDD_CGATE_COMPLEX, GATE_OPID_40(gate, c, t), q, sylvan_false, &res)) {
+            // TODO: counter //sylvan_stats_count(QDD_CGATE_CACHED);
+            return res;
+        }
+    }
+
+    BDDVAR var;
+    QDD low, high;
+    qdd_get_topvar(q, c, &var, &low, &high);
+    assert(var <= t);
+
+    if (var == c) { // apply gate to high, leave low unchanged
+        high = CALL(qdd_gate_complex, high, gate, t);
+    }
+    else { // not at target qubit yet, recursive calls down
+        qdd_refs_spawn(SPAWN(qdd_cgate_complex, high, gate, c, t));
+        low = CALL(qdd_cgate_complex, low, gate, c, t);
+        qdd_refs_push(low);
+        high = qdd_refs_sync(SYNC(qdd_cgate));
+        qdd_refs_pop(1);
+    }
+    res  = qdd_makenode(var, low, high);
+
+    // Multiply root amp of sum with input root amp, add to cache, return
+    AMP new_root_amp = amp_mul(QDD_AMP(q), QDD_AMP(res));
+    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
+    if (cachenow) {
+        cache_put3(CACHE_QDD_CGATE_COMPLEX, GATE_OPID_40(gate, c, t), q, sylvan_false, res);
+            //TODO: counter //sylvan_stats_count(QDD_CGATE_CACHEDPUT);
+    }
+    return res;
+}
+
 TASK_IMPL_4(QDD, qdd_matvec_mult, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR, nextvar)
 {
     // Trivial case: either one is all 0
