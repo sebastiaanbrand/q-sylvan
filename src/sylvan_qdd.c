@@ -786,7 +786,19 @@ TASK_IMPL_1(QDD, _fill_new_amp_table, QDD, qdd)
 
 /*******************************<applying gates>*******************************/
 
-TASK_IMPL_2(QDD, qdd_plus, QDD, a, QDD, b)
+TASK_IMPL_3(QDD, qdd_gate, QDD, q, uint32_t, gate, BDDVAR, target)
+{
+    // TODO: we can count nodes / other statistics here
+    return qdd_gate_rec(q, gate, target);
+}
+
+TASK_IMPL_4(QDD, qdd_cgate, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t)
+{
+    // TODO: we can count nodes / other statistics here
+    return qdd_cgate_rec(q, gate, c, t);
+}
+
+TASK_IMPL_2(QDD, qdd_plus_amp, QDD, a, QDD, b)
 {
     // Trivial cases
     if(QDD_AMP(a) == C_ZERO) return b;
@@ -838,10 +850,10 @@ TASK_IMPL_2(QDD, qdd_plus, QDD, a, QDD, b)
 
     // Recursive calls down
     QDD low, high;
-    qdd_refs_spawn(SPAWN(qdd_plus, high_a, high_b));
-    low = CALL(qdd_plus, low_a, low_b);
+    qdd_refs_spawn(SPAWN(qdd_plus_amp, high_a, high_b));
+    low = CALL(qdd_plus_amp, low_a, low_b);
     qdd_refs_push(low);
-    high = qdd_refs_sync(SYNC(qdd_plus));
+    high = qdd_refs_sync(SYNC(qdd_plus_amp));
     qdd_refs_pop(1);
 
     // Put in cache, return
@@ -853,7 +865,7 @@ TASK_IMPL_2(QDD, qdd_plus, QDD, a, QDD, b)
     return res;
 }
 
-TASK_IMPL_2(QDD, qdd_plus_wrapper, QDD, a, QDD, b)
+TASK_IMPL_2(QDD, qdd_plus_comp_wrap, QDD, a, QDD, b)
 {
     complex_t ca, cb;
     ca = comp_value(QDD_AMP(a));
@@ -944,7 +956,7 @@ TASK_IMPL_4(QDD, qdd_plus_complex, PTR, a, PTR, b, complex_t, ca, complex_t, cb)
     return res;
 }
 
-TASK_IMPL_3(QDD, qdd_gate, QDD, q, uint32_t, gate, BDDVAR, target)
+TASK_IMPL_3(QDD, qdd_gate_rec_amp, QDD, q, uint32_t, gate, BDDVAR, target)
 {
     // Check cache
     QDD res;
@@ -971,18 +983,18 @@ TASK_IMPL_3(QDD, qdd_gate, QDD, q, uint32_t, gate, BDDVAR, target)
         low2  = qdd_bundle_ptr_amp(QDD_PTR(high),b_u01);
         high1 = qdd_bundle_ptr_amp(QDD_PTR(low), a_u10);
         high2 = qdd_bundle_ptr_amp(QDD_PTR(high),b_u11);
-        qdd_refs_spawn(SPAWN(qdd_plus, high1, high2));
-        low = CALL(qdd_plus, low1, low2);
+        qdd_refs_spawn(SPAWN(qdd_plus_amp, high1, high2));
+        low = CALL(qdd_plus_amp, low1, low2);
         qdd_refs_push(low);
-        high = SYNC(qdd_plus);
+        high = SYNC(qdd_plus_amp);
         res = qdd_makenode(target, low, high);
        
     }
     else { // var < target: not at target qubit yet, recursive calls down
-        qdd_refs_spawn(SPAWN(qdd_gate, high, gate, target));
-        low = CALL(qdd_gate, low, gate, target);
+        qdd_refs_spawn(SPAWN(qdd_gate_rec_amp, high, gate, target));
+        low = CALL(qdd_gate_rec_amp, low, gate, target);
         qdd_refs_push(low);
-        high = qdd_refs_sync(SYNC(qdd_gate));
+        high = qdd_refs_sync(SYNC(qdd_gate_rec_amp));
         qdd_refs_pop(1);
         res  = qdd_makenode(var, low, high);
     }
@@ -997,7 +1009,7 @@ TASK_IMPL_3(QDD, qdd_gate, QDD, q, uint32_t, gate, BDDVAR, target)
     return res;
 }
 
-TASK_IMPL_3(QDD, qdd_gate_complex, QDD, qdd, uint32_t, gateid, BDDVAR, target)
+TASK_IMPL_3(QDD, qdd_gate_rec_complex, QDD, qdd, uint32_t, gateid, BDDVAR, target)
 {
     // Check cache
     QDD res;
@@ -1030,10 +1042,10 @@ TASK_IMPL_3(QDD, qdd_gate_complex, QDD, qdd, uint32_t, gateid, BDDVAR, target)
         res = qdd_makenode(target, res_low, res_high);
     }
     else { // var < target: not at target qubit yet, recursive calls down
-        qdd_refs_spawn(SPAWN(qdd_gate_complex, high, gateid, target));
-        low = CALL(qdd_gate_complex, low, gateid, target);
+        qdd_refs_spawn(SPAWN(qdd_gate_rec_complex, high, gateid, target));
+        low = CALL(qdd_gate_rec_complex, low, gateid, target);
         qdd_refs_push(low);
-        high = qdd_refs_sync(SYNC(qdd_gate_complex));
+        high = qdd_refs_sync(SYNC(qdd_gate_rec_complex));
         qdd_refs_pop(1);
         res  = qdd_makenode(var, low, high);
     }
@@ -1049,7 +1061,7 @@ TASK_IMPL_3(QDD, qdd_gate_complex, QDD, qdd, uint32_t, gateid, BDDVAR, target)
     return res;
 }
 
-TASK_IMPL_4(QDD, qdd_cgate, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t)
+TASK_IMPL_4(QDD, qdd_cgate_rec_amp, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t)
 {
     assert (c < t);
 
@@ -1069,13 +1081,13 @@ TASK_IMPL_4(QDD, qdd_cgate, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t)
     assert(var <= t);
 
     if (var == c) { // apply gate to high, leave low unchanged
-        high = qdd_gate(high, gate, t);
+        high = CALL(qdd_gate_rec_amp, high, gate, t);
     }
     else { // not at target qubit yet, recursive calls down
-        qdd_refs_spawn(SPAWN(qdd_cgate, high, gate, c, t));
-        low = CALL(qdd_cgate, low, gate, c, t);
+        qdd_refs_spawn(SPAWN(qdd_cgate_rec_amp, high, gate, c, t));
+        low = CALL(qdd_cgate_rec_amp, low, gate, c, t);
         qdd_refs_push(low);
-        high = qdd_refs_sync(SYNC(qdd_cgate));
+        high = qdd_refs_sync(SYNC(qdd_cgate_rec_amp));
         qdd_refs_pop(1);
     }
     res  = qdd_makenode(var, low, high);
@@ -1090,7 +1102,7 @@ TASK_IMPL_4(QDD, qdd_cgate, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t)
     return res;
 }
 
-TASK_IMPL_4(QDD, qdd_cgate_complex, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t)
+TASK_IMPL_4(QDD, qdd_cgate_rec_complex, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t)
 {
     assert (c < t);
 
@@ -1110,13 +1122,13 @@ TASK_IMPL_4(QDD, qdd_cgate_complex, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t
     assert(var <= t);
 
     if (var == c) { // apply gate to high, leave low unchanged
-        high = CALL(qdd_gate_complex, high, gate, t);
+        high = CALL(qdd_gate_rec_complex, high, gate, t);
     }
     else { // not at target qubit yet, recursive calls down
-        qdd_refs_spawn(SPAWN(qdd_cgate_complex, high, gate, c, t));
-        low = CALL(qdd_cgate_complex, low, gate, c, t);
+        qdd_refs_spawn(SPAWN(qdd_cgate_rec_complex, high, gate, c, t));
+        low = CALL(qdd_cgate_rec_complex, low, gate, c, t);
         qdd_refs_push(low);
-        high = qdd_refs_sync(SYNC(qdd_cgate_complex));
+        high = qdd_refs_sync(SYNC(qdd_cgate_rec_complex));
         qdd_refs_pop(1);
     }
     res  = qdd_makenode(var, low, high);
@@ -1202,7 +1214,7 @@ TASK_IMPL_4(QDD, qdd_matvec_mult, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR, nex
     res_high = qdd_makenode(nextvar, res_high01, res_high11);
 
     // 5. add resulting qdds
-    res = CALL(qdd_plus, res_low, res_high);
+    res = CALL(qdd_plus_amp, res_low, res_high);
 
     // Insert in cache
     if (cachenow) {
@@ -1300,10 +1312,10 @@ TASK_IMPL_4(QDD, qdd_matmat_mult, QDD, a, QDD, b, BDDVAR, nvars, BDDVAR, nextvar
 
     // 5. add resulting qdds
     QDD lh, rh;
-    qdd_refs_spawn(SPAWN(qdd_plus, lh1, lh2));
-    rh = CALL(qdd_plus, rh1, rh2);
+    qdd_refs_spawn(SPAWN(qdd_plus_amp, lh1, lh2));
+    rh = CALL(qdd_plus_amp, rh1, rh2);
     qdd_refs_push(rh);
-    lh = qdd_refs_sync(SYNC(qdd_plus));
+    lh = qdd_refs_sync(SYNC(qdd_plus_amp));
     qdd_refs_pop(1);
 
     // 6. put left and right halves of matix together
@@ -1732,7 +1744,7 @@ qdd_phi_add_mod(QDD qdd, BDDVAR* cs, uint64_t a, uint64_t N)
     qdd = qdd_circuit(qdd, CIRCID_QFT_inv, shor_wires.targ_first, shor_wires.targ_last);
     // 4.  CNOT (control = carry wire? = first of phi ADD, target = helper)
     qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
-    qdd = qdd_cgate(qdd, GATEID_Z, shor_wires.helper, shor_wires.targ_first)
+    qdd = qdd_cgate(qdd, GATEID_Z, shor_wires.helper, shor_wires.targ_first);
     qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
     // 5.  QFT
     qdd = qdd_circuit(qdd, CIRCID_QFT, shor_wires.targ_first, shor_wires.targ_last);
@@ -1747,7 +1759,7 @@ qdd_phi_add_mod(QDD qdd, BDDVAR* cs, uint64_t a, uint64_t N)
     qdd = qdd_gate(qdd, GATEID_X, shor_wires.targ_first);
     // 10. CNOT
     qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
-    qdd = qdd_cgate(qdd, GATEID_Z, shor_wires.helper, shor_wires.targ_first)
+    qdd = qdd_cgate(qdd, GATEID_Z, shor_wires.helper, shor_wires.targ_first);
     qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
     // 11. X on same wire as control of CNOT in 4/10
     qdd = qdd_gate(qdd, GATEID_X, shor_wires.targ_first);
@@ -1777,7 +1789,7 @@ qdd_phi_add_mod_inv(QDD qdd, BDDVAR* cs, uint64_t a, uint64_t N)
     qdd = qdd_gate(qdd, GATEID_X, shor_wires.targ_first);
     // 10. CNOT^-1 = CNOT
     qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
-    qdd = qdd_cgate(qdd, GATEID_Z, shor_wires.helper, shor_wires.targ_first)
+    qdd = qdd_cgate(qdd, GATEID_Z, shor_wires.helper, shor_wires.targ_first);
     qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
     // 9.  X^-1 = X
     qdd = qdd_gate(qdd, GATEID_X, shor_wires.targ_first);
@@ -1792,7 +1804,7 @@ qdd_phi_add_mod_inv(QDD qdd, BDDVAR* cs, uint64_t a, uint64_t N)
     qdd = qdd_circuit(qdd, CIRCID_QFT_inv, shor_wires.targ_first, shor_wires.targ_last);
     // 4. CNOT^-1 = CNOT (control = carry wire? = first of phi ADD, target = helper)
     qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
-    qdd = qdd_cgate(qdd, GATEID_Z, shor_wires.helper, shor_wires.targ_first)
+    qdd = qdd_cgate(qdd, GATEID_Z, shor_wires.helper, shor_wires.targ_first);
     qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
     // 3. (QFT^-1)^-1 = QFT
     qdd = qdd_circuit(qdd, CIRCID_QFT, shor_wires.targ_first, shor_wires.targ_last);

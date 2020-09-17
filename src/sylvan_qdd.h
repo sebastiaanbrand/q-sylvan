@@ -158,32 +158,52 @@ QDD qdd_refs_sync(QDD qdd);
 
 /*******************************<applying gates>*******************************/
 
+// Applies given (single qubit) gate to |q>
+#define qdd_gate(q,gate,target) (CALL(qdd_gate,q,gate,target));
+TASK_DECL_3(QDD, qdd_gate, QDD, uint32_t, BDDVAR);
+
+// Applies given controlled gate to |q>
+#define qdd_cgate(q,gate,c,t) (CALL(qdd_cgate,q,gate,c,t));
+TASK_DECL_4(QDD, qdd_cgate, QDD, uint32_t, BDDVAR, BDDVAR);
+
 /**
  * Propagate complex values in recursion or hash intermediate complex values
  */
 #define propagate_complex true
 #if propagate_complex
-    #define qdd_plus(a,b) (CALL(qdd_plus_wrapper,a,b));
-    #define qdd_gate(q,gate,target) (CALL(qdd_gate_complex,q,gate,target));
-    #define qdd_cgate(q,gate,c,t) (CALL(qdd_cgate_complex,q,gate,c,t));
+    #define qdd_plus(a,b) (CALL(qdd_plus_comp_wrap,a,b));
+    #define qdd_gate_rec(q,gate,target) (CALL(qdd_gate_rec_complex,q,gate,target));
+    #define qdd_cgate_rec(q,gate,c,t) (CALL(qdd_cgate_rec_complex,q,gate,c,t));
 #else
-    #define qdd_plus(a,b) (CALL(qdd_plus,a,b));
-    #define qdd_gate(q,gate,target) (CALL(qdd_gate,q,gate,target));
-    #define qdd_cgate(q,gate,c,t) (CALL(qdd_cgate,q,gate,c,t));
+    #define qdd_plus(a,b) (CALL(qdd_plus_amp,a,b));
+    #define qdd_gate_rec(q,gate,target) (CALL(qdd_gate_rec_amp,q,gate,target));
+    #define qdd_cgate_rec(q,gate,c,t) (CALL(qdd_cgate_rec_amp,q,gate,c,t));
 #endif
 
-// Computes |a> + |b>
-TASK_DECL_2(QDD, qdd_plus, QDD, QDD);
-TASK_DECL_2(QDD, qdd_plus_wrapper, QDD, QDD);
+/**
+ * Recursive implementation of vector addition. "_amp" passes hashed amps down
+ * while "_complex" passes complex_t structs down. The "_comp_wrap" function
+ * servers as a wrapper around _complex to give it the same signature as _amp.
+ */
+TASK_DECL_2(QDD, qdd_plus_amp, QDD, QDD);
+TASK_DECL_2(QDD, qdd_plus_comp_wrap, QDD, QDD);
 TASK_DECL_4(QDD, qdd_plus_complex, PTR, PTR, complex_t, complex_t);
 
-// Applies given (single qubit) gate to |q>
-TASK_DECL_3(QDD, qdd_gate, QDD, uint32_t, BDDVAR);
-TASK_DECL_3(QDD, qdd_gate_complex, PTR, uint32_t, BDDVAR);
+/**
+ * Recursive implementation of applying single qubit gates
+ * which passes hashed amps or complex_t values down.
+ * Calls "qdd_plus_amp/comp_wrap".
+ */
+TASK_DECL_3(QDD, qdd_gate_rec_amp, QDD, uint32_t, BDDVAR);
+TASK_DECL_3(QDD, qdd_gate_rec_complex, PTR, uint32_t, BDDVAR);
 
-// Applies given controlled gate to |q>
-TASK_DECL_4(QDD, qdd_cgate, QDD, uint32_t, BDDVAR, BDDVAR);
-TASK_DECL_4(QDD, qdd_cgate_complex, QDD, uint32_t, BDDVAR, BDDVAR);
+/**
+ * Recursive implementation of applying controlled gates
+ * which passes hashed amps or complex_t values down.
+ * Calls "qdd_gate_rec_amp/complex".
+ */
+TASK_DECL_4(QDD, qdd_cgate_rec_amp, QDD, uint32_t, BDDVAR, BDDVAR);
+TASK_DECL_4(QDD, qdd_cgate_rec_complex, QDD, uint32_t, BDDVAR, BDDVAR);
 
 // Computes Mat * |vec>
 #define qdd_matvec_mult(mat,vec,nvars) (CALL(qdd_matvec_mult,mat,vec,nvars,0));
