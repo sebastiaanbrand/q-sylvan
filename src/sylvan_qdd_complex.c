@@ -29,11 +29,11 @@ Note use of cosl and sinl for long double computation
 static long double Pi;    // set value of global Pi
 
 
-size_t SIZE;
+size_t ctable_size;
+size_t ctable_entries; // incremented with atomic add // TODO: thread local?
 cmap_t *ctable;
 cmap_t *ctable_old;
 static bool CACHE_AMP_OPS = true;
-
 
 
 /* Shorthand functions for making complex numbers */
@@ -347,8 +347,9 @@ comp_lookup(complex_t c)
 {
     // TODO: catch comp_zero() / comp_one() here?
     uint64_t res;
-    cmap_find_or_put(ctable, &c, &res);
-    if (res >= SIZE) {
+    bool success;
+    res = comp_try_lookup(c, &success);
+    if (!success) {
         printf("Amplitude table full!\n");
         exit(1);
     }
@@ -359,11 +360,14 @@ AMP
 comp_try_lookup(complex_t c, bool *success)
 {
     uint64_t res;
-    cmap_find_or_put(ctable, &c, &res);
-    if (res >= SIZE) 
-        *success = false;
-    else 
+    int present = cmap_find_or_put(ctable, &c, &res);
+    if (present == 0) {
         *success = true;
+        // TODO: investigate if this bottlenecks anything
+        __sync_fetch_and_add(&ctable_entries, 1);
+    }
+    else if (present == 1) *success = true;
+    else                   *success = false;
     return (AMP) res;
 }
 
@@ -447,8 +451,9 @@ comp_print_bits(AMP a)
 void
 init_amplitude_table(size_t size)
 {
-    SIZE = size;
-    ctable = cmap_create(SIZE);
+    ctable_size = size;
+    ctable_entries = 0;
+    ctable = cmap_create(ctable_size);
 
     C_ONE     = comp_lookup(comp_one());
     C_ZERO    = comp_lookup(comp_zero());
@@ -540,6 +545,18 @@ count_amplitude_table_enries()
     return cmap_count_entries(ctable);
 }
 
+uint64_t
+get_num_ctable_entries()
+{
+    return ctable_entries;
+}
+
+uint64_t
+get_ctable_size()
+{
+    return ctable_size;
+}
+
 void
 free_amplitude_table()
 {
@@ -553,7 +570,7 @@ init_new_empty_table()
     ctable_old = ctable;
 
     // re-init new (empty) ctable
-    init_amplitude_table(SIZE);
+    init_amplitude_table(ctable_size);
 }
 
 void

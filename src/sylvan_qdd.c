@@ -425,7 +425,6 @@ qdd_quit()
     qdd_initialized = 0;
 }
 
-
 void
 sylvan_init_qdd(size_t ctable_size)
 {
@@ -722,15 +721,31 @@ qdd_countnodes(QDD qdd)
 
 /**************************<cleaning amplitude table>**************************/
 
+static int auto_gc_ctable    = 1;
+static double ctable_gc_thes = 0.5;
+
 void
-clean_amplitude_table(QDD qdds[], int n_qdds)
+qdd_set_auto_gc_ctable(bool enabled)
+{
+    auto_gc_ctable = enabled;
+}
+
+void
+qdd_set_gc_ctable_thres(double fraction_filled)
+{
+    ctable_gc_thes = fraction_filled;
+}
+
+void
+qdd_gc_ctable(QDD *keep)
 {
     LACE_ME;
     // 1. Create new amp table
     init_new_empty_table();
 
     // 2. Fill new table with amps present in given QDDs
-    for (int i = 0; i < n_qdds; i++) qdds[i] = _fill_new_amp_table(qdds[i]);
+    //for (int i = 0; i < n_qdds; i++) qdds[i] = _fill_new_amp_table(qdds[i]);
+    *keep = _fill_new_amp_table(*keep);
 
     // 3. Delete old amp table
     delete_old_table();
@@ -780,6 +795,15 @@ TASK_IMPL_1(QDD, _fill_new_amp_table, QDD, qdd)
     return res;
 }
 
+void
+qdd_test_gc_ctable(QDD *keep)
+{
+    uint64_t entries = get_num_ctable_entries();
+    uint64_t size    = get_ctable_size();
+    if ( ((double)entries / (double)size) > ctable_gc_thes )
+        qdd_gc_ctable(keep);
+}
+
 /*************************</cleaning amplitude table>**************************/
 
 
@@ -789,12 +813,14 @@ TASK_IMPL_1(QDD, _fill_new_amp_table, QDD, qdd)
 TASK_IMPL_3(QDD, qdd_gate, QDD, q, uint32_t, gate, BDDVAR, target)
 {
     // TODO: we can count nodes / other statistics here
+    if (auto_gc_ctable) qdd_test_gc_ctable(&q);
     return qdd_gate_rec(q, gate, target);
 }
 
 TASK_IMPL_4(QDD, qdd_cgate, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t)
 {
     // TODO: we can count nodes / other statistics here
+    if (auto_gc_ctable) qdd_test_gc_ctable(&q);
     return qdd_cgate_rec(q, gate, c, t);
 }
 
@@ -1636,18 +1662,8 @@ qdd_grover(BDDVAR n, bool* flag)
     for (BDDVAR k = 0; k < n; k++) qdd = qdd_gate(qdd, GATEID_H, k);
 
     // Grover iterations
-    QDD qdds[1];
     for (uint32_t i = 1; i <= R; i++) {
         qdd = qdd_grover_iteration(qdd, n, flag);
-
-        // TODO: call clean_amp_table only when amp table is full
-        // we can't auto trigger gc of amplitude table if we're not using the 
-        // _complex functions
-        if ((i % 4 == 0) ) {
-            qdds[0] = qdd;
-            clean_amplitude_table(qdds, 1);
-            qdd = qdds[0];
-        }
     }
 
     return qdd;
@@ -1895,7 +1911,6 @@ shor_period_finding(uint64_t a, uint64_t N)
     x[shor_wires.ctrl_last] = 1; // set the input reg. to |0...001> = |1>
 
     QDD qdd = qdd_create_basis_state(num_qubits, x);
-    QDD qdds[1];
 
     uint64_t as[2*shor_n];
     as[2*shor_n-1] = a;
@@ -1945,10 +1960,8 @@ shor_period_finding(uint64_t a, uint64_t N)
         
 
         // gc amp table
-        qdds[0] = qdd;
-        clean_amplitude_table(qdds, 1);
+        qdd_gc_ctable(&qdd);
         //printf("i = %2d, amps = %ld\n", i, count_amplitude_table_enries());
-        qdd = qdds[0];
     }
 
     // turn measurement outcomes into an integer

@@ -60,7 +60,7 @@ complex_close(complex_t *in_table, const complex_t* to_insert)
             (fabs(in_table->i - to_insert->i) < TOLERANCE));
 }
 
-bool
+int
 cmap_find_or_put (const cmap_t *cmap, const complex_t *v, ref_t *ret)
 {
     bucket_t *val  = (bucket_t *) v;
@@ -115,8 +115,8 @@ cmap_find_or_put (const cmap_t *cmap, const complex_t *v, ref_t *ret)
         }
         hash += prime << CACHE_LINE;
     }
-    // amplitude table full, return invalid / value outside size
-    return (cmap->size);
+    // amplitude table full, unable to add
+    return -1;
 }
 
 complex_t *

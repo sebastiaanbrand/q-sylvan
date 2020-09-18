@@ -482,7 +482,12 @@ bool qdd_is_unitvector(QDD qdd, BDDVAR n);
 // counts the nodes by recursively marking them (and unmarks when done)
 uint64_t qdd_countnodes(QDD qdd);
 
-void clean_amplitude_table(QDD qdds[], int n_qdds);
+/* enabled by default */
+void qdd_set_auto_gc_ctable(bool enabled);
+/* default 0.5 */
+void qdd_set_gc_ctable_thres(double fraction_filled);
+void qdd_gc_ctable(QDD *keep);
+void qdd_test_gc_ctable(QDD *keep);
 /**
  * Recursive function for moving amps from old to new amp table.
  */

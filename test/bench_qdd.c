@@ -7,7 +7,7 @@
 
 #ifdef HAVE_PROFILER
 #include <gperftools/profiler.h>
-static char* profile_name = "bench_qdd.prof";
+static char* profile_name = NULL; //"bench_qdd.prof";
 #endif
 
 /**
@@ -208,8 +208,7 @@ int bench_grover(int num_qubits, bool flag[], int workers)
     // Init Sylvan
     sylvan_set_limits(4LL<<30, 1, 6);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<23);
-    //sylvan_gc_disable(); // issue with gc, maybe "marked" flag location MTBBD vs QDD
+    sylvan_init_qdd(1LL<<18);
 
 
     QDD grov;
@@ -220,7 +219,7 @@ int bench_grover(int num_qubits, bool flag[], int workers)
     t_end = wctime();
     runtime = (t_end - t_start);
 
-    node_count = qdd_countnodes(grov);
+    node_count = qdd_countnodes(grov); // TODO: also get Pr(flag)
     printf("%ld nodes, %lf sec \n", node_count, runtime);
 
     // Cleanup
@@ -393,7 +392,6 @@ int bench_supremacy_5_4(uint32_t depth, uint32_t workers)
 
     // Start with |00...0> state
     QDD qdd = qdd_create_all_zero_state(n_qubits);
-    QDD qdds[1];
 
     // H on all qubits
     for (BDDVAR k=0; k < n_qubits; k++) qdd = qdd_gate(qdd, GATEID_H, k);
@@ -538,11 +536,9 @@ int bench_supremacy_5_4(uint32_t depth, uint32_t workers)
         default:
             break;
         }
-        qdds[0] = qdd;
         uint64_t namps = count_amplitude_table_enries();
         printf("%2d - namps = %ld\n", d, namps);
-        clean_amplitude_table(qdds, 1);
-        qdd = qdds[0];
+        qdd_gc_ctable(&qdd);
         if (count_nodes) node_count[d] = qdd_countnodes(qdd);
     }
 
@@ -578,15 +574,16 @@ int main()
     //bench_25qubit_circuit(16);
 
     BDDVAR n = 21;
-    bool flag[n];
     srand(time(NULL));
-    for (BDDVAR i = 0; i < n; i++) flag[i] = (bool)(rand() % 2);
+    //bool flag[n];
+    //for (BDDVAR i = 0; i < n; i++) flag[i] = (bool)(rand() % 2);
+    bool flag[] = {1,1,1,0,1,0,1,1,0,0,0,1,0,0,0,0,0,0,1,0,1};
     bench_grover(n, flag, 1);
-    //bench_grover(n, flag, 2);
-    //bench_grover(n, flag, 4);
-    //bench_grover(n, flag, 8);
+    bench_grover(n, flag, 2);
+    bench_grover(n, flag, 4);
+    bench_grover(n, flag, 8);
 
-   /*
+    /*
     //   3 x   5 =     15 (11 qubits)
     //   7 x  11 =     77 (17 qubits)
     //  17 x  29 =    493 (21 qubits)

@@ -58,9 +58,9 @@ und.
 \param dbs The dbs
 \param vector The int vector
 \retval idx The index that the vector was found or inserted at
-\return 1 if the vector was present, 0 if it was added
+\return 1 if the vector was present, 0 if it was added, -1 if table was full
 */
-extern bool cmap_find_or_put (const cmap_t *dbs, const complex_t *v, ref_t *ret);
+extern int cmap_find_or_put (const cmap_t *dbs, const complex_t *v, ref_t *ret);
 
 extern complex_t *cmap_get (const cmap_t *dbs, const ref_t ref);
 

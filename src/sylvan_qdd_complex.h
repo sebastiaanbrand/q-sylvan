@@ -97,6 +97,8 @@ void comp_print_bits(AMP a);
 /* Managing the complex value table */
 void init_amplitude_table(size_t size);
 uint64_t count_amplitude_table_enries();
+uint64_t get_num_ctable_entries();
+uint64_t get_ctable_size();
 void free_amplitude_table();
 void init_new_empty_table();
 void delete_old_table();
