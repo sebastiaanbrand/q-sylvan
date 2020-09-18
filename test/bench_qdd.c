@@ -188,7 +188,7 @@ int bench_25qubit_circuit(int workers)
     return 0;
 }
 
-int bench_grover(int num_qubits, bool flag[], int workers)
+int bench_grover(int num_qubits, bool flag[], int workers, FILE *logfile)
 {
     printf("bench grover, %d qubits, %2d worker(s), ", num_qubits, workers); 
     printf("flag = [");
@@ -210,11 +210,14 @@ int bench_grover(int num_qubits, bool flag[], int workers)
     sylvan_init_package();
     sylvan_init_qdd(1LL<<18);
 
-
     QDD grov;
     uint64_t node_count;
+    
+    if (logfile != NULL) qdd_stats_start(logfile);
 
     grov = qdd_grover(num_qubits, flag);
+
+    if (logfile != NULL) qdd_stats_finish();
 
     t_end = wctime();
     runtime = (t_end - t_start);
@@ -578,10 +581,16 @@ int main()
     //bool flag[n];
     //for (BDDVAR i = 0; i < n; i++) flag[i] = (bool)(rand() % 2);
     bool flag[] = {1,1,1,0,1,0,1,1,0,0,0,1,0,0,0,0,0,0,1,0,1};
-    bench_grover(n, flag, 1);
-    bench_grover(n, flag, 2);
-    bench_grover(n, flag, 4);
-    bench_grover(n, flag, 8);
+
+    FILE *fp;
+    
+    fp = fopen("grov21_log.csv", "w");
+    bench_grover(n, flag, 1, fp);
+    fclose(fp);
+
+    //bench_grover(n, flag, 2, NULL);
+    //bench_grover(n, flag, 4, NULL);
+    //bench_grover(n, flag, 8, NULL);
 
     /*
     //   3 x   5 =     15 (11 qubits)

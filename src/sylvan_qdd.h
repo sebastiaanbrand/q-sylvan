@@ -88,7 +88,7 @@ And analogously for the high edges.
 extern "C" {
 #endif /* __cplusplus */
 
-
+// TODO: organize this file better
 /**
  * 
  * QDD : essentially an edge, containing [var, amp, pointer]
@@ -159,11 +159,11 @@ QDD qdd_refs_sync(QDD qdd);
 /*******************************<applying gates>*******************************/
 
 // Applies given (single qubit) gate to |q>
-#define qdd_gate(q,gate,target) (CALL(qdd_gate,q,gate,target));
+#define qdd_gate(qdd,gate,target) (CALL(qdd_gate,qdd,gate,target));
 TASK_DECL_3(QDD, qdd_gate, QDD, uint32_t, BDDVAR);
 
 // Applies given controlled gate to |q>
-#define qdd_cgate(q,gate,c,t) (CALL(qdd_cgate,q,gate,c,t));
+#define qdd_cgate(qdd,gate,c,t) (CALL(qdd_cgate,qdd,gate,c,t));
 TASK_DECL_4(QDD, qdd_cgate, QDD, uint32_t, BDDVAR, BDDVAR);
 
 /**
@@ -499,6 +499,11 @@ TASK_DECL_1(QDD, _fill_new_amp_table, QDD);
  */
 void qdd_fprintdot(FILE *out, QDD qdd, bool draw_zeros);
 
+/*******************************<logging stats>********************************/
+void qdd_stats_start(FILE *out);
+void qdd_stats_log(QDD qdd);
+void qdd_stats_finish();
+/******************************</logging stats>********************************/
 
 // debug stuff
 void qdd_printnodes(QDD q);

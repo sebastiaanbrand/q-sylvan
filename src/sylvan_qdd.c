@@ -696,7 +696,6 @@ qdd_unmark_rec(QDD qdd)
     qdd_unmark_rec(qddnode_getptrhigh(n));
 }
 
-
 /**
  * Counts nodes in the qdd by marking them.
  */
@@ -810,18 +809,25 @@ qdd_test_gc_ctable(QDD *keep)
 
 /*******************************<applying gates>*******************************/
 
-TASK_IMPL_3(QDD, qdd_gate, QDD, q, uint32_t, gate, BDDVAR, target)
+TASK_IMPL_3(QDD, qdd_gate, QDD, qdd, uint32_t, gate, BDDVAR, target)
 {
-    // TODO: we can count nodes / other statistics here
-    if (auto_gc_ctable) qdd_test_gc_ctable(&q);
-    return qdd_gate_rec(q, gate, target);
+    if (auto_gc_ctable) qdd_test_gc_ctable(&qdd);
+
+    // This only logs stuff if logging is enabled
+    qdd_stats_log(qdd);
+
+    return qdd_gate_rec(qdd, gate, target);
 }
 
-TASK_IMPL_4(QDD, qdd_cgate, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t)
+TASK_IMPL_4(QDD, qdd_cgate, QDD, qdd, uint32_t, gate, BDDVAR, c, BDDVAR, t)
 {
-    // TODO: we can count nodes / other statistics here
-    if (auto_gc_ctable) qdd_test_gc_ctable(&q);
-    return qdd_cgate_rec(q, gate, c, t);
+    if (auto_gc_ctable) qdd_test_gc_ctable(&qdd);
+
+    // This only logs stuff if logging is enabled
+    qdd_stats_log(qdd);
+
+    // Actually apply the gate
+    return qdd_cgate_rec(qdd, gate, c, t);
 }
 
 TASK_IMPL_2(QDD, qdd_plus_amp, QDD, a, QDD, b)
@@ -2659,6 +2665,62 @@ bit_from_int(uint64_t a, uint8_t index)
     res = res>>index;
     return (bool) res;
 }
+
+/*******************************<logging stats>********************************/
+
+bool qdd_stats_logging = false;
+uint64_t statslog_buffer = 1024;
+uint64_t in_buffer = 0;
+uint64_t *nodelog;
+uint64_t *amp_log;
+FILE *qdd_logfile;
+
+void
+qdd_stats_start(FILE *out)
+{
+    qdd_stats_logging = true;
+    qdd_logfile = out;
+    nodelog = (uint64_t*) malloc(statslog_buffer * sizeof(uint64_t));
+    amp_log = (uint64_t*) malloc(statslog_buffer * sizeof(uint64_t));
+    in_buffer = 0;
+}
+
+void
+qdd_stats_flush_buffer()
+{
+    for (uint64_t i = 0; i < in_buffer; i++) {
+        fprintf(qdd_logfile, "%ld,%ld\n", nodelog[i], amp_log[i]);
+    }
+    in_buffer = 0;
+}
+
+void
+qdd_stats_log(QDD qdd)
+{
+    if (!qdd_stats_logging) return;
+
+    if (in_buffer >= statslog_buffer) {
+        qdd_stats_flush_buffer();
+    }
+
+    // Insert info
+    uint64_t num_nodes = qdd_countnodes(qdd);
+    uint64_t num_amps  = get_num_ctable_entries();
+    nodelog[in_buffer] = num_nodes;
+    amp_log[in_buffer] = num_amps;
+    in_buffer++;
+}
+
+void
+qdd_stats_finish()
+{
+    qdd_stats_flush_buffer();
+    qdd_stats_logging = false;
+    free(nodelog);
+    free(amp_log);
+}
+
+/******************************</logging stats>********************************/
 
 
 /**************************<printing & file writing>***************************/
