@@ -809,25 +809,47 @@ qdd_test_gc_ctable(QDD *keep)
 
 /*******************************<applying gates>*******************************/
 
+static void
+qdd_do_before_gate(QDD* qdd)
+{
+    // check if ctable needs gc
+    if (auto_gc_ctable) qdd_test_gc_ctable(qdd);
+
+    // log stuff (if logging is enabled)
+    qdd_stats_log(*qdd);
+}
+
+/* Wrapper for applying a single qubit gate. */
 TASK_IMPL_3(QDD, qdd_gate, QDD, qdd, uint32_t, gate, BDDVAR, target)
 {
-    if (auto_gc_ctable) qdd_test_gc_ctable(&qdd);
-
-    // This only logs stuff if logging is enabled
-    qdd_stats_log(qdd);
-
+    qdd_do_before_gate(&qdd);
     return qdd_gate_rec(qdd, gate, target);
 }
 
+/* Wrapper for applying a controled gate with 1 control qubit. */
 TASK_IMPL_4(QDD, qdd_cgate, QDD, qdd, uint32_t, gate, BDDVAR, c, BDDVAR, t)
 {
-    if (auto_gc_ctable) qdd_test_gc_ctable(&qdd);
+    qdd_do_before_gate(&qdd);
+    BDDVAR cs[4] = {c, QDD_INVALID_VAR, QDD_INVALID_VAR, QDD_INVALID_VAR};
+    return qdd_cgate_rec(qdd, gate, cs, t);
+}
 
-    // This only logs stuff if logging is enabled
-    qdd_stats_log(qdd);
+/* Wrapper for applying a controled gate with 2 control qubits. */
+TASK_IMPL_5(QDD, qdd_cgate2, QDD, qdd, uint32_t, gate, BDDVAR, c1, BDDVAR, c2, BDDVAR, t)
+{
+    assert(false);
+    qdd_do_before_gate(&qdd);
+    BDDVAR cs[4] = {c1, c2, QDD_INVALID_VAR, QDD_INVALID_VAR};
+    return qdd_cgate_rec(qdd, gate, cs, t);
+}
 
-    // Actually apply the gate
-    return qdd_cgate_rec(qdd, gate, c, t);
+/* Wrapper for applying a controled gate with 3 control qubits. */
+TASK_IMPL_6(QDD, qdd_cgate3, QDD, qdd, uint32_t, gate, BDDVAR, c1, BDDVAR, c2, BDDVAR, c3, BDDVAR, t)
+{
+    assert(false);
+    qdd_do_before_gate(&qdd);
+    BDDVAR cs[4] = {c1, c2, c3, QDD_INVALID_VAR}; // last pos is a buffer
+    return qdd_cgate_rec(qdd, gate, cs, t);
 }
 
 TASK_IMPL_2(QDD, qdd_plus_amp, QDD, a, QDD, b)
@@ -1093,85 +1115,123 @@ TASK_IMPL_3(QDD, qdd_gate_rec_complex, QDD, qdd, uint32_t, gateid, BDDVAR, targe
     return res;
 }
 
-TASK_IMPL_4(QDD, qdd_cgate_rec_amp, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t)
+TASK_IMPL_5(QDD, qdd_cgate_rec_amp, QDD, q, uint32_t, gate, BDDVAR*, cs, uint32_t, ci, BDDVAR, t)
 {
-    assert (c < t);
-
     // Check cache
     QDD res;
     bool cachenow = 1;
     if (cachenow) {
-        if (cache_get3(CACHE_QDD_CGATE, GATE_OPID_40(gate, c, t), q, sylvan_false, &res)) {
+        if (cache_get3(CACHE_QDD_CGATE, sylvan_false, q,
+                       GATE_OPID_64(gate, ci, cs[0], cs[1], cs[2], t),
+                       &res)) {
             sylvan_stats_count(QDD_CGATE_CACHED);
             return res;
         }
     }
 
-    BDDVAR var;
-    QDD low, high;
-    qdd_get_topvar(q, c, &var, &low, &high);
-    assert(var <= t);
+    // Get current control qubit
+    BDDVAR c = cs[ci];
 
-    if (var == c) { // apply gate to high, leave low unchanged
-        high = CALL(qdd_gate_rec_amp, high, gate, t);
+    // If no more control qubits, apply gate here
+    if (c == QDD_INVALID_VAR || ci > MAX_CONTROLS) {
+        res = CALL(qdd_gate_rec_amp, q, gate, t);
     }
-    else { // not at target qubit yet, recursive calls down
-        qdd_refs_spawn(SPAWN(qdd_cgate_rec_amp, high, gate, c, t));
-        low = CALL(qdd_cgate_rec_amp, low, gate, c, t);
-        qdd_refs_push(low);
-        high = qdd_refs_sync(SYNC(qdd_cgate_rec_amp));
-        qdd_refs_pop(1);
-    }
-    res  = qdd_makenode(var, low, high);
+    else {
+        BDDVAR var;
+        QDD low, high;
+        qdd_get_topvar(q, c, &var, &low, &high);
+        assert(var <= c);
 
-    // Multiply root amp of sum with input root amp, add to cache, return
-    AMP new_root_amp = amp_mul(QDD_AMP(q), QDD_AMP(res));
-    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
+        // If current node is (one of) the control qubit(s), 
+        // control on q_c = |1> (high edge)
+        if (var == c) {
+            ci++;
+            high = CALL(qdd_cgate_rec_amp, high, gate, cs, ci, t);
+            ci--;
+        }
+        // Not at control qubit yet, apply to both childeren.
+        else {
+            qdd_refs_spawn(SPAWN(qdd_cgate_rec_amp, high, gate, cs, ci, t));
+            low = CALL(qdd_cgate_rec_amp, low, gate, cs, ci, t);
+            qdd_refs_push(low);
+            high = qdd_refs_sync(SYNC(qdd_cgate_rec_amp));
+            qdd_refs_pop(1);
+        }
+        res = qdd_makenode(var, low, high);
+
+        // Multiply root amp of sum with input root amp, add to cache, return
+        AMP new_root_amp = amp_mul(QDD_AMP(q), QDD_AMP(res));
+        res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
+    }
+
+    // Add to cache, return
     if (cachenow) {
-        if (cache_put3(CACHE_QDD_CGATE, GATE_OPID_40(gate, c, t), q, sylvan_false, res)) 
+        if (cache_put3(CACHE_QDD_CGATE, sylvan_false, q,
+                       GATE_OPID_64(gate, ci, cs[0], cs[1], cs[2], t),
+                       res)) {
             sylvan_stats_count(QDD_CGATE_CACHEDPUT);
+        }
     }
     return res;
 }
 
-TASK_IMPL_4(QDD, qdd_cgate_rec_complex, QDD, q, uint32_t, gate, BDDVAR, c, BDDVAR, t)
+TASK_IMPL_5(QDD, qdd_cgate_rec_complex, QDD, q, uint32_t, gate, BDDVAR*, cs, uint32_t, ci, BDDVAR, t)
 {
-    assert (c < t);
-
     // Check cache
     QDD res;
     bool cachenow = 1;
     if (cachenow) {
-        if (cache_get3(CACHE_QDD_CGATE, GATE_OPID_40(gate, c, t), q, sylvan_false, &res)) {
+        if (cache_get3(CACHE_QDD_CGATE, sylvan_false, q,
+                       GATE_OPID_64(gate, ci, cs[0], cs[1], cs[2], t),
+                       &res)) {
             sylvan_stats_count(QDD_CGATE_CACHED);
             return res;
         }
     }
 
-    BDDVAR var;
-    QDD low, high;
-    qdd_get_topvar(q, c, &var, &low, &high);
-    assert(var <= t);
+    // Get current control qubit
+    BDDVAR c = cs[ci];
 
-    if (var == c) { // apply gate to high, leave low unchanged
-        high = CALL(qdd_gate_rec_complex, high, gate, t);
+    // If no more control qubits, apply gate here
+    if (c == QDD_INVALID_VAR || ci > MAX_CONTROLS) {
+        res = CALL(qdd_gate_rec_complex, q, gate, t);
     }
-    else { // not at target qubit yet, recursive calls down
-        qdd_refs_spawn(SPAWN(qdd_cgate_rec_complex, high, gate, c, t));
-        low = CALL(qdd_cgate_rec_complex, low, gate, c, t);
-        qdd_refs_push(low);
-        high = qdd_refs_sync(SYNC(qdd_cgate_rec_complex));
-        qdd_refs_pop(1);
-    }
-    res  = qdd_makenode(var, low, high);
+    else {
+        BDDVAR var;
+        QDD low, high;
+        qdd_get_topvar(q, c, &var, &low, &high);
+        assert(var <= c);
 
-    // Multiply root amp of sum with input root amp, add to cache, return
-    complex_t comp = comp_mul(comp_value(QDD_AMP(q)), comp_value(QDD_AMP(res)));
-    AMP new_root_amp = qdd_comp_lookup(comp);
-    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
+        // If current node is (one of) the control qubit(s), 
+        // control on q_c = |1> (high edge)
+        if (var == c) {
+            ci++;
+            high = CALL(qdd_gate_rec_complex, high, gate, t);
+            ci--;
+        }
+        // Not at control qubit yet, apply to both childeren.
+        else {
+            qdd_refs_spawn(SPAWN(qdd_cgate_rec_complex, high, gate, cs, ci, t));
+            low = CALL(qdd_cgate_rec_complex, low, gate, cs, ci, t);
+            qdd_refs_push(low);
+            high = qdd_refs_sync(SYNC(qdd_cgate_rec_complex));
+            qdd_refs_pop(1);
+        }
+        res = qdd_makenode(var, low, high);
+
+        // Multiply root amp of sum with input root amp, add to cache, return
+        complex_t comp = comp_mul(comp_value(QDD_AMP(q)), comp_value(QDD_AMP(res)));
+        AMP new_root_amp = qdd_comp_lookup(comp);
+        res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
+    }
+
+    // Add to cache, return
     if (cachenow) {
-        if (cache_put3(CACHE_QDD_CGATE, GATE_OPID_40(gate, c, t), q, sylvan_false, res))
+        if (cache_put3(CACHE_QDD_CGATE, sylvan_false, q,
+                       GATE_OPID_64(gate, ci, cs[0], cs[1], cs[2], t),
+                       res)) {
             sylvan_stats_count(QDD_CGATE_CACHEDPUT);
+        }
     }
     return res;
 }
@@ -1479,8 +1539,9 @@ TASK_IMPL_6(QDD, qdd_ccircuit, QDD, qdd, uint32_t, circ_id, BDDVAR*, cs, uint32_
     QDD res;
     bool cachenow = 1;
     if (cachenow) {
+        // TODO: for correctness, I think we need sto put 'ci' in this cache key as wel
         if (cache_get3(CACHE_QDD_SUBCIRC, sylvan_false, qdd, 
-                       GATE_OPID_64(circ_id, cs[0], cs[1], cs[2], t1, t2), 
+                       GATE_OPID_64(circ_id, cs[0], cs[1], cs[2], t1, t2),
                        &res)) {
             return res;
         }
@@ -1505,6 +1566,7 @@ TASK_IMPL_6(QDD, qdd_ccircuit, QDD, qdd, uint32_t, circ_id, BDDVAR*, cs, uint32_
         }
 
         // Check if we need to control here
+        // TODO: I think get_topvar() function can do this
         BDDVAR var;
         QDD low, high;
         bool control_here = false;
@@ -1525,6 +1587,7 @@ TASK_IMPL_6(QDD, qdd_ccircuit, QDD, qdd, uint32_t, circ_id, BDDVAR*, cs, uint32_
         if (control_here) {
             ci++; // next control qubit
             high = CALL(qdd_ccircuit, high, circ_id, cs, ci, t1, t2);
+            ci--;
         }
         else {
             // recursive call to both children
