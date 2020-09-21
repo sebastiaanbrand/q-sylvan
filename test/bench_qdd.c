@@ -187,48 +187,6 @@ int bench_25qubit_circuit(int workers)
     return 0;
 }
 
-int bench_grover(int num_qubits, bool flag[], int workers, FILE *logfile)
-{
-    printf("bench grover, %d qubits, %2d worker(s), ", num_qubits, workers); 
-    printf("flag = [");
-    for (int i = 0; i < num_qubits; i++)
-        printf("%d",flag[i]);
-    printf("], ");
-    fflush(stdout);
-
-    double t_start, t_end, runtime;
-    t_start = wctime();
-
-    // Init Lace
-    lace_init(workers, 0);
-    lace_startup(0, NULL, NULL);
-    LACE_ME;
-
-    // Init Sylvan
-    sylvan_set_limits(4LL<<30, 1, 6);
-    sylvan_init_package();
-    sylvan_init_qdd(1LL<<18);
-
-    QDD grov;
-    uint64_t node_count;
-    
-    if (logfile != NULL) qdd_stats_start(logfile);
-
-    grov = qdd_grover(num_qubits, flag);
-
-    if (logfile != NULL) qdd_stats_finish();
-
-    t_end = wctime();
-    runtime = (t_end - t_start);
-
-    node_count = qdd_countnodes(grov); // TODO: also get Pr(flag)
-    printf("%ld nodes, %lf sec \n", node_count, runtime);
-
-    // Cleanup
-    sylvan_quit();
-    lace_exit();
-    return 0;
-}
 
 int bench_shor(uint64_t N, uint64_t a, int workers, int rand_seed)
 {
@@ -571,22 +529,6 @@ int main()
     //bench_25qubit_circuit(8);
     //bench_25qubit_circuit(16);
 
-    BDDVAR n = 21;
-    srand(time(NULL));
-    //bool flag[n];
-    //for (BDDVAR i = 0; i < n; i++) flag[i] = (bool)(rand() % 2);
-    bool flag[] = {1,1,1,0,1,0,1,1,0,0,0,1,0,0,0,0,0,0,1,0,1};
-
-    FILE *fp;
-    
-    fp = fopen("grov21_log.csv", "w");
-    bench_grover(n, flag, 1, fp);
-    fclose(fp);
-
-    //bench_grover(n, flag, 2, NULL);
-    //bench_grover(n, flag, 4, NULL);
-    //bench_grover(n, flag, 8, NULL);
-
     /*
     //   3 x   5 =     15 (11 qubits)
     //   7 x  11 =     77 (17 qubits)
@@ -614,7 +556,7 @@ int main()
     bench_supremacy_5_4(depth, 16);
     */
 
-   #ifdef HAVE_PROFILER
+    #ifdef HAVE_PROFILER
         if (profile_name != NULL) ProfilerStop();
     #endif
 

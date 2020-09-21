@@ -217,6 +217,9 @@ TASK_DECL_4(QDD, qdd_matvec_mult, QDD, QDD, BDDVAR, BDDVAR);
 #define qdd_matmat_mult(a,b,nvars) (CALL(qdd_matmat_mult,a,b,nvars,0));
 TASK_DECL_4(QDD, qdd_matmat_mult, QDD, QDD, BDDVAR, BDDVAR);
 
+// Multiply some qdd by a scalar.
+QDD qdd_scalar_mult(QDD qdd, complex_t c);
+
 /******************************</applying gates>*******************************/
 
 
@@ -289,18 +292,6 @@ QDD qdd_all_control_phase(QDD qdd, BDDVAR n, bool *x);
 
 /********************</applying (controlled) sub-circuits>*********************/
 
-
-
-
-/**
- * Exectutes Grover on an n qubit circuit with a single flagged element.
- * 
- * @param n Number of qubits.
- * @param flag Binary representation of some integer in [0, 2^n]
- */
-QDD qdd_grover(BDDVAR n, bool* flag);
-#define qdd_grover_iteration(qdd,n,flag) (CALL(qdd_grover_iteration,qdd,n,flag));
-TASK_DECL_3(QDD, qdd_grover_iteration, QDD, BDDVAR, bool*);
 
 /**
  * The flollowing functions are a breakdown of the components needed for Shor
