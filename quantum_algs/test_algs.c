@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include <time.h>
 
-#include "sylvan.h"
-#include "grover.h"
 #include "test_assert.h"
+#include "sylvan.h"
 #include "sylvan_qdd_complex.h"
+
+#include "grover.h"
 
 bool VERBOSE = true;
 

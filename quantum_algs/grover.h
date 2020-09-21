@@ -1,11 +1,6 @@
 #include <stdbool.h>
-#include <stdint.h>
 
-#include "lace.h"
-#include "sylvan_qdd.h"
-#include "sylvan_qdd.h"
-
-
+#include "sylvan.h"
 
 /**
  * Exectutes Grover on an n qubit circuit with a single flagged element.

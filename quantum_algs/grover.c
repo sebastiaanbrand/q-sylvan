@@ -1,7 +1,6 @@
 #include "grover.h"
-#include "sylvan_int.h"
 #include "sylvan_qdd_complex.h"
-#include "sylvan_qdd.h"
+
 
 TASK_IMPL_3(QDD, qdd_grover_iteration, QDD, qdd, BDDVAR, n, bool*, flag)
 {
