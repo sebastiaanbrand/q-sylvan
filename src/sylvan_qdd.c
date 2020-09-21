@@ -423,6 +423,7 @@ qdd_quit()
         qdd_protected_created = 0;
     }
     qdd_initialized = 0;
+    free_amplitude_table();
 }
 
 void

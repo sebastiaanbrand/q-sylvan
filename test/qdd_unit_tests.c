@@ -1610,7 +1610,6 @@ int main()
 
     int res = runtests();
 
-    free_amplitude_table();
     sylvan_quit();
     lace_exit();
 

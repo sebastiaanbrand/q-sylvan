@@ -181,7 +181,6 @@ int bench_25qubit_circuit(int workers)
     printf("%ld nodes, %lf sec\n", node_count, runtime);
 
     // Cleanup
-    free_amplitude_table();
     sylvan_quit();
     lace_exit();
     
@@ -226,7 +225,6 @@ int bench_grover(int num_qubits, bool flag[], int workers, FILE *logfile)
     printf("%ld nodes, %lf sec \n", node_count, runtime);
 
     // Cleanup
-    free_amplitude_table();
     sylvan_quit();
     lace_exit();
     return 0;
@@ -261,7 +259,6 @@ int bench_shor(uint64_t N, uint64_t a, int workers, int rand_seed)
     printf("found factor %ld, %lf sec\n", fac, runtime);
 
     // Cleanup
-    free_amplitude_table();
     sylvan_quit();
     lace_exit();
     return 0;
@@ -362,7 +359,6 @@ int bench_supremacy_5_1(uint32_t depth, uint32_t workers)
     printf("\n");
 
     // Cleanup
-    free_amplitude_table();
     sylvan_quit();
     lace_exit();
 
@@ -554,7 +550,6 @@ int bench_supremacy_5_4(uint32_t depth, uint32_t workers)
     printf("\n");
 
     // Cleanup
-    free_amplitude_table();
     sylvan_quit();
     lace_exit();
 
