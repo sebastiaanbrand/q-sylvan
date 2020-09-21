@@ -1556,34 +1556,12 @@ TASK_IMPL_6(QDD, qdd_ccircuit, QDD, qdd, uint32_t, circ_id, BDDVAR*, cs, uint32_
         // root amp with normalization, so no need to do that here again
     }
     else {
-        // Check if skipped control node
-        bool skipped = false;
-        if (QDD_PTR(qdd) == QDD_TERMINAL) skipped = true;
-        else {
-            qddnode_t node = QDD_GETNODE(QDD_PTR(qdd));
-            if (qddnode_getvar(node) > c) skipped = true;
-        }
-
-        // Check if we need to control here
-        // TODO: I think get_topvar() function can do this
         BDDVAR var;
         QDD low, high;
-        bool control_here = false;
-        if (skipped) { // var > control
-            low  = qdd_bundle_ptr_amp(QDD_PTR(qdd), C_ONE);
-            high = qdd_bundle_ptr_amp(QDD_PTR(qdd), C_ONE);
-            var  = c;
-            control_here = true;
-        }
-        else {
-            // not skipped, either (var == control) or (var < control)
-            qddnode_t node = QDD_GETNODE(QDD_PTR(qdd));
-            var = qddnode_getvar(node);
-            qddnode_getchilderen(node, &low, &high);
-            if (var == c) control_here = true;
-        }
+        qdd_get_topvar(qdd, c, &var, &low, &high);
+        assert(var <= c);
 
-        if (control_here) {
+        if (var == c) {
             ci++; // next control qubit
             high = CALL(qdd_ccircuit, high, circ_id, cs, ci, t1, t2);
             ci--;
