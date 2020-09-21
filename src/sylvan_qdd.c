@@ -1539,8 +1539,7 @@ TASK_IMPL_6(QDD, qdd_ccircuit, QDD, qdd, uint32_t, circ_id, BDDVAR*, cs, uint32_
     QDD res;
     bool cachenow = 1;
     if (cachenow) {
-        // TODO: for correctness, I think we need sto put 'ci' in this cache key as wel
-        if (cache_get3(CACHE_QDD_SUBCIRC, sylvan_false, qdd, 
+        if (cache_get3(CACHE_QDD_SUBCIRC, GATE_OPID_40(0, ci, 0), qdd, 
                        GATE_OPID_64(circ_id, cs[0], cs[1], cs[2], t1, t2),
                        &res)) {
             return res;
@@ -1608,7 +1607,7 @@ TASK_IMPL_6(QDD, qdd_ccircuit, QDD, qdd, uint32_t, circ_id, BDDVAR*, cs, uint32_
     
     // Add to cache, return
     if (cachenow) {
-        cache_put3(CACHE_QDD_SUBCIRC, sylvan_false, qdd, 
+        cache_put3(CACHE_QDD_SUBCIRC, GATE_OPID_40(0, ci, 0), qdd, 
                    GATE_OPID_64(circ_id, cs[0], cs[1], cs[2], t1, t2), 
                    res);
     }
