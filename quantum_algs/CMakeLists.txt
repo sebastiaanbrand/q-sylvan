@@ -1,5 +1,6 @@
 set(SOURCES
     grover.c
+    supremacy.c
 )
 
 add_executable(bench bench.c ${SOURCES})
