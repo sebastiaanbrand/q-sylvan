@@ -91,7 +91,8 @@ VOID_TASK_IMPL_1(mtbdd_gc_mark_rec, MDD, mtbdd)
     if (mtbdd == mtbdd_true) return;
     if (mtbdd == mtbdd_false) return;
 
-    if (llmsset_mark(nodes, MTBDD_STRIPMARK(mtbdd))) {
+    //if (llmsset_mark(nodes, MTBDD_STRIPMARK(mtbdd))) {
+    if (llmsset_mark(nodes, mtbdd & 0x000000ffffffffffLL)) {
         mtbddnode_t n = MTBDD_GETNODE(mtbdd);
         if (!mtbddnode_isleaf(n)) {
             SPAWN(mtbdd_gc_mark_rec, mtbddnode_getlow(n));

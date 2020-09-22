@@ -32,6 +32,8 @@ typedef enum {
     BDD_NODES_REUSED,
     LDD_NODES_CREATED,
     LDD_NODES_REUSED,
+    QDD_NODES_CREATED,
+    QDD_NODES_REUSED,
 
     /* BDD operations */
     OPCOUNTER(BDD_ITE),
@@ -86,6 +88,13 @@ typedef enum {
     OPCOUNTER(LDD_ZIP),
     OPCOUNTER(LDD_RELPROD_UNION),
     OPCOUNTER(LDD_PROJECT_MINUS),
+
+    /* QDD operations */
+    OPCOUNTER(QDD_PLUS),
+    OPCOUNTER(QDD_MULT),
+    OPCOUNTER(QDD_GATE),
+    OPCOUNTER(QDD_CGATE),
+    OPCOUNTER(QDD_PROB),
 
     /* Other counters */
     SYLVAN_GC_COUNT,

@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include <pthread.h>
 #include <unistd.h>
 #include <time.h>
@@ -515,6 +516,7 @@ test_ldd()
 
     return 0;
 }
+
 
 int runtests()
 {

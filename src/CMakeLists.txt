@@ -9,7 +9,7 @@ set(SOURCES
     sylvan_mt.c
     sylvan_mtbdd.c
     sylvan_qdd.c
-    sylvan_qdd_int.c
+    sylvan_qdd_complex.c
     sylvan_obj.cpp
     sylvan_refs.c
     sylvan_sl.c
@@ -32,12 +32,14 @@ set(HEADERS
     sylvan_mtbdd.h
     sylvan_mtbdd_int.h
     sylvan_qdd.h
-    sylvan_qdd_int.h
+    sylvan_qdd_complex.h
     sylvan_obj.hpp
     sylvan_stats.h
     sylvan_table.h
     sylvan_tls.h
 )
+
+add_subdirectory(util)
 
 option(BUILD_SHARED_LIBS "Enable/disable creation of shared libraries" ON)
 option(BUILD_STATIC_LIBS "Enable/disable creation of static libraries" ON)
@@ -48,7 +50,7 @@ find_package(GMP REQUIRED)
 
 include_directories(${GMP_INCLUDE_DIR})
 
-target_link_libraries(sylvan m pthread ${GMP_LIBRARIES})
+target_link_libraries(sylvan m pthread ${GMP_LIBRARIES} util)
 
 if(UNIX AND NOT APPLE)
     target_link_libraries(sylvan rt)
