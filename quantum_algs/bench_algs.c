@@ -266,7 +266,7 @@ bench_supremacy_5_4(uint32_t depth, uint32_t workers)
 }
 
 
-double bench_grover_once(int num_qubits, bool flag[], int workers, char *fpath)
+double bench_grover_once(int num_qubits, bool flag[], int workers, char *fpath, uint64_t *nodes_peak)
 {
     if (VERBOSE) {
         printf("bench grover, %d qubits, %2d worker(s), ", num_qubits, workers); 
@@ -294,19 +294,20 @@ double bench_grover_once(int num_qubits, bool flag[], int workers, char *fpath)
     sylvan_init_qdd(1LL<<18);
 
     QDD grov;
-    uint64_t node_count;
+    uint64_t node_count_end;
     
     qdd_stats_start(logfile);
 
     grov = qdd_grover(num_qubits, flag);
 
+    if (nodes_peak != NULL)  *nodes_peak = qdd_stats_get_nodes_peak();
     if (logfile != NULL) qdd_stats_finish();
 
     t_end = wctime();
     runtime = (t_end - t_start);
 
-    node_count = qdd_countnodes(grov); // TODO: also get Pr(flag)
-    printf("%ld nodes, %lf sec \n", node_count, runtime);
+    node_count_end = qdd_countnodes(grov); // TODO: also get Pr(flag)
+    printf("%ld nodes end (%ld peak), %lf sec \n", node_count_end, *nodes_peak, runtime);
 
     if (logfile != NULL)
         fclose(logfile);
@@ -364,7 +365,7 @@ int bench_grover()
     strcpy(runtime_fname, output_dir);
     strcat(runtime_fname, "runtimes.csv");
     FILE *runtime_file = fopen(runtime_fname, "w");
-    fprintf(runtime_file, "sec, qubits, workers, flag\n");
+    fprintf(runtime_file, "sec, qubits, workers, peak_nodes, flag\n");
 
     // different number of qubits to test
     int n_qubits[] = {10, 20};
@@ -382,6 +383,7 @@ int bench_grover()
 
     // runtimes are written to single file
     double runtime;
+    uint64_t nodes_peak;
 
     // run benchmarks
     for (int q = 0; q < nn_qubits; q++) {
@@ -400,11 +402,11 @@ int bench_grover()
                 strcat(output_path, output_file);
 
                 // bench twice, once with logging and once for timing
-                runtime = bench_grover_once(n_qubits[q], flag, n_workers[w], NULL);
-                bench_grover_once(n_qubits[q], flag, n_workers[w], output_path);
+                runtime = bench_grover_once(n_qubits[q], flag, n_workers[w], NULL, &nodes_peak);
+                bench_grover_once(n_qubits[q], flag, n_workers[w], output_path, &nodes_peak);
 
                 // write runtime
-                fprintf(runtime_file, "%lf, %d, %d, %d\n", runtime, n_qubits[q], n_workers[w], f_int);
+                fprintf(runtime_file, "%lf, %d, %d, %ld, %d\n", runtime, n_qubits[q], n_workers[w], nodes_peak, f_int);
             }
         }
     }

@@ -2675,6 +2675,7 @@ uint64_t in_buffer = 0;
 uint64_t *nodelog;
 uint64_t *amp_log;
 FILE *qdd_logfile;
+uint64_t nodes_peak = 0;
 
 void
 qdd_stats_start(FILE *out)
@@ -2685,6 +2686,7 @@ qdd_stats_start(FILE *out)
     nodelog = (uint64_t*) malloc(statslog_buffer * sizeof(uint64_t));
     amp_log = (uint64_t*) malloc(statslog_buffer * sizeof(uint64_t));
     in_buffer = 0;
+    nodes_peak = 0;
 }
 
 void
@@ -2711,6 +2713,15 @@ qdd_stats_log(QDD qdd)
     nodelog[in_buffer] = num_nodes;
     amp_log[in_buffer] = num_amps;
     in_buffer++;
+
+    if (num_nodes > nodes_peak)
+        nodes_peak = num_nodes;
+}
+
+uint64_t
+qdd_stats_get_nodes_peak()
+{
+    return nodes_peak;
 }
 
 void
@@ -2719,6 +2730,7 @@ qdd_stats_finish()
     if (!qdd_stats_logging) return;
     qdd_stats_flush_buffer();
     qdd_stats_logging = false;
+    nodes_peak = 0;
     free(nodelog);
     free(amp_log);
 }
