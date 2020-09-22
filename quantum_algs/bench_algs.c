@@ -354,6 +354,8 @@ int main()
     int n = 21;
     bool flag[] = {1,1,1,0,1,0,1,1,0,0,0,1,0,0,0,0,0,0,1,0,1};
     bench_grover(n, flag, 1, NULL);
+    bench_grover(n, flag, 2, NULL);
+    bench_grover(n, flag, 4, NULL);
 
 
     bench_supremacy_5_1(100, 1);

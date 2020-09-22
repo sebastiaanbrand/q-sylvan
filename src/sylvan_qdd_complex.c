@@ -30,7 +30,9 @@ static long double Pi;    // set value of global Pi
 
 
 size_t ctable_size;
-size_t ctable_entries; // incremented with atomic add // TODO: thread local?
+size_t ctable_entries_est;
+DECLARE_THREAD_LOCAL(ctable_entries_local, size_t); // these are added to _est
+static const uint64_t ctable_entries_local_buffer = 1000; // every 1000 entries
 cmap_t *ctable;
 cmap_t *ctable_old;
 static bool CACHE_AMP_OPS = true;
@@ -363,8 +365,11 @@ comp_try_lookup(complex_t c, bool *success)
     int present = cmap_find_or_put(ctable, &c, &res);
     if (present == 0) {
         *success = true;
-        // TODO: investigate if this bottlenecks anything
-        __sync_fetch_and_add(&ctable_entries, 1);
+        ctable_entries_local += 1;
+        if (ctable_entries_local >= ctable_entries_local_buffer) {
+            __sync_fetch_and_add(&ctable_entries_est, ctable_entries_local);
+            ctable_entries_local = 0;
+        }
     }
     else if (present == 1) *success = true;
     else                   *success = false;
@@ -452,7 +457,15 @@ void
 init_amplitude_table(size_t size)
 {
     ctable_size = size;
-    ctable_entries = 0;
+    ctable_entries_est = 0;
+    ctable_entries_local = 0;
+    // NOTE: the sum of the local counters sometimes exceeds the actual total
+    // number of entries (when just counting the global value with atomic adds
+    // after every insert). This might be because 'ctable_entries_local = 0' 
+    // doesn't set it to 0 for all threads. Since it's only an estimate it is
+    // not a huge issue though.
+    // TODO: figure out how to get lace to handle this counting better
+    
     ctable = cmap_create(ctable_size);
 
     C_ONE     = comp_lookup(comp_one());
@@ -546,9 +559,9 @@ count_amplitude_table_enries()
 }
 
 uint64_t
-get_num_ctable_entries()
+get_ctable_entries_estimate()
 {
-    return ctable_entries;
+    return ctable_entries_est;
 }
 
 uint64_t

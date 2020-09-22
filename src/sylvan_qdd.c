@@ -721,8 +721,8 @@ qdd_countnodes(QDD qdd)
 
 /**************************<cleaning amplitude table>**************************/
 
-static int auto_gc_ctable    = 1;
-static double ctable_gc_thes = 0.5;
+static int auto_gc_ctable     = 1;
+static double ctable_gc_thres = 0.5;
 
 void
 qdd_set_auto_gc_ctable(bool enabled)
@@ -733,8 +733,9 @@ qdd_set_auto_gc_ctable(bool enabled)
 void
 qdd_set_gc_ctable_thres(double fraction_filled)
 {
-    ctable_gc_thes = fraction_filled;
+    ctable_gc_thres = fraction_filled;
 }
+
 
 void
 qdd_gc_ctable(QDD *keep)
@@ -798,9 +799,9 @@ TASK_IMPL_1(QDD, _fill_new_amp_table, QDD, qdd)
 void
 qdd_test_gc_ctable(QDD *keep)
 {
-    uint64_t entries = get_num_ctable_entries();
+    uint64_t entries = get_ctable_entries_estimate();
     uint64_t size    = get_ctable_size();
-    if ( ((double)entries / (double)size) > ctable_gc_thes )
+    if ( ((double)entries / (double)size) > ctable_gc_thres )
         qdd_gc_ctable(keep);
 }
 
@@ -2699,7 +2700,7 @@ qdd_stats_log(QDD qdd)
 
     // Insert info
     uint64_t num_nodes = qdd_countnodes(qdd);
-    uint64_t num_amps  = get_num_ctable_entries();
+    uint64_t num_amps  = count_amplitude_table_enries();
     nodelog[in_buffer] = num_nodes;
     amp_log[in_buffer] = num_amps;
     in_buffer++;
