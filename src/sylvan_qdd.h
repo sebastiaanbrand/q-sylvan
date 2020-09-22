@@ -112,6 +112,7 @@ static const BDDVAR     QDD_INVALID_VAR = UINT8_MAX;
  * Similar initialization as for MTBDDs + amplitude table init.
  */
 void sylvan_init_qdd(size_t ctable_size);
+void qdd_set_testing_mode(bool on);
 
 
 /*******************<garbage collection, references, marking>******************/

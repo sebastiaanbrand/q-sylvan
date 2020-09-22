@@ -495,6 +495,7 @@ int main()
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
     sylvan_init_qdd(1LL<<23);
+    qdd_set_testing_mode(true); // turn on internal sanity tests
 
     int res = runtests();
 

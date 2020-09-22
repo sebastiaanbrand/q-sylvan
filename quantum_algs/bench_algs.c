@@ -191,7 +191,8 @@ int bench_25qubit_circuit(int workers)
 int bench_supremacy_5_1(uint32_t depth, uint32_t workers)
 {
     // 5x1 "grid" from [Characterizing Quantum Supremacy in Near-Term Devices]
-    printf("bench sup5_1, depth %d, %2d worker(s)\n", depth, workers);
+    printf("bench sup5_1, depth %3d, %2d worker(s), ", depth, workers);
+    fflush(stdout);
 
     uint64_t node_count;
     double t_start, t_end, runtime;
@@ -214,9 +215,7 @@ int bench_supremacy_5_1(uint32_t depth, uint32_t workers)
     t_end = wctime();
     runtime = (t_end - t_start);
 
-    printf("%lf sec", runtime);
-    printf(", %ld nodes", node_count);
-    printf("\n");
+    printf("%4ld nodes, %lf sec\n", node_count, runtime);
 
     // Cleanup
     sylvan_quit();
@@ -228,7 +227,8 @@ int bench_supremacy_5_1(uint32_t depth, uint32_t workers)
 int
 bench_supremacy_5_4(uint32_t depth, uint32_t workers)
 {
-    printf("bench sup5_4, depth %d, %2d worker(s)\n", depth, workers);
+    printf("bench sup5_4, depth %3d, %2d worker(s), ", depth, workers);
+    fflush(stdout);
 
     uint64_t node_count;
     double t_start, t_end, runtime;
@@ -251,9 +251,7 @@ bench_supremacy_5_4(uint32_t depth, uint32_t workers)
     t_end = wctime();
     runtime = (t_end - t_start);
 
-    printf("%lf sec", runtime);
-    printf(", %ld nodes", node_count);
-    printf("\n");
+    printf("%4ld nodes, %lf sec\n", node_count, runtime);
 
     // Cleanup
     sylvan_quit();

@@ -26,6 +26,7 @@
 #include "sylvan_qdd_complex.h"
 
 //static int granularity = 1; // default
+static bool testing_mode = 0; // turns on/off (expensive) sanity checks
 
 /****************< (bit level) manipulation of QDD / qddnode_t >***************/
 /**
@@ -446,6 +447,12 @@ sylvan_init_qdd(size_t ctable_size)
 
     LACE_ME;
     CALL(qdd_refs_init);
+}
+
+void
+qdd_set_testing_mode(bool on)
+{
+    testing_mode = on;
 }
 
 void
@@ -1934,8 +1941,7 @@ shor_period_finding(uint64_t a, uint64_t N)
     double m_prob;
 
     for (uint32_t i = 0; i < 2*shor_n; i++) {
-        //printf("shor it = %d/%d\n", i+1, 2*shor_n);
-        assert(qdd_is_unitvector(qdd, num_qubits));
+        if (testing_mode) assert(qdd_is_unitvector(qdd, num_qubits));
 
         // H on top wire
         qdd = qdd_gate(qdd, GATEID_H, shor_wires.top);
@@ -2169,7 +2175,7 @@ qdd_measure_q0(QDD qdd, BDDVAR nvars, int *m, double *p)
     BDDVAR var;
     qdd_get_topvar(qdd, 0, &var, &low, &high);
 
-    assert(qdd_is_unitvector(qdd, nvars)); // TODO: only do this during testing
+    if (testing_mode) assert(qdd_is_unitvector(qdd, nvars));
 
     prob_low  = qdd_unnormed_prob(low,  1, nvars);
     prob_high = qdd_unnormed_prob(high, 1, nvars);
