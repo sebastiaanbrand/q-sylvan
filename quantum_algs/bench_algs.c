@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <sys/time.h>
 
 #include "sylvan.h"
@@ -10,6 +12,9 @@
 #include <gperftools/profiler.h>
 static char* profile_name = NULL; //"bench_qdd.prof";
 #endif
+
+
+static bool VERBOSE = false;
 
 /**
  * Obtain current wallclock time
@@ -261,14 +266,20 @@ bench_supremacy_5_4(uint32_t depth, uint32_t workers)
 }
 
 
-int bench_grover(int num_qubits, bool flag[], int workers, FILE *logfile)
+double bench_grover_once(int num_qubits, bool flag[], int workers, char *fpath)
 {
-    printf("bench grover, %d qubits, %2d worker(s), ", num_qubits, workers); 
-    printf("flag = [");
-    for (int i = 0; i < num_qubits; i++)
-        printf("%d",flag[i]);
-    printf("], ");
-    fflush(stdout);
+    if (VERBOSE) {
+        printf("bench grover, %d qubits, %2d worker(s), ", num_qubits, workers); 
+        printf("flag = [");
+        for (int i = 0; i < num_qubits; i++)
+            printf("%d",flag[i]);
+        printf("], ");
+        fflush(stdout);
+    }
+
+    FILE *logfile = NULL;
+    if (fpath != NULL)
+        logfile = fopen(fpath, "w");
 
     double t_start, t_end, runtime;
     t_start = wctime();
@@ -278,14 +289,14 @@ int bench_grover(int num_qubits, bool flag[], int workers, FILE *logfile)
     lace_startup(0, NULL, NULL);
 
     // Init Sylvan
-    sylvan_set_limits(4LL<<30, 1, 6);
+    sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
     sylvan_init_qdd(1LL<<18);
 
     QDD grov;
     uint64_t node_count;
     
-    if (logfile != NULL) qdd_stats_start(logfile);
+    qdd_stats_start(logfile);
 
     grov = qdd_grover(num_qubits, flag);
 
@@ -297,10 +308,13 @@ int bench_grover(int num_qubits, bool flag[], int workers, FILE *logfile)
     node_count = qdd_countnodes(grov); // TODO: also get Pr(flag)
     printf("%ld nodes, %lf sec \n", node_count, runtime);
 
+    if (logfile != NULL)
+        fclose(logfile);
+
     // Cleanup
     sylvan_quit();
     lace_exit();
-    return 0;
+    return runtime;
 }
 
 int bench_shor(uint64_t N, uint64_t a, int workers, int rand_seed)
@@ -336,6 +350,70 @@ int bench_shor(uint64_t N, uint64_t a, int workers, int rand_seed)
     return 0;
 }
 
+
+int bench_grover()
+{
+    VERBOSE = true;
+    
+    // output stuff
+    mkdir("benchmark_data/grover/", 0700);
+    char output_dir[256];
+    sprintf(output_dir, "benchmark_data/grover/%ld/", time(NULL));
+    mkdir(output_dir, 0700);
+    char runtime_fname[256];
+    strcpy(runtime_fname, output_dir);
+    strcat(runtime_fname, "runtimes.csv");
+    FILE *runtime_file = fopen(runtime_fname, "w");
+    fprintf(runtime_file, "sec, qubits, workers, flag\n");
+
+    // different number of qubits to test
+    int n_qubits[] = {10, 20};
+    int nn_qubits  = 2;
+    
+    // different number of workers to test
+    int n_workers[] = {1,2,4,8};
+    int nn_workers  = 4;
+
+    // different number of random flags to test
+    int n_flags = 5;
+    bool *flag;
+    int f_int;
+    
+
+    // runtimes are written to single file
+    double runtime;
+
+    // run benchmarks
+    for (int q = 0; q < nn_qubits; q++) {
+
+        for (int f = 0; f < n_flags; f++) {
+            flag  = qdd_grover_random_flag(n_qubits[q]);
+            f_int = bitarray_to_int(flag, n_qubits[q], true);
+
+            for (int w = 0; w < nn_workers; w++) {
+
+                // output stuff
+                char output_path[256];
+                char output_file[256];
+                sprintf(output_file, "grov_hist_n%d_w%d_f%d.csv", n_qubits[q], n_workers[w], f_int);
+                strcpy(output_path, output_dir);
+                strcat(output_path, output_file);
+
+                // bench twice, once with logging and once for timing
+                runtime = bench_grover_once(n_qubits[q], flag, n_workers[w], NULL);
+                bench_grover_once(n_qubits[q], flag, n_workers[w], output_path);
+
+                // write runtime
+                fprintf(runtime_file, "%lf, %d, %d, %d\n", runtime, n_qubits[q], n_workers[w], f_int);
+            }
+        }
+    }
+
+    fclose(runtime_file);
+
+    return 0;
+}
+
 int main()
 {
     #ifdef HAVE_PROFILER
@@ -346,16 +424,17 @@ int main()
         }
     #endif
 
+    mkdir("benchmark_data", 0700);
+
     //bench_25qubit_circuit(1);
     //bench_25qubit_circuit(2);
 
-    int n = 21;
-    bool flag[] = {1,1,1,0,1,0,1,1,0,0,0,1,0,0,0,0,0,0,1,0,1};
-    bench_grover(n, flag, 1, NULL);
-    bench_grover(n, flag, 2, NULL);
-    bench_grover(n, flag, 4, NULL);
+    
+
+    bench_grover();
 
 
+    /*
     bench_supremacy_5_1(100, 1);
     bench_supremacy_5_4(5, 1);
 
@@ -363,6 +442,7 @@ int main()
     bench_shor(77, 0, 1, rand_seed);
     bench_shor(77, 0, 2, rand_seed);
     bench_shor(77, 0, 4, rand_seed);
+    */
 
     #ifdef HAVE_PROFILER
         if (profile_name != NULL) ProfilerStop();

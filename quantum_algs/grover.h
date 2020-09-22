@@ -11,3 +11,5 @@
 QDD qdd_grover(BDDVAR n, bool* flag);
 #define qdd_grover_iteration(qdd,n,flag) (CALL(qdd_grover_iteration,qdd,n,flag));
 TASK_DECL_3(QDD, qdd_grover_iteration, QDD, BDDVAR, bool*);
+
+bool *qdd_grover_random_flag(BDDVAR nqubits);

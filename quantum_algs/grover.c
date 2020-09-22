@@ -43,3 +43,11 @@ qdd_grover(BDDVAR n, bool* flag)
 
     return qdd;
 }
+
+bool *
+qdd_grover_random_flag(BDDVAR nqubits)
+{
+    bool *flag = malloc( (sizeof(bool)*nqubits) );
+    for (BDDVAR k = 0; k < nqubits; k++) flag[k] = (rand() % 2);
+    return flag;
+}

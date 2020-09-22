@@ -2679,6 +2679,7 @@ FILE *qdd_logfile;
 void
 qdd_stats_start(FILE *out)
 {
+    if (out == NULL) return;
     qdd_stats_logging = true;
     qdd_logfile = out;
     nodelog = (uint64_t*) malloc(statslog_buffer * sizeof(uint64_t));
@@ -2715,6 +2716,7 @@ qdd_stats_log(QDD qdd)
 void
 qdd_stats_finish()
 {
+    if (!qdd_stats_logging) return;
     qdd_stats_flush_buffer();
     qdd_stats_logging = false;
     free(nodelog);
