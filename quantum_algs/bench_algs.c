@@ -16,6 +16,12 @@ static char* profile_name = NULL; //"bench_qdd.prof";
 
 static bool VERBOSE = false;
 
+static size_t min_tablesize;
+static size_t max_tablesize;
+static size_t min_cachesize;
+static size_t max_cachesize;
+static size_t ctable_size;
+
 /**
  * Obtain current wallclock time
  */
@@ -289,9 +295,9 @@ double bench_grover_once(int num_qubits, bool flag[], int workers, char *fpath, 
     lace_startup(0, NULL, NULL);
 
     // Init Sylvan
-    sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
+    sylvan_set_sizes(min_tablesize, max_tablesize, min_cachesize, max_cachesize);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<18);
+    sylvan_init_qdd(ctable_size);
 
     QDD grov;
     uint64_t node_count_end;
@@ -356,16 +362,33 @@ int bench_grover()
 {
     VERBOSE = true;
     
-    // output stuff
+    // output dir
     mkdir("benchmark_data/grover/", 0700);
     char output_dir[256];
     sprintf(output_dir, "benchmark_data/grover/%ld/", time(NULL));
     mkdir(output_dir, 0700);
+    // output file for runtime data
     char runtime_fname[256];
     strcpy(runtime_fname, output_dir);
     strcat(runtime_fname, "runtimes.csv");
     FILE *runtime_file = fopen(runtime_fname, "w");
     fprintf(runtime_file, "sec, qubits, workers, peak_nodes, flag\n");
+    // output file for sylvan parameters
+    char param_fname[256];
+    strcpy(param_fname, output_dir);
+    strcat(param_fname, "parameters.txt");
+    FILE *param_file = fopen(param_fname, "w");
+
+    // sylvan sizes
+    min_tablesize = max_tablesize = 1LL<<25;
+    min_cachesize = max_cachesize = 1LL<<16;
+    ctable_size   = 1LL<<18;
+    fprintf(param_file, "min_tablesize = %ld\n", min_tablesize);
+    fprintf(param_file, "max_tablesize = %ld\n", max_tablesize);
+    fprintf(param_file, "min_cachesize = %ld\n", min_cachesize);
+    fprintf(param_file, "max_cachesize = %ld\n", max_cachesize);
+    fprintf(param_file, "ctable_size = %ld\n", ctable_size);
+    fclose(param_file);
 
     // different number of qubits to test
     int n_qubits[] = {10, 20};
@@ -379,7 +402,6 @@ int bench_grover()
     int n_flags = 5;
     bool *flag;
     int f_int;
-    
 
     // runtimes are written to single file
     double runtime;
@@ -394,16 +416,16 @@ int bench_grover()
 
             for (int w = 0; w < nn_workers; w++) {
 
-                // output stuff
-                char output_path[256];
-                char output_file[256];
-                sprintf(output_file, "grov_hist_n%d_w%d_f%d.csv", n_qubits[q], n_workers[w], f_int);
-                strcpy(output_path, output_dir);
-                strcat(output_path, output_file);
+                // output file for history of this run
+                char history_path[256];
+                char history_fname[256];
+                sprintf(history_fname, "grov_hist_n%d_w%d_f%d.csv", n_qubits[q], n_workers[w], f_int);
+                strcpy(history_path, output_dir);
+                strcat(history_path, history_fname);
 
                 // bench twice, once with logging and once for timing
                 runtime = bench_grover_once(n_qubits[q], flag, n_workers[w], NULL, &nodes_peak);
-                bench_grover_once(n_qubits[q], flag, n_workers[w], output_path, &nodes_peak);
+                bench_grover_once(n_qubits[q], flag, n_workers[w], history_path, &nodes_peak);
 
                 // write runtime
                 fprintf(runtime_file, "%lf, %d, %d, %ld, %d\n", runtime, n_qubits[q], n_workers[w], nodes_peak, f_int);
