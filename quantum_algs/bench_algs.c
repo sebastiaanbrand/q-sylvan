@@ -367,12 +367,16 @@ int bench_grover()
     char output_dir[256];
     sprintf(output_dir, "benchmark_data/grover/%ld/", time(NULL));
     mkdir(output_dir, 0700);
+    char history_dir[256];
+    strcpy(history_dir, output_dir);
+    strcat(history_dir, "run_histories/");
+    mkdir(history_dir, 0700);
     // output file for runtime data
     char runtime_fname[256];
     strcpy(runtime_fname, output_dir);
     strcat(runtime_fname, "runtimes.csv");
     FILE *runtime_file = fopen(runtime_fname, "w");
-    fprintf(runtime_file, "sec, qubits, workers, peak_nodes, flag\n");
+    fprintf(runtime_file, "runtime, qubits, workers, peak_nodes, flag\n");
     // output file for sylvan parameters
     char param_fname[256];
     strcpy(param_fname, output_dir);
@@ -395,11 +399,11 @@ int bench_grover()
     int nn_qubits  = 2;
     
     // different number of workers to test
-    int n_workers[] = {1,2,4,8};
-    int nn_workers  = 4;
+    int n_workers[] = {1,2,4};
+    int nn_workers  = 3;
 
     // different number of random flags to test
-    int n_flags = 5;
+    int n_flags = 2;
     bool *flag;
     int f_int;
 
@@ -420,7 +424,7 @@ int bench_grover()
                 char history_path[256];
                 char history_fname[256];
                 sprintf(history_fname, "grov_hist_n%d_w%d_f%d.csv", n_qubits[q], n_workers[w], f_int);
-                strcpy(history_path, output_dir);
+                strcpy(history_path, history_dir);
                 strcat(history_path, history_fname);
 
                 // bench twice, once with logging and once for timing
