@@ -94,7 +94,9 @@ def plot_concurrency_performance(data_folder, alg_name):
 
         # actually plot stuff
         plt.scatter(workers, speedups)
-        lengend_entries.append('{} qubits'.format(q))
+        w1_times = np.round(subset[np.where(subset['workers'] == 1)]['runtime'], 3)
+        leg = '{} qubits, time $w_1$ ({},{})'.format(q, np.min(w1_times), np.max(w1_times))
+        lengend_entries.append(leg)
 
     plt.ylabel('average speedup')
     plt.xlabel('number of workers')
