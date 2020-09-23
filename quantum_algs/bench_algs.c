@@ -395,15 +395,15 @@ int bench_grover()
     fclose(param_file);
 
     // different number of qubits to test
-    int n_qubits[] = {10, 20};
-    int nn_qubits  = 2;
+    int n_qubits[] = {10, 15, 20};
+    int nn_qubits  = 3;
     
     // different number of workers to test
-    int n_workers[] = {1,2,4};
-    int nn_workers  = 3;
+    int n_workers[] = {1,2,4,8};
+    int nn_workers  = 4;
 
     // different number of random flags to test
-    int n_flags = 2;
+    int n_flags = 5;
     bool *flag;
     int f_int;
 

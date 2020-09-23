@@ -7,8 +7,8 @@ bench_path = "../build/benchmark_data/"
 alg_names  = ["grover"]
 
 plot_concur_perf_bool = True
-plot_peaknodes_bool   = False
-plot_histories_bool   = False
+plot_peaknodes_bool   = True
+plot_histories_bool   = True
 
 
 def plot_history(input_path, output_path, alg_name):
@@ -35,6 +35,7 @@ def plot_history(input_path, output_path, alg_name):
     plt.tight_layout()
     plt.savefig(output_path)
     plt.clf()
+    plt.close()
 
 
 def plot_histories(histories_path, output_folder, alg_name):
@@ -63,6 +64,7 @@ def plot_qubits_vs_peak_nodes(data_folder, alg_name):
     plt.tight_layout()
     plt.savefig(output_path)
     plt.clf()
+    plt.close()
 
 def plot_concurrency_performance(data_folder, alg_name):
     input_path  = data_folder + 'runtimes.csv'
@@ -82,11 +84,7 @@ def plot_concurrency_performance(data_folder, alg_name):
         flags = np.unique(subset['flag'])
         for flag in flags:
             subsubset = subset[np.where(subset['flag'] == flag)]
-            print(subsubset)
-
             speed_w1 = np.mean(subsubset[np.where(subsubset['workers'] == 1)]['runtime'])
-            print(speed_w1)
-
             for i, w in enumerate(workers):
                 speed_w = np.mean(subsubset[np.where(subsubset['workers'] == w)]['runtime'])
                 speedups[i] += (speed_w / speed_w1)**(-1)
@@ -106,6 +104,7 @@ def plot_concurrency_performance(data_folder, alg_name):
     plt.title(alg_name.capitalize().replace('_', ' '))
     plt.savefig(output_path)
     plt.clf()
+    plt.close()
 
 
 # iterates over all folders in the bench_path and plots everything it can plot
@@ -136,4 +135,3 @@ def plot_all():
 
 if __name__ == "__main__":
     plot_all()
-    
