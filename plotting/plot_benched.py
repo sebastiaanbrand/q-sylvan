@@ -6,6 +6,7 @@ plt_format = '.png'
 bench_path = "../build/benchmark_data/"
 alg_names  = ["grover"]
 
+replot_all = False
 plot_concur_perf_bool = True
 plot_peaknodes_bool   = True
 plot_histories_bool   = True
@@ -95,7 +96,7 @@ def plot_concurrency_performance(data_folder, alg_name):
         # actually plot stuff
         plt.scatter(workers, speedups)
         w1_times = np.round(subset[np.where(subset['workers'] == 1)]['runtime'], 3)
-        leg = '{} qubits, time $w_1$ ({},{})'.format(q, np.min(w1_times), np.max(w1_times))
+        leg = '{} qubits, time $w_1$ ({},{})'.format(int(q), np.min(w1_times), np.max(w1_times))
         lengend_entries.append(leg)
 
     plt.ylabel('average speedup')
@@ -119,20 +120,24 @@ def plot_all():
         # iterate over all experiments
         for exp_folder in os.listdir(alg_path):
             exp_path = alg_path + exp_folder + "/"
+            if ('concurrency.png' in os.listdir(exp_path)):
+                print("skipping {}".format(exp_folder))
+            else:
+                print("plotting {}".format(exp_folder))
 
-            # plot qubits vs peak nodes
-            if (plot_peaknodes_bool):
-                plot_qubits_vs_peak_nodes(exp_path, alg_name)
+                # plot qubits vs peak nodes
+                if (plot_peaknodes_bool):
+                    plot_qubits_vs_peak_nodes(exp_path, alg_name)
 
-            # plot concurrency performance
-            if (plot_concur_perf_bool):
-                plot_concurrency_performance(exp_path, alg_name)
+                # plot concurrency performance
+                if (plot_concur_perf_bool):
+                    plot_concurrency_performance(exp_path, alg_name)
 
-            # plot histories for all runs
-            if (plot_histories_bool):
-                histories_path = exp_path + "run_histories/"
-                output_folder  = histories_path + "plots/"
-                plot_histories(histories_path, output_folder, alg_name)
+                # plot histories for all runs
+                if (plot_histories_bool):
+                    histories_path = exp_path + "run_histories/"
+                    output_folder  = histories_path + "plots/"
+                    plot_histories(histories_path, output_folder, alg_name)
 
 
 if __name__ == "__main__":
