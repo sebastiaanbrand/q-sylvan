@@ -867,18 +867,8 @@ TASK_IMPL_2(QDD, qdd_plus_amp, QDD, a, QDD, b)
     if(QDD_AMP(a) == C_ZERO) return b;
     if(QDD_AMP(b) == C_ZERO) return a;
 
-    // Check cache
-    QDD res;
-    bool cachenow = 1;
-    if (cachenow) {
-        if (cache_get3(CACHE_QDD_PLUS, sylvan_false, a, b, &res)) {
-            sylvan_stats_count(QDD_PLUS_CACHED);
-            return res;
-        }
-    }
-
     // Get var(a) and var(b)
-    QDD low_a, low_b, high_a, high_b;
+    QDD low_a, low_b, high_a, high_b, res;
     BDDVAR var_a = UINT32_MAX, var_b = UINT32_MAX, topvar;
     if (QDD_PTR(a) != QDD_TERMINAL) {
         qddnode_t node = QDD_GETNODE(QDD_PTR(a));
@@ -898,6 +888,15 @@ TASK_IMPL_2(QDD, qdd_plus_amp, QDD, a, QDD, b)
         AMP sum = amp_add(QDD_AMP(a), QDD_AMP(b));
         res = qdd_bundle_ptr_amp(QDD_PTR(a), sum);
         return res;
+    }
+
+    // Check cache
+    bool cachenow = 1;
+    if (cachenow) {
+        if (cache_get3(CACHE_QDD_PLUS, sylvan_false, a, b, &res)) {
+            sylvan_stats_count(QDD_PLUS_CACHED);
+            return res;
+        }
     }
 
     // If not base/terminal case, pass edge weight of current edge down
@@ -951,24 +950,8 @@ TASK_IMPL_4(QDD, qdd_plus_complex, PTR, a, PTR, b, complex_t, ca, complex_t, cb)
     if (comp_exact_equal(cb, comp_zero()))
         return qdd_bundle_ptr_amp(a, qdd_comp_lookup(ca));
 
-    // Check cache
-    QDD res;
-    bool cachenow = 1;
-    if (cachenow) {
-        QDD blank;
-        comp_hack_t hca = (comp_hack_t) ca;
-        comp_hack_t hcb = (comp_hack_t) cb;
-        if (cache_get6((CACHE_QDD_PLUS | a), hca.as_int[0], hca.as_int[1],
-                        b, hcb.as_int[0], hcb.as_int[1],
-                        &res, &blank)) {
-            sylvan_stats_count(QDD_PLUS_CACHED);
-            return res;
-        }
-    }
-
     // Get var(a) and var(b)
-    QDD low_a, low_b, high_a, high_b;
-    
+    QDD low_a, low_b, high_a, high_b, res;
     BDDVAR var_a = UINT32_MAX, var_b = UINT32_MAX, topvar;
     if (a != QDD_TERMINAL) {
         qddnode_t node = QDD_GETNODE(a);
@@ -990,6 +973,20 @@ TASK_IMPL_4(QDD, qdd_plus_complex, PTR, a, PTR, b, complex_t, ca, complex_t, cb)
         AMP sum = qdd_comp_lookup(comp_add(ca, cb));
         res = qdd_bundle_ptr_amp(a, sum);
         return res;
+    }
+
+    // Check cache
+    bool cachenow = 1;
+    if (cachenow) {
+        QDD blank;
+        comp_hack_t hca = (comp_hack_t) ca;
+        comp_hack_t hcb = (comp_hack_t) cb;
+        if (cache_get6((CACHE_QDD_PLUS | a), hca.as_int[0], hca.as_int[1],
+                        b, hcb.as_int[0], hcb.as_int[1],
+                        &res, &blank)) {
+            sylvan_stats_count(QDD_PLUS_CACHED);
+            return res;
+        }
     }
 
     // If not base/terminal case, pass edge weight of current edge down
