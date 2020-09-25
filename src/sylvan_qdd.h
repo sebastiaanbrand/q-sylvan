@@ -499,6 +499,7 @@ void qdd_fprintdot(FILE *out, QDD qdd, bool draw_zeros);
 void qdd_stats_start(FILE *out);
 void qdd_stats_log(QDD qdd);
 uint64_t qdd_stats_get_nodes_peak();
+uint64_t qdd_stats_get_logcounter();
 void qdd_stats_finish();
 /******************************</logging stats>********************************/
 

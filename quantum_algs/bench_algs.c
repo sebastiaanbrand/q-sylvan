@@ -272,7 +272,7 @@ bench_supremacy_5_4(uint32_t depth, uint32_t workers)
 }
 
 
-double bench_grover_once(int num_qubits, bool flag[], int workers, char *fpath, uint64_t *nodes_peak)
+double bench_grover_once(int num_qubits, bool flag[], int workers, char *fpath, uint64_t *nodes_peak, uint64_t *n_gates)
 {
     if (VERBOSE) {
         printf("bench grover, %d qubits, %2d worker(s), ", num_qubits, workers); 
@@ -306,15 +306,17 @@ double bench_grover_once(int num_qubits, bool flag[], int workers, char *fpath, 
 
     grov = qdd_grover(num_qubits, flag);
 
-    if (nodes_peak != NULL)  *nodes_peak = qdd_stats_get_nodes_peak();
-    if (logfile != NULL) qdd_stats_finish();
+    if (nodes_peak != NULL) *nodes_peak = qdd_stats_get_nodes_peak();
+    if (n_gates    != NULL) *n_gates = qdd_stats_get_logcounter();
+    if (logfile    != NULL) qdd_stats_finish();
 
     t_end = wctime();
     runtime = (t_end - t_start);
 
-    node_count_end = qdd_countnodes(grov); // TODO: also get Pr(flag)
+    node_count_end = qdd_countnodes(grov);
     double prob = comp_to_prob(comp_value(qdd_get_amplitude(grov, flag)));
-    printf("%ld nodes end (%ld peak), Pr(flag)=%.3lf, %lf sec \n", node_count_end, *nodes_peak, prob, runtime);
+    uint64_t np = (nodes_peak == NULL) ? 0 : *nodes_peak;
+    printf("%ld nodes end (%ld peak), Pr(flag)=%.3lf, %lf sec\n", node_count_end, np, prob, runtime);
 
     if (logfile != NULL)
         fclose(logfile);
@@ -377,7 +379,8 @@ int bench_grover()
     strcpy(overview_fname, output_dir);
     strcat(overview_fname, "summary.csv");
     FILE *overview_file = fopen(overview_fname, "w");
-    fprintf(overview_file, "runtime, qubits, workers, peak_nodes, "
+    fprintf(overview_file, "qubits, peak_nodes, workers, "
+                           "runtime, avg_gate_time, "
                            "plus_cacheput, plus_cached, "
                            "gate_cacheput, gate_cached, "
                            "cgate_cacheput, cgate_cached, "
@@ -414,8 +417,8 @@ int bench_grover()
     int f_int;
 
     // runtimes are written to single file
-    double runtime;
-    uint64_t nodes_peak;
+    double runtime, avg_gate_time;
+    uint64_t nodes_peak, n_gates;
     uint64_t plus_cacheput, gate_cacheput, cgate_cacheput;
     uint64_t plus_cached, gate_cached, cgate_cached;
 
@@ -437,18 +440,20 @@ int bench_grover()
                 strcat(history_path, history_fname);
 
                 // bench twice, once with logging and once for timing
-                runtime = bench_grover_once(n_qubits[q], flag, n_workers[w], NULL, &nodes_peak);
-                bench_grover_once(n_qubits[q], flag, n_workers[w], history_path, &nodes_peak);
+                runtime = bench_grover_once(n_qubits[q], flag, n_workers[w], NULL, NULL, NULL);
+                bench_grover_once(n_qubits[q], flag, n_workers[w], history_path, &nodes_peak, &n_gates);
 
                 // add summary of this run to overview file
+                avg_gate_time = runtime / (double) n_gates;
                 plus_cacheput  = sylvan_stats.counters[QDD_PLUS_CACHEDPUT];
                 gate_cacheput  = sylvan_stats.counters[QDD_GATE_CACHEDPUT];
                 cgate_cacheput = sylvan_stats.counters[QDD_CGATE_CACHEDPUT];
                 plus_cached    = sylvan_stats.counters[QDD_PLUS_CACHED];
                 gate_cached    = sylvan_stats.counters[QDD_GATE_CACHED];
                 cgate_cached   = sylvan_stats.counters[QDD_CGATE_CACHED];
-                fprintf(overview_file, "%lf, %d, %d, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %d\n",
-                                        runtime, n_qubits[q], n_workers[w], nodes_peak,
+                fprintf(overview_file, "%d, %ld, %d, %lf, %.3e, %ld, %ld, %ld, %ld, %ld, %ld, %d\n",
+                                        n_qubits[q], nodes_peak, n_workers[w],
+                                        runtime, avg_gate_time, 
                                         plus_cacheput, plus_cached,
                                         gate_cacheput, gate_cached,
                                         cgate_cacheput, cgate_cached,
