@@ -33,6 +33,19 @@ wctime()
     return (tv.tv_sec + 1E-6 * tv.tv_usec);
 }
 
+static void
+write_parameters(FILE *param_file)
+{
+    // TODO: json format
+    fprintf(param_file, "min_tablesize = %ld\n", min_tablesize);
+    fprintf(param_file, "max_tablesize = %ld\n", max_tablesize);
+    fprintf(param_file, "min_cachesize = %ld\n", min_cachesize);
+    fprintf(param_file, "max_cachesize = %ld\n", max_cachesize);
+    fprintf(param_file, "ctable_size = %ld\n", ctable_size);
+    fprintf(param_file, "propagate_complex = %d\n", propagate_complex);
+    fclose(param_file);
+}
+
 int bench_25qubit_circuit(int workers)
 {
     printf("qdd 25 qubit circuit: %2d worker(s), ", workers); 
@@ -380,7 +393,7 @@ int bench_grover()
     strcat(overview_fname, "summary.csv");
     FILE *overview_file = fopen(overview_fname, "w");
     fprintf(overview_file, "qubits, peak_nodes, workers, "
-                           "runtime, avg_gate_time, "
+                           "gates, runtime, avg_gate_time, "
                            "plus_cacheput, plus_cached, "
                            "gate_cacheput, gate_cached, "
                            "cgate_cacheput, cgate_cached, "
@@ -395,24 +408,18 @@ int bench_grover()
     min_tablesize = max_tablesize = 1LL<<25;
     min_cachesize = max_cachesize = 1LL<<16;
     ctable_size   = 1LL<<18;
-    // TODO: json format
-    fprintf(param_file, "min_tablesize = %ld\n", min_tablesize);
-    fprintf(param_file, "max_tablesize = %ld\n", max_tablesize);
-    fprintf(param_file, "min_cachesize = %ld\n", min_cachesize);
-    fprintf(param_file, "max_cachesize = %ld\n", max_cachesize);
-    fprintf(param_file, "ctable_size = %ld\n", ctable_size);
-    fclose(param_file);
+    write_parameters(param_file);
 
     // different number of qubits to test
-    int n_qubits[] = {20};
-    int nn_qubits  = 1;
+    int n_qubits[] = {20, 22};
+    int nn_qubits  = 2;
     
     // different number of workers to test
     int n_workers[] = {1};
     int nn_workers  = 1;
 
     // different number of random flags to test
-    int n_flags = 2;
+    int n_flags = 3;
     bool *flag;
     int f_int;
 
@@ -451,9 +458,9 @@ int bench_grover()
                 plus_cached    = sylvan_stats.counters[QDD_PLUS_CACHED];
                 gate_cached    = sylvan_stats.counters[QDD_GATE_CACHED];
                 cgate_cached   = sylvan_stats.counters[QDD_CGATE_CACHED];
-                fprintf(overview_file, "%d, %ld, %d, %lf, %.3e, %ld, %ld, %ld, %ld, %ld, %ld, %d\n",
+                fprintf(overview_file, "%d, %ld, %d, %ld, %lf, %.3e, %ld, %ld, %ld, %ld, %ld, %ld, %d\n",
                                         n_qubits[q], nodes_peak, n_workers[w],
-                                        runtime, avg_gate_time, 
+                                        n_gates, runtime, avg_gate_time, 
                                         plus_cacheput, plus_cached,
                                         gate_cacheput, gate_cached,
                                         cgate_cacheput, cgate_cached,
