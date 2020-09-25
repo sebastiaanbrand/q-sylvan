@@ -2683,6 +2683,7 @@ qdd_stats_start(FILE *out)
     if (out == NULL) return;
     qdd_stats_logging = true;
     qdd_logfile = out;
+    fprintf(qdd_logfile, "nodes, amps\n");
     nodelog = (uint64_t*) malloc(statslog_buffer * sizeof(uint64_t));
     amp_log = (uint64_t*) malloc(statslog_buffer * sizeof(uint64_t));
     in_buffer = 0;

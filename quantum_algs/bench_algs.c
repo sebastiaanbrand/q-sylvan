@@ -313,7 +313,8 @@ double bench_grover_once(int num_qubits, bool flag[], int workers, char *fpath, 
     runtime = (t_end - t_start);
 
     node_count_end = qdd_countnodes(grov); // TODO: also get Pr(flag)
-    printf("%ld nodes end (%ld peak), %lf sec \n", node_count_end, *nodes_peak, runtime);
+    double prob = comp_to_prob(comp_value(qdd_get_amplitude(grov, flag)));
+    printf("%ld nodes end (%ld peak), Pr(flag)=%.3lf, %lf sec \n", node_count_end, *nodes_peak, prob, runtime);
 
     if (logfile != NULL)
         fclose(logfile);
@@ -372,11 +373,15 @@ int bench_grover()
     strcat(history_dir, "run_histories/");
     mkdir(history_dir, 0700);
     // output file for runtime data
-    char runtime_fname[256];
-    strcpy(runtime_fname, output_dir);
-    strcat(runtime_fname, "runtimes.csv");
-    FILE *runtime_file = fopen(runtime_fname, "w");
-    fprintf(runtime_file, "runtime, qubits, workers, peak_nodes, flag\n");
+    char overview_fname[256];
+    strcpy(overview_fname, output_dir);
+    strcat(overview_fname, "summary.csv");
+    FILE *overview_file = fopen(overview_fname, "w");
+    fprintf(overview_file, "runtime, qubits, workers, peak_nodes, "
+                           "plus_cacheput, plus_cached, "
+                           "gate_cacheput, gate_cached, "
+                           "cgate_cacheput, cgate_cached, "
+                           "flag\n");
     // output file for sylvan parameters
     char param_fname[256];
     strcpy(param_fname, output_dir);
@@ -387,6 +392,7 @@ int bench_grover()
     min_tablesize = max_tablesize = 1LL<<25;
     min_cachesize = max_cachesize = 1LL<<16;
     ctable_size   = 1LL<<18;
+    // TODO: json format
     fprintf(param_file, "min_tablesize = %ld\n", min_tablesize);
     fprintf(param_file, "max_tablesize = %ld\n", max_tablesize);
     fprintf(param_file, "min_cachesize = %ld\n", min_cachesize);
@@ -395,23 +401,26 @@ int bench_grover()
     fclose(param_file);
 
     // different number of qubits to test
-    int n_qubits[] = {10, 15, 20};
-    int nn_qubits  = 3;
+    int n_qubits[] = {20};
+    int nn_qubits  = 1;
     
     // different number of workers to test
-    int n_workers[] = {1,2,4,8};
-    int nn_workers  = 4;
+    int n_workers[] = {1};
+    int nn_workers  = 1;
 
     // different number of random flags to test
-    int n_flags = 5;
+    int n_flags = 2;
     bool *flag;
     int f_int;
 
     // runtimes are written to single file
     double runtime;
     uint64_t nodes_peak;
+    uint64_t plus_cacheput, gate_cacheput, cgate_cacheput;
+    uint64_t plus_cached, gate_cached, cgate_cached;
 
     // run benchmarks
+    srand(42);
     for (int q = 0; q < nn_qubits; q++) {
 
         for (int f = 0; f < n_flags; f++) {
@@ -431,13 +440,24 @@ int bench_grover()
                 runtime = bench_grover_once(n_qubits[q], flag, n_workers[w], NULL, &nodes_peak);
                 bench_grover_once(n_qubits[q], flag, n_workers[w], history_path, &nodes_peak);
 
-                // write runtime
-                fprintf(runtime_file, "%lf, %d, %d, %ld, %d\n", runtime, n_qubits[q], n_workers[w], nodes_peak, f_int);
+                // add summary of this run to overview file
+                plus_cacheput  = sylvan_stats.counters[QDD_PLUS_CACHEDPUT];
+                gate_cacheput  = sylvan_stats.counters[QDD_GATE_CACHEDPUT];
+                cgate_cacheput = sylvan_stats.counters[QDD_CGATE_CACHEDPUT];
+                plus_cached    = sylvan_stats.counters[QDD_PLUS_CACHED];
+                gate_cached    = sylvan_stats.counters[QDD_GATE_CACHED];
+                cgate_cached   = sylvan_stats.counters[QDD_CGATE_CACHED];
+                fprintf(overview_file, "%lf, %d, %d, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %d\n",
+                                        runtime, n_qubits[q], n_workers[w], nodes_peak,
+                                        plus_cacheput, plus_cached,
+                                        gate_cacheput, gate_cached,
+                                        cgate_cacheput, cgate_cached,
+                                        f_int);
             }
         }
     }
 
-    fclose(runtime_file);
+    fclose(overview_file);
 
     return 0;
 }

@@ -13,7 +13,7 @@ plot_histories_bool   = True
 
 
 def plot_history(input_path, output_path, alg_name):
-    ys = np.loadtxt(input_path, dtype=np.uint64, delimiter=',')
+    ys = np.genfromtxt(input_path, dtype=float, delimiter=',', names=True)
     x  = np.arange(start=0, stop=len(ys), step=1)
 
     _, ax1 = plt.subplots()
@@ -23,13 +23,13 @@ def plot_history(input_path, output_path, alg_name):
     # gates vs nodes
     ax1.set_xlabel('gates')
     ax1.set_ylabel('qdd nodes', color=color1)
-    ax1.plot(x, ys[:,0], color=color1)
+    ax1.plot(x, ys['nodes'], color=color1)
     ax1.tick_params(axis='y', labelcolor=color1)
 
     # gates vs (total) ctable entries
     ax2 = ax1.twinx()
     ax2.set_ylabel('complex table entries', color=color2)
-    ax2.plot(x, ys[:,1], color=color2)
+    ax2.plot(x, ys['amps'], color=color2)
     ax2.tick_params(axis='y', labelcolor=color2)
 
     plt.title(alg_name.capitalize().replace('_', ' '))
@@ -53,7 +53,7 @@ def plot_histories(histories_path, output_folder, alg_name):
 
 
 def plot_qubits_vs_peak_nodes(data_folder, alg_name):
-    input_path  = data_folder + 'runtimes.csv'
+    input_path  = data_folder + 'summary.csv'
     output_path = data_folder + 'peak_nodes' + plt_format
     data = np.genfromtxt(input_path, dtype=float, delimiter=',', names=True)
     x = data['qubits']
@@ -68,7 +68,7 @@ def plot_qubits_vs_peak_nodes(data_folder, alg_name):
     plt.close()
 
 def plot_concurrency_performance(data_folder, alg_name):
-    input_path  = data_folder + 'runtimes.csv'
+    input_path  = data_folder + 'summary.csv'
     output_path = data_folder + 'concurrency' + plt_format
     data = np.genfromtxt(input_path, dtype=float, delimiter=',', names=True)
 
