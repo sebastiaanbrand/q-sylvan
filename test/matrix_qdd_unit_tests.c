@@ -10,7 +10,7 @@ bool VERBOSE = true;
 int test_x_gate()
 {
     BDDVAR nqubits;
-    QDD v0, v1, v2, v3, v4, v5, mI, mX, mX1, mX0, mTemp;
+    QDD v0, v1, v2, v3, v4, v5, mI, mX, mX1, mX0, mXXI, mTemp;
     bool x[] = {0};
     bool x3[] = {0, 0, 0};
 
@@ -42,6 +42,8 @@ int test_x_gate()
     mI  = qdd_create_all_identity_matrix(nqubits);
     mX1 = qdd_create_single_qubit_gate(nqubits, 1, GATEID_X); // X gate on q1
     mX0 = qdd_create_single_qubit_gate(nqubits, 0, GATEID_X); // X gate on q0
+    uint32_t gateids[] = {GATEID_X, GATEID_X, GATEID_I}; // X on q0 and q1, I on q2
+    mXXI = qdd_create_single_qubit_gates(nqubits, gateids);
     test_assert(qdd_countnodes(v3) == 4);
     test_assert(qdd_countnodes(v4) == 4);
     test_assert(qdd_countnodes(v5) == 4);
@@ -60,6 +62,8 @@ int test_x_gate()
     mTemp = qdd_matmat_mult(mX1, mI, nqubits); test_assert(mTemp == mX1);
     mTemp = qdd_matmat_mult(mX0,mX0, nqubits); test_assert(mTemp == mI);
     mTemp = qdd_matmat_mult(mX1,mX1, nqubits); test_assert(mTemp == mI);
+    mTemp = qdd_matmat_mult(mX0,mX1, nqubits); test_assert(mTemp == mXXI);
+    mTemp = qdd_matmat_mult(mX1,mX0, nqubits); test_assert(mTemp == mXXI);
 
     // calculate (X0 X1)|00> by multiplying X0 and X1 first
     mTemp = qdd_matmat_mult(mX0,mX1, nqubits);
@@ -76,7 +80,7 @@ int test_x_gate()
 int test_h_gate()
 {
     BDDVAR nqubits;
-    QDD v0, v1, v2, v3, v4, v5, v6, mI, mH, mH0, mH1, mTemp;
+    QDD v0, v1, v2, v3, v4, v5, v6, mI, mH, mII, mHI, mIH, mHH, mTemp;
     bool x[] = {0};
     bool x2[] = {0,0};
     AMP a;
@@ -111,16 +115,19 @@ int test_h_gate()
     x2[1] = 0; x2[0] = 1; v3 = qdd_create_basis_state(nqubits, x2); // |01>
     x2[1] = 0; x2[0] = 0; v4 = qdd_create_basis_state(nqubits, x2); // |00>
     x2[1] = 0; x2[0] = 0; v5 = qdd_create_basis_state(nqubits, x2); // |00>
-    mI  = qdd_create_all_identity_matrix(nqubits);
-    mH0 = qdd_create_single_qubit_gate(nqubits, 0, GATEID_H);
-    mH1 = qdd_create_single_qubit_gate(nqubits, 1, GATEID_H);
+    x2[1] = 1; x2[0] = 0; v6 = qdd_create_basis_state(nqubits, x2); // |10>
+    mII = qdd_create_all_identity_matrix(nqubits);
+    mHI = qdd_create_single_qubit_gate(nqubits, 0, GATEID_H);
+    mIH = qdd_create_single_qubit_gate(nqubits, 1, GATEID_H);
+    mHH = qdd_create_single_qubit_gates_same(nqubits, GATEID_H);
 
     // matrix-vector mult
-    v2 = qdd_matvec_mult(mH0, v2, nqubits); // v2 = |0+>
-    v3 = qdd_matvec_mult(mH0, v3, nqubits); // v3 = |0->
-    v4 = qdd_matvec_mult(mH1, v4, nqubits); // v4 = |+0>
-    v5 = qdd_matvec_mult(mH0, v5, nqubits);
-    v5 = qdd_matvec_mult(mH1, v5, nqubits); // v5 = |++>
+    v2 = qdd_matvec_mult(mHI, v2, nqubits); // v2 = |0+>
+    v3 = qdd_matvec_mult(mHI, v3, nqubits); // v3 = |0->
+    v4 = qdd_matvec_mult(mIH, v4, nqubits); // v4 = |+0>
+    v5 = qdd_matvec_mult(mHI, v5, nqubits);
+    v5 = qdd_matvec_mult(mIH, v5, nqubits); // v5 = |++>
+    v6 = qdd_matvec_mult(mHH, v6, nqubits); // v6 = |-+>
 
     // v2 = |0+>
     x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(v2, x2); test_assert(a == comp_lookup(comp_make(1.0/sqrt(2.0),0)));
@@ -150,16 +157,26 @@ int test_h_gate()
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(v5, x2); test_assert(a == comp_lookup(comp_make(0.5, 0)));
     test_assert(qdd_countnodes(v5) == 1);
 
+    // v6 = |-+>
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(v6, x2); test_assert(a == comp_lookup(comp_make(0.5, 0)));
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(v6, x2); test_assert(a == comp_lookup(comp_make(0.5, 0)));
+    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(v6, x2); test_assert(a == comp_lookup(comp_make(-0.5, 0)));
+    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(v6, x2); test_assert(a == comp_lookup(comp_make(-0.5, 0)));
+    test_assert(qdd_countnodes(v6) == 2);
+
     // matrix-matrix mult
-    mTemp = qdd_matmat_mult(mI, mH0, nqubits); test_assert(mTemp == mH0);
-    mTemp = qdd_matmat_mult(mI, mH1, nqubits); test_assert(mTemp == mH1);
-    mTemp = qdd_matmat_mult(mH0, mI, nqubits); test_assert(mTemp == mH0);
-    mTemp = qdd_matmat_mult(mH1, mI, nqubits); test_assert(mTemp == mH1);
-    mTemp = qdd_matmat_mult(mH0,mH0, nqubits); test_assert(mTemp == mI);
-    mTemp = qdd_matmat_mult(mH1,mH1, nqubits); test_assert(mTemp == mI);
+    mTemp = qdd_matmat_mult(mII, mHI, nqubits); test_assert(mTemp == mHI);
+    mTemp = qdd_matmat_mult(mII, mIH, nqubits); test_assert(mTemp == mIH);
+    mTemp = qdd_matmat_mult(mHI, mII, nqubits); test_assert(mTemp == mHI);
+    mTemp = qdd_matmat_mult(mIH, mII, nqubits); test_assert(mTemp == mIH);
+    mTemp = qdd_matmat_mult(mHI, mHI, nqubits); test_assert(mTemp == mII);
+    mTemp = qdd_matmat_mult(mIH, mIH, nqubits); test_assert(mTemp == mII);
+    mTemp = qdd_matmat_mult(mHI, mIH, nqubits); test_assert(mTemp == mHH);
+    mTemp = qdd_matmat_mult(mIH, mHI, nqubits); test_assert(mTemp == mHH);
+    mTemp = qdd_matmat_mult(mHH, mHH, nqubits); test_assert(mTemp == mII);
 
     // calculate (H0 H1)|00> by multiplying H0 and H1 first
-    mTemp = qdd_matmat_mult(mH0,mH1, nqubits);
+    mTemp = qdd_matmat_mult(mHI, mIH, nqubits);
     v6 = qdd_create_all_zero_state(nqubits);
     v6 = qdd_matvec_mult(mTemp, v6, nqubits);
     test_assert(v6 == v5);

@@ -2455,6 +2455,28 @@ qdd_create_single_qubit_gate(BDDVAR n, BDDVAR t, uint32_t gateid)
 }
 
 QDD
+qdd_create_single_qubit_gates(BDDVAR n, uint32_t *gateids)
+{
+    // Start at terminal and build backwards
+    QDD prev = qdd_bundle_ptr_amp(QDD_TERMINAL, C_ONE);
+    for (int k = n-1; k >= 0; k--) {
+        prev = qdd_stack_matrix(prev, k, gateids[k]);
+    }
+    return prev;
+}
+
+QDD
+qdd_create_single_qubit_gates_same(BDDVAR n, uint32_t gateid)
+{
+    // Start at terminal and build backwards
+    QDD prev = qdd_bundle_ptr_amp(QDD_TERMINAL, C_ONE);
+    for (int k = n-1; k >= 0; k--) {
+        prev = qdd_stack_matrix(prev, k, gateid);
+    }
+    return prev;
+}
+
+QDD
 qdd_create_controlled_gate(BDDVAR n, BDDVAR c, BDDVAR t, uint32_t gateid)
 {
     // for now, assume t > c
