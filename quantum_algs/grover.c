@@ -72,7 +72,7 @@ qdd_grover_matrix(BDDVAR n, bool *flag)
     // Number of Grover iterations
     uint32_t R = floor( 3.14159265359/4.0 * sqrt( pow(2,n) ) );
 
-    // Matrix QDDs
+    // Create matrix QDDs
     QDD all_H, oracle, phase;
     all_H  = qdd_create_single_qubit_gates_same(n, GATEID_H);
     oracle = qdd_create_all_control_phase(n, flag);
@@ -81,11 +81,9 @@ qdd_grover_matrix(BDDVAR n, bool *flag)
 
     // Actual circuit, start with all 0 state
     QDD state = qdd_create_all_zero_state(n);
-    assert(qdd_is_unitvector(state, n));
 
     // H on all qubits
     state = qdd_matvec_mult(all_H, state, n);
-    assert(qdd_is_unitvector(state, n));
 
     // Grover iterations, TODO: include mat-mat mult
     for (uint32_t i = 1; i <= R; i++) {
