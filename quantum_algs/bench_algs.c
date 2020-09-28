@@ -452,12 +452,17 @@ int bench_grover()
 
                 // add summary of this run to overview file
                 avg_gate_time = runtime / (double) n_gates;
+                #if SYLVAN_STATS
                 plus_cacheput  = sylvan_stats.counters[QDD_PLUS_CACHEDPUT];
                 gate_cacheput  = sylvan_stats.counters[QDD_GATE_CACHEDPUT];
                 cgate_cacheput = sylvan_stats.counters[QDD_CGATE_CACHEDPUT];
                 plus_cached    = sylvan_stats.counters[QDD_PLUS_CACHED];
                 gate_cached    = sylvan_stats.counters[QDD_GATE_CACHED];
                 cgate_cached   = sylvan_stats.counters[QDD_CGATE_CACHED];
+                #else
+                plus_cached = gate_cached = cgate_cached = 0;
+                plus_cacheput = gate_cacheput = cgate_cacheput = 0;
+                #endif
                 fprintf(overview_file, "%d, %ld, %d, %ld, %lf, %.3e, %ld, %ld, %ld, %ld, %ld, %ld, %d\n",
                                         n_qubits[q], nodes_peak, n_workers[w],
                                         n_gates, runtime, avg_gate_time, 

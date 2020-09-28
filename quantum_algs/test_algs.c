@@ -26,7 +26,7 @@ int test_grover()
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(grov, x2); test_assert(a == C_ZERO);
     test_assert(qdd_is_unitvector(grov, nqubits));
 
-    if(VERBOSE) printf("qdd %2d-qubit Grover:      ok (Pr(flag) = %lf)\n", nqubits, prob);
+    if(VERBOSE) printf("qdd %2d-qubit Grover:        ok (Pr(flag) = %lf)\n", nqubits, prob);
 
 
     // 3 qubit test
@@ -43,7 +43,7 @@ int test_grover()
     x3[2] = 1; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
     test_assert(qdd_is_unitvector(grov, 3));
 
-    if(VERBOSE) printf("qdd %2d-qubit Grover:      ok (Pr(flag) = %lf)\n", nqubits, prob);
+    if(VERBOSE) printf("qdd %2d-qubit Grover:        ok (Pr(flag) = %lf)\n", nqubits, prob);
 
 
     // 10 qubit test (random flag)
@@ -55,9 +55,60 @@ int test_grover()
     test_assert(qdd_is_close_to_unitvector(grov, nqubits, TOLERANCE*100));
     prob = comp_to_prob(comp_value(qdd_get_amplitude(grov, x10)));
 
-    if(VERBOSE) printf("qdd %2d-qubit Grover:      ok (Pr(flag) = %lf)\n", nqubits, prob);
+    if(VERBOSE) printf("qdd %2d-qubit Grover:        ok (Pr(flag) = %lf)\n", nqubits, prob);
     return 0;
 }
+
+int test_grover_matrix()
+{
+    BDDVAR nqubits;
+    AMP a;
+    QDD grov;
+    double prob;
+
+    // 2 qubit test
+    nqubits = 2;
+    bool x2[] = {0,1}; // "flagged" entry
+    grov = qdd_grover_matrix(nqubits, x2);
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(grov, x2); test_assert(a == C_ZERO);
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(grov, x2); test_assert(a == C_ZERO);
+    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(grov, x2); test_assert(a == C_ONE);  prob = comp_to_prob(comp_value(a));
+    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(grov, x2); test_assert(a == C_ZERO);
+    test_assert(qdd_is_unitvector(grov, nqubits));
+
+    if(VERBOSE) printf("matrix qdd %2d-qubit Grover: ok (Pr(flag) = %lf)\n", nqubits, prob);
+
+
+    // 3 qubit test
+    nqubits = 3;
+    bool x3[] = {1,1,0}; // "flagged" entry
+    grov = qdd_grover_matrix(3, x3);
+    x3[2] = 0; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
+    x3[2] = 0; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
+    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
+    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) > 0.94);  prob = comp_to_prob(comp_value(a));
+    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
+    x3[2] = 1; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
+    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
+    test_assert(qdd_is_unitvector(grov, 3));
+
+    if(VERBOSE) printf("matrix qdd %2d-qubit Grover: ok (Pr(flag) = %lf)\n", nqubits, prob);
+
+
+    // 10 qubit test (random flag)
+    nqubits = 10;
+    bool x10[nqubits];
+    srand(time(NULL));
+    for (BDDVAR i = 0; i < nqubits; i++) x10[i] = (bool)(rand() % 2);
+    grov = qdd_grover_matrix(nqubits, x10);
+    test_assert(qdd_is_close_to_unitvector(grov, nqubits, TOLERANCE*100));
+    prob = comp_to_prob(comp_value(qdd_get_amplitude(grov, x10)));
+
+    if(VERBOSE) printf("matrix qdd %2d-qubit Grover: ok (Pr(flag) = %lf)\n", nqubits, prob);
+    return 0;
+}
+
 
 int test_shor()
 {   
@@ -163,7 +214,7 @@ int test_shor()
     x3[0]=1; x3[1]=1; x3[2]=1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     // </Test qdd_phi_add>
 
-    if(VERBOSE) printf("qdd fourier addition:     ok\n");
+    if(VERBOSE) printf("qdd fourier addition:       ok\n");
 
 
     // test Shor
@@ -179,7 +230,7 @@ int test_shor()
         factor = run_shor(N, 0, false);
         counter++;
     }
-    if(VERBOSE) printf("qdd %ld-qubit Shor:        ok (found factor %ld of %ld with %ld tries)\n", nqubits, factor, N, counter);
+    if(VERBOSE) printf("qdd %ld-qubit Shor:          ok (found factor %ld of %ld with %ld tries)\n", nqubits, factor, N, counter);
 
     // 35 = 5 x 7 (15 qubits)
     N = 35;
@@ -190,7 +241,7 @@ int test_shor()
         factor = run_shor(N, 0, false);
         counter++;
     }
-    if(VERBOSE) printf("qdd %ld-qubit Shor:        ok (found factor %ld of %ld with %ld tries)\n", nqubits, factor, N, counter);
+    if(VERBOSE) printf("qdd %ld-qubit Shor:          ok (found factor %ld of %ld with %ld tries)\n", nqubits, factor, N, counter);
 
 
     return 0;
@@ -199,6 +250,7 @@ int test_shor()
 int runtests()
 {
     if (test_grover()) return 1;
+    if (test_grover_matrix()) return 1;
     if (test_shor()) return 1;
 
     return 0;
