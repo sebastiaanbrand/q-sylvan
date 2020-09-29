@@ -54,7 +54,7 @@ qdd_grover(BDDVAR n, bool* flag)
 }
 
 QDD
-qdd_phase_flips(BDDVAR n)
+qdd_grover_phase_flips(BDDVAR n)
 {
     // flip all the phases except for |00..0>
     bool x[n]; 
@@ -73,11 +73,17 @@ qdd_grover_matrix(BDDVAR n, bool *flag)
     uint32_t R = floor( 3.14159265359/4.0 * sqrt( pow(2,n) ) );
 
     // Create matrix QDDs
-    QDD all_H, oracle, phase;
+    QDD all_H, oracle, phase, grov_it;
     all_H  = qdd_create_single_qubit_gates_same(n, GATEID_H);
     oracle = qdd_create_all_control_phase(n, flag);
-    phase  = qdd_phase_flips(n);
+    phase  = qdd_grover_phase_flips(n);
 
+    // Grover iteration matrix G = H * Phase * H * oracle
+    // (oracle on the left because we apply G|\psi> from right to left)
+    grov_it = oracle;
+    grov_it = qdd_matmat_mult(all_H, grov_it, n);
+    grov_it = qdd_matmat_mult(phase, grov_it, n);
+    grov_it = qdd_matmat_mult(all_H, grov_it, n);
 
     // Actual circuit, start with all 0 state
     QDD state = qdd_create_all_zero_state(n);
@@ -85,12 +91,9 @@ qdd_grover_matrix(BDDVAR n, bool *flag)
     // H on all qubits
     state = qdd_matvec_mult(all_H, state, n);
 
-    // Grover iterations, TODO: include mat-mat mult
+    // Grover iterations
     for (uint32_t i = 1; i <= R; i++) {
-        state = qdd_matvec_mult(oracle, state, n);
-        state = qdd_matvec_mult(all_H, state, n);
-        state = qdd_matvec_mult(phase, state, n);
-        state = qdd_matvec_mult(all_H, state, n);
+        state = qdd_matvec_mult(grov_it, state, n);
     }
 
     return state;
