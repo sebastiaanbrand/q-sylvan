@@ -1260,7 +1260,7 @@ TASK_IMPL_4(QDD, qdd_matvec_mult, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR, nex
     QDD res;
     bool cachenow = 1;
     if (cachenow) {
-        if (cache_get3(CACHE_QDD_MATVEC_MULT, sylvan_false, mat, vec, &res)) {
+        if (cache_get3(CACHE_QDD_MATVEC_MULT, nextvar, mat, vec, &res)) {
             sylvan_stats_count(QDD_MULT_CACHED);
             return res;
         }
@@ -1316,7 +1316,7 @@ TASK_IMPL_4(QDD, qdd_matvec_mult, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR, nex
 
     // Insert in cache
     if (cachenow) {
-        if (cache_put3(CACHE_QDD_MATVEC_MULT, sylvan_false, mat, vec, res)) 
+        if (cache_put3(CACHE_QDD_MATVEC_MULT, nextvar, mat, vec, res)) 
             sylvan_stats_count(QDD_MULT_CACHEDPUT);
     }
 
@@ -1341,7 +1341,7 @@ TASK_IMPL_4(QDD, qdd_matmat_mult, QDD, a, QDD, b, BDDVAR, nvars, BDDVAR, nextvar
     QDD res;
     bool cachenow = 1;
     if (cachenow) {
-        if (cache_get3(CACHE_QDD_MATMAT_MULT, sylvan_false, a, b, &res)) {
+        if (cache_get3(CACHE_QDD_MATMAT_MULT, nextvar, a, b, &res)) {
             sylvan_stats_count(QDD_MULT_CACHED);
             return res;
         }
@@ -1421,7 +1421,7 @@ TASK_IMPL_4(QDD, qdd_matmat_mult, QDD, a, QDD, b, BDDVAR, nvars, BDDVAR, nextvar
 
     // Insert in cache
     if (cachenow) {
-        if (cache_put3(CACHE_QDD_MATMAT_MULT, sylvan_false, a, b, res)) 
+        if (cache_put3(CACHE_QDD_MATMAT_MULT, nextvar, a, b, res)) 
             sylvan_stats_count(QDD_MULT_CACHEDPUT);
     }
 
@@ -2613,7 +2613,7 @@ qdd_is_close_to_unitvector(QDD qdd, BDDVAR n, double tol)
         return true;
     }
     else {
-        //printf("probs sum to %.30lf\n", sum_abs_squares);
+        printf("probs sum to %.30lf\n", sum_abs_squares);
         if (WRITE_TO_FILE) {
             FILE *fp;
             fp = fopen("is_unitvector_false.dot", "w");
