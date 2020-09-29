@@ -112,6 +112,7 @@ static const BDDVAR     QDD_INVALID_VAR = UINT8_MAX;
  * Similar initialization as for MTBDDs + amplitude table init.
  */
 void sylvan_init_qdd(size_t ctable_size);
+void qdd_set_testing_mode(bool on);
 
 
 /*******************<garbage collection, references, marking>******************/
@@ -425,6 +426,26 @@ QDD qdd_create_all_identity_matrix(BDDVAR n);
 QDD qdd_create_single_qubit_gate(BDDVAR n, BDDVAR t, uint32_t gateid);
 
 /**
+ * Creates a QDD matrix which applies the given list of n gates to n qubits.
+ * 
+ * @param n Total number of qubits.
+ * @param gateids List of length n of gate ID of predefined single qubit gates.
+ * 
+ * @return A QDD encoding of U_0 \tensor U_1 \tensor ... \tensor U_{n-1}
+ */
+QDD qdd_create_single_qubit_gates(BDDVAR n, uint32_t *gateid);
+
+/**
+ * Creates a QDD matrix which applies single qubit gate U to all qubits.
+ * 
+ * @param n Total number of qubits.
+ * @param gateid Gate ID of predefined single qubit gate U.
+ * 
+ * @return A QDD encoding of U^{\tensor n}
+ */
+QDD qdd_create_single_qubit_gates_same(BDDVAR n, uint32_t gateid);
+
+/**
  * Creates a QDD matrix which does gateid(c,t) and I on all other qubits.
  * 
  * @param n Total number of qubits.
@@ -497,6 +518,8 @@ void qdd_fprintdot(FILE *out, QDD qdd, bool draw_zeros);
 /*******************************<logging stats>********************************/
 void qdd_stats_start(FILE *out);
 void qdd_stats_log(QDD qdd);
+uint64_t qdd_stats_get_nodes_peak();
+uint64_t qdd_stats_get_logcounter();
 void qdd_stats_finish();
 /******************************</logging stats>********************************/
 

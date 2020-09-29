@@ -26,6 +26,7 @@
 #include "sylvan_qdd_complex.h"
 
 //static int granularity = 1; // default
+static bool testing_mode = 0; // turns on/off (expensive) sanity checks
 
 /****************< (bit level) manipulation of QDD / qddnode_t >***************/
 /**
@@ -449,6 +450,12 @@ sylvan_init_qdd(size_t ctable_size)
 }
 
 void
+qdd_set_testing_mode(bool on)
+{
+    testing_mode = on;
+}
+
+void
 qdd_refs_ptrs_up(qdd_refs_internal_t qdd_refs_key)
 {
     size_t cur = qdd_refs_key->pcur - qdd_refs_key->pbegin;
@@ -721,8 +728,8 @@ qdd_countnodes(QDD qdd)
 
 /**************************<cleaning amplitude table>**************************/
 
-static int auto_gc_ctable    = 1;
-static double ctable_gc_thes = 0.5;
+static int auto_gc_ctable     = 1;
+static double ctable_gc_thres = 0.5;
 
 void
 qdd_set_auto_gc_ctable(bool enabled)
@@ -733,8 +740,9 @@ qdd_set_auto_gc_ctable(bool enabled)
 void
 qdd_set_gc_ctable_thres(double fraction_filled)
 {
-    ctable_gc_thes = fraction_filled;
+    ctable_gc_thres = fraction_filled;
 }
+
 
 void
 qdd_gc_ctable(QDD *keep)
@@ -798,9 +806,9 @@ TASK_IMPL_1(QDD, _fill_new_amp_table, QDD, qdd)
 void
 qdd_test_gc_ctable(QDD *keep)
 {
-    uint64_t entries = get_num_ctable_entries();
+    uint64_t entries = get_ctable_entries_estimate();
     uint64_t size    = get_ctable_size();
-    if ( ((double)entries / (double)size) > ctable_gc_thes )
+    if ( ((double)entries / (double)size) > ctable_gc_thres )
         qdd_gc_ctable(keep);
 }
 
@@ -859,18 +867,8 @@ TASK_IMPL_2(QDD, qdd_plus_amp, QDD, a, QDD, b)
     if(QDD_AMP(a) == C_ZERO) return b;
     if(QDD_AMP(b) == C_ZERO) return a;
 
-    // Check cache
-    QDD res;
-    bool cachenow = 1;
-    if (cachenow) {
-        if (cache_get3(CACHE_QDD_PLUS, sylvan_false, a, b, &res)) {
-            sylvan_stats_count(QDD_PLUS_CACHED);
-            return res;
-        }
-    }
-
     // Get var(a) and var(b)
-    QDD low_a, low_b, high_a, high_b;
+    QDD low_a, low_b, high_a, high_b, res;
     BDDVAR var_a = UINT32_MAX, var_b = UINT32_MAX, topvar;
     if (QDD_PTR(a) != QDD_TERMINAL) {
         qddnode_t node = QDD_GETNODE(QDD_PTR(a));
@@ -890,6 +888,15 @@ TASK_IMPL_2(QDD, qdd_plus_amp, QDD, a, QDD, b)
         AMP sum = amp_add(QDD_AMP(a), QDD_AMP(b));
         res = qdd_bundle_ptr_amp(QDD_PTR(a), sum);
         return res;
+    }
+
+    // Check cache
+    bool cachenow = 1;
+    if (cachenow) {
+        if (cache_get3(CACHE_QDD_PLUS, sylvan_false, a, b, &res)) {
+            sylvan_stats_count(QDD_PLUS_CACHED);
+            return res;
+        }
     }
 
     // If not base/terminal case, pass edge weight of current edge down
@@ -943,24 +950,8 @@ TASK_IMPL_4(QDD, qdd_plus_complex, PTR, a, PTR, b, complex_t, ca, complex_t, cb)
     if (comp_exact_equal(cb, comp_zero()))
         return qdd_bundle_ptr_amp(a, qdd_comp_lookup(ca));
 
-    // Check cache
-    QDD res;
-    bool cachenow = 1;
-    if (cachenow) {
-        QDD blank;
-        comp_hack_t hca = (comp_hack_t) ca;
-        comp_hack_t hcb = (comp_hack_t) cb;
-        if (cache_get6((CACHE_QDD_PLUS | a), hca.as_int[0], hca.as_int[1],
-                        b, hcb.as_int[0], hcb.as_int[1],
-                        &res, &blank)) {
-            sylvan_stats_count(QDD_PLUS_CACHED);
-            return res;
-        }
-    }
-
     // Get var(a) and var(b)
-    QDD low_a, low_b, high_a, high_b;
-    
+    QDD low_a, low_b, high_a, high_b, res;
     BDDVAR var_a = UINT32_MAX, var_b = UINT32_MAX, topvar;
     if (a != QDD_TERMINAL) {
         qddnode_t node = QDD_GETNODE(a);
@@ -982,6 +973,20 @@ TASK_IMPL_4(QDD, qdd_plus_complex, PTR, a, PTR, b, complex_t, ca, complex_t, cb)
         AMP sum = qdd_comp_lookup(comp_add(ca, cb));
         res = qdd_bundle_ptr_amp(a, sum);
         return res;
+    }
+
+    // Check cache
+    bool cachenow = 1;
+    if (cachenow) {
+        QDD blank;
+        comp_hack_t hca = (comp_hack_t) ca;
+        comp_hack_t hcb = (comp_hack_t) cb;
+        if (cache_get6((CACHE_QDD_PLUS | a), hca.as_int[0], hca.as_int[1],
+                        b, hcb.as_int[0], hcb.as_int[1],
+                        &res, &blank)) {
+            sylvan_stats_count(QDD_PLUS_CACHED);
+            return res;
+        }
     }
 
     // If not base/terminal case, pass edge weight of current edge down
@@ -1255,7 +1260,7 @@ TASK_IMPL_4(QDD, qdd_matvec_mult, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR, nex
     QDD res;
     bool cachenow = 1;
     if (cachenow) {
-        if (cache_get3(CACHE_QDD_MATVEC_MULT, sylvan_false, mat, vec, &res)) {
+        if (cache_get3(CACHE_QDD_MATVEC_MULT, nextvar, mat, vec, &res)) {
             sylvan_stats_count(QDD_MULT_CACHED);
             return res;
         }
@@ -1311,7 +1316,7 @@ TASK_IMPL_4(QDD, qdd_matvec_mult, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR, nex
 
     // Insert in cache
     if (cachenow) {
-        if (cache_put3(CACHE_QDD_MATVEC_MULT, sylvan_false, mat, vec, res)) 
+        if (cache_put3(CACHE_QDD_MATVEC_MULT, nextvar, mat, vec, res)) 
             sylvan_stats_count(QDD_MULT_CACHEDPUT);
     }
 
@@ -1336,7 +1341,7 @@ TASK_IMPL_4(QDD, qdd_matmat_mult, QDD, a, QDD, b, BDDVAR, nvars, BDDVAR, nextvar
     QDD res;
     bool cachenow = 1;
     if (cachenow) {
-        if (cache_get3(CACHE_QDD_MATMAT_MULT, sylvan_false, a, b, &res)) {
+        if (cache_get3(CACHE_QDD_MATMAT_MULT, nextvar, a, b, &res)) {
             sylvan_stats_count(QDD_MULT_CACHED);
             return res;
         }
@@ -1416,7 +1421,7 @@ TASK_IMPL_4(QDD, qdd_matmat_mult, QDD, a, QDD, b, BDDVAR, nvars, BDDVAR, nextvar
 
     // Insert in cache
     if (cachenow) {
-        if (cache_put3(CACHE_QDD_MATMAT_MULT, sylvan_false, a, b, res)) 
+        if (cache_put3(CACHE_QDD_MATMAT_MULT, nextvar, a, b, res)) 
             sylvan_stats_count(QDD_MULT_CACHEDPUT);
     }
 
@@ -1933,8 +1938,7 @@ shor_period_finding(uint64_t a, uint64_t N)
     double m_prob;
 
     for (uint32_t i = 0; i < 2*shor_n; i++) {
-        //printf("shor it = %d/%d\n", i+1, 2*shor_n);
-        assert(qdd_is_unitvector(qdd, num_qubits));
+        if (testing_mode) assert(qdd_is_unitvector(qdd, num_qubits));
 
         // H on top wire
         qdd = qdd_gate(qdd, GATEID_H, shor_wires.top);
@@ -1962,11 +1966,6 @@ shor_period_finding(uint64_t a, uint64_t N)
         if (m_outcome == 1) qdd = qdd_gate(qdd, GATEID_X, shor_wires.top);
         qddnode_t node = QDD_GETNODE(QDD_PTR(qdd));
         assert(qddnode_getptrhigh(node) == QDD_TERMINAL);
-        
-
-        // gc amp table
-        qdd_gc_ctable(&qdd);
-        //printf("i = %2d, amps = %ld\n", i, count_amplitude_table_enries());
     }
 
     // turn measurement outcomes into an integer
@@ -2173,7 +2172,7 @@ qdd_measure_q0(QDD qdd, BDDVAR nvars, int *m, double *p)
     BDDVAR var;
     qdd_get_topvar(qdd, 0, &var, &low, &high);
 
-    assert(qdd_is_unitvector(qdd, nvars)); // TODO: only do this during testing
+    if (testing_mode) assert(qdd_is_unitvector(qdd, nvars));
 
     prob_low  = qdd_unnormed_prob(low,  1, nvars);
     prob_high = qdd_unnormed_prob(high, 1, nvars);
@@ -2456,6 +2455,28 @@ qdd_create_single_qubit_gate(BDDVAR n, BDDVAR t, uint32_t gateid)
 }
 
 QDD
+qdd_create_single_qubit_gates(BDDVAR n, uint32_t *gateids)
+{
+    // Start at terminal and build backwards
+    QDD prev = qdd_bundle_ptr_amp(QDD_TERMINAL, C_ONE);
+    for (int k = n-1; k >= 0; k--) {
+        prev = qdd_stack_matrix(prev, k, gateids[k]);
+    }
+    return prev;
+}
+
+QDD
+qdd_create_single_qubit_gates_same(BDDVAR n, uint32_t gateid)
+{
+    // Start at terminal and build backwards
+    QDD prev = qdd_bundle_ptr_amp(QDD_TERMINAL, C_ONE);
+    for (int k = n-1; k >= 0; k--) {
+        prev = qdd_stack_matrix(prev, k, gateid);
+    }
+    return prev;
+}
+
+QDD
 qdd_create_controlled_gate(BDDVAR n, BDDVAR c, BDDVAR t, uint32_t gateid)
 {
     // for now, assume t > c
@@ -2592,7 +2613,7 @@ qdd_is_close_to_unitvector(QDD qdd, BDDVAR n, double tol)
         return true;
     }
     else {
-        //printf("probs sum to %.30lf\n", sum_abs_squares);
+        printf("probs sum to %.30lf\n", sum_abs_squares);
         if (WRITE_TO_FILE) {
             FILE *fp;
             fp = fopen("is_unitvector_false.dot", "w");
@@ -2673,15 +2694,21 @@ uint64_t in_buffer = 0;
 uint64_t *nodelog;
 uint64_t *amp_log;
 FILE *qdd_logfile;
+uint64_t nodes_peak = 0;
+uint64_t logcounter = 0;
 
 void
 qdd_stats_start(FILE *out)
 {
+    if (out == NULL) return;
     qdd_stats_logging = true;
     qdd_logfile = out;
+    fprintf(qdd_logfile, "nodes, amps\n");
     nodelog = (uint64_t*) malloc(statslog_buffer * sizeof(uint64_t));
     amp_log = (uint64_t*) malloc(statslog_buffer * sizeof(uint64_t));
     in_buffer = 0;
+    nodes_peak = 0;
+    logcounter = 0;
 }
 
 void
@@ -2704,17 +2731,36 @@ qdd_stats_log(QDD qdd)
 
     // Insert info
     uint64_t num_nodes = qdd_countnodes(qdd);
-    uint64_t num_amps  = get_num_ctable_entries();
+    uint64_t num_amps  = count_amplitude_table_enries();
     nodelog[in_buffer] = num_nodes;
     amp_log[in_buffer] = num_amps;
     in_buffer++;
+    logcounter++;
+
+    if (num_nodes > nodes_peak)
+        nodes_peak = num_nodes;
+}
+
+uint64_t
+qdd_stats_get_nodes_peak()
+{
+    return nodes_peak;
+}
+
+uint64_t
+qdd_stats_get_logcounter()
+{
+    return logcounter;
 }
 
 void
 qdd_stats_finish()
 {
+    if (!qdd_stats_logging) return;
     qdd_stats_flush_buffer();
     qdd_stats_logging = false;
+    nodes_peak = 0;
+    logcounter = 0;
     free(nodelog);
     free(amp_log);
 }

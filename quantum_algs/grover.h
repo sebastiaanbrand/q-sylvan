@@ -2,12 +2,20 @@
 
 #include "sylvan.h"
 
+/* Random bit array of lenght 'nqubits' */
+bool *qdd_grover_random_flag(BDDVAR nqubits);
+
 /**
- * Exectutes Grover on an n qubit circuit with a single flagged element.
- * 
- * @param n Number of qubits.
- * @param flag Binary representation of some integer in [0, 2^n]
+ * Implementation of Grover where the gates are seen as functions applied to
+ * the QDD.
  */
 QDD qdd_grover(BDDVAR n, bool* flag);
 #define qdd_grover_iteration(qdd,n,flag) (CALL(qdd_grover_iteration,qdd,n,flag));
 TASK_DECL_3(QDD, qdd_grover_iteration, QDD, BDDVAR, bool*);
+
+/**
+ * Implementation of Grover where both the state vector and the gates are
+ * represented as QDDs, and matrix-vector / matrix-matrix multiplication is
+ * used to compute the result.
+ */
+QDD qdd_grover_matrix(BDDVAR n, bool *flag);
