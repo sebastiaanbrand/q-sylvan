@@ -34,16 +34,17 @@ wctime()
 }
 
 static void
-write_parameters(FILE *param_file)
+write_parameters(FILE *file)
 {
-    // TODO: json format
-    fprintf(param_file, "min_tablesize = %ld\n", min_tablesize);
-    fprintf(param_file, "max_tablesize = %ld\n", max_tablesize);
-    fprintf(param_file, "min_cachesize = %ld\n", min_cachesize);
-    fprintf(param_file, "max_cachesize = %ld\n", max_cachesize);
-    fprintf(param_file, "ctable_size = %ld\n", ctable_size);
-    fprintf(param_file, "propagate_complex = %d\n", propagate_complex);
-    fclose(param_file);
+    fprintf(file, "{\n");
+    fprintf(file, "  \"min_tablesize\": %ld,\n", min_tablesize);
+    fprintf(file, "  \"max_tablesize\": %ld,\n", max_tablesize);
+    fprintf(file, "  \"min_cachesize\": %ld,\n", min_cachesize);
+    fprintf(file, "  \"max_cachesize\": %ld,\n", max_cachesize);
+    fprintf(file, "  \"ctable_size\": %ld,\n", ctable_size);
+    fprintf(file, "  \"propagate_complex\": %d\n", propagate_complex);
+    fprintf(file, "}\n");
+    fclose(file);
 }
 
 int bench_25qubit_circuit(int workers)
@@ -340,11 +341,15 @@ double bench_grover_once(int num_qubits, bool flag[], int workers, char *fpath, 
     return runtime;
 }
 
-int bench_shor(uint64_t N, uint64_t a, int workers, int rand_seed)
+double bench_shor_once(uint64_t N, uint64_t a, int workers, int rseed, bool *success, char *fpath, uint64_t *nodes_peak, uint64_t *n_gates)
 {
     uint32_t num_qubits = (int)ceil(log2(N))*2 + 3;
     printf("bench shor, factor %ld (%d qubits), %2d worker(s), ", N, num_qubits, workers); 
     fflush(stdout);
+
+    FILE *logfile = NULL;
+    if (fpath != NULL)
+        logfile = fopen(fpath, "w");
 
     double t_start, t_end, runtime;
     t_start = wctime();
@@ -354,23 +359,32 @@ int bench_shor(uint64_t N, uint64_t a, int workers, int rand_seed)
     lace_startup(0, NULL, NULL);
 
     // Init Sylvan
-    sylvan_set_limits(4LL<<30, 1, 6);
+    sylvan_set_sizes(min_tablesize, max_tablesize, min_cachesize, max_cachesize);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<23);
-    //sylvan_gc_disable(); // issue with gc, maybe "marked" flag location MTBBD vs QDD
+    sylvan_init_qdd(ctable_size);
 
-    srand(rand_seed);
+    qdd_stats_start(logfile);
+
+    srand(rseed);
     uint64_t fac = run_shor(N, a, false);
 
     t_end = wctime();
     runtime = (t_end - t_start);
+
+    if (nodes_peak != NULL) *nodes_peak = qdd_stats_get_nodes_peak();
+    if (n_gates    != NULL) *n_gates = qdd_stats_get_logcounter();
+    if (logfile    != NULL) {
+        qdd_stats_finish();
+        fclose(logfile);
+    }
+    *success = (fac == 0) ? 0 : 1;
 
     printf("found factor %ld, %lf sec\n", fac, runtime);
 
     // Cleanup
     sylvan_quit();
     lace_exit();
-    return 0;
+    return runtime;
 }
 
 
@@ -401,7 +415,7 @@ int bench_grover()
     // output file for sylvan parameters
     char param_fname[256];
     strcpy(param_fname, output_dir);
-    strcat(param_fname, "parameters.txt");
+    strcat(param_fname, "parameters.json");
     FILE *param_file = fopen(param_fname, "w");
 
     // sylvan sizes
@@ -411,7 +425,7 @@ int bench_grover()
     write_parameters(param_file);
 
     // different number of qubits to test
-    int n_qubits[] = {20, 22};
+    int n_qubits[] = {15, 20};
     int nn_qubits  = 2;
     
     // different number of workers to test
@@ -479,6 +493,113 @@ int bench_grover()
     return 0;
 }
 
+int bench_shor()
+{
+    VERBOSE = true;
+    
+    // output dir
+    mkdir("benchmark_data/shor/", 0700);
+    char output_dir[256];
+    sprintf(output_dir, "benchmark_data/shor/%ld/", time(NULL));
+    mkdir(output_dir, 0700);
+    char history_dir[256];
+    strcpy(history_dir, output_dir);
+    strcat(history_dir, "run_histories/");
+    mkdir(history_dir, 0700);
+    // output file for runtime data
+    char overview_fname[256];
+    strcpy(overview_fname, output_dir);
+    strcat(overview_fname, "summary.csv");
+    FILE *overview_file = fopen(overview_fname, "w");
+    fprintf(overview_file, "N, a, qubits, peak_nodes, success, "
+                           "workers, gates, runtime, avg_gate_time, "
+                           "plus_cacheput, plus_cached, "
+                           "gate_cacheput, gate_cached, "
+                           "cgate_cacheput, cgate_cached\n");
+    // output file for sylvan parameters
+    char param_fname[256];
+    strcpy(param_fname, output_dir);
+    strcat(param_fname, "parameters.json");
+    FILE *param_file = fopen(param_fname, "w");
+
+    // sylvan sizes
+    min_tablesize = max_tablesize = 1LL<<25;
+    min_cachesize = max_cachesize = 1LL<<16;
+    ctable_size   = 1LL<<18;
+    write_parameters(param_file);
+
+    // Different sized N to test
+    //  3 x  5 =  15 (11 qubits)
+    //  5 x  7 =  35 (15 qubits)
+    // 11 x 13 = 143 (19 qubits)
+    int Ns[] = {15, 35, 143};
+    int nN = 3;
+    uint64_t N, a;
+    uint32_t nqubits;
+
+    // how often to re-run the same (N,a) (TODO: different 'a' for each run?)
+    int re_runs = 2;
+    
+    // different number of workers to test
+    int n_workers[] = {1};
+    int nn_workers  = 1;
+
+    // runtimes are written to single file
+    double runtime, avg_gate_time;
+    uint64_t nodes_peak, n_gates;
+    uint64_t plus_cacheput, gate_cacheput, cgate_cacheput;
+    uint64_t plus_cached, gate_cached, cgate_cached;
+
+    // run benchmarks
+    srand(42);
+    for (int q = 0; q < nN; q++) {
+        N = Ns[q];
+        a = shor_generate_a(N);
+        nqubits = (int)ceil(log2(N))*2 + 3;
+        for (int r = 0; r < re_runs; r++) {
+            for (int w = 0; w < nn_workers; w++) {
+                
+                // output file for history of this run
+                char history_path[256];
+                char history_fname[256];
+                sprintf(history_fname, "shor_hist_n%d_w%d_N%ld_a%ld_r%d.csv", nqubits, n_workers[w], N,a,r);
+                strcpy(history_path, history_dir);
+                strcat(history_path, history_fname);
+
+                // bench twice, once with logging and once for timing
+                uint64_t rseed = time(NULL);
+                bool success;
+                runtime = bench_shor_once(N, a, n_workers[w], rseed, &success, NULL, NULL, NULL);
+                bench_shor_once(N, a, n_workers[w], rseed, &success, history_path, &nodes_peak, &n_gates);
+
+                // add summary of this run to overview file
+                avg_gate_time = runtime / (double) n_gates;
+                #if SYLVAN_STATS
+                plus_cacheput  = sylvan_stats.counters[QDD_PLUS_CACHEDPUT];
+                gate_cacheput  = sylvan_stats.counters[QDD_GATE_CACHEDPUT];
+                cgate_cacheput = sylvan_stats.counters[QDD_CGATE_CACHEDPUT];
+                plus_cached    = sylvan_stats.counters[QDD_PLUS_CACHED];
+                gate_cached    = sylvan_stats.counters[QDD_GATE_CACHED];
+                cgate_cached   = sylvan_stats.counters[QDD_CGATE_CACHED];
+                #else
+                plus_cached = gate_cached = cgate_cached = 0;
+                plus_cacheput = gate_cacheput = cgate_cacheput = 0;
+                #endif
+                fprintf(overview_file, "%ld, %ld, %d, %ld, %d, %d, %ld, %lf, %.3e, %ld, %ld, %ld, %ld, %ld, %ld\n",
+                                        N, a, nqubits, nodes_peak, success,
+                                        n_workers[w], n_gates, runtime, avg_gate_time, 
+                                        plus_cacheput, plus_cached,
+                                        gate_cacheput, gate_cached,
+                                        cgate_cacheput, cgate_cached);
+            }
+        }
+    }
+
+    fclose(overview_file);
+
+    return 0;
+}
+
 int main()
 {
     #ifdef HAVE_PROFILER
@@ -490,24 +611,9 @@ int main()
     #endif
 
     mkdir("benchmark_data", 0700);
-
-    //bench_25qubit_circuit(1);
-    //bench_25qubit_circuit(2);
-
-    
-
-    bench_grover();
-
-
-    /*
-    bench_supremacy_5_1(100, 1);
-    bench_supremacy_5_4(5, 1);
-
-    uint64_t rand_seed = time(NULL);
-    bench_shor(77, 0, 1, rand_seed);
-    bench_shor(77, 0, 2, rand_seed);
-    bench_shor(77, 0, 4, rand_seed);
-    */
+  
+    //bench_grover();
+    bench_shor();
 
     #ifdef HAVE_PROFILER
         if (profile_name != NULL) ProfilerStop();
