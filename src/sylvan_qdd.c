@@ -2704,8 +2704,17 @@ qdd_stats_start(FILE *out)
     qdd_stats_logging = true;
     qdd_logfile = out;
     fprintf(qdd_logfile, "nodes, amps\n");
-    nodelog = (uint64_t*) malloc(statslog_buffer * sizeof(uint64_t));
-    amp_log = (uint64_t*) malloc(statslog_buffer * sizeof(uint64_t));
+    // NOTE: logging with multiple workers active seems to allow for the 
+    // 'in_buffer' variable to become to high. For now just allocate a buffer
+    // with more leeway.
+    // TODO: find a better solution. It seems to be the case only with shor
+    // - I think because of the ccirc function, so implementing shor without 
+    // this might fix the problem
+    // - Or just only log with a single worker
+    // - Or find a generally better solution involving stopping the workers 
+    // when loggin
+    nodelog = (uint64_t*) malloc(statslog_buffer*2 * sizeof(uint64_t));
+    amp_log = (uint64_t*) malloc(statslog_buffer*2 * sizeof(uint64_t));
     in_buffer = 0;
     nodes_peak = 0;
     logcounter = 0;
