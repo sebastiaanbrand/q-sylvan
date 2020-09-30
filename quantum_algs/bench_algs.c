@@ -429,8 +429,8 @@ int bench_grover()
     int nn_qubits  = 2;
     
     // different number of workers to test
-    int n_workers[] = {1};
-    int nn_workers  = 1;
+    int n_workers[] = {1, 2, 4};
+    int nn_workers  = 3;
 
     // different number of random flags to test
     int n_flags = 3;
@@ -541,8 +541,8 @@ int bench_shor()
     int re_runs = 2;
     
     // different number of workers to test
-    int n_workers[] = {1};
-    int nn_workers  = 1;
+    int n_workers[] = {1, 2, 4};
+    int nn_workers  = 3;
 
     // runtimes are written to single file
     double runtime, avg_gate_time;
@@ -557,6 +557,7 @@ int bench_shor()
         a = shor_generate_a(N);
         nqubits = (int)ceil(log2(N))*2 + 3;
         for (int r = 0; r < re_runs; r++) {
+            uint64_t rseed = time(NULL);
             for (int w = 0; w < nn_workers; w++) {
                 
                 // output file for history of this run
@@ -567,7 +568,6 @@ int bench_shor()
                 strcat(history_path, history_fname);
 
                 // bench twice, once with logging and once for timing
-                uint64_t rseed = time(NULL);
                 bool success;
                 runtime = bench_shor_once(N, a, n_workers[w], rseed, &success, NULL, NULL, NULL);
                 bench_shor_once(N, a, n_workers[w], rseed, &success, history_path, &nodes_peak, &n_gates);

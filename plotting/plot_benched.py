@@ -3,10 +3,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 plt_format = '.png'
-bench_path = "../build/benchmark_data/"
-alg_names  = ["grover"]
+bench_path = '../build/benchmark_data/'
+alg_names  = ['shor']
 
-replot_all = False
+replot_all = True
 plot_concur_perf_bool = True
 plot_peaknodes_bool   = True
 plot_histories_bool   = True
@@ -46,7 +46,7 @@ def plot_histories(histories_path, output_folder, alg_name):
 
     # iterate over all .csv files
     for filename in os.listdir(histories_path):
-        if filename.endswith(".csv"):
+        if filename.endswith('.csv'):
             hist_file_path = histories_path + filename
             output_path = output_folder + filename[:-4] + plt_format
             plot_history(hist_file_path, output_path, alg_name)
@@ -81,17 +81,24 @@ def plot_concurrency_performance(data_folder, alg_name):
         subset = data[np.where(data['qubits'] == q)]
         speedups = np.zeros(workers.shape)
         
-        # asume grover, group by flag
-        flags = np.unique(subset['flag'])
-        for flag in flags:
-            subsubset = subset[np.where(subset['flag'] == flag)]
+        # for Grover, group by same flag, for Shor group by input number N
+        group_name = ''
+        if (alg_name == 'grover'):
+            group_name = 'flag'
+        elif (alg_name == 'shor'):
+            group_name = 'N'
+
+        # speedups are calculated withing a group
+        group_ids = np.unique(subset[group_name])
+        for group_id in group_ids:
+            subsubset = subset[np.where(subset[group_name] == group_id)]
             speed_w1 = np.mean(subsubset[np.where(subsubset['workers'] == 1)]['runtime'])
             for i, w in enumerate(workers):
                 speed_w = np.mean(subsubset[np.where(subsubset['workers'] == w)]['runtime'])
                 speedups[i] += (speed_w / speed_w1)**(-1)
 
-        # these are the speedups averaged over the different flags
-        speedups /= flags.shape
+        # these are the speedups averaged over the different groups
+        speedups /= group_ids.shape
 
         # actually plot stuff
         plt.scatter(workers, speedups)
@@ -115,15 +122,15 @@ def plot_all():
 
     # iterate over all algorithms
     for alg_name in alg_names:
-        alg_path = bench_path + alg_name + "/"
+        alg_path = bench_path + alg_name + '/'
 
         # iterate over all experiments
         for exp_folder in os.listdir(alg_path):
-            exp_path = alg_path + exp_folder + "/"
-            if ('concurrency.png' in os.listdir(exp_path)):
-                print("skipping {}".format(exp_folder))
+            exp_path = alg_path + exp_folder + '/'
+            if (not replot_all and 'concurrency.png' in os.listdir(exp_path)):
+                print('skipping {}/{}'.format(alg_name, exp_folder))
             else:
-                print("plotting {}".format(exp_folder))
+                print('plotting {}/{}'.format(alg_name, exp_folder))
 
                 # plot qubits vs peak nodes
                 if (plot_peaknodes_bool):
@@ -135,10 +142,10 @@ def plot_all():
 
                 # plot histories for all runs
                 if (plot_histories_bool):
-                    histories_path = exp_path + "run_histories/"
-                    output_folder  = histories_path + "plots/"
+                    histories_path = exp_path + 'run_histories/'
+                    output_folder  = histories_path + 'plots/'
                     plot_histories(histories_path, output_folder, alg_name)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     plot_all()
