@@ -52,7 +52,7 @@ int test_grover()
     srand(time(NULL));
     for (BDDVAR i = 0; i < nqubits; i++) x10[i] = (bool)(rand() % 2);
     grov = qdd_grover(nqubits, x10);
-    test_assert(qdd_is_close_to_unitvector(grov, nqubits, TOLERANCE*100));
+    test_assert(qdd_is_close_to_unitvector(grov, nqubits, cmap_get_tolerance()*100));
     prob = comp_to_prob(comp_value(qdd_get_amplitude(grov, x10)));
 
     if(VERBOSE) printf("qdd %2d-qubit Grover:        ok (Pr(flag) = %lf)\n", nqubits, prob);
@@ -102,7 +102,7 @@ int test_grover_matrix()
     srand(time(NULL));
     for (BDDVAR i = 0; i < nqubits; i++) x10[i] = (bool)(rand() % 2);
     grov = qdd_grover_matrix(nqubits, x10);
-    test_assert(qdd_is_close_to_unitvector(grov, nqubits, TOLERANCE*100));
+    test_assert(qdd_is_close_to_unitvector(grov, nqubits, cmap_get_tolerance()*100));
     prob = comp_to_prob(comp_value(qdd_get_amplitude(grov, x10)));
 
     if(VERBOSE) printf("matrix qdd %2d-qubit Grover: ok (Pr(flag) = %lf)\n", nqubits, prob);
@@ -267,7 +267,7 @@ int main()
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<19);
+    sylvan_init_qdd(1LL<<19, -1);
     qdd_set_testing_mode(true); // turn on internal sanity tests
 
     int res = runtests();

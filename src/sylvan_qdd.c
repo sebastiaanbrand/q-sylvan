@@ -428,7 +428,7 @@ qdd_quit()
 }
 
 void
-sylvan_init_qdd(size_t ctable_size)
+sylvan_init_qdd(size_t ctable_size, double ctable_tolerance)
 {
     if (qdd_initialized) return;
     qdd_initialized = 1;
@@ -443,7 +443,7 @@ sylvan_init_qdd(size_t ctable_size)
         qdd_protected_created = 1;
     }
 
-    init_amplitude_table(ctable_size);
+    init_amplitude_table(ctable_size, ctable_tolerance);
 
     LACE_ME;
     CALL(qdd_refs_init);
@@ -743,6 +743,12 @@ qdd_set_gc_ctable_thres(double fraction_filled)
     ctable_gc_thres = fraction_filled;
 }
 
+double
+qdd_get_gc_ctable_thres()
+{
+    return ctable_gc_thres;
+}
+
 
 void
 qdd_gc_ctable(QDD *keep)
@@ -754,6 +760,9 @@ qdd_gc_ctable(QDD *keep)
     // 2. Fill new table with amps present in given QDDs
     //for (int i = 0; i < n_qdds; i++) qdds[i] = _fill_new_amp_table(qdds[i]);
     *keep = _fill_new_amp_table(*keep);
+
+    //uint64_t in_use = count_amplitude_table_enries();
+    //printf("amps in use after gc: %ld\n", in_use);
 
     // 3. Delete old amp table
     delete_old_table();
@@ -945,6 +954,7 @@ TASK_IMPL_2(QDD, qdd_plus_comp_wrap, QDD, a, QDD, b)
 TASK_IMPL_4(QDD, qdd_plus_complex, PTR, a, PTR, b, complex_t, ca, complex_t, cb)
 {
     // Trivial cases // Q: use exact or approx?
+    // TODO: use same "is equivalent function" as used in cmap
     if (comp_exact_equal(ca, comp_zero())) 
         return qdd_bundle_ptr_amp(b, qdd_comp_lookup(cb));
     if (comp_exact_equal(cb, comp_zero()))
@@ -2179,7 +2189,7 @@ qdd_measure_q0(QDD qdd, BDDVAR nvars, int *m, double *p)
     prob_root = comp_to_prob(comp_value(QDD_AMP(qdd)));
     prob_low  *= prob_root;
     prob_high *= prob_root;
-    if (fabs(prob_low + prob_high - 1.0) > TOLERANCE) {
+    if (fabs(prob_low + prob_high - 1.0) > cmap_get_tolerance()) {
         printf("prob sum = %.5lf (%.5lf + %.5lf)\n", prob_low + prob_high, prob_low, prob_high);
         assert("probabilities don't sum to 1" && false);
     }
@@ -2259,7 +2269,7 @@ qdd_measure_all(QDD qdd, BDDVAR n, bool* ms, double *p)
         prob_high = prob_high * prob_roots / prob_path;
         prob_low  = prob_low  * prob_roots / prob_path;
 
-        if (fabs(prob_low + prob_high - 1.0) > TOLERANCE) {
+        if (fabs(prob_low + prob_high - 1.0) > cmap_get_tolerance()) {
             printf("prob sum = %.10lf\n", prob_low + prob_high);
             assert("probabilities don't sum to 1" && false);
         }
@@ -2613,7 +2623,7 @@ qdd_is_close_to_unitvector(QDD qdd, BDDVAR n, double tol)
         return true;
     }
     else {
-        printf("probs sum to %.30lf\n", sum_abs_squares);
+        //printf("probs sum to %.30lf\n", sum_abs_squares);
         if (WRITE_TO_FILE) {
             FILE *fp;
             fp = fopen("is_unitvector_false.dot", "w");
@@ -2627,7 +2637,7 @@ qdd_is_close_to_unitvector(QDD qdd, BDDVAR n, double tol)
 bool
 qdd_is_unitvector(QDD qdd, BDDVAR n)
 {
-    return qdd_is_close_to_unitvector(qdd, n, TOLERANCE*10);
+    return qdd_is_close_to_unitvector(qdd, n, cmap_get_tolerance()*10);
 }
 
 bool

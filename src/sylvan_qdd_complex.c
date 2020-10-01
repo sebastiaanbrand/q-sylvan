@@ -29,6 +29,7 @@ Note use of cosl and sinl for long double computation
 static long double Pi;    // set value of global Pi
 
 
+static const double default_tolerance = 1e-14;
 size_t ctable_size;
 size_t ctable_entries_est;
 DECLARE_THREAD_LOCAL(ctable_entries_local, size_t); // these are added to _est
@@ -332,7 +333,7 @@ bool comp_exact_equal(complex_t a, complex_t b)
 
 bool comp_approx_equal(complex_t a, complex_t b)
 {
-    return comp_epsilon_close(a, b, TOLERANCE);
+    return comp_epsilon_close(a, b, cmap_get_tolerance());
 }
 
 bool comp_epsilon_close(complex_t a, complex_t b, double epsilon)
@@ -454,7 +455,7 @@ comp_print_bits(AMP a)
 /* Managing the complex value table */
 
 void
-init_amplitude_table(size_t size)
+init_amplitude_table(size_t size, double tolerance)
 {
     ctable_size = size;
     ctable_entries_est = 0;
@@ -465,8 +466,9 @@ init_amplitude_table(size_t size)
     // doesn't set it to 0 for all threads. Since it's only an estimate it is
     // not a huge issue though.
     // TODO: figure out how to get lace to handle this counting better
-    
-    ctable = cmap_create(ctable_size);
+
+    if (tolerance < 0) tolerance = default_tolerance;
+    ctable = cmap_create(ctable_size, tolerance);
 
     C_ONE     = comp_lookup(comp_one());
     C_ZERO    = comp_lookup(comp_zero());
@@ -583,7 +585,8 @@ init_new_empty_table()
     ctable_old = ctable;
 
     // re-init new (empty) ctable
-    init_amplitude_table(ctable_size);
+    double tolerance = cmap_get_tolerance();
+    init_amplitude_table(ctable_size, tolerance);
 }
 
 void

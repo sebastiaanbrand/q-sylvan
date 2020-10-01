@@ -21,6 +21,8 @@ static size_t max_tablesize;
 static size_t min_cachesize;
 static size_t max_cachesize;
 static size_t ctable_size;
+static double ctable_tolerance;
+static double ctable_gc_thres;
 
 /**
  * Obtain current wallclock time
@@ -41,7 +43,9 @@ write_parameters(FILE *file)
     fprintf(file, "  \"max_tablesize\": %ld,\n", max_tablesize);
     fprintf(file, "  \"min_cachesize\": %ld,\n", min_cachesize);
     fprintf(file, "  \"max_cachesize\": %ld,\n", max_cachesize);
-    fprintf(file, "  \"ctable_size\": %ld,\n", ctable_size);
+    fprintf(file, "  \"ctable_size\": %ld,\n", get_ctable_size());
+    fprintf(file, "  \"ctable_tolerance\": %.5e,\n", cmap_get_tolerance());
+    fprintf(file, "  \"ctable_gc_thres\": %lf,\n", qdd_get_gc_ctable_thres());
     fprintf(file, "  \"propagate_complex\": %d\n", propagate_complex);
     fprintf(file, "}\n");
     fclose(file);
@@ -63,7 +67,7 @@ int bench_25qubit_circuit(int workers)
     // Init Sylvan
     sylvan_set_limits(4LL<<30, 1, 6);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<23);
+    sylvan_init_qdd(1LL<<23, -1);
 
     QDD q;
     uint64_t node_count;
@@ -213,6 +217,7 @@ int bench_25qubit_circuit(int workers)
     return 0;
 }
 
+
 int bench_supremacy_5_1(uint32_t depth, uint32_t workers)
 {
     // 5x1 "grid" from [Characterizing Quantum Supremacy in Near-Term Devices]
@@ -231,7 +236,7 @@ int bench_supremacy_5_1(uint32_t depth, uint32_t workers)
     // Init Sylvan
     sylvan_set_limits(4LL<<30, 1, 6);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<23);
+    sylvan_init_qdd(1LL<<23, -1);
 
     srand(42);
     QDD res = supremacy_5_1_circuit(depth);
@@ -249,8 +254,7 @@ int bench_supremacy_5_1(uint32_t depth, uint32_t workers)
     return 0;
 }
 
-int
-bench_supremacy_5_4(uint32_t depth, uint32_t workers)
+double bench_supremacy_5_4_once(uint32_t depth, uint32_t workers)
 {
     printf("bench sup5_4, depth %3d, %2d worker(s), ", depth, workers);
     fflush(stdout);
@@ -264,9 +268,10 @@ bench_supremacy_5_4(uint32_t depth, uint32_t workers)
     lace_startup(0, NULL, NULL);
 
     // Init Sylvan
-    sylvan_set_limits(4LL<<30, 1, 6);
+    sylvan_set_sizes(min_tablesize, max_tablesize, min_cachesize, max_cachesize);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<23);
+    sylvan_init_qdd(ctable_size, ctable_tolerance);
+    qdd_set_gc_ctable_thres(ctable_gc_thres);
 
     srand(66);
 
@@ -282,7 +287,7 @@ bench_supremacy_5_4(uint32_t depth, uint32_t workers)
     sylvan_quit();
     lace_exit();
 
-    return 0;
+    return runtime;
 }
 
 
@@ -311,7 +316,7 @@ double bench_grover_once(int num_qubits, bool flag[], int workers, char *fpath, 
     // Init Sylvan
     sylvan_set_sizes(min_tablesize, max_tablesize, min_cachesize, max_cachesize);
     sylvan_init_package();
-    sylvan_init_qdd(ctable_size);
+    sylvan_init_qdd(ctable_size, ctable_tolerance);
 
     QDD grov;
     uint64_t node_count_end;
@@ -361,7 +366,7 @@ double bench_shor_once(uint64_t N, uint64_t a, int workers, int rseed, bool *suc
     // Init Sylvan
     sylvan_set_sizes(min_tablesize, max_tablesize, min_cachesize, max_cachesize);
     sylvan_init_package();
-    sylvan_init_qdd(ctable_size);
+    sylvan_init_qdd(ctable_size, ctable_tolerance);
 
     qdd_stats_start(logfile);
 
@@ -387,6 +392,24 @@ double bench_shor_once(uint64_t N, uint64_t a, int workers, int rseed, bool *suc
     return runtime;
 }
 
+int bench_supremacy()
+{
+    // sylvan / qdd params
+    min_tablesize = max_tablesize = 1LL<<25;
+    min_cachesize = max_cachesize = 1LL<<16;
+    ctable_size   = 1LL<<18;
+    ctable_tolerance = 1e-14;
+
+    bench_supremacy_5_4_once(7, 1);
+    bench_supremacy_5_4_once(10, 1);
+    bench_supremacy_5_4_once(11, 1);
+    bench_supremacy_5_4_once(12, 1);
+    bench_supremacy_5_4_once(13, 1);
+    bench_supremacy_5_4_once(14, 1);
+    bench_supremacy_5_4_once(15, 1);
+
+    return 0;
+}
 
 int bench_grover()
 {
@@ -418,10 +441,11 @@ int bench_grover()
     strcat(param_fname, "parameters.json");
     FILE *param_file = fopen(param_fname, "w");
 
-    // sylvan sizes
+    // sylvan / qdd params
     min_tablesize = max_tablesize = 1LL<<25;
     min_cachesize = max_cachesize = 1LL<<16;
     ctable_size   = 1LL<<18;
+    ctable_tolerance = 1e-14;
     write_parameters(param_file);
 
     // different number of qubits to test
@@ -522,10 +546,11 @@ int bench_shor()
     strcat(param_fname, "parameters.json");
     FILE *param_file = fopen(param_fname, "w");
 
-    // sylvan sizes
+    // sylvan / qdd params
     min_tablesize = max_tablesize = 1LL<<25;
     min_cachesize = max_cachesize = 1LL<<16;
     ctable_size   = 1LL<<18;
+    ctable_tolerance = 1e-14;
     write_parameters(param_file);
 
     // Different sized N to test
@@ -614,6 +639,7 @@ int main()
   
     //bench_grover();
     bench_shor();
+    //bench_supremacy();
 
     #ifdef HAVE_PROFILER
         if (profile_name != NULL) ProfilerStop();

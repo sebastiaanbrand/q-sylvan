@@ -110,8 +110,9 @@ static const BDDVAR     QDD_INVALID_VAR = UINT8_MAX;
 
 /**
  * Similar initialization as for MTBDDs + amplitude table init.
+ * Setting tolerance to -1 uses default tolerance.
  */
-void sylvan_init_qdd(size_t ctable_size);
+void sylvan_init_qdd(size_t ctable_size, double ctable_tolerance);
 void qdd_set_testing_mode(bool on);
 
 
@@ -502,6 +503,7 @@ uint64_t qdd_countnodes(QDD qdd);
 void qdd_set_auto_gc_ctable(bool enabled);
 /* default 0.5 */
 void qdd_set_gc_ctable_thres(double fraction_filled);
+double qdd_get_gc_ctable_thres();
 void qdd_gc_ctable(QDD *keep);
 void qdd_test_gc_ctable(QDD *keep);
 /**
