@@ -1314,6 +1314,64 @@ TASK_IMPL_6(QDD, qdd_cgate_range_rec_amp, QDD, q, uint32_t, gate, BDDVAR, c_firs
     return res;
 }
 
+TASK_IMPL_6(QDD, qdd_cgate_range_rec_complex, QDD, q, uint32_t, gate, BDDVAR, c_first, BDDVAR, c_last, BDDVAR, t, BDDVAR, k)
+{
+    // Check cache
+    QDD res;
+    bool cachenow = 1;
+    if (cachenow) {
+        if (cache_get3(CACHE_QDD_CGATE_RANGE, sylvan_false, q,
+                       GATE_OPID_64(gate, c_first, c_last, k, t, 0),
+                       &res)) {
+            sylvan_stats_count(QDD_CGATE_CACHED);
+            return res;
+        }
+    }
+
+    // Past last control
+    if (k > c_last) {
+        res = CALL(qdd_gate_rec_complex, q, gate, t);
+    }
+    else {
+        BDDVAR var;
+        QDD low, high;
+        // Not at first control qubit yet, apply to both children
+        if (k < c_first) {
+            qdd_get_topvar(q, c_first, &var, &low, &high);
+            qdd_refs_spawn(SPAWN(qdd_cgate_range_rec_complex, high, gate, c_first, c_last, t, var));
+            low = CALL(qdd_cgate_range_rec_complex, low, gate, c_first, c_last, t, var);
+            qdd_refs_push(low);
+            high = qdd_refs_sync(SYNC(qdd_cgate_range_rec_complex));
+            qdd_refs_pop(1);
+        }
+        // k is a control qubit, control on q_k = |1> (high edge)
+        else {
+            assert(c_first <= k && k <= c_last);
+            qdd_get_topvar(q, k, &var, &low, &high);
+            assert(var == k);
+            k++;
+            high = CALL(qdd_cgate_range_rec_complex, high, gate, c_first, c_last, t, k);
+            k--;
+        }
+        res = qdd_makenode(var, low, high);
+
+        // Multiply root amp of sum with input root amp
+        complex_t comp = comp_mul(comp_value(QDD_AMP(q)), comp_value(QDD_AMP(res)));
+        AMP new_root_amp = qdd_comp_lookup(comp);
+        res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
+    }
+
+    // Add to cache, return
+    if (cachenow) {
+        if (cache_put3(CACHE_QDD_CGATE_RANGE, sylvan_false, q,
+                       GATE_OPID_64(gate, c_first, c_last, k, t, 0),
+                       res)) {
+            sylvan_stats_count(QDD_CGATE_CACHEDPUT);
+        }
+    }
+    return res;
+}
+
 TASK_IMPL_4(QDD, qdd_matvec_mult, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR, nextvar)
 {
     // Trivial case: either one is all 0

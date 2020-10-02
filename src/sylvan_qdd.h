@@ -179,11 +179,12 @@ TASK_DECL_5(QDD, qdd_cgate_range, QDD, uint32_t, BDDVAR, BDDVAR, BDDVAR);
 /**
  * Propagate complex values in recursion or hash intermediate complex values.
  */
-#define propagate_complex false
+#define propagate_complex true
 #if propagate_complex
     #define qdd_plus(a,b) (CALL(qdd_plus_comp_wrap,a,b));
     #define qdd_gate_rec(q,gate,target) (CALL(qdd_gate_rec_complex,q,gate,target));
     #define qdd_cgate_rec(q,gate,cs,t) (CALL(qdd_cgate_rec_complex,q,gate,cs,0,t));
+    #define qdd_cgate_range_rec(q,gate,c_first,c_last,t) (CALL(qdd_cgate_range_rec_complex,q,gate,c_first,c_last,t,0));
 #else
     #define qdd_plus(a,b) (CALL(qdd_plus_amp,a,b));
     #define qdd_gate_rec(q,gate,target) (CALL(qdd_gate_rec_amp,q,gate,target));
@@ -222,6 +223,7 @@ TASK_DECL_5(QDD, qdd_cgate_rec_complex, QDD, uint32_t, BDDVAR*, uint32_t, BDDVAR
  * Calls "qdd_gate_rec_amp/complex".
  */
 TASK_DECL_6(QDD, qdd_cgate_range_rec_amp, QDD, uint32_t, BDDVAR, BDDVAR, BDDVAR, BDDVAR);
+TASK_DECL_6(QDD, qdd_cgate_range_rec_complex, QDD, uint32_t, BDDVAR, BDDVAR, BDDVAR, BDDVAR);
 
 // Computes Mat * |vec>
 #define qdd_matvec_mult(mat,vec,nvars) (CALL(qdd_matvec_mult,mat,vec,nvars,0));
