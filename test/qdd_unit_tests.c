@@ -669,13 +669,56 @@ int test_ccz_gate()
     x3[2] = 0; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q3, x3); test_assert(a == aRef);
     x3[2] = 0; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(q3, x3); test_assert(a == aRef);
     x3[2] = 1; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q3, x3); test_assert(a == aRef);    
-    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q3, x3); test_assert(a == amp_mul(aRef,comp_lookup(comp_make(-1.0,0.0))));
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q3, x3); test_assert(a == amp_mul(aRef,comp_lookup(comp_minus_one())));
     x3[2] = 1; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q3, x3); test_assert(a == aRef);
     x3[2] = 1; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(q3, x3); test_assert(a == aRef);
 
     // TODO: few more tests
 
     if(VERBOSE) printf("qdd all-control z gate:   ok\n");
+    return 0;
+}
+
+int test_controlled_range_gate()
+{
+    QDD q10;
+    bool x10[] = {0,0,0,0,0,0,0,0,0,0};
+    AMP a, aRef, aRefMin;
+    bool *x_bits;
+
+    LACE_ME;
+
+    BDDVAR nqubits = 10;
+    q10 = qdd_create_basis_state(10, x10);
+    for (BDDVAR k = 0; k < nqubits; k++) q10 = qdd_gate(q10, GATEID_H, k);
+    aRef = qdd_get_amplitude(q10, x10);
+    aRefMin = amp_mul(aRef, comp_lookup(comp_minus_one()));
+
+    // assert |++..+> state
+    for (uint64_t x = 0; x < (1UL<<nqubits); x++) {
+        x_bits = int_to_bitarray(x, nqubits, true);
+        a = qdd_get_amplitude(q10, x_bits); 
+        test_assert(a == aRef);
+    }
+
+    // CZ gate on c=2,3,4,5 t=8
+    q10 = qdd_cgate_range(q10, GATEID_Z, 2, 5, 8);
+    for (uint64_t x = 0; x < (1UL<<nqubits); x++) {
+        x_bits = int_to_bitarray(x, nqubits, true);
+        a = qdd_get_amplitude(q10, x_bits);
+        // for all amps |**1111**1*> we should have a phase flip
+        if (x_bits[2] && x_bits[3] && x_bits[4] && x_bits[5] && x_bits[8]) {
+            test_assert(a == aRefMin);
+        }
+        // all others should remain the same
+        else {
+            test_assert(a == aRef);
+        }
+    }
+
+    // TODO: test other gates as well
+
+    if(VERBOSE) printf("qdd controlled range:     ok\n");
     return 0;
 }
 
@@ -1393,6 +1436,7 @@ int runtests()
     if (test_phase_gates()) return 1;
     if (test_cx_gate()) return 1;
     if (test_cz_gate()) return 1;
+    if (test_controlled_range_gate()) return 1;
     if (test_ccz_gate()) return 1;
     if (test_swap_circuit()) return 1;
     if (test_cswap_circuit()) return 1;
