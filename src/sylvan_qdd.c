@@ -428,7 +428,7 @@ qdd_quit()
 }
 
 void
-sylvan_init_qdd(size_t ctable_size)
+sylvan_init_qdd(size_t ctable_size, double ctable_tolerance)
 {
     if (qdd_initialized) return;
     qdd_initialized = 1;
@@ -443,7 +443,7 @@ sylvan_init_qdd(size_t ctable_size)
         qdd_protected_created = 1;
     }
 
-    init_amplitude_table(ctable_size);
+    init_amplitude_table(ctable_size, ctable_tolerance);
 
     LACE_ME;
     CALL(qdd_refs_init);
@@ -743,6 +743,12 @@ qdd_set_gc_ctable_thres(double fraction_filled)
     ctable_gc_thres = fraction_filled;
 }
 
+double
+qdd_get_gc_ctable_thres()
+{
+    return ctable_gc_thres;
+}
+
 
 void
 qdd_gc_ctable(QDD *keep)
@@ -754,6 +760,9 @@ qdd_gc_ctable(QDD *keep)
     // 2. Fill new table with amps present in given QDDs
     //for (int i = 0; i < n_qdds; i++) qdds[i] = _fill_new_amp_table(qdds[i]);
     *keep = _fill_new_amp_table(*keep);
+
+    //uint64_t in_use = count_amplitude_table_enries();
+    //printf("amps in use after gc: %ld\n", in_use);
 
     // 3. Delete old amp table
     delete_old_table();
@@ -835,7 +844,7 @@ TASK_IMPL_3(QDD, qdd_gate, QDD, qdd, uint32_t, gate, BDDVAR, target)
     return qdd_gate_rec(qdd, gate, target);
 }
 
-/* Wrapper for applying a controled gate with 1 control qubit. */
+/* Wrapper for applying a controlled gate with 1 control qubit. */
 TASK_IMPL_4(QDD, qdd_cgate, QDD, qdd, uint32_t, gate, BDDVAR, c, BDDVAR, t)
 {
     qdd_do_before_gate(&qdd);
@@ -843,22 +852,27 @@ TASK_IMPL_4(QDD, qdd_cgate, QDD, qdd, uint32_t, gate, BDDVAR, c, BDDVAR, t)
     return qdd_cgate_rec(qdd, gate, cs, t);
 }
 
-/* Wrapper for applying a controled gate with 2 control qubits. */
+/* Wrapper for applying a controlled gate with 2 control qubits. */
 TASK_IMPL_5(QDD, qdd_cgate2, QDD, qdd, uint32_t, gate, BDDVAR, c1, BDDVAR, c2, BDDVAR, t)
 {
-    assert(false);
     qdd_do_before_gate(&qdd);
     BDDVAR cs[4] = {c1, c2, QDD_INVALID_VAR, QDD_INVALID_VAR};
     return qdd_cgate_rec(qdd, gate, cs, t);
 }
 
-/* Wrapper for applying a controled gate with 3 control qubits. */
+/* Wrapper for applying a controlled gate with 3 control qubits. */
 TASK_IMPL_6(QDD, qdd_cgate3, QDD, qdd, uint32_t, gate, BDDVAR, c1, BDDVAR, c2, BDDVAR, c3, BDDVAR, t)
 {
-    assert(false);
     qdd_do_before_gate(&qdd);
     BDDVAR cs[4] = {c1, c2, c3, QDD_INVALID_VAR}; // last pos is a buffer
     return qdd_cgate_rec(qdd, gate, cs, t);
+}
+
+/* Wrapper for applying a controlled gate where the controls are a range. */
+TASK_IMPL_5(QDD, qdd_cgate_range, QDD, qdd, uint32_t, gate, BDDVAR, c_first, BDDVAR, c_last, BDDVAR, t)
+{
+    qdd_do_before_gate(&qdd);
+    return qdd_cgate_range_rec(qdd,gate,c_first,c_last,t) ;
 }
 
 TASK_IMPL_2(QDD, qdd_plus_amp, QDD, a, QDD, b)
@@ -945,6 +959,7 @@ TASK_IMPL_2(QDD, qdd_plus_comp_wrap, QDD, a, QDD, b)
 TASK_IMPL_4(QDD, qdd_plus_complex, PTR, a, PTR, b, complex_t, ca, complex_t, cb)
 {
     // Trivial cases // Q: use exact or approx?
+    // TODO: use same "is equivalent function" as used in cmap
     if (comp_exact_equal(ca, comp_zero())) 
         return qdd_bundle_ptr_amp(b, qdd_comp_lookup(cb));
     if (comp_exact_equal(cb, comp_zero()))
@@ -1165,7 +1180,7 @@ TASK_IMPL_5(QDD, qdd_cgate_rec_amp, QDD, q, uint32_t, gate, BDDVAR*, cs, uint32_
         }
         res = qdd_makenode(var, low, high);
 
-        // Multiply root amp of sum with input root amp, add to cache, return
+        // Multiply root amp of sum with input root amp
         AMP new_root_amp = amp_mul(QDD_AMP(q), QDD_AMP(res));
         res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     }
@@ -1225,7 +1240,7 @@ TASK_IMPL_5(QDD, qdd_cgate_rec_complex, QDD, q, uint32_t, gate, BDDVAR*, cs, uin
         }
         res = qdd_makenode(var, low, high);
 
-        // Multiply root amp of sum with input root amp, add to cache, return
+        // Multiply root amp of sum with input root amp
         complex_t comp = comp_mul(comp_value(QDD_AMP(q)), comp_value(QDD_AMP(res)));
         AMP new_root_amp = qdd_comp_lookup(comp);
         res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
@@ -1235,6 +1250,121 @@ TASK_IMPL_5(QDD, qdd_cgate_rec_complex, QDD, q, uint32_t, gate, BDDVAR*, cs, uin
     if (cachenow) {
         if (cache_put3(CACHE_QDD_CGATE, sylvan_false, q,
                        GATE_OPID_64(gate, ci, cs[0], cs[1], cs[2], t),
+                       res)) {
+            sylvan_stats_count(QDD_CGATE_CACHEDPUT);
+        }
+    }
+    return res;
+}
+
+TASK_IMPL_6(QDD, qdd_cgate_range_rec_amp, QDD, q, uint32_t, gate, BDDVAR, c_first, BDDVAR, c_last, BDDVAR, t, BDDVAR, k)
+{
+    // Check cache
+    QDD res;
+    bool cachenow = 1;
+    if (cachenow) {
+        if (cache_get3(CACHE_QDD_CGATE_RANGE, sylvan_false, q,
+                       GATE_OPID_64(gate, c_first, c_last, k, t, 0),
+                       &res)) {
+            sylvan_stats_count(QDD_CGATE_CACHED);
+            return res;
+        }
+    }
+
+    // Past last control
+    if (k > c_last) {
+        res = CALL(qdd_gate_rec_amp, q, gate, t);
+    }
+    else {
+        BDDVAR var;
+        QDD low, high;
+        // Not at first control qubit yet, apply to both children
+        if (k < c_first) {
+            qdd_get_topvar(q, c_first, &var, &low, &high);
+            qdd_refs_spawn(SPAWN(qdd_cgate_range_rec_amp, high, gate, c_first, c_last, t, var));
+            low = CALL(qdd_cgate_range_rec_amp, low, gate, c_first, c_last, t, var);
+            qdd_refs_push(low);
+            high = qdd_refs_sync(SYNC(qdd_cgate_range_rec_amp));
+            qdd_refs_pop(1);
+        }
+        // k is a control qubit, control on q_k = |1> (high edge)
+        else {
+            assert(c_first <= k && k <= c_last);
+            qdd_get_topvar(q, k, &var, &low, &high);
+            assert(var == k);
+            k++;
+            high = CALL(qdd_cgate_range_rec_amp, high, gate, c_first, c_last, t, k);
+            k--;
+        }
+        res = qdd_makenode(var, low, high);
+
+        // Multiply root amp of result with the input root amp
+        AMP new_root_amp = amp_mul(QDD_AMP(q), QDD_AMP(res));
+        res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
+    }
+
+    // Add to cache, return
+    if (cachenow) {
+        if (cache_put3(CACHE_QDD_CGATE_RANGE, sylvan_false, q,
+                       GATE_OPID_64(gate, c_first, c_last, k, t, 0),
+                       res)) {
+            sylvan_stats_count(QDD_CGATE_CACHEDPUT);
+        }
+    }
+    return res;
+}
+
+TASK_IMPL_6(QDD, qdd_cgate_range_rec_complex, QDD, q, uint32_t, gate, BDDVAR, c_first, BDDVAR, c_last, BDDVAR, t, BDDVAR, k)
+{
+    // Check cache
+    QDD res;
+    bool cachenow = 1;
+    if (cachenow) {
+        if (cache_get3(CACHE_QDD_CGATE_RANGE, sylvan_false, q,
+                       GATE_OPID_64(gate, c_first, c_last, k, t, 0),
+                       &res)) {
+            sylvan_stats_count(QDD_CGATE_CACHED);
+            return res;
+        }
+    }
+
+    // Past last control
+    if (k > c_last) {
+        res = CALL(qdd_gate_rec_complex, q, gate, t);
+    }
+    else {
+        BDDVAR var;
+        QDD low, high;
+        // Not at first control qubit yet, apply to both children
+        if (k < c_first) {
+            qdd_get_topvar(q, c_first, &var, &low, &high);
+            qdd_refs_spawn(SPAWN(qdd_cgate_range_rec_complex, high, gate, c_first, c_last, t, var));
+            low = CALL(qdd_cgate_range_rec_complex, low, gate, c_first, c_last, t, var);
+            qdd_refs_push(low);
+            high = qdd_refs_sync(SYNC(qdd_cgate_range_rec_complex));
+            qdd_refs_pop(1);
+        }
+        // k is a control qubit, control on q_k = |1> (high edge)
+        else {
+            assert(c_first <= k && k <= c_last);
+            qdd_get_topvar(q, k, &var, &low, &high);
+            assert(var == k);
+            k++;
+            high = CALL(qdd_cgate_range_rec_complex, high, gate, c_first, c_last, t, k);
+            k--;
+        }
+        res = qdd_makenode(var, low, high);
+
+        // Multiply root amp of sum with input root amp
+        complex_t comp = comp_mul(comp_value(QDD_AMP(q)), comp_value(QDD_AMP(res)));
+        AMP new_root_amp = qdd_comp_lookup(comp);
+        res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
+    }
+
+    // Add to cache, return
+    if (cachenow) {
+        if (cache_put3(CACHE_QDD_CGATE_RANGE, sylvan_false, q,
+                       GATE_OPID_64(gate, c_first, c_last, k, t, 0),
                        res)) {
             sylvan_stats_count(QDD_CGATE_CACHEDPUT);
         }
@@ -2179,7 +2309,7 @@ qdd_measure_q0(QDD qdd, BDDVAR nvars, int *m, double *p)
     prob_root = comp_to_prob(comp_value(QDD_AMP(qdd)));
     prob_low  *= prob_root;
     prob_high *= prob_root;
-    if (fabs(prob_low + prob_high - 1.0) > TOLERANCE) {
+    if (fabs(prob_low + prob_high - 1.0) > cmap_get_tolerance()) {
         printf("prob sum = %.5lf (%.5lf + %.5lf)\n", prob_low + prob_high, prob_low, prob_high);
         assert("probabilities don't sum to 1" && false);
     }
@@ -2259,7 +2389,7 @@ qdd_measure_all(QDD qdd, BDDVAR n, bool* ms, double *p)
         prob_high = prob_high * prob_roots / prob_path;
         prob_low  = prob_low  * prob_roots / prob_path;
 
-        if (fabs(prob_low + prob_high - 1.0) > TOLERANCE) {
+        if (fabs(prob_low + prob_high - 1.0) > cmap_get_tolerance()) {
             printf("prob sum = %.10lf\n", prob_low + prob_high);
             assert("probabilities don't sum to 1" && false);
         }
@@ -2613,7 +2743,7 @@ qdd_is_close_to_unitvector(QDD qdd, BDDVAR n, double tol)
         return true;
     }
     else {
-        printf("probs sum to %.30lf\n", sum_abs_squares);
+        //printf("probs sum to %.30lf\n", sum_abs_squares);
         if (WRITE_TO_FILE) {
             FILE *fp;
             fp = fopen("is_unitvector_false.dot", "w");
@@ -2627,7 +2757,7 @@ qdd_is_close_to_unitvector(QDD qdd, BDDVAR n, double tol)
 bool
 qdd_is_unitvector(QDD qdd, BDDVAR n)
 {
-    return qdd_is_close_to_unitvector(qdd, n, TOLERANCE*10);
+    return qdd_is_close_to_unitvector(qdd, n, cmap_get_tolerance()*10);
 }
 
 bool
@@ -2676,6 +2806,26 @@ bitarray_to_int(bool *x, int n, bool MSB_first)
     return res;
 }
 
+bool *
+int_to_bitarray(uint64_t n, int length, bool MSB_first)
+{
+    if (length <= 0) length = (int) ceil(log2(n));
+    bool *res = malloc(sizeof(bool) * length);
+    if (MSB_first) {
+        for (int i = length-1; i >= 0; i--) {
+            res[i] = (n & 1LL);
+            n = n>>1;
+        }
+    }
+    else {
+        for (int i = 0; i < length; i++) {
+            res[i] = (n & 1LL);
+            n = n>>1;
+        }
+    }
+    return res;
+}
+
 bool
 bit_from_int(uint64_t a, uint8_t index)
 {
@@ -2704,8 +2854,17 @@ qdd_stats_start(FILE *out)
     qdd_stats_logging = true;
     qdd_logfile = out;
     fprintf(qdd_logfile, "nodes, amps\n");
-    nodelog = (uint64_t*) malloc(statslog_buffer * sizeof(uint64_t));
-    amp_log = (uint64_t*) malloc(statslog_buffer * sizeof(uint64_t));
+    // NOTE: logging with multiple workers active seems to allow for the 
+    // 'in_buffer' variable to become to high. For now just allocate a buffer
+    // with more leeway.
+    // TODO: find a better solution. It seems to be the case only with shor
+    // - I think because of the ccirc function, so implementing shor without 
+    // this might fix the problem
+    // - Or just only log with a single worker
+    // - Or find a generally better solution involving stopping the workers 
+    // when loggin
+    nodelog = (uint64_t*) malloc(statslog_buffer*2 * sizeof(uint64_t));
+    amp_log = (uint64_t*) malloc(statslog_buffer*2 * sizeof(uint64_t));
     in_buffer = 0;
     nodes_peak = 0;
     logcounter = 0;

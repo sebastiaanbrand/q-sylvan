@@ -110,8 +110,9 @@ static const BDDVAR     QDD_INVALID_VAR = UINT8_MAX;
 
 /**
  * Similar initialization as for MTBDDs + amplitude table init.
+ * Setting tolerance to -1 uses default tolerance.
  */
-void sylvan_init_qdd(size_t ctable_size);
+void sylvan_init_qdd(size_t ctable_size, double ctable_tolerance);
 void qdd_set_testing_mode(bool on);
 
 
@@ -159,11 +160,11 @@ QDD qdd_refs_sync(QDD qdd);
 
 /*******************************<applying gates>*******************************/
 
-// Applies given (single qubit) gate to |q>
+// Applies given (single qubit) gate to |q>. (Wrapper function)
 #define qdd_gate(qdd,gate,target) (CALL(qdd_gate,qdd,gate,target));
 TASK_DECL_3(QDD, qdd_gate, QDD, uint32_t, BDDVAR);
 
-// Applies given controlled gate to |q>
+// Applies given controlled gate to |q>. (Wrapper function)
 #define qdd_cgate(qdd,gate,c,t) (CALL(qdd_cgate,qdd,gate,c,t));
 #define qdd_cgate2(qdd,gate,c1,c2,t) (CALL(qdd_cgate2,qdd,gate,c1,c2,t));
 #define qdd_cgate3(qdd,gate,c1,c2,c3,t) (CALL(qdd_cgate3,qdd,gate,c1,c2,c3,t));
@@ -171,18 +172,24 @@ TASK_DECL_4(QDD, qdd_cgate,  QDD, uint32_t, BDDVAR, BDDVAR);
 TASK_DECL_5(QDD, qdd_cgate2, QDD, uint32_t, BDDVAR, BDDVAR, BDDVAR);
 TASK_DECL_6(QDD, qdd_cgate3, QDD, uint32_t, BDDVAR, BDDVAR, BDDVAR, BDDVAR);
 
+// Applies given controlled gate to |q>. (Wrapper function)
+#define qdd_cgate_range(qdd,gate,c_first,c_last,t) (CALL(qdd_cgate_range,qdd,gate,c_first,c_last,t));
+TASK_DECL_5(QDD, qdd_cgate_range, QDD, uint32_t, BDDVAR, BDDVAR, BDDVAR);
+
 /**
- * Propagate complex values in recursion or hash intermediate complex values
+ * Propagate complex values in recursion or hash intermediate complex values.
  */
 #define propagate_complex true
 #if propagate_complex
     #define qdd_plus(a,b) (CALL(qdd_plus_comp_wrap,a,b));
     #define qdd_gate_rec(q,gate,target) (CALL(qdd_gate_rec_complex,q,gate,target));
     #define qdd_cgate_rec(q,gate,cs,t) (CALL(qdd_cgate_rec_complex,q,gate,cs,0,t));
+    #define qdd_cgate_range_rec(q,gate,c_first,c_last,t) (CALL(qdd_cgate_range_rec_complex,q,gate,c_first,c_last,t,0));
 #else
     #define qdd_plus(a,b) (CALL(qdd_plus_amp,a,b));
     #define qdd_gate_rec(q,gate,target) (CALL(qdd_gate_rec_amp,q,gate,target));
     #define qdd_cgate_rec(q,gate,cs,t) (CALL(qdd_cgate_rec_amp,q,gate,cs,0,t));
+    #define qdd_cgate_range_rec(q,gate,c_first,c_last,t) (CALL(qdd_cgate_range_rec_amp,q,gate,c_first,c_last,t,0));
 #endif
 
 /**
@@ -209,6 +216,14 @@ TASK_DECL_3(QDD, qdd_gate_rec_complex, PTR, uint32_t, BDDVAR);
  */
 TASK_DECL_5(QDD, qdd_cgate_rec_amp, QDD, uint32_t, BDDVAR*, uint32_t, BDDVAR);
 TASK_DECL_5(QDD, qdd_cgate_rec_complex, QDD, uint32_t, BDDVAR*, uint32_t, BDDVAR);
+
+/**
+ * Recursive implementation of applying controlled gates where the controlles 
+ * are defined by a range 'c_first' through 'c_last'.
+ * Calls "qdd_gate_rec_amp/complex".
+ */
+TASK_DECL_6(QDD, qdd_cgate_range_rec_amp, QDD, uint32_t, BDDVAR, BDDVAR, BDDVAR, BDDVAR);
+TASK_DECL_6(QDD, qdd_cgate_range_rec_complex, QDD, uint32_t, BDDVAR, BDDVAR, BDDVAR, BDDVAR);
 
 // Computes Mat * |vec>
 #define qdd_matvec_mult(mat,vec,nvars) (CALL(qdd_matvec_mult,mat,vec,nvars,0));
@@ -502,6 +517,7 @@ uint64_t qdd_countnodes(QDD qdd);
 void qdd_set_auto_gc_ctable(bool enabled);
 /* default 0.5 */
 void qdd_set_gc_ctable_thres(double fraction_filled);
+double qdd_get_gc_ctable_thres();
 void qdd_gc_ctable(QDD *keep);
 void qdd_test_gc_ctable(QDD *keep);
 /**
@@ -528,6 +544,7 @@ void qdd_printnodes(QDD q);
 bool _next_bitstring(bool *x, int n);
 void _print_bitstring(bool *x, int n, bool backwards);
 uint64_t bitarray_to_int(bool *x, int n, bool MSB_first);
+bool * int_to_bitarray(uint64_t n, int length, bool MSB_first);
 bool bit_from_int(uint64_t a, uint8_t index);
 
 #ifdef __cplusplus

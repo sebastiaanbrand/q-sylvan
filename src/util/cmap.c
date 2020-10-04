@@ -25,7 +25,8 @@ typedef union {
     uint64_t        d[2];
 } bucket_t;
 
-
+// float "equality" tolerance
+static double TOLERANCE = 1e-14f;
 static const uint64_t EMPTY = 14738995463583502973ull;
 static const uint64_t LOCK  = 14738995463583502974ull;
 static const uint64_t CL_MASK = -(1ULL << CACHE_LINE);
@@ -40,7 +41,6 @@ struct cmap_s {
     // long doubles for the real and imaginary components?
 };
 
-
 void 
 print_bucket_floats(bucket_t *b)
 {
@@ -51,6 +51,12 @@ void
 print_bucket_bits(bucket_t* b)
 {
     printf("hex = %lx, %lx\n", b->d[0], b->d[1]);
+}
+
+double
+cmap_get_tolerance()
+{
+    return TOLERANCE;
 }
 
 bool
@@ -67,8 +73,8 @@ cmap_find_or_put (const cmap_t *cmap, const complex_t *v, ref_t *ret)
 
     // Round the value to compute the hash with, but store the actual value v
     complex_t round_v;
-    round_v.r = round(v->r * INV_TOLERANCE)/INV_TOLERANCE;
-    round_v.i = round(v->i * INV_TOLERANCE)/INV_TOLERANCE;
+    round_v.r = round(v->r / TOLERANCE) * TOLERANCE;
+    round_v.i = round(v->i / TOLERANCE) * TOLERANCE;
 
     // fix 0 possibly having a sign
     if(round_v.r == 0.0) round_v.r = 0.0;
@@ -144,8 +150,9 @@ print_bitvalues(const cmap_t *cmap, const ref_t ref)
 }
 
 cmap_t *
-cmap_create (uint64_t size)
+cmap_create (uint64_t size, double tolerance)
 {
+    TOLERANCE = tolerance;
     cmap_t  *cmap = calloc (1, sizeof(cmap_t));
     cmap->size = size;
     cmap->mask = cmap->size - 1;
