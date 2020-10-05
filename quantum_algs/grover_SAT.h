@@ -18,4 +18,4 @@ TASK_DECL_3(QDD, qdd_grover_cnf_iteration, QDD, BDDVAR, bool*, BDDVAR);
  * represented as QDDs, and matrix-vector / matrix-matrix multiplication is
  * used to compute the result.
  */
-QDD qdd_grover_cnf_matrix(BDDVAR n, bool *flag);
+QDD qdd_grover_cnf_matrix(BDDVAR n, BDDVAR clauses, bool *flag, BDDVAR n_answers);
