@@ -147,7 +147,7 @@ supremacy_5_4_circuit(uint32_t depth)
         qdd = qdd_gate(qdd, GATEID_T, 19);
     }
     // Following cycles the single qubit gates are random from {sqrt(X), sqrt(Y)}
-    for (uint32_t d = 7; d < depth; d++) {
+    for (uint32_t d = 7; d <= depth; d++) {
         switch (d % 8) {
         case 0:
             qdd = qdd_cgate(qdd, GATEID_Z,  2,  3);    // CZ(2,3)

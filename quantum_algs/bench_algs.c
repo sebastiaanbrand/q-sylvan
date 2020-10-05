@@ -43,9 +43,9 @@ write_parameters(FILE *file)
     fprintf(file, "  \"max_tablesize\": %ld,\n", max_tablesize);
     fprintf(file, "  \"min_cachesize\": %ld,\n", min_cachesize);
     fprintf(file, "  \"max_cachesize\": %ld,\n", max_cachesize);
-    fprintf(file, "  \"ctable_size\": %ld,\n", get_ctable_size());
-    fprintf(file, "  \"ctable_tolerance\": %.5e,\n", cmap_get_tolerance());
-    fprintf(file, "  \"ctable_gc_thres\": %lf,\n", qdd_get_gc_ctable_thres());
+    fprintf(file, "  \"ctable_size\": %ld,\n", ctable_size);
+    fprintf(file, "  \"ctable_tolerance\": %.5e,\n", ctable_tolerance);
+    fprintf(file, "  \"ctable_gc_thres\": %lf,\n", ctable_gc_thres);
     fprintf(file, "  \"propagate_complex\": %d\n", propagate_complex);
     fprintf(file, "}\n");
     fclose(file);
@@ -254,10 +254,16 @@ int bench_supremacy_5_1(uint32_t depth, uint32_t workers)
     return 0;
 }
 
-double bench_supremacy_5_4_once(uint32_t depth, uint32_t workers)
+double bench_supremacy_5_4_once(uint32_t depth, uint32_t workers, uint64_t rseed, char *fpath, uint64_t *nodes_peak, uint64_t *n_gates)
 {
-    printf("bench sup5_4, depth %3d, %2d worker(s), ", depth, workers);
-    fflush(stdout);
+    if (VERBOSE) {
+        printf("bench sup5_4, depth %3d, %2d worker(s), ", depth, workers);
+        fflush(stdout);
+    }
+
+    FILE *logfile = NULL;
+    if (fpath != NULL)
+        logfile = fopen(fpath, "w");
 
     uint64_t node_count;
     double t_start, t_end, runtime;
@@ -273,15 +279,22 @@ double bench_supremacy_5_4_once(uint32_t depth, uint32_t workers)
     sylvan_init_qdd(ctable_size, ctable_tolerance);
     qdd_set_gc_ctable_thres(ctable_gc_thres);
 
-    srand(66);
+    qdd_stats_start(logfile);
 
+    srand(rseed);
     QDD res = supremacy_5_4_circuit(depth);
-    node_count = qdd_countnodes(res); 
+
+    if (nodes_peak != NULL) *nodes_peak = qdd_stats_get_nodes_peak();
+    if (n_gates    != NULL) *n_gates = qdd_stats_get_logcounter();
+    if (logfile    != NULL) qdd_stats_finish();
 
     t_end = wctime();
     runtime = (t_end - t_start);
 
-    printf("%4ld nodes, %lf sec\n", node_count, runtime);
+    if (VERBOSE) {
+        node_count = qdd_countnodes(res); 
+        printf("%4ld nodes, %lf sec\n", node_count, runtime);
+    }
 
     // Cleanup
     sylvan_quit();
@@ -317,6 +330,7 @@ double bench_grover_once(int num_qubits, bool flag[], int workers, char *fpath, 
     sylvan_set_sizes(min_tablesize, max_tablesize, min_cachesize, max_cachesize);
     sylvan_init_package();
     sylvan_init_qdd(ctable_size, ctable_tolerance);
+    qdd_set_gc_ctable_thres(ctable_gc_thres);
 
     QDD grov;
     uint64_t node_count_end;
@@ -332,10 +346,12 @@ double bench_grover_once(int num_qubits, bool flag[], int workers, char *fpath, 
     t_end = wctime();
     runtime = (t_end - t_start);
 
-    node_count_end = qdd_countnodes(grov);
-    double prob = comp_to_prob(comp_value(qdd_get_amplitude(grov, flag)));
-    uint64_t np = (nodes_peak == NULL) ? 0 : *nodes_peak;
-    printf("%ld nodes end (%ld peak), Pr(flag)=%.3lf, %lf sec\n", node_count_end, np, prob, runtime);
+    if (VERBOSE) {
+        node_count_end = qdd_countnodes(grov);
+        double prob = comp_to_prob(comp_value(qdd_get_amplitude(grov, flag)));
+        uint64_t np = (nodes_peak == NULL) ? 0 : *nodes_peak;
+        printf("%ld nodes end (%ld peak), Pr(flag)=%.3lf, %lf sec\n", node_count_end, np, prob, runtime);
+    }
 
     if (logfile != NULL)
         fclose(logfile);
@@ -348,9 +364,11 @@ double bench_grover_once(int num_qubits, bool flag[], int workers, char *fpath, 
 
 double bench_shor_once(uint64_t N, uint64_t a, int workers, int rseed, bool *success, char *fpath, uint64_t *nodes_peak, uint64_t *n_gates)
 {
-    uint32_t num_qubits = (int)ceil(log2(N))*2 + 3;
-    printf("bench shor, factor %ld (%d qubits), %2d worker(s), ", N, num_qubits, workers); 
-    fflush(stdout);
+    if (VERBOSE) {
+        uint32_t num_qubits = (int)ceil(log2(N))*2 + 3;
+        printf("bench shor, factor %ld (%d qubits), %2d worker(s), ", N, num_qubits, workers); 
+        fflush(stdout);
+    }
 
     FILE *logfile = NULL;
     if (fpath != NULL)
@@ -384,7 +402,7 @@ double bench_shor_once(uint64_t N, uint64_t a, int workers, int rseed, bool *suc
     }
     *success = (fac == 0) ? 0 : 1;
 
-    printf("found factor %ld, %lf sec\n", fac, runtime);
+    if (VERBOSE) printf("found factor %ld, %lf sec\n", fac, runtime);
 
     // Cleanup
     sylvan_quit();
@@ -394,19 +412,99 @@ double bench_shor_once(uint64_t N, uint64_t a, int workers, int rseed, bool *suc
 
 int bench_supremacy()
 {
-    // sylvan / qdd params
-    min_tablesize = max_tablesize = 1LL<<25;
-    min_cachesize = max_cachesize = 1LL<<16;
-    ctable_size   = 1LL<<18;
-    ctable_tolerance = 1e-14;
+    VERBOSE = true;
 
-    bench_supremacy_5_4_once(7, 1);
-    bench_supremacy_5_4_once(10, 1);
-    bench_supremacy_5_4_once(11, 1);
-    bench_supremacy_5_4_once(12, 1);
-    bench_supremacy_5_4_once(13, 1);
-    bench_supremacy_5_4_once(14, 1);
-    bench_supremacy_5_4_once(15, 1);
+    // output dir
+    mkdir("benchmark_data/supremacy/", 0700);
+    char output_dir[256];
+    sprintf(output_dir, "benchmark_data/supremacy/%ld/", time(NULL));
+    mkdir(output_dir, 0700);
+    char history_dir[256];
+    strcpy(history_dir, output_dir);
+    strcat(history_dir, "run_histories/");
+    mkdir(history_dir, 0700);
+    // output file for runtime data
+    char overview_fname[256];
+    strcpy(overview_fname, output_dir);
+    strcat(overview_fname, "summary.csv");
+    FILE *overview_file = fopen(overview_fname, "w");
+    fprintf(overview_file, "qubits, depth, rseed, peak_nodes, workers, "
+                           "gates, runtime, avg_gate_time, "
+                           "plus_cacheput, plus_cached, "
+                           "gate_cacheput, gate_cached, "
+                           "cgate_cacheput, cgate_cached\n");
+    // output file for sylvan parameters
+    char param_fname[256];
+    strcpy(param_fname, output_dir);
+    strcat(param_fname, "parameters.json");
+    FILE *param_file = fopen(param_fname, "w");
+
+    // sylvan / qdd params
+    min_tablesize = max_tablesize = 1LL<<30;
+    min_cachesize = max_cachesize = 1LL<<16;
+    ctable_size   = 1LL<<23;
+    ctable_gc_thres = 0.25;
+    ctable_tolerance = 1e-14;
+    write_parameters(param_file);
+
+    // params
+    int nqubits = 20; // always 20 for 5x4 grid
+    int depths[] = {15};//{15,16,17,18,19,20};
+    int ndepths = 1;
+
+    // different number of workers to test
+    int n_workers[] = {1, 2, 4};
+    int nn_workers  = 3;
+
+    // re-runs for different depths
+    int re_runs = 2;
+    uint64_t rseeds[] = {66, 123};
+
+    // runtimes are written to single file
+    double runtime, avg_gate_time;
+    uint64_t nodes_peak, n_gates;
+    uint64_t plus_cacheput, gate_cacheput, cgate_cacheput;
+    uint64_t plus_cached, gate_cached, cgate_cached;
+
+    for (int i = 0; i < ndepths; i++) {
+        for (int r = 0; r < re_runs; r++) {
+            uint64_t rseed = rseeds[r];
+            for (int w = 0; w < nn_workers; w++) {
+
+                // output file for history of this run
+                char history_path[256];
+                char history_fname[256];
+                sprintf(history_fname, "sup5x4_d%d_w%d_rseed%ld.csv", depths[i], n_workers[w], rseed);
+                strcpy(history_path, history_dir);
+                strcat(history_path, history_fname);
+
+                // bench twice, once with logging and once for timing
+                runtime = bench_supremacy_5_4_once(depths[i], n_workers[w], rseed, NULL, NULL, NULL);
+                bench_supremacy_5_4_once(depths[i], n_workers[w], rseed, history_path, &nodes_peak, &n_gates);
+
+                // add summary of this run to overview file
+                avg_gate_time = runtime / (double) n_gates;
+                #if SYLVAN_STATS
+                plus_cacheput  = sylvan_stats.counters[QDD_PLUS_CACHEDPUT];
+                gate_cacheput  = sylvan_stats.counters[QDD_GATE_CACHEDPUT];
+                cgate_cacheput = sylvan_stats.counters[QDD_CGATE_CACHEDPUT];
+                plus_cached    = sylvan_stats.counters[QDD_PLUS_CACHED];
+                gate_cached    = sylvan_stats.counters[QDD_GATE_CACHED];
+                cgate_cached   = sylvan_stats.counters[QDD_CGATE_CACHED];
+                #else
+                plus_cached = gate_cached = cgate_cached = 0;
+                plus_cacheput = gate_cacheput = cgate_cacheput = 0;
+                #endif
+                fprintf(overview_file, "%d, %d, %ld, %ld, %d, %ld, %lf, %.3e, %ld, %ld, %ld, %ld, %ld, %ld\n",
+                                        nqubits, depths[i], rseed, nodes_peak, n_workers[w],
+                                        n_gates, runtime, avg_gate_time,
+                                        plus_cacheput, plus_cached,
+                                        gate_cacheput, gate_cached,
+                                        cgate_cacheput, cgate_cached);
+            }
+        }
+    }
+    
 
     return 0;
 }
@@ -582,7 +680,7 @@ int bench_shor()
         a = shor_generate_a(N);
         nqubits = (int)ceil(log2(N))*2 + 3;
         for (int r = 0; r < re_runs; r++) {
-            uint64_t rseed = time(NULL);
+            uint64_t rseed = rand();
             for (int w = 0; w < nn_workers; w++) {
                 
                 // output file for history of this run
@@ -638,8 +736,8 @@ int main()
     mkdir("benchmark_data", 0700);
   
     //bench_grover();
-    bench_shor();
-    //bench_supremacy();
+    //bench_shor();
+    bench_supremacy();
 
     #ifdef HAVE_PROFILER
         if (profile_name != NULL) ProfilerStop();

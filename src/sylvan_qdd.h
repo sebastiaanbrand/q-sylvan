@@ -179,7 +179,7 @@ TASK_DECL_5(QDD, qdd_cgate_range, QDD, uint32_t, BDDVAR, BDDVAR, BDDVAR);
 /**
  * Propagate complex values in recursion or hash intermediate complex values.
  */
-#define propagate_complex true
+#define propagate_complex false
 #if propagate_complex
     #define qdd_plus(a,b) (CALL(qdd_plus_comp_wrap,a,b));
     #define qdd_gate_rec(q,gate,target) (CALL(qdd_gate_rec_complex,q,gate,target));

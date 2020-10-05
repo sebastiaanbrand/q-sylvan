@@ -4,7 +4,9 @@ import matplotlib.pyplot as plt
 
 plt_format = '.png'
 bench_path = '../build/benchmark_data/'
-alg_names  = ['shor']
+alg_names  = ['grover', 'shor', 'supremacy']
+group_by = {'grover':'qubits', 'shor':'qubits', 'supremacy':'depth'}
+avg_over = {'grover':'flag', 'shor':'N', 'supremacy':'rseed'}
 
 replot_all = True
 plot_concur_perf_bool = True
@@ -56,10 +58,10 @@ def plot_qubits_vs_peak_nodes(data_folder, alg_name):
     input_path  = data_folder + 'summary.csv'
     output_path = data_folder + 'peak_nodes' + plt_format
     data = np.genfromtxt(input_path, dtype=float, delimiter=',', names=True)
-    x = data['qubits']
+    x = data[group_by[alg_name]]
     y = data['peak_nodes']
     plt.scatter(x, y)
-    plt.xlabel('qubits')
+    plt.xlabel(group_by[alg_name])
     plt.ylabel('qdd peak nodes')
     plt.title(alg_name.capitalize().replace('_', ' '))
     plt.tight_layout()
@@ -75,23 +77,17 @@ def plot_concurrency_performance(data_folder, alg_name):
     lengend_entries = []
     
     # for different number of qubits
-    qubits  = np.unique(data['qubits'])
+    main_group_ids = np.unique(data[group_by[alg_name]])
+    #qubits  = np.unique(data['qubits'])
     workers = np.unique(data['workers'])
-    for q in qubits:
-        subset = data[np.where(data['qubits'] == q)]
+    for g_id in main_group_ids:
+        subset = data[np.where(data[group_by[alg_name]] == g_id)]
         speedups = np.zeros(workers.shape)
-        
-        # for Grover, group by same flag, for Shor group by input number N
-        group_name = ''
-        if (alg_name == 'grover'):
-            group_name = 'flag'
-        elif (alg_name == 'shor'):
-            group_name = 'N'
 
         # speedups are calculated withing a group
-        group_ids = np.unique(subset[group_name])
+        group_ids = np.unique(subset[avg_over[alg_name]])
         for group_id in group_ids:
-            subsubset = subset[np.where(subset[group_name] == group_id)]
+            subsubset = subset[np.where(subset[avg_over[alg_name]] == group_id)]
             speed_w1 = np.mean(subsubset[np.where(subsubset['workers'] == 1)]['runtime'])
             for i, w in enumerate(workers):
                 speed_w = np.mean(subsubset[np.where(subsubset['workers'] == w)]['runtime'])
@@ -103,7 +99,7 @@ def plot_concurrency_performance(data_folder, alg_name):
         # actually plot stuff
         plt.scatter(workers, speedups)
         w1_times = np.round(subset[np.where(subset['workers'] == 1)]['runtime'], 3)
-        leg = '{} qubits, time $w_1$ ({},{})'.format(int(q), np.min(w1_times), np.max(w1_times))
+        leg = '{} {}, time $w_1$ ({},{})'.format(int(g_id), group_by[alg_name], np.min(w1_times), np.max(w1_times))
         lengend_entries.append(leg)
 
     plt.ylabel('average speedup')
