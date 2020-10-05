@@ -1,4 +1,4 @@
-#include "grover.h"
+#include "grover_cnf.h"
 #include "sylvan_qdd_complex.h"
 
 bool *
@@ -27,8 +27,9 @@ qdd_grover_cnf_random_flag(BDDVAR nqubits, BDDVAR nclauses)
     return flag;
 }
 
-TASK_IMPL_3(QDD, qdd_grover_cnf_iteration, QDD, qdd, BDDVAR, n, bool*, flag, BDDVAR, clauses)
+TASK_IMPL_3(QDD, qdd_grover_cnf_iteration, QDD, qdd, BDDVAR, n, bool*, flag)
 {
+    BDDVAR clauses = sizeof(flag) / n;
     // Compute the results of each clause
     for (BDDVAR k = 0; k < clauses; k++) {
         // Satisfy clause rules by applying X gates
@@ -80,12 +81,13 @@ TASK_IMPL_3(QDD, qdd_grover_cnf_iteration, QDD, qdd, BDDVAR, n, bool*, flag, BDD
 }
 
 QDD
-qdd_grover_cnf(BDDVAR n, bool* flag, BDDVAR clauses, BDDVAR n_answers)
+qdd_grover_cnf(BDDVAR n, bool* flag, BDDVAR n_answers)
 {   
     LACE_ME;
 
     // not entirely sure about this, book says R <= ceil(pi/4 * sqrt(N))
     uint32_t R = floor( 3.14159265359/4.0 * sqrt( pow(2,n) / n_answers ) );
+    BDDVAR clauses = sizeof(flag) / n;
 
     // start with all zero state |000...0>
     QDD qdd = qdd_create_all_zero_state(n);
@@ -113,29 +115,19 @@ qdd_grover_cnf_phase_flips(BDDVAR n)
 }
 
 QDD
-qdd_grover_cnf_matrix(BDDVAR n, BDDVAR clauses, bool *flag, BDDVAR n_answers)
+qdd_grover_cnf_matrix(BDDVAR n, bool *flag, BDDVAR n_answers)
 {
     LACE_ME;
 
     // Number of Grover iterations
     uint32_t R = floor( 3.14159265359/4.0 * sqrt( pow(2,n) / n_answers ) );
+    BDDVAR clauses = sizeof(flag) / n;
 
     // Create matrix QDDs
     QDD all_H, all_I, oracle, oracle_half, oracle_flip, phase, grov_it;
     all_I  = qdd_create_single_qubit_gates_same(n+clauses, GATEID_I);
     all_H  = qdd_create_single_qubit_gates_same(n, GATEID_H);
     phase  = qdd_grover_cnf_phase_flips(n);
-
-
-
-
-
-    // for (BDDVAR k = 0; k < clauses; k++)
-    //     qdd = qdd_gate(qdd, GATEID_X, n+k);
-    // qdd = qdd_cgate_range(qdd,GATEID_Z,0,n+k-1,n+k);
-    // for (BDDVAR k = 0; k < clauses; k++)
-    //     qdd = qdd_gate(qdd, GATEID_X, n+k);
-    // // Uncompute all clauses
 
     // Oracle matrix QDD is a little bit more difficult
     // Create for each clause a matrix QDD and multiply with the previous matrix QDD

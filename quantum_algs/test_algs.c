@@ -6,6 +6,7 @@
 #include "sylvan_qdd_complex.h"
 
 #include "grover.h"
+#include "grover_cnf.h"
 
 bool VERBOSE = true;
 
@@ -106,6 +107,94 @@ int test_grover_matrix()
     prob = comp_to_prob(comp_value(qdd_get_amplitude(grov, x10)));
 
     if(VERBOSE) printf("matrix qdd %2d-qubit Grover: ok (Pr(flag) = %lf)\n", nqubits, prob);
+    return 0;
+}
+
+int test_grover_cnf()
+{
+    BDDVAR nqubits;
+    BDDVAR answers;
+    AMP a;
+    QDD grov;
+    double prob;
+
+    // 2 qubit test
+    nqubits = 2;
+    // "flagged" cnf (~x1 V ~x2)^(x1 V x2)^(x1 V ~x2)
+    bool x2[] = {0,0,1,1,0,1}; // In the order c1(x2,x1),c2(x2,x1), etc.
+    answers = 1;
+    grov = qdd_grover_cnf(nqubits, x2, answers);
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(grov, x2); test_assert(a == C_ZERO);
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(grov, x2); test_assert(a == C_ZERO);
+    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(grov, x2); test_assert(a == C_ONE);  prob = comp_to_prob(comp_value(a));
+    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(grov, x2); test_assert(a == C_ZERO);
+    test_assert(qdd_is_unitvector(grov, nqubits));
+
+    if(VERBOSE) printf("qdd %2d-qubit cnf Grover:        ok (Pr(flag) = %lf)\n", nqubits, prob);
+
+
+    // 3 qubit test
+    nqubits = 3;
+    // "flagged" cnf (~x1 V ~x2 V ~x3)^(~x1 V ~x2 V x3)^(~x1 V x2 V ~x3)^(x1 V ~x2 V ~x3)^(x1 V ~x2 V x3)^(x1 V x2 V ~x3)^(x1 V x2 V x3)
+    bool x3[] = {0,0,0,0,0,1,0,1,0,1,0,0,1,0,1,1,1,0,1,1,1}; // In the order c1(x3,x2,x1),c2(x3,x2,x1), etc.
+    answers = 1;
+    grov = qdd_grover_cnf(3, x3, answers);
+    x3[2] = 0; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
+    x3[2] = 0; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
+    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
+    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) > 0.94);  prob = comp_to_prob(comp_value(a));
+    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
+    x3[2] = 1; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
+    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
+    test_assert(qdd_is_unitvector(grov, 3));
+
+    if(VERBOSE) printf("qdd %2d-qubit cnf Grover:        ok (Pr(flag) = %lf)\n", nqubits, prob);
+
+    return 0;
+}
+
+int test_grover_cnf_matrix()
+{
+    BDDVAR nqubits;
+    BDDVAR answers;
+    AMP a;
+    QDD grov;
+    double prob;
+
+    // 2 qubit test
+    nqubits = 2;
+    // "flagged" cnf (~x1 V ~x2)^(x1 V x2)^(x1 V ~x2)
+    bool x2[] = {0,0,1,1,0,1}; // In the order c1(x2,x1),c2(x2,x1), etc.
+    answers = 1;
+    grov = qdd_grover_cnf_matrix(nqubits, x2, answers);
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(grov, x2); test_assert(a == C_ZERO);
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(grov, x2); test_assert(a == C_ZERO);
+    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(grov, x2); test_assert(a == C_ONE);  prob = comp_to_prob(comp_value(a));
+    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(grov, x2); test_assert(a == C_ZERO);
+    test_assert(qdd_is_unitvector(grov, nqubits));
+
+    if(VERBOSE) printf("matrix qdd %2d-qubit cnf Grover: ok (Pr(flag) = %lf)\n", nqubits, prob);
+
+
+    // 3 qubit test
+    nqubits = 3;
+    // "flagged" cnf (~x1 V ~x2 V ~x3)^(~x1 V ~x2 V x3)^(~x1 V x2 V ~x3)^(x1 V ~x2 V ~x3)^(x1 V ~x2 V x3)^(x1 V x2 V ~x3)^(x1 V x2 V x3)
+    bool x3[] = {0,0,0,0,0,1,0,1,0,1,0,0,1,0,1,1,1,0,1,1,1}; // In the order c1(x3,x2,x1),c2(x3,x2,x1), etc.
+    answers = 1;
+    grov = qdd_grover_cnf_matrix(3, x3, answers);
+    x3[2] = 0; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
+    x3[2] = 0; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
+    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
+    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) > 0.94);  prob = comp_to_prob(comp_value(a));
+    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
+    x3[2] = 1; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
+    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
+    test_assert(qdd_is_unitvector(grov, 3));
+
+    if(VERBOSE) printf("matrix qdd %2d-qubit cnf Grover: ok (Pr(flag) = %lf)\n", nqubits, prob);
+
     return 0;
 }
 
@@ -251,6 +340,8 @@ int runtests()
 {
     if (test_grover()) return 1;
     if (test_grover_matrix()) return 1;
+    if (test_grover_cnf()) return 1;
+    if (test_grover_cnf_matrix()) return 1;
     if (test_shor()) return 1;
 
     return 0;
