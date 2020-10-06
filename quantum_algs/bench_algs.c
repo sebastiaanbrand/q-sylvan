@@ -304,12 +304,12 @@ double bench_supremacy_5_4_once(uint32_t depth, uint32_t workers, uint64_t rseed
 }
 
 
-double bench_grover_once(int num_qubits, bool flag[], int workers, char *fpath, uint64_t *nodes_peak, uint64_t *n_gates)
+double bench_grover_once(int num_bits, bool flag[], int workers, char *fpath, uint64_t *nodes_peak, uint64_t *n_gates)
 {
     if (VERBOSE) {
-        printf("bench grover, %d qubits, %2d worker(s), ", num_qubits, workers); 
+        printf("bench grover, %d qubits, %2d worker(s), ", num_bits+1, workers); 
         printf("flag = [");
-        for (int i = 0; i < num_qubits; i++)
+        for (int i = 0; i < num_bits; i++)
             printf("%d",flag[i]);
         printf("], ");
         fflush(stdout);
@@ -337,7 +337,7 @@ double bench_grover_once(int num_qubits, bool flag[], int workers, char *fpath, 
     
     qdd_stats_start(logfile);
 
-    grov = qdd_grover(num_qubits, flag);
+    grov = qdd_grover(num_bits, flag);
 
     if (nodes_peak != NULL) *nodes_peak = qdd_stats_get_nodes_peak();
     if (n_gates    != NULL) *n_gates = qdd_stats_get_logcounter();
@@ -348,7 +348,7 @@ double bench_grover_once(int num_qubits, bool flag[], int workers, char *fpath, 
 
     if (VERBOSE) {
         node_count_end = qdd_countnodes(grov);
-        double prob = comp_to_prob(comp_value(qdd_get_amplitude(grov, flag)));
+        double prob = comp_to_prob(comp_value(qdd_get_amplitude(grov, flag)))*2;
         uint64_t np = (nodes_peak == NULL) ? 0 : *nodes_peak;
         printf("%ld nodes end (%ld peak), Pr(flag)=%.3lf, %lf sec\n", node_count_end, np, prob, runtime);
     }
@@ -546,9 +546,9 @@ int bench_grover()
     ctable_tolerance = 1e-14;
     write_parameters(param_file);
 
-    // different number of qubits to test
-    int n_qubits[] = {15, 20};
-    int nn_qubits  = 2;
+    // different number of bits for the flag to test
+    int n_bits[] = {15, 20};
+    int nn_bits  = 2;
     
     // different number of workers to test
     int n_workers[] = {1, 2, 4};
@@ -567,24 +567,24 @@ int bench_grover()
 
     // run benchmarks
     srand(42);
-    for (int q = 0; q < nn_qubits; q++) {
+    for (int q = 0; q < nn_bits; q++) {
 
         for (int f = 0; f < n_flags; f++) {
-            flag  = qdd_grover_random_flag(n_qubits[q]);
-            f_int = bitarray_to_int(flag, n_qubits[q], true);
+            flag  = qdd_grover_random_flag(n_bits[q]);
+            f_int = bitarray_to_int(flag, n_bits[q], true);
 
             for (int w = 0; w < nn_workers; w++) {
 
                 // output file for history of this run
                 char history_path[256];
                 char history_fname[256];
-                sprintf(history_fname, "grov_hist_n%d_w%d_f%d.csv", n_qubits[q], n_workers[w], f_int);
+                sprintf(history_fname, "grov_hist_n%d_w%d_f%d.csv", n_bits[q]+1, n_workers[w], f_int);
                 strcpy(history_path, history_dir);
                 strcat(history_path, history_fname);
 
                 // bench twice, once with logging and once for timing
-                runtime = bench_grover_once(n_qubits[q], flag, n_workers[w], NULL, NULL, NULL);
-                bench_grover_once(n_qubits[q], flag, n_workers[w], history_path, &nodes_peak, &n_gates);
+                runtime = bench_grover_once(n_bits[q], flag, n_workers[w], NULL, NULL, NULL);
+                bench_grover_once(n_bits[q], flag, n_workers[w], history_path, &nodes_peak, &n_gates);
 
                 // add summary of this run to overview file
                 avg_gate_time = runtime / (double) n_gates;
@@ -600,7 +600,7 @@ int bench_grover()
                 plus_cacheput = gate_cacheput = cgate_cacheput = 0;
                 #endif
                 fprintf(overview_file, "%d, %ld, %d, %ld, %lf, %.3e, %ld, %ld, %ld, %ld, %ld, %ld, %d\n",
-                                        n_qubits[q], nodes_peak, n_workers[w],
+                                        n_bits[q]+1, nodes_peak, n_workers[w],
                                         n_gates, runtime, avg_gate_time, 
                                         plus_cacheput, plus_cached,
                                         gate_cacheput, gate_cached,
@@ -735,9 +735,9 @@ int main()
 
     mkdir("benchmark_data", 0700);
   
-    //bench_grover();
+    bench_grover();
     //bench_shor();
-    bench_supremacy();
+    //bench_supremacy();
 
     #ifdef HAVE_PROFILER
         if (profile_name != NULL) ProfilerStop();
