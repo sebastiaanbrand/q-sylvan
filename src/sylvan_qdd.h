@@ -114,6 +114,7 @@ static const BDDVAR     QDD_INVALID_VAR = UINT8_MAX;
  */
 void sylvan_init_qdd(size_t ctable_size, double ctable_tolerance);
 void qdd_set_testing_mode(bool on);
+void qdd_set_caching_granularity(int granularity);
 
 
 /*******************<garbage collection, references, marking>******************/

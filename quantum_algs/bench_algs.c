@@ -23,6 +23,7 @@ static size_t max_cachesize;
 static size_t ctable_size;
 static double ctable_tolerance;
 static double ctable_gc_thres;
+static int caching_granularity;
 
 /**
  * Obtain current wallclock time
@@ -46,7 +47,8 @@ write_parameters(FILE *file)
     fprintf(file, "  \"ctable_size\": %ld,\n", ctable_size);
     fprintf(file, "  \"ctable_tolerance\": %.5e,\n", ctable_tolerance);
     fprintf(file, "  \"ctable_gc_thres\": %lf,\n", ctable_gc_thres);
-    fprintf(file, "  \"propagate_complex\": %d\n", propagate_complex);
+    fprintf(file, "  \"propagate_complex\": %d,\n", propagate_complex);
+    fprintf(file, "  \"caching_granularity\": %d\n", caching_granularity);
     fprintf(file, "}\n");
     fclose(file);
 }
@@ -278,6 +280,7 @@ double bench_supremacy_5_4_once(uint32_t depth, uint32_t workers, uint64_t rseed
     sylvan_init_package();
     sylvan_init_qdd(ctable_size, ctable_tolerance);
     qdd_set_gc_ctable_thres(ctable_gc_thres);
+    qdd_set_caching_granularity(caching_granularity);
 
     qdd_stats_start(logfile);
 
@@ -331,6 +334,7 @@ double bench_grover_once(int num_bits, bool flag[], int workers, char *fpath, ui
     sylvan_init_package();
     sylvan_init_qdd(ctable_size, ctable_tolerance);
     qdd_set_gc_ctable_thres(ctable_gc_thres);
+    qdd_set_caching_granularity(caching_granularity);
 
     QDD grov;
     uint64_t node_count_end;
@@ -385,6 +389,8 @@ double bench_shor_once(uint64_t N, uint64_t a, int workers, int rseed, bool *suc
     sylvan_set_sizes(min_tablesize, max_tablesize, min_cachesize, max_cachesize);
     sylvan_init_package();
     sylvan_init_qdd(ctable_size, ctable_tolerance);
+    qdd_set_gc_ctable_thres(ctable_gc_thres);
+    qdd_set_caching_granularity(caching_granularity);
 
     qdd_stats_start(logfile);
 
@@ -445,6 +451,7 @@ int bench_supremacy()
     ctable_size   = 1LL<<23;
     ctable_gc_thres = 0.25;
     ctable_tolerance = 1e-14;
+    caching_granularity = 1;
     write_parameters(param_file);
 
     // params
@@ -544,6 +551,8 @@ int bench_grover()
     min_cachesize = max_cachesize = 1LL<<16;
     ctable_size   = 1LL<<18;
     ctable_tolerance = 1e-14;
+    ctable_gc_thres = 0.5;
+    caching_granularity = 1;
     write_parameters(param_file);
 
     // different number of bits for the flag to test
@@ -649,6 +658,7 @@ int bench_shor()
     min_cachesize = max_cachesize = 1LL<<16;
     ctable_size   = 1LL<<18;
     ctable_tolerance = 1e-14;
+    caching_granularity = 1;
     write_parameters(param_file);
 
     // Different sized N to test

@@ -25,7 +25,7 @@
 #include "sylvan_refs.h"
 #include "sylvan_qdd_complex.h"
 
-//static int granularity = 1; // default
+static int granularity = 1; // operation cache access granularity
 static bool testing_mode = 0; // turns on/off (expensive) sanity checks
 
 /****************< (bit level) manipulation of QDD / qddnode_t >***************/
@@ -453,6 +453,12 @@ void
 qdd_set_testing_mode(bool on)
 {
     testing_mode = on;
+}
+
+void
+qdd_set_caching_granularity(int g)
+{
+    granularity = g;
 }
 
 void
@@ -905,7 +911,7 @@ TASK_IMPL_2(QDD, qdd_plus_amp, QDD, a, QDD, b)
     }
 
     // Check cache
-    bool cachenow = 1;
+    bool cachenow = ((topvar % granularity) == 0);
     if (cachenow) {
         if (cache_get3(CACHE_QDD_PLUS, sylvan_false, a, b, &res)) {
             sylvan_stats_count(QDD_PLUS_CACHED);
@@ -991,7 +997,7 @@ TASK_IMPL_4(QDD, qdd_plus_complex, PTR, a, PTR, b, complex_t, ca, complex_t, cb)
     }
 
     // Check cache
-    bool cachenow = 1;
+    bool cachenow = ((topvar % granularity) == 0);
     if (cachenow) {
         QDD blank;
         comp_hack_t hca = (comp_hack_t) ca;
@@ -1033,20 +1039,21 @@ TASK_IMPL_4(QDD, qdd_plus_complex, PTR, a, PTR, b, complex_t, ca, complex_t, cb)
 
 TASK_IMPL_3(QDD, qdd_gate_rec_amp, QDD, q, uint32_t, gate, BDDVAR, target)
 {
+    // TODO: trivial cases ? (at least amp ZERO)
+
+    BDDVAR var;
+    QDD res, low, high;
+    qdd_get_topvar(q, target, &var, &low, &high);
+    assert(var <= target);
+
     // Check cache
-    QDD res;
-    bool cachenow = 1;
+    bool cachenow = ((var % granularity) == 0);
     if (cachenow) {
         if (cache_get3(CACHE_QDD_GATE, GATE_OPID_40(gate, target, 0), q, sylvan_false, &res)) {
             sylvan_stats_count(QDD_GATE_CACHED);
             return res;
         }
     }
-
-    BDDVAR var;
-    QDD low, high;
-    qdd_get_topvar(q, target, &var, &low, &high);
-    assert(var <= target);
 
     if (var == target) {
         AMP a_u00 = amp_mul(QDD_AMP(low), gates[gate][0]);
@@ -1086,22 +1093,23 @@ TASK_IMPL_3(QDD, qdd_gate_rec_amp, QDD, q, uint32_t, gate, BDDVAR, target)
 
 TASK_IMPL_3(QDD, qdd_gate_rec_complex, QDD, qdd, uint32_t, gateid, BDDVAR, target)
 {
+    // TODO: trivial cases ? (at least amp ZERO)
+
+    BDDVAR var;
+    QDD res, low, high;
+    qdd_get_topvar(qdd, target, &var, &low, &high);
+    assert(var <= target);
+    complex_t ca = comp_value(QDD_AMP(low));
+    complex_t cb = comp_value(QDD_AMP(high));
+
     // Check cache
-    QDD res;
-    bool cachenow = 1;
+    bool cachenow = ((var % granularity) == 0);
     if (cachenow) {
         if (cache_get3(CACHE_QDD_GATE, GATE_OPID_40(gateid, target, 0), qdd, sylvan_false, &res)) {
             sylvan_stats_count(QDD_GATE_CACHED);
             return res;
         }
     }
-
-    BDDVAR var;
-    QDD low, high;
-    qdd_get_topvar(qdd, target, &var, &low, &high);
-    assert(var <= target);
-    complex_t ca = comp_value(QDD_AMP(low));
-    complex_t cb = comp_value(QDD_AMP(high));
 
     if (var == target) {
         complex_t a_u00, a_u10, b_u01, b_u11;
@@ -1138,58 +1146,54 @@ TASK_IMPL_3(QDD, qdd_gate_rec_complex, QDD, qdd, uint32_t, gateid, BDDVAR, targe
 
 TASK_IMPL_5(QDD, qdd_cgate_rec_amp, QDD, q, uint32_t, gate, BDDVAR*, cs, uint32_t, ci, BDDVAR, t)
 {
+    // Get current control qubit. If no more control qubits, apply gate here
+    BDDVAR c = cs[ci];
+    if (c == QDD_INVALID_VAR || ci > MAX_CONTROLS) {
+        return CALL(qdd_gate_rec_amp, q, gate, t);
+    }
+
+    BDDVAR var;
+    QDD res, low, high;
+    qdd_get_topvar(q, c, &var, &low, &high);
+    assert(var <= c);
+
     // Check cache
-    QDD res;
-    bool cachenow = 1;
+    bool cachenow = ((var % granularity) == 0);
     if (cachenow) {
         if (cache_get3(CACHE_QDD_CGATE, sylvan_false, q,
-                       GATE_OPID_64(gate, ci, cs[0], cs[1], cs[2], t),
-                       &res)) {
+                    GATE_OPID_64(gate, ci, cs[0], cs[1], cs[2], t),
+                    &res)) {
             sylvan_stats_count(QDD_CGATE_CACHED);
             return res;
         }
     }
 
-    // Get current control qubit
-    BDDVAR c = cs[ci];
-
-    // If no more control qubits, apply gate here
-    if (c == QDD_INVALID_VAR || ci > MAX_CONTROLS) {
-        res = CALL(qdd_gate_rec_amp, q, gate, t);
+    // If current node is (one of) the control qubit(s), 
+    // control on q_c = |1> (high edge)
+    if (var == c) {
+        ci++;
+        high = CALL(qdd_cgate_rec_amp, high, gate, cs, ci, t);
+        ci--;
     }
+    // Not at control qubit yet, apply to both childeren.
     else {
-        BDDVAR var;
-        QDD low, high;
-        qdd_get_topvar(q, c, &var, &low, &high);
-        assert(var <= c);
-
-        // If current node is (one of) the control qubit(s), 
-        // control on q_c = |1> (high edge)
-        if (var == c) {
-            ci++;
-            high = CALL(qdd_cgate_rec_amp, high, gate, cs, ci, t);
-            ci--;
-        }
-        // Not at control qubit yet, apply to both childeren.
-        else {
-            qdd_refs_spawn(SPAWN(qdd_cgate_rec_amp, high, gate, cs, ci, t));
-            low = CALL(qdd_cgate_rec_amp, low, gate, cs, ci, t);
-            qdd_refs_push(low);
-            high = qdd_refs_sync(SYNC(qdd_cgate_rec_amp));
-            qdd_refs_pop(1);
-        }
-        res = qdd_makenode(var, low, high);
-
-        // Multiply root amp of sum with input root amp
-        AMP new_root_amp = amp_mul(QDD_AMP(q), QDD_AMP(res));
-        res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
+        qdd_refs_spawn(SPAWN(qdd_cgate_rec_amp, high, gate, cs, ci, t));
+        low = CALL(qdd_cgate_rec_amp, low, gate, cs, ci, t);
+        qdd_refs_push(low);
+        high = qdd_refs_sync(SYNC(qdd_cgate_rec_amp));
+        qdd_refs_pop(1);
     }
+    res = qdd_makenode(var, low, high);
+
+    // Multiply root amp of sum with input root amp
+    AMP new_root_amp = amp_mul(QDD_AMP(q), QDD_AMP(res));
+    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
 
     // Add to cache, return
     if (cachenow) {
         if (cache_put3(CACHE_QDD_CGATE, sylvan_false, q,
-                       GATE_OPID_64(gate, ci, cs[0], cs[1], cs[2], t),
-                       res)) {
+                    GATE_OPID_64(gate, ci, cs[0], cs[1], cs[2], t),
+                    res)) {
             sylvan_stats_count(QDD_CGATE_CACHEDPUT);
         }
     }
@@ -1198,53 +1202,49 @@ TASK_IMPL_5(QDD, qdd_cgate_rec_amp, QDD, q, uint32_t, gate, BDDVAR*, cs, uint32_
 
 TASK_IMPL_5(QDD, qdd_cgate_rec_complex, QDD, q, uint32_t, gate, BDDVAR*, cs, uint32_t, ci, BDDVAR, t)
 {
+    // Get current control qubit. If no more control qubits, apply gate here
+    BDDVAR c = cs[ci];
+    if (c == QDD_INVALID_VAR || ci > MAX_CONTROLS) {
+        return CALL(qdd_gate_rec_complex, q, gate, t);
+    }
+
+    BDDVAR var;
+    QDD res, low, high;
+    qdd_get_topvar(q, c, &var, &low, &high);
+    assert(var <= c);
+
     // Check cache
-    QDD res;
-    bool cachenow = 1;
+    bool cachenow = ((var % granularity) == 0);
     if (cachenow) {
         if (cache_get3(CACHE_QDD_CGATE, sylvan_false, q,
-                       GATE_OPID_64(gate, ci, cs[0], cs[1], cs[2], t),
-                       &res)) {
+                    GATE_OPID_64(gate, ci, cs[0], cs[1], cs[2], t),
+                    &res)) {
             sylvan_stats_count(QDD_CGATE_CACHED);
             return res;
         }
     }
 
-    // Get current control qubit
-    BDDVAR c = cs[ci];
-
-    // If no more control qubits, apply gate here
-    if (c == QDD_INVALID_VAR || ci > MAX_CONTROLS) {
-        res = CALL(qdd_gate_rec_complex, q, gate, t);
+    // If current node is (one of) the control qubit(s), 
+    // control on q_c = |1> (high edge)
+    if (var == c) {
+        ci++;
+        high = CALL(qdd_gate_rec_complex, high, gate, t);
+        ci--;
     }
+    // Not at control qubit yet, apply to both childeren.
     else {
-        BDDVAR var;
-        QDD low, high;
-        qdd_get_topvar(q, c, &var, &low, &high);
-        assert(var <= c);
-
-        // If current node is (one of) the control qubit(s), 
-        // control on q_c = |1> (high edge)
-        if (var == c) {
-            ci++;
-            high = CALL(qdd_gate_rec_complex, high, gate, t);
-            ci--;
-        }
-        // Not at control qubit yet, apply to both childeren.
-        else {
-            qdd_refs_spawn(SPAWN(qdd_cgate_rec_complex, high, gate, cs, ci, t));
-            low = CALL(qdd_cgate_rec_complex, low, gate, cs, ci, t);
-            qdd_refs_push(low);
-            high = qdd_refs_sync(SYNC(qdd_cgate_rec_complex));
-            qdd_refs_pop(1);
-        }
-        res = qdd_makenode(var, low, high);
-
-        // Multiply root amp of sum with input root amp
-        complex_t comp = comp_mul(comp_value(QDD_AMP(q)), comp_value(QDD_AMP(res)));
-        AMP new_root_amp = qdd_comp_lookup(comp);
-        res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
+        qdd_refs_spawn(SPAWN(qdd_cgate_rec_complex, high, gate, cs, ci, t));
+        low = CALL(qdd_cgate_rec_complex, low, gate, cs, ci, t);
+        qdd_refs_push(low);
+        high = qdd_refs_sync(SYNC(qdd_cgate_rec_complex));
+        qdd_refs_pop(1);
     }
+    res = qdd_makenode(var, low, high);
+
+    // Multiply root amp of sum with input root amp
+    complex_t comp = comp_mul(comp_value(QDD_AMP(q)), comp_value(QDD_AMP(res)));
+    AMP new_root_amp = qdd_comp_lookup(comp);
+    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
 
     // Add to cache, return
     if (cachenow) {
@@ -1261,7 +1261,7 @@ TASK_IMPL_6(QDD, qdd_cgate_range_rec_amp, QDD, q, uint32_t, gate, BDDVAR, c_firs
 {
     // Check cache
     QDD res;
-    bool cachenow = 1;
+    bool cachenow = ((k % granularity) == 0);
     if (cachenow) {
         if (cache_get3(CACHE_QDD_CGATE_RANGE, sylvan_false, q,
                        GATE_OPID_64(gate, c_first, c_last, k, t, 0),
@@ -1318,7 +1318,7 @@ TASK_IMPL_6(QDD, qdd_cgate_range_rec_complex, QDD, q, uint32_t, gate, BDDVAR, c_
 {
     // Check cache
     QDD res;
-    bool cachenow = 1;
+    bool cachenow = ((k % granularity) == 0);
     if (cachenow) {
         if (cache_get3(CACHE_QDD_CGATE_RANGE, sylvan_false, q,
                        GATE_OPID_64(gate, c_first, c_last, k, t, 0),
@@ -1388,7 +1388,7 @@ TASK_IMPL_4(QDD, qdd_matvec_mult, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR, nex
 
     // Check cache
     QDD res;
-    bool cachenow = 1;
+    bool cachenow = ((nextvar % granularity) == 0);
     if (cachenow) {
         if (cache_get3(CACHE_QDD_MATVEC_MULT, nextvar, mat, vec, &res)) {
             sylvan_stats_count(QDD_MULT_CACHED);
@@ -1469,7 +1469,7 @@ TASK_IMPL_4(QDD, qdd_matmat_mult, QDD, a, QDD, b, BDDVAR, nvars, BDDVAR, nextvar
 
     // Check cache
     QDD res;
-    bool cachenow = 1;
+    bool cachenow = ((nextvar % granularity) == 0);
     if (cachenow) {
         if (cache_get3(CACHE_QDD_MATMAT_MULT, nextvar, a, b, &res)) {
             sylvan_stats_count(QDD_MULT_CACHED);
@@ -2417,7 +2417,7 @@ TASK_IMPL_3(double, qdd_unnormed_prob, QDD, qdd, BDDVAR, topvar, BDDVAR, nvars)
     }
 
     // Look in cache
-    bool cachenow = 1;
+    bool cachenow = ((topvar % granularity) == 0);
     if (cachenow) {
         uint64_t prob_bits;
         if (cache_get3(CACHE_QDD_PROB, sylvan_false, qdd, QDD_PARAM_PACK_16(topvar, nvars), &prob_bits)) {
