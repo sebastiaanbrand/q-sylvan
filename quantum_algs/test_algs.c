@@ -12,51 +12,78 @@ bool VERBOSE = true;
 
 int test_grover()
 {
-    BDDVAR nqubits;
+    BDDVAR nbits;
     AMP a;
     QDD grov;
     double prob;
 
-    // 2 qubit test
-    nqubits = 2;
-    bool x2[] = {0,1}; // "flagged" entry
-    grov = qdd_grover(nqubits, x2);
-    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(grov, x2); test_assert(a == C_ZERO);
-    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(grov, x2); test_assert(a == C_ZERO);
-    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(grov, x2); test_assert(a == C_ONE);  prob = comp_to_prob(comp_value(a));
-    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(grov, x2); test_assert(a == C_ZERO);
-    test_assert(qdd_is_unitvector(grov, nqubits));
+    // 2 qubit test (+1 ancilla)
+    nbits = 2;
+    bool flag2[] = {0,1}; // "flagged" entry
+    grov = qdd_grover(nbits, flag2);
+    test_assert(qdd_is_unitvector(grov, nbits+1));
 
-    if(VERBOSE) printf("qdd %2d-qubit Grover:        ok (Pr(flag) = %lf)\n", nqubits, prob);
+    // test probabilities
+    prob = 0;
+    for (int k = 0; k < (1<<(nbits+1)); k++) {
+        bool *x = int_to_bitarray(k, nbits+1, true);
+        a = qdd_get_amplitude(grov, x);
+        if (x[0] == flag2[0] && x[1] == flag2[1])
+            prob += comp_to_prob(comp_value(a));
+        else
+            test_assert(a == C_ZERO);
+    }
+    test_assert(fabs(prob - 1) < cmap_get_tolerance());
 
-
-    // 3 qubit test
-    nqubits = 3;
-    bool x3[] = {1,1,0}; // "flagged" entry
-    grov = qdd_grover(3, x3);
-    x3[2] = 0; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
-    x3[2] = 0; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
-    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
-    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) > 0.94);  prob = comp_to_prob(comp_value(a));
-    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
-    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
-    x3[2] = 1; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
-    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
-    test_assert(qdd_is_unitvector(grov, 3));
-
-    if(VERBOSE) printf("qdd %2d-qubit Grover:        ok (Pr(flag) = %lf)\n", nqubits, prob);
+    if(VERBOSE) printf("qdd %2d-qubit Grover:        ok (Pr(flag) = %lf)\n", nbits+1, prob);
 
 
-    // 10 qubit test (random flag)
-    nqubits = 10;
-    bool x10[nqubits];
+    // 3 qubit test (+1 ancilla)
+    nbits = 3;
+    bool flag3[] = {1,1,0}; // "flagged" entry
+    grov = qdd_grover(nbits, flag3);
+    test_assert(qdd_is_unitvector(grov, nbits+1));
+
+    // test probabilities
+    prob = 0;
+    for (int k = 0; k < (1<<(nbits+1)); k++) {
+        bool *x = int_to_bitarray(k, nbits+1, true);
+        a = qdd_get_amplitude(grov, x);
+        if (x[0] == flag3[0] && x[1] == flag3[1] && x[2] == flag3[2])
+            prob += comp_to_prob(comp_value(a));
+        else
+            test_assert(comp_to_prob(comp_value(a)) < 0.004);
+    }
+    test_assert(prob > 0.94);
+
+    if(VERBOSE) printf("qdd %2d-qubit Grover:        ok (Pr(flag) = %lf)\n", nbits+1, prob);
+
+
+    // 10 qubit test (+1 ancilla)
+    nbits = 10;
+    bool flag10[nbits];
     srand(time(NULL));
-    for (BDDVAR i = 0; i < nqubits; i++) x10[i] = (bool)(rand() % 2);
-    grov = qdd_grover(nqubits, x10);
-    test_assert(qdd_is_close_to_unitvector(grov, nqubits, cmap_get_tolerance()*100));
-    prob = comp_to_prob(comp_value(qdd_get_amplitude(grov, x10)));
+    for (BDDVAR i = 0; i < nbits; i++) flag10[i] = (bool)(rand() % 2);
+    grov = qdd_grover(nbits, flag10);
+    test_assert(qdd_is_close_to_unitvector(grov, nbits+1, cmap_get_tolerance()*100));
 
-    if(VERBOSE) printf("qdd %2d-qubit Grover:        ok (Pr(flag) = %lf)\n", nqubits, prob);
+    // test probabilities
+    prob = 0;
+    for (int k = 0; k < (1<<(nbits+1)); k++) {
+        bool *x = int_to_bitarray(k, nbits+1, true);
+        a = qdd_get_amplitude(grov, x);
+        if (x[0] == flag10[0] && x[1] == flag10[1] && 
+            x[2] == flag10[2] && x[3] == flag10[3] &&
+            x[4] == flag10[4] && x[5] == flag10[5] &&
+            x[6] == flag10[6] && x[7] == flag10[7] &&
+            x[8] == flag10[8] && x[9] == flag10[9])
+            prob += comp_to_prob(comp_value(a));
+        else
+            test_assert(comp_to_prob(comp_value(a)) < 0.001);
+    }
+    test_assert(prob > 0.99);
+
+    if(VERBOSE) printf("qdd %2d-qubit Grover:        ok (Pr(flag) = %lf)\n", nbits+1, prob);
     return 0;
 }
 
