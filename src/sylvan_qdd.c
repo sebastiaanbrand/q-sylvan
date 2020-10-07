@@ -541,6 +541,11 @@ qdd_refs_sync(QDD result)
 
 /******************</garbage collection, references, marking>******************/
 
+/**
+ * Gets either the top node of the qdd, or the node with var 't' if this
+ * variable would otherwise be skipped. The "node" is returned as 
+ * (*topvar, *low, *high).
+ */
 static void
 qdd_get_topvar(QDD qdd, BDDVAR t, BDDVAR *topvar, QDD *low, QDD *high)
 {
@@ -1039,7 +1044,8 @@ TASK_IMPL_4(QDD, qdd_plus_complex, PTR, a, PTR, b, complex_t, ca, complex_t, cb)
 
 TASK_IMPL_3(QDD, qdd_gate_rec_amp, QDD, q, uint32_t, gate, BDDVAR, target)
 {
-    // TODO: trivial cases ? (at least amp ZERO)
+    // Trivial cases
+    if (QDD_AMP(q) == C_ZERO) return q;
 
     BDDVAR var;
     QDD res, low, high;
@@ -1049,8 +1055,11 @@ TASK_IMPL_3(QDD, qdd_gate_rec_amp, QDD, q, uint32_t, gate, BDDVAR, target)
     // Check cache
     bool cachenow = ((var % granularity) == 0);
     if (cachenow) {
-        if (cache_get3(CACHE_QDD_GATE, GATE_OPID_40(gate, target, 0), q, sylvan_false, &res)) {
+        if (cache_get3(CACHE_QDD_GATE, sylvan_false, QDD_PTR(q), GATE_OPID_40(gate, target, 0), &res)) {
             sylvan_stats_count(QDD_GATE_CACHED);
+            // Multiply root of res with root of input qdd
+            AMP new_root_amp = amp_mul(QDD_AMP(q), QDD_AMP(res));
+            res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
             return res;
         }
     }
@@ -1070,7 +1079,6 @@ TASK_IMPL_3(QDD, qdd_gate_rec_amp, QDD, q, uint32_t, gate, BDDVAR, target)
         qdd_refs_push(low);
         high = SYNC(qdd_plus_amp);
         res = qdd_makenode(target, low, high);
-       
     }
     else { // var < target: not at target qubit yet, recursive calls down
         qdd_refs_spawn(SPAWN(qdd_gate_rec_amp, high, gate, target));
@@ -1081,19 +1089,21 @@ TASK_IMPL_3(QDD, qdd_gate_rec_amp, QDD, q, uint32_t, gate, BDDVAR, target)
         res  = qdd_makenode(var, low, high);
     }
 
-    // Multiply root amp of sum with input root amp, add to cache, return
-    AMP new_root_amp = amp_mul(QDD_AMP(q), QDD_AMP(res));
-    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
+    // Store not yet "root normalized" result in cache
     if (cachenow) {
-        if (cache_put3(CACHE_QDD_GATE, GATE_OPID_40(gate, target, 0), q, sylvan_false, res)) 
+        if (cache_put3(CACHE_QDD_GATE, sylvan_false, QDD_PTR(q), GATE_OPID_40(gate, target, 0), res)) 
             sylvan_stats_count(QDD_GATE_CACHEDPUT);
     }
+    // Multiply amp res with amp of input qdd
+    AMP new_root_amp = amp_mul(QDD_AMP(q), QDD_AMP(res));
+    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     return res;
 }
 
 TASK_IMPL_3(QDD, qdd_gate_rec_complex, QDD, qdd, uint32_t, gateid, BDDVAR, target)
 {
-    // TODO: trivial cases ? (at least amp ZERO)
+    // Trivial cases
+    if (QDD_AMP(qdd) == C_ZERO) return qdd;
 
     BDDVAR var;
     QDD res, low, high;
@@ -1105,8 +1115,12 @@ TASK_IMPL_3(QDD, qdd_gate_rec_complex, QDD, qdd, uint32_t, gateid, BDDVAR, targe
     // Check cache
     bool cachenow = ((var % granularity) == 0);
     if (cachenow) {
-        if (cache_get3(CACHE_QDD_GATE, GATE_OPID_40(gateid, target, 0), qdd, sylvan_false, &res)) {
+        if (cache_get3(CACHE_QDD_GATE, GATE_OPID_40(gateid, target, 0), QDD_PTR(qdd), sylvan_false, &res)) {
             sylvan_stats_count(QDD_GATE_CACHED);
+            // Multiply amp res with amp of input qdd
+            complex_t c = comp_mul(comp_value(QDD_AMP(qdd)), comp_value(QDD_AMP(res)));
+            AMP new_root_amp = qdd_comp_lookup(c);
+            res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
             return res;
         }
     }
@@ -1133,14 +1147,15 @@ TASK_IMPL_3(QDD, qdd_gate_rec_complex, QDD, qdd, uint32_t, gateid, BDDVAR, targe
         res  = qdd_makenode(var, low, high);
     }
 
-    // Multiply root amp of sum with input root amp, add to cache, return
+    // Store not yet "root normalized" result in cache
+    if (cachenow) {
+        if (cache_put3(CACHE_QDD_GATE, GATE_OPID_40(gateid, target, 0), QDD_PTR(qdd), sylvan_false, res))
+            sylvan_stats_count(QDD_GATE_CACHEDPUT);
+    }
+    // Multiply amp res with amp of input qdd
     complex_t c = comp_mul(comp_value(QDD_AMP(qdd)), comp_value(QDD_AMP(res)));
     AMP new_root_amp = qdd_comp_lookup(c);
     res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
-    if (cachenow) {
-        if (cache_put3(CACHE_QDD_GATE, GATE_OPID_40(gateid, target, 0), qdd, sylvan_false, res))
-            sylvan_stats_count(QDD_GATE_CACHEDPUT);
-    }
     return res;
 }
 
