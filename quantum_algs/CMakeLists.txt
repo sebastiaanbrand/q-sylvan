@@ -1,4 +1,5 @@
 set(SOURCES
+    grover_cnf.c
     grover.c
     supremacy.c
 )
