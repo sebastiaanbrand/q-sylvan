@@ -104,6 +104,9 @@ typedef uint64_t QDD; // QDD edge (contains AMP and PTR)
 typedef uint64_t AMP; // amplitude index
 typedef uint64_t PTR; // node index
 
+typedef struct __attribute__((packed)) qddnode {
+    QDD low, high;
+} *qddnode_t; // 16 bytes
 
 static const PTR        QDD_TERMINAL = 1;
 static const BDDVAR     QDD_INVALID_VAR = UINT8_MAX;
@@ -304,56 +307,6 @@ TASK_DECL_6(QDD, qdd_ccircuit, QDD, uint32_t, BDDVAR*, uint32_t, BDDVAR, BDDVAR)
 QDD qdd_all_control_phase(QDD qdd, BDDVAR n, bool *x);
 
 /********************</applying (controlled) sub-circuits>*********************/
-
-
-/**
- * The flollowing functions are a breakdown of the components needed for Shor
- * as in Beauregard, "Circuit for Shor's algorithm using 2n+ 3 qubits." (2002).
- */
-/**
- * Implements circuit in Fig. 3.
- * Addition in Fourier space. Important here to note is the endianess:
- * - Input/output statevector |x> = |q0, q1, q2>, then q0 contains the MSB.
- * - Classical bit-array a has a[0] as LSB. This is done to easier allow for 
- *   leading zeros (in a[] now trailing zeros) when enoding the number in more 
- *   bits than it needs.
- * - Carries happen from q(k) -> q(k-1), i.e. towards the MSB, so if we write
- *   the state as |q0, q1, q2> carries go to the left (as normal).
- * 
- * @param qdd A QDD encoding a state |phi(x)> = QFT|x> with |x> a z-basis state.
- * @param a A big-endian (MSB first) encoding of some integer.
- * 
- * @return A QDD encoding |phi(x + a)>, with (x+a)
- */
-QDD qdd_phi_add(QDD qdd, BDDVAR first, BDDVAR last, BDDVAR c1, BDDVAR c2, bool* a); // Fig. 3
-QDD qdd_phi_add_inv(QDD qdd, BDDVAR first, BDDVAR last,  BDDVAR c1, BDDVAR c2, bool* a);
-QDD qdd_phi_add_mod(QDD qdd, BDDVAR* cs, uint64_t a, uint64_t N); // Fig. 5
-QDD qdd_phi_add_mod_inv(QDD qdd, BDDVAR* cs, uint64_t a, uint64_t N);
-QDD qdd_cmult(QDD qdd, uint64_t a, uint64_t N); // Fig. 6
-QDD qdd_cmult_inv(QDD qdd, uint64_t a, uint64_t N);
-QDD qdd_shor_ua(QDD qdd, uint64_t a, uint64_t N); // Fig. 7
-uint64_t shor_period_finding(uint64_t a, uint64_t N); // Fig. 8
-uint64_t shor_generate_a(uint64_t N);
-void shor_set_globals(uint64_t a, uint64_t N);
-
-/**
- * N is the number to factor, and 'a' is the value to use in a^x mod N. 
- * If 'a' is set to 0 a random 'a' is chosen.
- */
-uint64_t run_shor(uint64_t N, uint64_t a, bool verbose);
-// global vars for Shor (not ideal but it is difficult enough as it is)
-// TODO: move shor to separate file, not in qdd source code
-uint32_t  shor_n;
-bool shor_bits_a[64];
-bool shor_bits_N[64];
-struct shor_wires_s {
-    BDDVAR top;
-    BDDVAR ctrl_first;
-    BDDVAR ctrl_last;
-    BDDVAR helper;
-    BDDVAR targ_first;
-    BDDVAR targ_last;
-} shor_wires;
 
 
 /**

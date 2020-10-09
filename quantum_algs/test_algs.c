@@ -6,6 +6,7 @@
 #include "sylvan_qdd_complex.h"
 
 #include "grover.h"
+#include "shor.h"
 
 bool VERBOSE = true;
 
@@ -139,6 +140,7 @@ int test_grover_matrix()
 
 int test_shor()
 {   
+    qdd_shor_set_testing_mode(true); // internal sanity checks in shor implementation
     QDD q, qref;
     bool x3[] = {0,0,0};
     bool as[] = {1,0,1};

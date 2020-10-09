@@ -6,6 +6,7 @@
 #include "sylvan.h"
 #include "sylvan_qdd_complex.h"
 #include "grover.h"
+#include "shor.h"
 #include "supremacy.h"
 
 #ifdef HAVE_PROFILER
@@ -745,8 +746,8 @@ int main()
 
     mkdir("benchmark_data", 0700);
   
-    bench_grover();
-    //bench_shor();
+    //bench_grover();
+    bench_shor();
     //bench_supremacy();
 
     #ifdef HAVE_PROFILER

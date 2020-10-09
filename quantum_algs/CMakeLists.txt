@@ -1,5 +1,6 @@
 set(SOURCES
     grover.c
+    shor.c
     supremacy.c
 )
 
