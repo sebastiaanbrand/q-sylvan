@@ -1175,10 +1175,13 @@ TASK_IMPL_5(QDD, qdd_cgate_rec_amp, QDD, q, uint32_t, gate, BDDVAR*, cs, uint32_
     // Check cache
     bool cachenow = ((var % granularity) == 0);
     if (cachenow) {
-        if (cache_get3(CACHE_QDD_CGATE, sylvan_false, q,
+        if (cache_get3(CACHE_QDD_CGATE, sylvan_false, QDD_PTR(q),
                     GATE_OPID_64(gate, ci, cs[0], cs[1], cs[2], t),
                     &res)) {
             sylvan_stats_count(QDD_CGATE_CACHED);
+            // Multiply root amp of res with input root amp
+            AMP new_root_amp = amp_mul(QDD_AMP(q), QDD_AMP(res));
+            res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
             return res;
         }
     }
@@ -1200,18 +1203,17 @@ TASK_IMPL_5(QDD, qdd_cgate_rec_amp, QDD, q, uint32_t, gate, BDDVAR*, cs, uint32_
     }
     res = qdd_makenode(var, low, high);
 
-    // Multiply root amp of sum with input root amp
-    AMP new_root_amp = amp_mul(QDD_AMP(q), QDD_AMP(res));
-    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
-
-    // Add to cache, return
+    // Store not yet "root normalized" result in cache
     if (cachenow) {
-        if (cache_put3(CACHE_QDD_CGATE, sylvan_false, q,
+        if (cache_put3(CACHE_QDD_CGATE, sylvan_false, QDD_PTR(q),
                     GATE_OPID_64(gate, ci, cs[0], cs[1], cs[2], t),
                     res)) {
             sylvan_stats_count(QDD_CGATE_CACHEDPUT);
         }
     }
+    // Multiply root amp of res with input root amp
+    AMP new_root_amp = amp_mul(QDD_AMP(q), QDD_AMP(res));
+    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     return res;
 }
 
@@ -1231,10 +1233,14 @@ TASK_IMPL_5(QDD, qdd_cgate_rec_complex, QDD, q, uint32_t, gate, BDDVAR*, cs, uin
     // Check cache
     bool cachenow = ((var % granularity) == 0);
     if (cachenow) {
-        if (cache_get3(CACHE_QDD_CGATE, sylvan_false, q,
+        if (cache_get3(CACHE_QDD_CGATE, sylvan_false, QDD_PTR(q),
                     GATE_OPID_64(gate, ci, cs[0], cs[1], cs[2], t),
                     &res)) {
             sylvan_stats_count(QDD_CGATE_CACHED);
+            // Multiply root amp of res with input root amp
+            complex_t comp = comp_mul(comp_value(QDD_AMP(q)), comp_value(QDD_AMP(res)));
+            AMP new_root_amp = qdd_comp_lookup(comp);
+            res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
             return res;
         }
     }
@@ -1256,86 +1262,91 @@ TASK_IMPL_5(QDD, qdd_cgate_rec_complex, QDD, q, uint32_t, gate, BDDVAR*, cs, uin
     }
     res = qdd_makenode(var, low, high);
 
-    // Multiply root amp of sum with input root amp
-    complex_t comp = comp_mul(comp_value(QDD_AMP(q)), comp_value(QDD_AMP(res)));
-    AMP new_root_amp = qdd_comp_lookup(comp);
-    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
-
-    // Add to cache, return
+    // Store not yet "root normalized" result in cache
     if (cachenow) {
-        if (cache_put3(CACHE_QDD_CGATE, sylvan_false, q,
+        if (cache_put3(CACHE_QDD_CGATE, sylvan_false, QDD_PTR(q),
                        GATE_OPID_64(gate, ci, cs[0], cs[1], cs[2], t),
                        res)) {
             sylvan_stats_count(QDD_CGATE_CACHEDPUT);
         }
     }
+    // Multiply root amp of res with input root amp
+    complex_t comp = comp_mul(comp_value(QDD_AMP(q)), comp_value(QDD_AMP(res)));
+    AMP new_root_amp = qdd_comp_lookup(comp);
+    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     return res;
 }
 
 TASK_IMPL_6(QDD, qdd_cgate_range_rec_amp, QDD, q, uint32_t, gate, BDDVAR, c_first, BDDVAR, c_last, BDDVAR, t, BDDVAR, k)
 {
+    // Past last control (done with "control part" of controlled gate)
+    if (k > c_last) {
+        return CALL(qdd_gate_rec_amp, q, gate, t);
+    }
+
     // Check cache
     QDD res;
     bool cachenow = ((k % granularity) == 0);
     if (cachenow) {
-        if (cache_get3(CACHE_QDD_CGATE_RANGE, sylvan_false, q,
+        if (cache_get3(CACHE_QDD_CGATE_RANGE, sylvan_false, QDD_PTR(q),
                        GATE_OPID_64(gate, c_first, c_last, k, t, 0),
                        &res)) {
             sylvan_stats_count(QDD_CGATE_CACHED);
+            // Multiply root amp of result with the input root amp
+            AMP new_root_amp = amp_mul(QDD_AMP(q), QDD_AMP(res));
+            res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
             return res;
         }
     }
 
-    // Past last control
-    if (k > c_last) {
-        res = CALL(qdd_gate_rec_amp, q, gate, t);
+    BDDVAR var;
+    QDD low, high;
+    // Not at first control qubit yet, apply to both children
+    if (k < c_first) {
+        qdd_get_topvar(q, c_first, &var, &low, &high);
+        qdd_refs_spawn(SPAWN(qdd_cgate_range_rec_amp, high, gate, c_first, c_last, t, var));
+        low = CALL(qdd_cgate_range_rec_amp, low, gate, c_first, c_last, t, var);
+        qdd_refs_push(low);
+        high = qdd_refs_sync(SYNC(qdd_cgate_range_rec_amp));
+        qdd_refs_pop(1);
     }
+    // k is a control qubit, control on q_k = |1> (high edge)
     else {
-        BDDVAR var;
-        QDD low, high;
-        // Not at first control qubit yet, apply to both children
-        if (k < c_first) {
-            qdd_get_topvar(q, c_first, &var, &low, &high);
-            qdd_refs_spawn(SPAWN(qdd_cgate_range_rec_amp, high, gate, c_first, c_last, t, var));
-            low = CALL(qdd_cgate_range_rec_amp, low, gate, c_first, c_last, t, var);
-            qdd_refs_push(low);
-            high = qdd_refs_sync(SYNC(qdd_cgate_range_rec_amp));
-            qdd_refs_pop(1);
-        }
-        // k is a control qubit, control on q_k = |1> (high edge)
-        else {
-            assert(c_first <= k && k <= c_last);
-            qdd_get_topvar(q, k, &var, &low, &high);
-            assert(var == k);
-            k++;
-            high = CALL(qdd_cgate_range_rec_amp, high, gate, c_first, c_last, t, k);
-            k--;
-        }
-        res = qdd_makenode(var, low, high);
-
-        // Multiply root amp of result with the input root amp
-        AMP new_root_amp = amp_mul(QDD_AMP(q), QDD_AMP(res));
-        res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
+        assert(c_first <= k && k <= c_last);
+        qdd_get_topvar(q, k, &var, &low, &high);
+        assert(var == k);
+        k++;
+        high = CALL(qdd_cgate_range_rec_amp, high, gate, c_first, c_last, t, k);
+        k--;
     }
+    res = qdd_makenode(var, low, high);
 
-    // Add to cache, return
+    // Store not yet "root normalized" result in cache
     if (cachenow) {
-        if (cache_put3(CACHE_QDD_CGATE_RANGE, sylvan_false, q,
+        if (cache_put3(CACHE_QDD_CGATE_RANGE, sylvan_false, QDD_PTR(q),
                        GATE_OPID_64(gate, c_first, c_last, k, t, 0),
                        res)) {
             sylvan_stats_count(QDD_CGATE_CACHEDPUT);
         }
     }
+    // Multiply root amp of result with the input root amp
+    AMP new_root_amp = amp_mul(QDD_AMP(q), QDD_AMP(res));
+    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     return res;
 }
 
 TASK_IMPL_6(QDD, qdd_cgate_range_rec_complex, QDD, q, uint32_t, gate, BDDVAR, c_first, BDDVAR, c_last, BDDVAR, t, BDDVAR, k)
 {
+    // Past last control (done with "control part" of controlled gate)
+    if (k > c_last) {
+        return CALL(qdd_gate_rec_complex, q, gate, t);
+    }
+
     // Check cache
     QDD res;
     bool cachenow = ((k % granularity) == 0);
     if (cachenow) {
-        if (cache_get3(CACHE_QDD_CGATE_RANGE, sylvan_false, q,
+        if (cache_get3(CACHE_QDD_CGATE_RANGE, sylvan_false, QDD_PTR(q),
                        GATE_OPID_64(gate, c_first, c_last, k, t, 0),
                        &res)) {
             sylvan_stats_count(QDD_CGATE_CACHED);
@@ -1343,47 +1354,40 @@ TASK_IMPL_6(QDD, qdd_cgate_range_rec_complex, QDD, q, uint32_t, gate, BDDVAR, c_
         }
     }
 
-    // Past last control
-    if (k > c_last) {
-        res = CALL(qdd_gate_rec_complex, q, gate, t);
+    BDDVAR var;
+    QDD low, high;
+    // Not at first control qubit yet, apply to both children
+    if (k < c_first) {
+        qdd_get_topvar(q, c_first, &var, &low, &high);
+        qdd_refs_spawn(SPAWN(qdd_cgate_range_rec_complex, high, gate, c_first, c_last, t, var));
+        low = CALL(qdd_cgate_range_rec_complex, low, gate, c_first, c_last, t, var);
+        qdd_refs_push(low);
+        high = qdd_refs_sync(SYNC(qdd_cgate_range_rec_complex));
+        qdd_refs_pop(1);
     }
+    // k is a control qubit, control on q_k = |1> (high edge)
     else {
-        BDDVAR var;
-        QDD low, high;
-        // Not at first control qubit yet, apply to both children
-        if (k < c_first) {
-            qdd_get_topvar(q, c_first, &var, &low, &high);
-            qdd_refs_spawn(SPAWN(qdd_cgate_range_rec_complex, high, gate, c_first, c_last, t, var));
-            low = CALL(qdd_cgate_range_rec_complex, low, gate, c_first, c_last, t, var);
-            qdd_refs_push(low);
-            high = qdd_refs_sync(SYNC(qdd_cgate_range_rec_complex));
-            qdd_refs_pop(1);
-        }
-        // k is a control qubit, control on q_k = |1> (high edge)
-        else {
-            assert(c_first <= k && k <= c_last);
-            qdd_get_topvar(q, k, &var, &low, &high);
-            assert(var == k);
-            k++;
-            high = CALL(qdd_cgate_range_rec_complex, high, gate, c_first, c_last, t, k);
-            k--;
-        }
-        res = qdd_makenode(var, low, high);
-
-        // Multiply root amp of sum with input root amp
-        complex_t comp = comp_mul(comp_value(QDD_AMP(q)), comp_value(QDD_AMP(res)));
-        AMP new_root_amp = qdd_comp_lookup(comp);
-        res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
+        assert(c_first <= k && k <= c_last);
+        qdd_get_topvar(q, k, &var, &low, &high);
+        assert(var == k);
+        k++;
+        high = CALL(qdd_cgate_range_rec_complex, high, gate, c_first, c_last, t, k);
+        k--;
     }
+    res = qdd_makenode(var, low, high);
 
-    // Add to cache, return
+    // Store not yet "root normalized" result in cache
     if (cachenow) {
-        if (cache_put3(CACHE_QDD_CGATE_RANGE, sylvan_false, q,
+        if (cache_put3(CACHE_QDD_CGATE_RANGE, sylvan_false, QDD_PTR(q),
                        GATE_OPID_64(gate, c_first, c_last, k, t, 0),
                        res)) {
             sylvan_stats_count(QDD_CGATE_CACHEDPUT);
         }
     }
+    // Multiply root amp of sum with input root amp
+    complex_t comp = comp_mul(comp_value(QDD_AMP(q)), comp_value(QDD_AMP(res)));
+    AMP new_root_amp = qdd_comp_lookup(comp);
+    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     return res;
 }
 
