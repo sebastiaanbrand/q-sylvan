@@ -221,9 +221,16 @@ qdd_shor_ua(QDD qdd,  uint64_t a, uint64_t N)
     qdd = qdd_cmult(qdd, a, N);
 
     // 2. controlled swap top/bottom registers
-    BDDVAR cs[] = {shor_wires.top, QDD_INVALID_VAR, QDD_INVALID_VAR};
-    for (uint32_t i = shor_wires.ctrl_first; i <= shor_wires.ctrl_last; i++) {
-        qdd = qdd_ccircuit(qdd, CIRCID_swap, cs, i, shor_wires.targ_first+i);
+    BDDVAR t;
+    for (uint32_t c2 = shor_wires.ctrl_first; c2 <= shor_wires.ctrl_last; c2++) {
+        t = shor_wires.targ_first+c2;
+        qdd = qdd_gate(qdd, GATEID_H, c2);
+        qdd = qdd_cgate(qdd, GATEID_Z, c2, t);
+        qdd = qdd_gate(qdd, GATEID_H, c2);
+        qdd = qdd_cgate2(qdd, GATEID_X, shor_wires.top, c2, t);
+        qdd = qdd_gate(qdd, GATEID_H, c2);
+        qdd = qdd_cgate(qdd, GATEID_Z, c2, t);
+        qdd = qdd_gate(qdd, GATEID_H, c2);
     }
 
     // 3. controlled Cmult_inv(a^-1)

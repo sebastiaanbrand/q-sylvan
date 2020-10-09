@@ -1842,7 +1842,7 @@ qdd_measure_q0(QDD qdd, BDDVAR nvars, int *m, double *p)
     prob_root = comp_to_prob(comp_value(QDD_AMP(qdd)));
     prob_low  *= prob_root;
     prob_high *= prob_root;
-    if (fabs(prob_low + prob_high - 1.0) > cmap_get_tolerance()) {
+    if (fabs(prob_low + prob_high - 1.0) > cmap_get_tolerance()*1000) {
         printf("prob sum = %.5lf (%.5lf + %.5lf)\n", prob_low + prob_high, prob_low, prob_high);
         assert("probabilities don't sum to 1" && false);
     }

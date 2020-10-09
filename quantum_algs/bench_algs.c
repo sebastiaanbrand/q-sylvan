@@ -657,7 +657,8 @@ int bench_shor()
     // sylvan / qdd params
     min_tablesize = max_tablesize = 1LL<<25;
     min_cachesize = max_cachesize = 1LL<<16;
-    ctable_size   = 1LL<<18;
+    ctable_size   = 1LL<<20;
+    ctable_gc_thres = 0.5;
     ctable_tolerance = 1e-14;
     caching_granularity = 1;
     write_parameters(param_file);
