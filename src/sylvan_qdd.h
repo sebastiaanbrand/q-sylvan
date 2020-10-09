@@ -248,10 +248,6 @@ QDD qdd_scalar_mult(QDD qdd, complex_t c);
 #define CIRCID_reverse_range 1
 #define CIRCID_QFT           2
 #define CIRCID_QFT_inv       3
-#define CIRCID_phi_add_a     4 // call phi_add(shor_bits_a)
-#define CIRCID_phi_add_N     5 // call phi_add(shor_bits_N)
-#define CIRCID_phi_add_a_inv 6 // call phi_add_inv(shor_bits_a)
-#define CIRCID_phi_add_N_inv 7 // call phi_add_inv(shor_bits_N)
 
 // For now we have at most 3 control qubits
 static const uint32_t MAX_CONTROLS = 3;
@@ -329,8 +325,8 @@ QDD qdd_all_control_phase(QDD qdd, BDDVAR n, bool *x);
  * 
  * @return A QDD encoding |phi(x + a)>, with (x+a)
  */
-QDD qdd_phi_add(QDD qdd, BDDVAR first, BDDVAR last, bool* a); // Fig. 3
-QDD qdd_phi_add_inv(QDD qdd, BDDVAR first, BDDVAR last, bool* a);
+QDD qdd_phi_add(QDD qdd, BDDVAR first, BDDVAR last, BDDVAR c1, BDDVAR c2, bool* a); // Fig. 3
+QDD qdd_phi_add_inv(QDD qdd, BDDVAR first, BDDVAR last,  BDDVAR c1, BDDVAR c2, bool* a);
 QDD qdd_phi_add_mod(QDD qdd, BDDVAR* cs, uint64_t a, uint64_t N); // Fig. 5
 QDD qdd_phi_add_mod_inv(QDD qdd, BDDVAR* cs, uint64_t a, uint64_t N);
 QDD qdd_cmult(QDD qdd, uint64_t a, uint64_t N); // Fig. 6
