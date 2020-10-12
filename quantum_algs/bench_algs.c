@@ -6,6 +6,7 @@
 #include "sylvan.h"
 #include "sylvan_qdd_complex.h"
 #include "grover.h"
+#include "random_circuit.h"
 #include "shor.h"
 #include "supremacy.h"
 
@@ -307,6 +308,58 @@ double bench_supremacy_5_4_once(uint32_t depth, uint32_t workers, uint64_t rseed
     return runtime;
 }
 
+double bench_random_circuit_once(int qubits, int gates, int workers, uint64_t rseed, char *fpath, uint64_t *nodes_peak, uint64_t *n_gates)
+{
+    if (VERBOSE) {
+        printf("bench random circuit: %2d qubits, %d worker(s), ", qubits, workers);
+        fflush(stdout);
+    }
+
+    FILE *logfile = NULL;
+    if (fpath != NULL)
+        logfile = fopen(fpath, "w");
+
+    uint64_t node_count;
+    double t_start, t_end, runtime;
+    t_start = wctime();
+
+    // Init Lace
+    lace_init(workers, 0);
+    lace_startup(0, NULL, NULL);
+
+    // Init Sylvan
+    sylvan_set_sizes(min_tablesize, max_tablesize, min_cachesize, max_cachesize);
+    sylvan_init_package();
+    sylvan_init_qdd(ctable_size, ctable_tolerance);
+    qdd_set_gc_ctable_thres(ctable_gc_thres);
+    qdd_set_caching_granularity(caching_granularity);
+
+    qdd_stats_start(logfile);
+
+    // Random circuit
+    QDD qdd = qdd_run_random_circuit(qubits, gates, rseed);
+
+    if (nodes_peak != NULL) *nodes_peak = qdd_stats_get_nodes_peak();
+    if (n_gates    != NULL) *n_gates = qdd_stats_get_logcounter();
+    if (logfile    != NULL) qdd_stats_finish();
+
+    t_end = wctime();
+    runtime = (t_end - t_start);
+
+    if (VERBOSE) {
+        node_count = qdd_countnodes(qdd); 
+        printf("%4ld nodes, %lf sec\n", node_count, runtime);
+    }
+
+    // Cleanup
+    sylvan_quit();
+    lace_exit();
+
+    return runtime;
+
+    return 0;
+}
+
 
 double bench_grover_once(int num_bits, bool flag[], int workers, char *fpath, uint64_t *nodes_peak, uint64_t *n_gates)
 {
@@ -415,6 +468,23 @@ double bench_shor_once(uint64_t N, uint64_t a, int workers, int rseed, bool *suc
     sylvan_quit();
     lace_exit();
     return runtime;
+}
+
+int bench_random_circuit()
+{
+    VERBOSE = true;
+
+    // sylvan / qdd params
+    min_tablesize = max_tablesize = 1LL<<30;
+    min_cachesize = max_cachesize = 1LL<<16;
+    ctable_size   = 1LL<<23;
+    ctable_gc_thres = 0.25;
+    ctable_tolerance = 1e-14;
+    caching_granularity = 1;
+
+    uint64_t rseed = time(NULL);
+    bench_random_circuit_once(10, 100, 1, rseed, NULL, NULL, NULL);
+    return 0;
 }
 
 int bench_supremacy()
@@ -746,9 +816,10 @@ int main()
     #endif
 
     mkdir("benchmark_data", 0700);
-  
+    
+    bench_random_circuit();
     //bench_grover();
-    bench_shor();
+    //bench_shor();
     //bench_supremacy();
 
     #ifdef HAVE_PROFILER

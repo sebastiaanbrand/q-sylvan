@@ -1,5 +1,6 @@
 set(SOURCES
     grover.c
+    random_circuit.c
     shor.c
     supremacy.c
 )
