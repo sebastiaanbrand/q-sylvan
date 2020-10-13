@@ -3,6 +3,22 @@
 
 static bool testing_mode = 0; // turns on/off (expensive) sanity checks
 
+/**
+ * Global vars for Shor. 
+ * (not ideal but this alleviates the passing of many parameters a bit.
+ */
+uint32_t  shor_n;
+bool shor_bits_a[64];
+bool shor_bits_N[64];
+struct shor_wires_s {
+    BDDVAR top;
+    BDDVAR ctrl_first;
+    BDDVAR ctrl_last;
+    BDDVAR helper;
+    BDDVAR targ_first;
+    BDDVAR targ_last;
+} shor_wires;
+
 void
 qdd_shor_set_testing_mode(bool on)
 {

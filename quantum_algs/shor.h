@@ -48,19 +48,5 @@ void shor_set_globals(uint64_t a, uint64_t N);
  * If 'a' is set to 0 a random 'a' is chosen.
  */
 uint64_t run_shor(uint64_t N, uint64_t a, bool verbose);
-// global vars for Shor (not ideal but it is difficult enough as it is)
-// TODO: move shor to separate file, not in qdd source code
-uint32_t  shor_n;
-bool shor_bits_a[64];
-bool shor_bits_N[64];
-struct shor_wires_s {
-    BDDVAR top;
-    BDDVAR ctrl_first;
-    BDDVAR ctrl_last;
-    BDDVAR helper;
-    BDDVAR targ_first;
-    BDDVAR targ_last;
-} shor_wires;
-
 
 void qdd_shor_set_testing_mode(bool on);
