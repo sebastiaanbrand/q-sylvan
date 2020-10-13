@@ -540,6 +540,7 @@ int main()
     sylvan_init_package();
     sylvan_init_qdd(1LL<<23, -1);
     qdd_set_testing_mode(true); // turn on internal sanity tests
+    qdd_set_auto_gc_ctable(false); // no auto gc of ctable yet for mult operations
 
     int res = runtests();
 

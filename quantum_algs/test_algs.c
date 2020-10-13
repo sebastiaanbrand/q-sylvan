@@ -89,6 +89,8 @@ int test_grover()
 
 int test_grover_matrix()
 {
+    qdd_set_auto_gc_ctable(false); // no auto gc of ctable yet for mult operations
+    
     BDDVAR nqubits;
     AMP a;
     QDD grov;
@@ -134,6 +136,8 @@ int test_grover_matrix()
     prob = comp_to_prob(comp_value(qdd_get_amplitude(grov, x10)));
 
     if(VERBOSE) printf("matrix qdd %2d-qubit Grover: ok (Pr(flag) = %lf)\n", nqubits, prob);
+
+    qdd_set_auto_gc_ctable(true);
     return 0;
 }
 

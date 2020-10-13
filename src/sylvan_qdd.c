@@ -1386,7 +1386,23 @@ TASK_IMPL_6(QDD, qdd_cgate_range_rec_complex, QDD, q, uint32_t, gate, BDDVAR, c_
     return res;
 }
 
-TASK_IMPL_4(QDD, qdd_matvec_mult, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR, nextvar)
+/* Wrapper for matrix vector multiplication. */
+TASK_IMPL_3(QDD, qdd_matvec_mult, QDD, mat, QDD, vec, BDDVAR, nvars)
+{
+    assert(!auto_gc_ctable && "auto gc of ctable not implemented for mult operations");
+    qdd_do_before_gate(&vec);
+    return CALL(qdd_matvec_mult_rec, mat, vec, nvars, 0);
+}
+
+/* Wrapper for matrix vector multiplication. */
+TASK_IMPL_3(QDD, qdd_matmat_mult, QDD, a, QDD, b, BDDVAR, nvars)
+{
+    assert(!auto_gc_ctable && "auto gc of ctable not implemented for mult operations");
+    //qdd_do_before_gate(&vec);
+    return CALL(qdd_matmat_mult_rec, a, b, nvars, 0);
+}
+
+TASK_IMPL_4(QDD, qdd_matvec_mult_rec, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR, nextvar)
 {
     // Trivial case: either one is all 0
     if (QDD_AMP(mat) == C_ZERO || QDD_AMP(vec) == C_ZERO)
@@ -1439,14 +1455,14 @@ TASK_IMPL_4(QDD, qdd_matvec_mult, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR, nex
     // |u10 u11| |vec_high|          |u10|           |u11|
     QDD res_low00, res_low10, res_high01, res_high11;
     nextvar++;
-    qdd_refs_spawn(SPAWN(qdd_matvec_mult, u00, vec_low,  nvars, nextvar)); // 1
-    qdd_refs_spawn(SPAWN(qdd_matvec_mult, u10, vec_low,  nvars, nextvar)); // 2
-    qdd_refs_spawn(SPAWN(qdd_matvec_mult, u01, vec_high, nvars, nextvar)); // 3
-    res_high11 = CALL(qdd_matvec_mult, u11, vec_high, nvars, nextvar);
+    qdd_refs_spawn(SPAWN(qdd_matvec_mult_rec, u00, vec_low,  nvars, nextvar)); // 1
+    qdd_refs_spawn(SPAWN(qdd_matvec_mult_rec, u10, vec_low,  nvars, nextvar)); // 2
+    qdd_refs_spawn(SPAWN(qdd_matvec_mult_rec, u01, vec_high, nvars, nextvar)); // 3
+    res_high11 = CALL(qdd_matvec_mult_rec, u11, vec_high, nvars, nextvar);
     qdd_refs_push(res_high11);
-    res_high01 = qdd_refs_sync(SYNC(qdd_matvec_mult)); // 3
-    res_low10  = qdd_refs_sync(SYNC(qdd_matvec_mult)); // 2
-    res_low00  = qdd_refs_sync(SYNC(qdd_matvec_mult)); // 1
+    res_high01 = qdd_refs_sync(SYNC(qdd_matvec_mult_rec)); // 3
+    res_low10  = qdd_refs_sync(SYNC(qdd_matvec_mult_rec)); // 2
+    res_low00  = qdd_refs_sync(SYNC(qdd_matvec_mult_rec)); // 1
     qdd_refs_pop(1);
     nextvar--;
 
@@ -1467,7 +1483,7 @@ TASK_IMPL_4(QDD, qdd_matvec_mult, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR, nex
     return res;
 }
 
-TASK_IMPL_4(QDD, qdd_matmat_mult, QDD, a, QDD, b, BDDVAR, nvars, BDDVAR, nextvar)
+TASK_IMPL_4(QDD, qdd_matmat_mult_rec, QDD, a, QDD, b, BDDVAR, nvars, BDDVAR, nextvar)
 {
     // Trivial case: either one is all 0
     if (QDD_AMP(a) == C_ZERO || QDD_AMP(b) == C_ZERO)
@@ -1526,22 +1542,22 @@ TASK_IMPL_4(QDD, qdd_matmat_mult, QDD, a, QDD, b, BDDVAR, nvars, BDDVAR, nextvar
     // |a10 a11| |b10 b11|      |a10|      |a11|      |a10|      |a11|
     QDD a00_b00, a00_b01, a10_b00, a10_b01, a01_b10, a01_b11, a11_b10, a11_b11;
     nextvar++;
-    qdd_refs_spawn(SPAWN(qdd_matmat_mult, a00, b00, nvars, nextvar)); // 1
-    qdd_refs_spawn(SPAWN(qdd_matmat_mult, a00, b01, nvars, nextvar)); // 2
-    qdd_refs_spawn(SPAWN(qdd_matmat_mult, a10, b00, nvars, nextvar)); // 3
-    qdd_refs_spawn(SPAWN(qdd_matmat_mult, a10, b01, nvars, nextvar)); // 4
-    qdd_refs_spawn(SPAWN(qdd_matmat_mult, a01, b10, nvars, nextvar)); // 5
-    qdd_refs_spawn(SPAWN(qdd_matmat_mult, a01, b11, nvars, nextvar)); // 6
-    qdd_refs_spawn(SPAWN(qdd_matmat_mult, a11, b10, nvars, nextvar)); // 7
-    a11_b11 = CALL(qdd_matmat_mult, a11, b11, nvars, nextvar);
+    qdd_refs_spawn(SPAWN(qdd_matmat_mult_rec, a00, b00, nvars, nextvar)); // 1
+    qdd_refs_spawn(SPAWN(qdd_matmat_mult_rec, a00, b01, nvars, nextvar)); // 2
+    qdd_refs_spawn(SPAWN(qdd_matmat_mult_rec, a10, b00, nvars, nextvar)); // 3
+    qdd_refs_spawn(SPAWN(qdd_matmat_mult_rec, a10, b01, nvars, nextvar)); // 4
+    qdd_refs_spawn(SPAWN(qdd_matmat_mult_rec, a01, b10, nvars, nextvar)); // 5
+    qdd_refs_spawn(SPAWN(qdd_matmat_mult_rec, a01, b11, nvars, nextvar)); // 6
+    qdd_refs_spawn(SPAWN(qdd_matmat_mult_rec, a11, b10, nvars, nextvar)); // 7
+    a11_b11 = CALL(qdd_matmat_mult_rec, a11, b11, nvars, nextvar);
     qdd_refs_push(a11_b11);
-    a11_b10 = qdd_refs_sync(SYNC(qdd_matmat_mult)); // 7
-    a01_b11 = qdd_refs_sync(SYNC(qdd_matmat_mult)); // 6
-    a01_b10 = qdd_refs_sync(SYNC(qdd_matmat_mult)); // 5
-    a10_b01 = qdd_refs_sync(SYNC(qdd_matmat_mult)); // 4
-    a10_b00 = qdd_refs_sync(SYNC(qdd_matmat_mult)); // 3
-    a00_b01 = qdd_refs_sync(SYNC(qdd_matmat_mult)); // 2
-    a00_b00 = qdd_refs_sync(SYNC(qdd_matmat_mult)); // 1
+    a11_b10 = qdd_refs_sync(SYNC(qdd_matmat_mult_rec)); // 7
+    a01_b11 = qdd_refs_sync(SYNC(qdd_matmat_mult_rec)); // 6
+    a01_b10 = qdd_refs_sync(SYNC(qdd_matmat_mult_rec)); // 5
+    a10_b01 = qdd_refs_sync(SYNC(qdd_matmat_mult_rec)); // 4
+    a10_b00 = qdd_refs_sync(SYNC(qdd_matmat_mult_rec)); // 3
+    a00_b01 = qdd_refs_sync(SYNC(qdd_matmat_mult_rec)); // 2
+    a00_b00 = qdd_refs_sync(SYNC(qdd_matmat_mult_rec)); // 1
     qdd_refs_pop(1);
     nextvar--;
 

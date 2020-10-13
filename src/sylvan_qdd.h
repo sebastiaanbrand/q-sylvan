@@ -229,13 +229,20 @@ TASK_DECL_5(QDD, qdd_cgate_rec_complex, QDD, uint32_t, BDDVAR*, uint32_t, BDDVAR
 TASK_DECL_6(QDD, qdd_cgate_range_rec_amp, QDD, uint32_t, BDDVAR, BDDVAR, BDDVAR, BDDVAR);
 TASK_DECL_6(QDD, qdd_cgate_range_rec_complex, QDD, uint32_t, BDDVAR, BDDVAR, BDDVAR, BDDVAR);
 
-/* Computes Mat * |vec> */
-#define qdd_matvec_mult(mat,vec,nvars) (CALL(qdd_matvec_mult,mat,vec,nvars,0))
-TASK_DECL_4(QDD, qdd_matvec_mult, QDD, QDD, BDDVAR, BDDVAR);
 
-/* Computes A*B (note that matrix multiplication does not generally commute) */
-#define qdd_matmat_mult(a,b,nvars) (CALL(qdd_matmat_mult,a,b,nvars,0))
-TASK_DECL_4(QDD, qdd_matmat_mult, QDD, QDD, BDDVAR, BDDVAR);
+/* Computes Mat * |vec> (Wrapper function) */
+#define qdd_matvec_mult(mat,vec,nvars) (CALL(qdd_matvec_mult,mat,vec,nvars))
+TASK_DECL_3(QDD, qdd_matvec_mult, QDD, QDD, BDDVAR);
+
+/* Computes A*B (note generally AB != BA) (Wrapper function) */
+#define qdd_matmat_mult(a,b,nvars) (CALL(qdd_matmat_mult,a,b,nvars))
+TASK_DECL_3(QDD, qdd_matmat_mult, QDD, QDD, BDDVAR);
+
+/**
+ * Recursive implementation of matrix-vector mult and matrix-matrix mult.
+ */
+TASK_DECL_4(QDD, qdd_matvec_mult_rec, QDD, QDD, BDDVAR, BDDVAR);
+TASK_DECL_4(QDD, qdd_matmat_mult_rec, QDD, QDD, BDDVAR, BDDVAR);
 
 /* Multiply some qdd by a scalar. */
 QDD qdd_scalar_mult(QDD qdd, complex_t c);
