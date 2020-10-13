@@ -2378,6 +2378,7 @@ uint64_t *nodelog;
 uint64_t *amp_log;
 FILE *qdd_logfile;
 uint64_t nodes_peak = 0;
+double nodes_avg = 0;
 uint64_t logcounter = 0;
 
 void
@@ -2429,14 +2430,26 @@ qdd_stats_log(QDD qdd)
     in_buffer++;
     logcounter++;
 
+    // peak nodes
     if (num_nodes > nodes_peak)
         nodes_peak = num_nodes;
+    
+    // (online) avg nodes
+    double a = 1.0/(double)logcounter;
+    double b = 1.0 - a;
+    nodes_avg = a * nodes_avg + b * (double)num_nodes;
 }
 
 uint64_t
 qdd_stats_get_nodes_peak()
 {
     return nodes_peak;
+}
+
+double
+qdd_stats_get_nodes_avg()
+{
+    return nodes_avg;
 }
 
 uint64_t
