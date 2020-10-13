@@ -4,14 +4,21 @@ import matplotlib.pyplot as plt
 
 plt_format = '.png'
 bench_path = '../build/benchmark_data/'
-alg_names  = ['grover', 'shor', 'supremacy']
-group_by = {'grover':'qubits', 'shor':'qubits', 'supremacy':'depth'}
-avg_over = {'grover':'flag', 'shor':'N', 'supremacy':'rseed'}
+alg_names  = ['grover', 'shor', 'supremacy', 'random_circuit']
+group_by = {'grover':'qubits',
+            'shor':'qubits',
+            'supremacy':'depth',
+            'random_circuit':'qubits'}
+avg_over = {'grover':'flag',
+            'shor':'N',
+            'supremacy':'rseed',
+            'random_circuit':'rseed'}
 
 replot_all = True
 plot_concur_perf_bool = True
 plot_peaknodes_bool   = True
 plot_histories_bool   = True
+plot_runtimes_bool    = True
 
 
 def plot_history(input_path, output_path, alg_name):
@@ -112,6 +119,33 @@ def plot_concurrency_performance(data_folder, alg_name):
     plt.clf()
     plt.close()
 
+def plot_runtimes(data_folder, alg_name, x_axis='qubits'):
+    input_path  = data_folder + 'summary.csv'
+    output_path = data_folder + 'runtime_vs_' + x_axis + plt_format
+    data = np.genfromtxt(input_path, dtype=float, delimiter=',', names=True)
+
+    _, ax1 = plt.subplots()
+    color1 = 'tab:orange'
+    color2 = 'tab:purple'
+
+    # 'x_axis' vs runtime
+    ax1.set_xlabel(x_axis)
+    ax1.set_ylabel('runtime', color=color1)
+    ax1.scatter(data[x_axis], data['runtime'], color=color1)
+    ax1.tick_params(axis='y', labelcolor=color1)
+
+    # 'x_axis' vs avg time per gate
+    ax2 = ax1.twinx()
+    ax2.set_ylabel('avg time per gate', color=color2)
+    ax2.scatter(data[x_axis], data['avg_gate_time'], color=color2)
+    ax2.tick_params(axis='y', labelcolor=color2)
+
+    plt.title(alg_name.capitalize().replace('_', ' '))
+    plt.tight_layout()
+    plt.savefig(output_path)
+    plt.clf()
+    plt.close()
+
 
 # iterates over all folders in the bench_path and plots everything it can plot
 def plot_all():
@@ -135,6 +169,12 @@ def plot_all():
                 # plot concurrency performance
                 if (plot_concur_perf_bool):
                     plot_concurrency_performance(exp_path, alg_name)
+                
+                # plot runtimes vs number of qubits
+                if (plot_runtimes):
+                    plot_runtimes(exp_path, alg_name, 'qubits')
+                    if (alg_name == 'random_circuit'):
+                        plot_runtimes(exp_path, alg_name, 'avg_nodes')
 
                 # plot histories for all runs
                 if (plot_histories_bool):
