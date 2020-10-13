@@ -10,7 +10,7 @@ bool *qdd_grover_random_flag(BDDVAR nbits);
  * the QDD.
  */
 QDD qdd_grover(BDDVAR n, bool* flag);
-#define qdd_grover_iteration(qdd,n,oracle) (CALL(qdd_grover_iteration,qdd,n,oracle));
+#define qdd_grover_iteration(qdd,n,oracle) (CALL(qdd_grover_iteration,qdd,n,oracle))
 TASK_DECL_3(QDD, qdd_grover_iteration, QDD, BDDVAR, bool*);
 
 /**

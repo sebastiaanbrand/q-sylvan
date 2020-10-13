@@ -164,20 +164,20 @@ QDD qdd_refs_sync(QDD qdd);
 
 /*******************************<applying gates>*******************************/
 
-// Applies given (single qubit) gate to |q>. (Wrapper function)
-#define qdd_gate(qdd,gate,target) (CALL(qdd_gate,qdd,gate,target));
+/* Applies given (single qubit) gate to |q>. (Wrapper function) */
+#define qdd_gate(qdd,gate,target) (CALL(qdd_gate,qdd,gate,target))
 TASK_DECL_3(QDD, qdd_gate, QDD, uint32_t, BDDVAR);
 
-// Applies given controlled gate to |q>. (Wrapper function)
-#define qdd_cgate(qdd,gate,c,t) (CALL(qdd_cgate,qdd,gate,c,t));
-#define qdd_cgate2(qdd,gate,c1,c2,t) (CALL(qdd_cgate2,qdd,gate,c1,c2,t));
-#define qdd_cgate3(qdd,gate,c1,c2,c3,t) (CALL(qdd_cgate3,qdd,gate,c1,c2,c3,t));
+/* Applies given controlled gate to |q>. (Wrapper function) */
+#define qdd_cgate(qdd,gate,c,t) (CALL(qdd_cgate,qdd,gate,c,t))
+#define qdd_cgate2(qdd,gate,c1,c2,t) (CALL(qdd_cgate2,qdd,gate,c1,c2,t))
+#define qdd_cgate3(qdd,gate,c1,c2,c3,t) (CALL(qdd_cgate3,qdd,gate,c1,c2,c3,t))
 TASK_DECL_4(QDD, qdd_cgate,  QDD, uint32_t, BDDVAR, BDDVAR);
 TASK_DECL_5(QDD, qdd_cgate2, QDD, uint32_t, BDDVAR, BDDVAR, BDDVAR);
 TASK_DECL_6(QDD, qdd_cgate3, QDD, uint32_t, BDDVAR, BDDVAR, BDDVAR, BDDVAR);
 
-// Applies given controlled gate to |q>. (Wrapper function)
-#define qdd_cgate_range(qdd,gate,c_first,c_last,t) (CALL(qdd_cgate_range,qdd,gate,c_first,c_last,t));
+/* Applies given controlled gate to |q>. (Wrapper function) */
+#define qdd_cgate_range(qdd,gate,c_first,c_last,t) (CALL(qdd_cgate_range,qdd,gate,c_first,c_last,t))
 TASK_DECL_5(QDD, qdd_cgate_range, QDD, uint32_t, BDDVAR, BDDVAR, BDDVAR);
 
 /**
@@ -185,15 +185,15 @@ TASK_DECL_5(QDD, qdd_cgate_range, QDD, uint32_t, BDDVAR, BDDVAR, BDDVAR);
  */
 #define propagate_complex false
 #if propagate_complex
-    #define qdd_plus(a,b) (CALL(qdd_plus_comp_wrap,a,b));
-    #define qdd_gate_rec(q,gate,target) (CALL(qdd_gate_rec_complex,q,gate,target));
-    #define qdd_cgate_rec(q,gate,cs,t) (CALL(qdd_cgate_rec_complex,q,gate,cs,0,t));
-    #define qdd_cgate_range_rec(q,gate,c_first,c_last,t) (CALL(qdd_cgate_range_rec_complex,q,gate,c_first,c_last,t,0));
+    #define qdd_plus(a,b) (CALL(qdd_plus_comp_wrap,a,b))
+    #define qdd_gate_rec(q,gate,target) (CALL(qdd_gate_rec_complex,q,gate,target))
+    #define qdd_cgate_rec(q,gate,cs,t) (CALL(qdd_cgate_rec_complex,q,gate,cs,0,t))
+    #define qdd_cgate_range_rec(q,gate,c_first,c_last,t) (CALL(qdd_cgate_range_rec_complex,q,gate,c_first,c_last,t,0))
 #else
-    #define qdd_plus(a,b) (CALL(qdd_plus_amp,a,b));
-    #define qdd_gate_rec(q,gate,target) (CALL(qdd_gate_rec_amp,q,gate,target));
-    #define qdd_cgate_rec(q,gate,cs,t) (CALL(qdd_cgate_rec_amp,q,gate,cs,0,t));
-    #define qdd_cgate_range_rec(q,gate,c_first,c_last,t) (CALL(qdd_cgate_range_rec_amp,q,gate,c_first,c_last,t,0));
+    #define qdd_plus(a,b) (CALL(qdd_plus_amp,a,b))
+    #define qdd_gate_rec(q,gate,target) (CALL(qdd_gate_rec_amp,q,gate,target))
+    #define qdd_cgate_rec(q,gate,cs,t) (CALL(qdd_cgate_rec_amp,q,gate,cs,0,t))
+    #define qdd_cgate_range_rec(q,gate,c_first,c_last,t) (CALL(qdd_cgate_range_rec_amp,q,gate,c_first,c_last,t,0))
 #endif
 
 /**
@@ -229,15 +229,15 @@ TASK_DECL_5(QDD, qdd_cgate_rec_complex, QDD, uint32_t, BDDVAR*, uint32_t, BDDVAR
 TASK_DECL_6(QDD, qdd_cgate_range_rec_amp, QDD, uint32_t, BDDVAR, BDDVAR, BDDVAR, BDDVAR);
 TASK_DECL_6(QDD, qdd_cgate_range_rec_complex, QDD, uint32_t, BDDVAR, BDDVAR, BDDVAR, BDDVAR);
 
-// Computes Mat * |vec>
-#define qdd_matvec_mult(mat,vec,nvars) (CALL(qdd_matvec_mult,mat,vec,nvars,0));
+/* Computes Mat * |vec> */
+#define qdd_matvec_mult(mat,vec,nvars) (CALL(qdd_matvec_mult,mat,vec,nvars,0))
 TASK_DECL_4(QDD, qdd_matvec_mult, QDD, QDD, BDDVAR, BDDVAR);
 
-// Computes A*B (note that matrix multiplication does not generally commute)
-#define qdd_matmat_mult(a,b,nvars) (CALL(qdd_matmat_mult,a,b,nvars,0));
+/* Computes A*B (note that matrix multiplication does not generally commute) */
+#define qdd_matmat_mult(a,b,nvars) (CALL(qdd_matmat_mult,a,b,nvars,0))
 TASK_DECL_4(QDD, qdd_matmat_mult, QDD, QDD, BDDVAR, BDDVAR);
 
-// Multiply some qdd by a scalar.
+/* Multiply some qdd by a scalar. */
 QDD qdd_scalar_mult(QDD qdd, complex_t c);
 
 /******************************</applying gates>*******************************/
@@ -473,7 +473,7 @@ void qdd_test_gc_ctable(QDD *keep);
 /**
  * Recursive function for moving amps from old to new amp table.
  */
-#define _fill_new_amp_table(qdd) (CALL(_fill_new_amp_table, qdd));
+#define _fill_new_amp_table(qdd) (CALL(_fill_new_amp_table, qdd))
 TASK_DECL_1(QDD, _fill_new_amp_table, QDD);
 
 /**

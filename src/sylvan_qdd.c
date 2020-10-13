@@ -1658,7 +1658,7 @@ qdd_circuit_QFT_inv(QDD qdd, BDDVAR first, BDDVAR last)
     // Note that we're not swapping the qubit order in this function
     
     // H gates and phase gates (but now backwards)
-    for (a = last + 1; a-- > first; ) { // weird for loop because BDDVARs are unsigned
+    for (a = last + 1; a-- > first; ) { // weird for-loop because BDDVARs are unsigned
 
         // Controlled phase gates (negative angles this time)
         for (b = last; b >= (a+1); b--){

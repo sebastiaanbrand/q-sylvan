@@ -314,7 +314,7 @@ int test_phase_gates()
     v0 = qdd_matvec_mult(mTdag1, v0, nqubits);
     v0 = qdd_matvec_mult(mTdag1, v0, nqubits);
     v0 = qdd_matvec_mult(mTdag1, v0, nqubits);
-    v0 = qdd_matvec_mult(mTdag1, v0, nqubits)
+    v0 = qdd_matvec_mult(mTdag1, v0, nqubits);
 
     x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(v0, x2); test_assert(a == comp_lookup(comp_make(0.5, 0)));
     x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(v0, x2); test_assert(a == comp_lookup(comp_make(0.5, 0)));
