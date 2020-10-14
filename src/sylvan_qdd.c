@@ -2388,6 +2388,7 @@ bit_from_int(uint64_t a, uint8_t index)
 /*******************************<logging stats>********************************/
 
 bool qdd_stats_logging = false;
+uint32_t statslog_granularity = 1;
 uint64_t statslog_buffer = 1024;
 uint64_t in_buffer = 0;
 uint64_t *nodelog;
@@ -2396,6 +2397,7 @@ FILE *qdd_logfile;
 uint64_t nodes_peak = 0;
 double nodes_avg = 0;
 uint64_t logcounter = 0;
+uint64_t logtrycounter = 0;
 
 void
 qdd_stats_start(FILE *out)
@@ -2418,6 +2420,14 @@ qdd_stats_start(FILE *out)
     in_buffer = 0;
     nodes_peak = 0;
     logcounter = 0;
+    logtrycounter = 0;
+}
+
+void
+qdd_stats_set_granularity(uint32_t g)
+{
+    if (g == 0) statslog_granularity = 1;
+    else statslog_granularity = g;
 }
 
 void
@@ -2433,6 +2443,9 @@ void
 qdd_stats_log(QDD qdd)
 {
     if (!qdd_stats_logging) return;
+
+    // only log every 'statslog_granularity' calls of this function
+    if (logtrycounter++ % statslog_granularity != 0) return;
 
     if (in_buffer >= statslog_buffer) {
         qdd_stats_flush_buffer();
@@ -2471,7 +2484,7 @@ qdd_stats_get_nodes_avg()
 uint64_t
 qdd_stats_get_logcounter()
 {
-    return logcounter;
+    return logtrycounter;
 }
 
 void
@@ -2482,6 +2495,7 @@ qdd_stats_finish()
     qdd_stats_logging = false;
     nodes_peak = 0;
     logcounter = 0;
+    logtrycounter = 0;
     free(nodelog);
     free(amp_log);
 }

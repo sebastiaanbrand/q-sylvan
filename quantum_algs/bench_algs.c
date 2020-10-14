@@ -29,6 +29,9 @@ static double ctable_tolerance;
 static double ctable_gc_thres;
 static int caching_granularity;
 
+/* for very deep circuits we don't want to log (i.e. count nodes, etc.) every gate */
+static uint32_t log_entries = 1e4;
+
 /**
  * Obtain current wallclock time
  */
@@ -539,7 +542,7 @@ int bench_grover()
     // sylvan / qdd params
     min_tablesize = max_tablesize = 1LL<<25;
     min_cachesize = max_cachesize = 1LL<<16;
-    ctable_size   = 1LL<<18;
+    ctable_size   = 1LL<<23;
     ctable_tolerance = 1e-14;
     ctable_gc_thres = 0.5;
     caching_granularity = 1;
@@ -578,6 +581,10 @@ int bench_grover()
                 sprintf(history_fname, "grov_hist_n%d_w%d_f%d.csv", n_bits[q]+1, n_workers[w], f_int);
                 strcpy(history_path, history_dir);
                 strcat(history_path, history_fname);
+
+                // set log granularity based on number of gates in circuit
+                uint32_t log_granularity = qdd_grover_approx_number_of_gates(n_bits[q])/log_entries;
+                qdd_stats_set_granularity(log_granularity);
 
                 // bench twice, once with logging and once for timing
                 runtime = bench_grover_once(n_bits[q], flag, n_workers[w], NULL, NULL, NULL);
@@ -667,7 +674,7 @@ int bench_shor()
     uint32_t nqubits;
 
     // how often to re-run the same (N,a) (TODO: different 'a' for each run?)
-    int re_runs = 2;
+    int re_runs = 3;
     
     // different number of workers to test
     int n_workers[] = {1, 2, 4};
