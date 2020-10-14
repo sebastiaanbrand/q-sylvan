@@ -399,6 +399,7 @@ int bench_random_circuit()
                                             plus_cacheput, plus_cached,
                                             gate_cacheput, gate_cached,
                                             cgate_cacheput, cgate_cached);
+                    fflush(overview_file);
                 }
             }
         }
@@ -447,16 +448,14 @@ int bench_supremacy()
 
     // params
     int nqubits = 20; // always 20 for 5x4 grid
-    int depths[] = {15};//{15,16,17,18,19,20};
-    int ndepths = 1;
+    int depths[] = {15,16,17,18,19,20};
 
     // different number of workers to test
-    int n_workers[] = {1, 2, 4};
+    int n_workers[] = {1, 2, 4, 8};
     int nn_workers  = 3;
 
     // re-runs for different depths
     int re_runs = 2;
-    uint64_t rseeds[] = {66, 123};
 
     // runtimes are written to single file
     double runtime, avg_gate_time;
@@ -464,9 +463,9 @@ int bench_supremacy()
     uint64_t plus_cacheput, gate_cacheput, cgate_cacheput;
     uint64_t plus_cached, gate_cached, cgate_cached;
 
-    for (int i = 0; i < ndepths; i++) {
+    for (uint32_t i = 0; i < len(depths); i++) {
         for (int r = 0; r < re_runs; r++) {
-            uint64_t rseed = rseeds[r];
+            uint64_t rseed = rand();
             for (int w = 0; w < nn_workers; w++) {
 
                 // output file for history of this run
@@ -499,6 +498,7 @@ int bench_supremacy()
                                         plus_cacheput, plus_cached,
                                         gate_cacheput, gate_cached,
                                         cgate_cacheput, cgate_cached);
+                fflush(overview_file);
             }
         }
     }
@@ -546,12 +546,10 @@ int bench_grover()
     write_parameters(param_file);
 
     // different number of bits for the flag to test
-    int n_bits[] = {15, 20};
-    int nn_bits  = 2;
+    int n_bits[] = {15, 20, 25, 30, 35, 40};
     
     // different number of workers to test
-    int n_workers[] = {1, 2, 4};
-    int nn_workers  = 3;
+    int n_workers[] = {1, 2, 4, 8};
 
     // different number of random flags to test
     int n_flags = 3;
@@ -566,13 +564,13 @@ int bench_grover()
 
     // run benchmarks
     srand(42);
-    for (int q = 0; q < nn_bits; q++) {
+    for (uint32_t q = 0; q < len(n_bits); q++) {
 
         for (int f = 0; f < n_flags; f++) {
             flag  = qdd_grover_random_flag(n_bits[q]);
             f_int = bitarray_to_int(flag, n_bits[q], true);
 
-            for (int w = 0; w < nn_workers; w++) {
+            for (uint32_t w = 0; w < len(n_workers); w++) {
 
                 // output file for history of this run
                 char history_path[256];
@@ -605,6 +603,7 @@ int bench_grover()
                                         gate_cacheput, gate_cached,
                                         cgate_cacheput, cgate_cached,
                                         f_int);
+                fflush(overview_file);
             }
         }
     }
@@ -653,11 +652,17 @@ int bench_shor()
     write_parameters(param_file);
 
     // Different sized N to test
-    //  3 x  5 =  15 (11 qubits)
-    //  5 x  7 =  35 (15 qubits)
-    // 11 x 13 = 143 (19 qubits)
-    int Ns[] = {15, 35, 143};
-    int nN = 3;
+    //   3 x   5 =     15 (11 qubits)
+    //   5 x   7 =     35 (15 qubits)
+    //  11 x  13 =    143 (19 qubits)
+    //  17 x  19 =    323 (21 qubits)
+    //  29 x  31 =    899 (23 qubits)
+    //  37 x  41 =   1517 (25 qubits)
+    //  79 x  83 =   6557 (29 qubits)
+    // 127 x 131 =  16637 (33 qubits)
+    // 293 x 307 =  89951 (37 qubits)
+    // 419 x 421 = 176399 (39 qubits)
+    int Ns[] = {15, 35, 143, 323, 899, 1517, 6557, 16637, 89951, 176399};
     uint64_t N, a;
     uint32_t nqubits;
 
@@ -666,7 +671,6 @@ int bench_shor()
     
     // different number of workers to test
     int n_workers[] = {1, 2, 4};
-    int nn_workers  = 3;
 
     // runtimes are written to single file
     double runtime, avg_gate_time;
@@ -676,13 +680,13 @@ int bench_shor()
 
     // run benchmarks
     srand(42);
-    for (int q = 0; q < nN; q++) {
+    for (uint32_t q = 0; q < len(Ns); q++) {
         N = Ns[q];
         a = shor_generate_a(N);
         nqubits = (int)ceil(log2(N))*2 + 3;
         for (int r = 0; r < re_runs; r++) {
             uint64_t rseed = rand();
-            for (int w = 0; w < nn_workers; w++) {
+            for (uint32_t w = 0; w < len(n_workers); w++) {
                 
                 // output file for history of this run
                 char history_path[256];
@@ -715,6 +719,7 @@ int bench_shor()
                                         plus_cacheput, plus_cached,
                                         gate_cacheput, gate_cached,
                                         cgate_cacheput, cgate_cached);
+                fflush(overview_file);
             }
         }
     }
@@ -736,8 +741,8 @@ int main()
 
     mkdir("benchmark_data", 0700);
     
-    bench_random_circuit();
-    //bench_grover();
+    //bench_random_circuit();
+    bench_grover();
     //bench_shor();
     //bench_supremacy();
 
