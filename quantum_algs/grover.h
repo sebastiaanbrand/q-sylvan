@@ -2,6 +2,9 @@
 
 #include "sylvan.h"
 
+/* Approximate number of gates for 'nbits'-bit Grover */
+uint64_t qdd_grover_approx_number_of_gates(BDDVAR nbits);
+
 /* Random bit array of lenght 'nbits' */
 bool *qdd_grover_random_flag(BDDVAR nbits);
 
