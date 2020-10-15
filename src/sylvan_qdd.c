@@ -2392,9 +2392,6 @@ bit_from_int(uint64_t a, uint8_t index)
 bool qdd_stats_logging = false;
 uint32_t statslog_granularity = 1;
 uint64_t statslog_buffer = 1024;
-uint64_t in_buffer = 0;
-uint64_t *nodelog;
-uint64_t *amp_log;
 FILE *qdd_logfile;
 uint64_t nodes_peak = 0;
 double nodes_avg = 0;
@@ -2408,18 +2405,6 @@ qdd_stats_start(FILE *out)
     qdd_stats_logging = true;
     qdd_logfile = out;
     fprintf(qdd_logfile, "nodes, amps\n");
-    // NOTE: logging with multiple workers active seems to allow for the 
-    // 'in_buffer' variable to become to high. For now just allocate a buffer
-    // with more leeway.
-    // TODO: find a better solution. It seems to be the case only with shor
-    // - I think because of the ccirc function, so implementing shor without 
-    // this might fix the problem
-    // - Or just only log with a single worker
-    // - Or find a generally better solution involving stopping the workers 
-    // when loggin
-    nodelog = (uint64_t*) malloc(statslog_buffer*2 * sizeof(uint64_t));
-    amp_log = (uint64_t*) malloc(statslog_buffer*2 * sizeof(uint64_t));
-    in_buffer = 0;
     nodes_peak = 0;
     logcounter = 0;
     logtrycounter = 0;
@@ -2433,15 +2418,6 @@ qdd_stats_set_granularity(uint32_t g)
 }
 
 void
-qdd_stats_flush_buffer()
-{
-    for (uint64_t i = 0; i < in_buffer; i++) {
-        fprintf(qdd_logfile, "%ld,%ld\n", nodelog[i], amp_log[i]);
-    }
-    in_buffer = 0;
-}
-
-void
 qdd_stats_log(QDD qdd)
 {
     if (!qdd_stats_logging) return;
@@ -2449,17 +2425,15 @@ qdd_stats_log(QDD qdd)
     // only log every 'statslog_granularity' calls of this function
     if (logtrycounter++ % statslog_granularity != 0) return;
 
-    if (in_buffer >= statslog_buffer) {
-        qdd_stats_flush_buffer();
-    }
-
     // Insert info
     uint64_t num_nodes = qdd_countnodes(qdd);
     uint64_t num_amps  = count_amplitude_table_enries();
-    nodelog[in_buffer] = num_nodes;
-    amp_log[in_buffer] = num_amps;
-    in_buffer++;
+    fprintf(qdd_logfile, "%ld,%ld\n", num_nodes, num_amps);
     logcounter++;
+
+    // manually flush every 'statslog_buffer' entries
+    if (logcounter % statslog_buffer == 0)
+        fflush(qdd_logfile);
 
     // peak nodes
     if (num_nodes > nodes_peak)
@@ -2493,13 +2467,11 @@ void
 qdd_stats_finish()
 {
     if (!qdd_stats_logging) return;
-    qdd_stats_flush_buffer();
+    fflush(qdd_logfile);
     qdd_stats_logging = false;
     nodes_peak = 0;
     logcounter = 0;
     logtrycounter = 0;
-    free(nodelog);
-    free(amp_log);
 }
 
 /******************************</logging stats>********************************/
