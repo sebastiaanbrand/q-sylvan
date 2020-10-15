@@ -61,43 +61,9 @@ write_parameters(FILE *file)
 }
 
 
-int bench_supremacy_5_1(uint32_t depth, uint32_t workers)
-{
-    // 5x1 "grid" from [Characterizing Quantum Supremacy in Near-Term Devices]
-    printf("bench sup5_1, depth %3d, %2d worker(s), ", depth, workers);
-    fflush(stdout);
-
-    uint64_t node_count;
-    double t_start, t_end, runtime;
-    t_start = wctime();
-
-    // Init Lace
-    lace_init(workers, 0);
-    lace_startup(0, NULL, NULL);
-    LACE_ME;
-
-    // Init Sylvan
-    sylvan_set_limits(4LL<<30, 1, 6);
-    sylvan_init_package();
-    sylvan_init_qdd(1LL<<23, -1);
-
-    srand(42);
-    QDD res = supremacy_5_1_circuit(depth);
-    node_count = qdd_countnodes(res);
-
-    t_end = wctime();
-    runtime = (t_end - t_start);
-
-    printf("%4ld nodes, %lf sec\n", node_count, runtime);
-
-    // Cleanup
-    sylvan_quit();
-    lace_exit();
-
-    return 0;
-}
-
-double bench_supremacy_5_4_once(uint32_t depth, uint32_t workers, uint64_t rseed, char *fpath, uint64_t *nodes_peak, uint64_t *n_gates)
+double bench_supremacy_5_4_once(uint32_t depth, uint32_t workers, uint64_t rseed, 
+                                char *fpath, uint64_t *nodes_peak, double *avg_nodes, 
+                                uint64_t *n_gates)
 {
     if (VERBOSE) {
         printf("bench sup5_4, depth %3d, %2d worker(s), ", depth, workers);
@@ -129,6 +95,7 @@ double bench_supremacy_5_4_once(uint32_t depth, uint32_t workers, uint64_t rseed
     QDD res = supremacy_5_4_circuit(depth);
 
     if (nodes_peak != NULL) *nodes_peak = qdd_stats_get_nodes_peak();
+    if (avg_nodes  != NULL) *avg_nodes = qdd_stats_get_nodes_avg();
     if (n_gates    != NULL) *n_gates = qdd_stats_get_logcounter();
     if (logfile    != NULL) qdd_stats_finish();
 
@@ -148,7 +115,7 @@ double bench_supremacy_5_4_once(uint32_t depth, uint32_t workers, uint64_t rseed
 }
 
 double bench_random_circuit_once(int qubits, int gates, int workers, uint64_t rseed,
-                                 char *fpath, uint64_t *nodes_peak, double *nodes_avg,
+                                 char *fpath, uint64_t *nodes_peak, double *avg_nodes,
                                  uint64_t *n_gates)
 {
     if (VERBOSE) {
@@ -181,7 +148,7 @@ double bench_random_circuit_once(int qubits, int gates, int workers, uint64_t rs
     QDD qdd = qdd_run_random_single_qubit_gates(qubits, gates, rseed);
 
     if (nodes_peak != NULL) *nodes_peak = qdd_stats_get_nodes_peak();
-    if (nodes_avg  != NULL) *nodes_avg = qdd_stats_get_nodes_avg();
+    if (avg_nodes  != NULL) *avg_nodes = qdd_stats_get_nodes_avg();
     if (n_gates    != NULL) *n_gates = qdd_stats_get_logcounter();
     if (logfile    != NULL) qdd_stats_finish();
 
@@ -203,7 +170,8 @@ double bench_random_circuit_once(int qubits, int gates, int workers, uint64_t rs
 }
 
 
-double bench_grover_once(int num_bits, bool flag[], int workers, char *fpath, uint64_t *nodes_peak, uint64_t *n_gates)
+double bench_grover_once(int num_bits, bool flag[], int workers, char *fpath, 
+                         uint64_t *nodes_peak, double *avg_nodes, uint64_t *n_gates)
 {
     if (VERBOSE) {
         printf("bench grover, %d qubits, %2d worker(s), ", num_bits+1, workers); 
@@ -240,6 +208,7 @@ double bench_grover_once(int num_bits, bool flag[], int workers, char *fpath, ui
     grov = qdd_grover(num_bits, flag);
 
     if (nodes_peak != NULL) *nodes_peak = qdd_stats_get_nodes_peak();
+    if (avg_nodes  != NULL) *avg_nodes = qdd_stats_get_nodes_avg();
     if (n_gates    != NULL) *n_gates = qdd_stats_get_logcounter();
     if (logfile    != NULL) qdd_stats_finish();
 
@@ -262,7 +231,9 @@ double bench_grover_once(int num_bits, bool flag[], int workers, char *fpath, ui
     return runtime;
 }
 
-double bench_shor_once(uint64_t N, uint64_t a, int workers, int rseed, bool *success, char *fpath, uint64_t *nodes_peak, uint64_t *n_gates)
+double bench_shor_once(uint64_t N, uint64_t a, int workers, int rseed, bool *success, 
+                       char *fpath, uint64_t *nodes_peak, double *avg_nodes,
+                       uint64_t *n_gates)
 {
     if (VERBOSE) {
         uint32_t num_qubits = (int)ceil(log2(N))*2 + 3;
@@ -297,6 +268,7 @@ double bench_shor_once(uint64_t N, uint64_t a, int workers, int rseed, bool *suc
     runtime = (t_end - t_start);
 
     if (nodes_peak != NULL) *nodes_peak = qdd_stats_get_nodes_peak();
+    if (avg_nodes  != NULL) *avg_nodes = qdd_stats_get_nodes_avg();
     if (n_gates    != NULL) *n_gates = qdd_stats_get_logcounter();
     if (logfile    != NULL) {
         qdd_stats_finish();
@@ -361,7 +333,7 @@ int bench_random_circuit()
     int reruns = 2;
 
     // runtimes are written to single file
-    double runtime, avg_gate_time, nodes_avg;
+    double runtime, avg_gate_time, avg_nodes;
     uint64_t nodes_peak, n_gates;
     uint64_t plus_cacheput, gate_cacheput, cgate_cacheput;
     uint64_t plus_cached, gate_cached, cgate_cached;
@@ -381,7 +353,7 @@ int bench_random_circuit()
 
                     // bench twice, once with logging and once for timing
                     runtime = bench_random_circuit_once(nqubits[q], ngates[g], nworkers[w], rseed, NULL, NULL, NULL, NULL);
-                    bench_random_circuit_once(nqubits[q], ngates[g], nworkers[w], rseed, history_path, &nodes_peak, &nodes_avg, &n_gates);
+                    bench_random_circuit_once(nqubits[q], ngates[g], nworkers[w], rseed, history_path, &nodes_peak, &avg_nodes, &n_gates);
 
                     // add summary of this run to overview file
                     avg_gate_time = runtime / (double) n_gates;
@@ -397,7 +369,7 @@ int bench_random_circuit()
                     plus_cacheput = gate_cacheput = cgate_cacheput = 0;
                     #endif
                     fprintf(overview_file, "%d, %ld, %ld, %lf, %d, %d, %lf, %.3e, %ld, %ld, %ld, %ld, %ld, %ld\n",
-                                            nqubits[q], rseed, nodes_peak, nodes_avg, nworkers[w],
+                                            nqubits[q], rseed, nodes_peak, avg_nodes, nworkers[w],
                                             ngates[g], runtime, avg_gate_time,
                                             plus_cacheput, plus_cached,
                                             gate_cacheput, gate_cached,
@@ -429,8 +401,8 @@ int bench_supremacy()
     strcpy(overview_fname, output_dir);
     strcat(overview_fname, "summary.csv");
     FILE *overview_file = fopen(overview_fname, "w");
-    fprintf(overview_file, "qubits, depth, rseed, peak_nodes, workers, "
-                           "gates, runtime, avg_gate_time, "
+    fprintf(overview_file, "qubits, depth, rseed, peak_nodes, avg_nodes, "
+                           "workers, gates, runtime, avg_gate_time, "
                            "plus_cacheput, plus_cached, "
                            "gate_cacheput, gate_cached, "
                            "cgate_cacheput, cgate_cached\n");
@@ -461,7 +433,7 @@ int bench_supremacy()
     int re_runs = 2;
 
     // runtimes are written to single file
-    double runtime, avg_gate_time;
+    double runtime, avg_gate_time, avg_nodes;
     uint64_t nodes_peak, n_gates;
     uint64_t plus_cacheput, gate_cacheput, cgate_cacheput;
     uint64_t plus_cached, gate_cached, cgate_cached;
@@ -479,8 +451,8 @@ int bench_supremacy()
                 strcat(history_path, history_fname);
 
                 // bench twice, once with logging and once for timing
-                runtime = bench_supremacy_5_4_once(depths[i], n_workers[w], rseed, NULL, NULL, NULL);
-                bench_supremacy_5_4_once(depths[i], n_workers[w], rseed, history_path, &nodes_peak, &n_gates);
+                runtime = bench_supremacy_5_4_once(depths[i], n_workers[w], rseed, NULL, NULL, NULL, NULL);
+                bench_supremacy_5_4_once(depths[i], n_workers[w], rseed, history_path, &nodes_peak, &avg_nodes, &n_gates);
 
                 // add summary of this run to overview file
                 avg_gate_time = runtime / (double) n_gates;
@@ -495,9 +467,9 @@ int bench_supremacy()
                 plus_cached = gate_cached = cgate_cached = 0;
                 plus_cacheput = gate_cacheput = cgate_cacheput = 0;
                 #endif
-                fprintf(overview_file, "%d, %d, %ld, %ld, %d, %ld, %lf, %.3e, %ld, %ld, %ld, %ld, %ld, %ld\n",
-                                        nqubits, depths[i], rseed, nodes_peak, n_workers[w],
-                                        n_gates, runtime, avg_gate_time,
+                fprintf(overview_file, "%d, %d, %ld, %ld, %lf, %d, %ld, %lf, %.3e, %ld, %ld, %ld, %ld, %ld, %ld\n",
+                                        nqubits, depths[i], rseed, nodes_peak, avg_nodes,
+                                        n_workers[w], n_gates, runtime, avg_gate_time,
                                         plus_cacheput, plus_cached,
                                         gate_cacheput, gate_cached,
                                         cgate_cacheput, cgate_cached);
@@ -527,7 +499,7 @@ int bench_grover()
     strcpy(overview_fname, output_dir);
     strcat(overview_fname, "summary.csv");
     FILE *overview_file = fopen(overview_fname, "w");
-    fprintf(overview_file, "qubits, peak_nodes, workers, "
+    fprintf(overview_file, "qubits, peak_nodes, avg_nodes, workers, "
                            "gates, runtime, avg_gate_time, "
                            "plus_cacheput, plus_cached, "
                            "gate_cacheput, gate_cached, "
@@ -560,7 +532,7 @@ int bench_grover()
     int f_int;
 
     // runtimes are written to single file
-    double runtime, avg_gate_time;
+    double runtime, avg_gate_time, avg_nodes;
     uint64_t nodes_peak, n_gates;
     uint64_t plus_cacheput, gate_cacheput, cgate_cacheput;
     uint64_t plus_cached, gate_cached, cgate_cached;
@@ -587,8 +559,8 @@ int bench_grover()
                 qdd_stats_set_granularity(log_granularity);
 
                 // bench twice, once with logging and once for timing
-                runtime = bench_grover_once(n_bits[q], flag, n_workers[w], NULL, NULL, NULL);
-                bench_grover_once(n_bits[q], flag, n_workers[w], history_path, &nodes_peak, &n_gates);
+                runtime = bench_grover_once(n_bits[q], flag, n_workers[w], NULL, NULL, NULL, NULL);
+                bench_grover_once(n_bits[q], flag, n_workers[w], history_path, &nodes_peak, &avg_nodes, &n_gates);
 
                 // add summary of this run to overview file
                 avg_gate_time = runtime / (double) n_gates;
@@ -603,8 +575,8 @@ int bench_grover()
                 plus_cached = gate_cached = cgate_cached = 0;
                 plus_cacheput = gate_cacheput = cgate_cacheput = 0;
                 #endif
-                fprintf(overview_file, "%d, %ld, %d, %ld, %lf, %.3e, %ld, %ld, %ld, %ld, %ld, %ld, %d\n",
-                                        n_bits[q]+1, nodes_peak, n_workers[w],
+                fprintf(overview_file, "%d, %ld, %lf, %d, %ld, %lf, %.3e, %ld, %ld, %ld, %ld, %ld, %ld, %d\n",
+                                        n_bits[q]+1, nodes_peak, avg_nodes, n_workers[w],
                                         n_gates, runtime, avg_gate_time, 
                                         plus_cacheput, plus_cached,
                                         gate_cacheput, gate_cached,
@@ -638,7 +610,7 @@ int bench_shor()
     strcpy(overview_fname, output_dir);
     strcat(overview_fname, "summary.csv");
     FILE *overview_file = fopen(overview_fname, "w");
-    fprintf(overview_file, "N, a, qubits, peak_nodes, success, "
+    fprintf(overview_file, "N, a, qubits, peak_nodes, avg_nodes, success, "
                            "workers, gates, runtime, avg_gate_time, "
                            "plus_cacheput, plus_cached, "
                            "gate_cacheput, gate_cached, "
@@ -680,7 +652,7 @@ int bench_shor()
     int n_workers[] = {1, 2, 4};
 
     // runtimes are written to single file
-    double runtime, avg_gate_time;
+    double runtime, avg_gate_time, avg_nodes;
     uint64_t nodes_peak, n_gates;
     uint64_t plus_cacheput, gate_cacheput, cgate_cacheput;
     uint64_t plus_cached, gate_cached, cgate_cached;
@@ -704,8 +676,8 @@ int bench_shor()
 
                 // bench twice, once with logging and once for timing
                 bool success;
-                runtime = bench_shor_once(N, a, n_workers[w], rseed, &success, NULL, NULL, NULL);
-                bench_shor_once(N, a, n_workers[w], rseed, &success, history_path, &nodes_peak, &n_gates);
+                runtime = bench_shor_once(N, a, n_workers[w], rseed, &success, NULL, NULL, NULL, NULL);
+                bench_shor_once(N, a, n_workers[w], rseed, &success, history_path, &nodes_peak, &avg_nodes, &n_gates);
 
                 // add summary of this run to overview file
                 avg_gate_time = runtime / (double) n_gates;
@@ -720,8 +692,8 @@ int bench_shor()
                 plus_cached = gate_cached = cgate_cached = 0;
                 plus_cacheput = gate_cacheput = cgate_cacheput = 0;
                 #endif
-                fprintf(overview_file, "%ld, %ld, %d, %ld, %d, %d, %ld, %lf, %.3e, %ld, %ld, %ld, %ld, %ld, %ld\n",
-                                        N, a, nqubits, nodes_peak, success,
+                fprintf(overview_file, "%ld, %ld, %d, %ld, %lf, %d, %d, %ld, %lf, %.3e, %ld, %ld, %ld, %ld, %ld, %ld\n",
+                                        N, a, nqubits, nodes_peak, avg_nodes, success,
                                         n_workers[w], n_gates, runtime, avg_gate_time, 
                                         plus_cacheput, plus_cached,
                                         gate_cacheput, gate_cached,

@@ -2466,7 +2466,7 @@ qdd_stats_log(QDD qdd)
     // (online) avg nodes
     double a = 1.0/(double)logcounter;
     double b = 1.0 - a;
-    nodes_avg = a * nodes_avg + b * (double)num_nodes;
+    nodes_avg = a * (double)num_nodes + b * nodes_avg;
 }
 
 uint64_t
