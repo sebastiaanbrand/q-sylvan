@@ -1073,6 +1073,7 @@ TASK_IMPL_3(QDD, qdd_gate_rec_amp, QDD, q, uint32_t, gate, BDDVAR, target)
         low = CALL(qdd_plus_amp, low1, low2);
         qdd_refs_push(low);
         high = SYNC(qdd_plus_amp);
+        qdd_refs_push(1);
         res = qdd_makenode(target, low, high);
     }
     else { // var < target: not at target qubit yet, recursive calls down
@@ -1131,6 +1132,7 @@ TASK_IMPL_3(QDD, qdd_gate_rec_complex, QDD, qdd, uint32_t, gateid, BDDVAR, targe
         res_low = CALL(qdd_plus_complex, QDD_PTR(low), QDD_PTR(high), a_u00, b_u01);
         qdd_refs_push(low);
         res_high = SYNC(qdd_plus_complex);
+        qdd_refs_pop(1);
         res = qdd_makenode(target, res_low, res_high);
     }
     else { // var < target: not at target qubit yet, recursive calls down
