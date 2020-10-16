@@ -149,44 +149,55 @@ int test_grover_cnf()
     // 2 qubit test
     nqubits = 2;
     // "flagged" cnf (~x1 V ~x2)^(~x1 V x2)^(x1 V ~x2)
-    bool x2[] = {0,0,1,0,0,1}; // In the order c1(x2,x1),c2(x2,x1), etc.
+    bool cnf2[] = {0,0,1,0,0,1}; // In the order c1(x2,x1),c2(x2,x1), etc.
+    bool ans2[] = {1,1};
     clauses = 3;
     answers = 1;
-    grov = qdd_grover_cnf(nqubits, x2, clauses, answers);
-    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(grov, x2); 
-    printf("00: %d\n", a);
-    // test_assert(a == C_ZERO);
-    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(grov, x2); 
-    printf("01: %d\n", a);
-    // test_assert(a == C_ZERO);
-    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(grov, x2); 
-    printf("10: %d\n", a);
-    // test_assert(a == C_ZERO);
-    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(grov, x2); 
-    printf("11: %d\n", a);
-    // test_assert(a == C_ONE);  prob = comp_to_prob(comp_value(a));
-    test_assert(qdd_is_unitvector(grov, nqubits));
+    grov = qdd_grover_cnf(nqubits, cnf2, clauses, answers);
+    // test probabilities
+    prob = 0;
+    for (int k = 0; k < (1<<(nqubits+1+clauses)); k++) {
+        bool *x = int_to_bitarray(k, nqubits+1+clauses, true);
+        a = qdd_get_amplitude(grov, x);
+        if (a != 0) {
+            _print_bitstring(x,nqubits+1+clauses,false);
+            printf("\t");
+            printf("%lf",comp_to_prob(comp_value(a)));
+            printf("\n");
+        }
+        if (x[0] == ans2[0] && x[1] == ans2[1])
+            prob += comp_to_prob(comp_value(a));
+    }
+    test_assert(qdd_is_unitvector(grov, nqubits+1+clauses));
 
-    if(VERBOSE) printf("qdd %2d-qubit cnf Grover:        ok (Pr(flag) = %lf)\n", nqubits, prob);
+    if(VERBOSE) printf("qdd %2d-qubit cnf Grover: ok (Pr(flag) = %lf)\n", nqubits, prob);
 
 
-    // // 3 qubit test
-    // nqubits = 3;
-    // // "flagged" cnf (~x1 V ~x2 V ~x3)^(~x1 V ~x2 V x3)^(~x1 V x2 V ~x3)^(x1 V ~x2 V ~x3)^(x1 V ~x2 V x3)^(x1 V x2 V ~x3)^(x1 V x2 V x3)
-    // bool x3[] = {0,0,0,0,0,1,0,1,0,1,0,0,1,0,1,1,1,0,1,1,1}; // In the order c1(x3,x2,x1),c2(x3,x2,x1), etc.
-    // answers = 1;
-    // grov = qdd_grover_cnf(3, x3, answers);
-    // x3[2] = 0; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
-    // x3[2] = 0; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
-    // x3[2] = 0; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
-    // x3[2] = 0; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) > 0.94);  prob = comp_to_prob(comp_value(a));
-    // x3[2] = 1; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
-    // x3[2] = 1; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
-    // x3[2] = 1; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
-    // x3[2] = 1; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(grov, x3); test_assert(comp_to_prob(comp_value(a)) < 0.008);
-    // test_assert(qdd_is_unitvector(grov, 3));
+    // 3 qubit test
+    nqubits = 3;
+    // "flagged" cnf (~x1 V ~x2 V ~x3)^(~x1 V ~x2 V x3)^(~x1 V x2 V ~x3)^(x1 V ~x2 V ~x3)^(x1 V ~x2 V x3)^(x1 V x2 V ~x3)^(x1 V x2 V x3)
+    bool cnf3[] = {0,0,0,0,0,1,0,1,0,1,0,0,1,0,1,1,1,0,1,1,1}; // In the order c1(x3,x2,x1),c2(x3,x2,x1), etc.
+    bool ans3[] = {1,1,1};
+    clauses = 3;
+    answers = 1;
+    grov = qdd_grover_cnf(nqubits, cnf3, clauses, answers);
+    // test probabilities
+    prob = 0;
+    for (int k = 0; k < (1<<(nqubits+1+clauses)); k++) {
+        bool *x = int_to_bitarray(k, nqubits+1+clauses, true);
+        a = qdd_get_amplitude(grov, x);
+        if (a != 0) {
+            _print_bitstring(x,nqubits+1+clauses,false);
+            printf("\t");
+            printf("%lf",comp_to_prob(comp_value(a)));
+            printf("\n");
+        }
+        if (x[0] == ans3[0] && x[1] == ans3[1] && x[2] == ans3[2])
+            prob += comp_to_prob(comp_value(a));
+    }
+    test_assert(qdd_is_unitvector(grov, nqubits+1+clauses));
 
-    // if(VERBOSE) printf("qdd %2d-qubit cnf Grover:        ok (Pr(flag) = %lf)\n", nqubits, prob);
+    if(VERBOSE) printf("qdd %2d-qubit cnf Grover: ok (Pr(flag) = %lf)\n", nqubits, prob);
 
     return 0;
 }
