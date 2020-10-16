@@ -1300,8 +1300,8 @@ TASK_IMPL_6(QDD, qdd_cgate_range_rec_amp, QDD, q, uint32_t, gate, BDDVAR, c_firs
     QDD low, high;
     // Not at first control qubit yet, apply to both children
     if (k < c_first) {
-        var++;
         qdd_get_topvar(q, c_first, &var, &low, &high);
+        var++;
         qdd_refs_spawn(SPAWN(qdd_cgate_range_rec_amp, high, gate, c_first, c_last, t, var));
         low = CALL(qdd_cgate_range_rec_amp, low, gate, c_first, c_last, t, var);
         qdd_refs_push(low);
@@ -1357,8 +1357,8 @@ TASK_IMPL_6(QDD, qdd_cgate_range_rec_complex, QDD, q, uint32_t, gate, BDDVAR, c_
     QDD low, high;
     // Not at first control qubit yet, apply to both children
     if (k < c_first) {
-        var++;
         qdd_get_topvar(q, c_first, &var, &low, &high);
+        var++;
         qdd_refs_spawn(SPAWN(qdd_cgate_range_rec_complex, high, gate, c_first, c_last, t, var));
         low = CALL(qdd_cgate_range_rec_complex, low, gate, c_first, c_last, t, var);
         qdd_refs_push(low);
