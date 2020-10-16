@@ -58,11 +58,6 @@ static const QDD qdd_amp_val_mask = 0x0020000000000000LL;
 static const QDD qdd_amp_mask     = 0x7fffff0000000000LL;
 static const QDD qdd_ptr_mask     = 0x000000ffffffffffLL;
 
-typedef struct __attribute__((packed)) qddnode {
-    QDD low, high;
-} *qddnode_t; // 16 bytes
-
-
 /**
  * Gets only the AMP information of a QDD edge `q`.
  */
@@ -541,6 +536,11 @@ qdd_refs_sync(QDD result)
 
 /******************</garbage collection, references, marking>******************/
 
+/**
+ * Gets either the top node of the qdd, or the node with var 't' if this
+ * variable would otherwise be skipped. The "node" is returned as 
+ * (*topvar, *low, *high).
+ */
 static void
 qdd_get_topvar(QDD qdd, BDDVAR t, BDDVAR *topvar, QDD *low, QDD *high)
 {
@@ -1039,7 +1039,8 @@ TASK_IMPL_4(QDD, qdd_plus_complex, PTR, a, PTR, b, complex_t, ca, complex_t, cb)
 
 TASK_IMPL_3(QDD, qdd_gate_rec_amp, QDD, q, uint32_t, gate, BDDVAR, target)
 {
-    // TODO: trivial cases ? (at least amp ZERO)
+    // Trivial cases
+    if (QDD_AMP(q) == C_ZERO) return q;
 
     BDDVAR var;
     QDD res, low, high;
@@ -1049,8 +1050,11 @@ TASK_IMPL_3(QDD, qdd_gate_rec_amp, QDD, q, uint32_t, gate, BDDVAR, target)
     // Check cache
     bool cachenow = ((var % granularity) == 0);
     if (cachenow) {
-        if (cache_get3(CACHE_QDD_GATE, GATE_OPID_40(gate, target, 0), q, sylvan_false, &res)) {
+        if (cache_get3(CACHE_QDD_GATE, sylvan_false, QDD_PTR(q), GATE_OPID_40(gate, target, 0), &res)) {
             sylvan_stats_count(QDD_GATE_CACHED);
+            // Multiply root of res with root of input qdd
+            AMP new_root_amp = amp_mul(QDD_AMP(q), QDD_AMP(res));
+            res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
             return res;
         }
     }
@@ -1068,9 +1072,9 @@ TASK_IMPL_3(QDD, qdd_gate_rec_amp, QDD, q, uint32_t, gate, BDDVAR, target)
         qdd_refs_spawn(SPAWN(qdd_plus_amp, high1, high2));
         low = CALL(qdd_plus_amp, low1, low2);
         qdd_refs_push(low);
-        high = SYNC(qdd_plus_amp);
+        high = qdd_refs_sync(SYNC(qdd_plus_amp));
+        qdd_refs_pop(1);
         res = qdd_makenode(target, low, high);
-       
     }
     else { // var < target: not at target qubit yet, recursive calls down
         qdd_refs_spawn(SPAWN(qdd_gate_rec_amp, high, gate, target));
@@ -1081,19 +1085,21 @@ TASK_IMPL_3(QDD, qdd_gate_rec_amp, QDD, q, uint32_t, gate, BDDVAR, target)
         res  = qdd_makenode(var, low, high);
     }
 
-    // Multiply root amp of sum with input root amp, add to cache, return
-    AMP new_root_amp = amp_mul(QDD_AMP(q), QDD_AMP(res));
-    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
+    // Store not yet "root normalized" result in cache
     if (cachenow) {
-        if (cache_put3(CACHE_QDD_GATE, GATE_OPID_40(gate, target, 0), q, sylvan_false, res)) 
+        if (cache_put3(CACHE_QDD_GATE, sylvan_false, QDD_PTR(q), GATE_OPID_40(gate, target, 0), res)) 
             sylvan_stats_count(QDD_GATE_CACHEDPUT);
     }
+    // Multiply amp res with amp of input qdd
+    AMP new_root_amp = amp_mul(QDD_AMP(q), QDD_AMP(res));
+    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     return res;
 }
 
 TASK_IMPL_3(QDD, qdd_gate_rec_complex, QDD, qdd, uint32_t, gateid, BDDVAR, target)
 {
-    // TODO: trivial cases ? (at least amp ZERO)
+    // Trivial cases
+    if (QDD_AMP(qdd) == C_ZERO) return qdd;
 
     BDDVAR var;
     QDD res, low, high;
@@ -1105,8 +1111,12 @@ TASK_IMPL_3(QDD, qdd_gate_rec_complex, QDD, qdd, uint32_t, gateid, BDDVAR, targe
     // Check cache
     bool cachenow = ((var % granularity) == 0);
     if (cachenow) {
-        if (cache_get3(CACHE_QDD_GATE, GATE_OPID_40(gateid, target, 0), qdd, sylvan_false, &res)) {
+        if (cache_get3(CACHE_QDD_GATE, GATE_OPID_40(gateid, target, 0), QDD_PTR(qdd), sylvan_false, &res)) {
             sylvan_stats_count(QDD_GATE_CACHED);
+            // Multiply amp res with amp of input qdd
+            complex_t c = comp_mul(comp_value(QDD_AMP(qdd)), comp_value(QDD_AMP(res)));
+            AMP new_root_amp = qdd_comp_lookup(c);
+            res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
             return res;
         }
     }
@@ -1121,7 +1131,8 @@ TASK_IMPL_3(QDD, qdd_gate_rec_complex, QDD, qdd, uint32_t, gateid, BDDVAR, targe
         qdd_refs_spawn(SPAWN(qdd_plus_complex, QDD_PTR(low), QDD_PTR(high), a_u10, b_u11));
         res_low = CALL(qdd_plus_complex, QDD_PTR(low), QDD_PTR(high), a_u00, b_u01);
         qdd_refs_push(low);
-        res_high = SYNC(qdd_plus_complex);
+        res_high = qdd_refs_sync(SYNC(qdd_plus_complex));
+        qdd_refs_pop(1);
         res = qdd_makenode(target, res_low, res_high);
     }
     else { // var < target: not at target qubit yet, recursive calls down
@@ -1133,14 +1144,15 @@ TASK_IMPL_3(QDD, qdd_gate_rec_complex, QDD, qdd, uint32_t, gateid, BDDVAR, targe
         res  = qdd_makenode(var, low, high);
     }
 
-    // Multiply root amp of sum with input root amp, add to cache, return
+    // Store not yet "root normalized" result in cache
+    if (cachenow) {
+        if (cache_put3(CACHE_QDD_GATE, GATE_OPID_40(gateid, target, 0), QDD_PTR(qdd), sylvan_false, res))
+            sylvan_stats_count(QDD_GATE_CACHEDPUT);
+    }
+    // Multiply amp res with amp of input qdd
     complex_t c = comp_mul(comp_value(QDD_AMP(qdd)), comp_value(QDD_AMP(res)));
     AMP new_root_amp = qdd_comp_lookup(c);
     res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
-    if (cachenow) {
-        if (cache_put3(CACHE_QDD_GATE, GATE_OPID_40(gateid, target, 0), qdd, sylvan_false, res))
-            sylvan_stats_count(QDD_GATE_CACHEDPUT);
-    }
     return res;
 }
 
@@ -1160,10 +1172,13 @@ TASK_IMPL_5(QDD, qdd_cgate_rec_amp, QDD, q, uint32_t, gate, BDDVAR*, cs, uint32_
     // Check cache
     bool cachenow = ((var % granularity) == 0);
     if (cachenow) {
-        if (cache_get3(CACHE_QDD_CGATE, sylvan_false, q,
+        if (cache_get3(CACHE_QDD_CGATE, sylvan_false, QDD_PTR(q),
                     GATE_OPID_64(gate, ci, cs[0], cs[1], cs[2], t),
                     &res)) {
             sylvan_stats_count(QDD_CGATE_CACHED);
+            // Multiply root amp of res with input root amp
+            AMP new_root_amp = amp_mul(QDD_AMP(q), QDD_AMP(res));
+            res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
             return res;
         }
     }
@@ -1185,18 +1200,17 @@ TASK_IMPL_5(QDD, qdd_cgate_rec_amp, QDD, q, uint32_t, gate, BDDVAR*, cs, uint32_
     }
     res = qdd_makenode(var, low, high);
 
-    // Multiply root amp of sum with input root amp
-    AMP new_root_amp = amp_mul(QDD_AMP(q), QDD_AMP(res));
-    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
-
-    // Add to cache, return
+    // Store not yet "root normalized" result in cache
     if (cachenow) {
-        if (cache_put3(CACHE_QDD_CGATE, sylvan_false, q,
+        if (cache_put3(CACHE_QDD_CGATE, sylvan_false, QDD_PTR(q),
                     GATE_OPID_64(gate, ci, cs[0], cs[1], cs[2], t),
                     res)) {
             sylvan_stats_count(QDD_CGATE_CACHEDPUT);
         }
     }
+    // Multiply root amp of res with input root amp
+    AMP new_root_amp = amp_mul(QDD_AMP(q), QDD_AMP(res));
+    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     return res;
 }
 
@@ -1216,10 +1230,14 @@ TASK_IMPL_5(QDD, qdd_cgate_rec_complex, QDD, q, uint32_t, gate, BDDVAR*, cs, uin
     // Check cache
     bool cachenow = ((var % granularity) == 0);
     if (cachenow) {
-        if (cache_get3(CACHE_QDD_CGATE, sylvan_false, q,
+        if (cache_get3(CACHE_QDD_CGATE, sylvan_false, QDD_PTR(q),
                     GATE_OPID_64(gate, ci, cs[0], cs[1], cs[2], t),
                     &res)) {
             sylvan_stats_count(QDD_CGATE_CACHED);
+            // Multiply root amp of res with input root amp
+            complex_t comp = comp_mul(comp_value(QDD_AMP(q)), comp_value(QDD_AMP(res)));
+            AMP new_root_amp = qdd_comp_lookup(comp);
+            res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
             return res;
         }
     }
@@ -1241,86 +1259,93 @@ TASK_IMPL_5(QDD, qdd_cgate_rec_complex, QDD, q, uint32_t, gate, BDDVAR*, cs, uin
     }
     res = qdd_makenode(var, low, high);
 
-    // Multiply root amp of sum with input root amp
-    complex_t comp = comp_mul(comp_value(QDD_AMP(q)), comp_value(QDD_AMP(res)));
-    AMP new_root_amp = qdd_comp_lookup(comp);
-    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
-
-    // Add to cache, return
+    // Store not yet "root normalized" result in cache
     if (cachenow) {
-        if (cache_put3(CACHE_QDD_CGATE, sylvan_false, q,
+        if (cache_put3(CACHE_QDD_CGATE, sylvan_false, QDD_PTR(q),
                        GATE_OPID_64(gate, ci, cs[0], cs[1], cs[2], t),
                        res)) {
             sylvan_stats_count(QDD_CGATE_CACHEDPUT);
         }
     }
+    // Multiply root amp of res with input root amp
+    complex_t comp = comp_mul(comp_value(QDD_AMP(q)), comp_value(QDD_AMP(res)));
+    AMP new_root_amp = qdd_comp_lookup(comp);
+    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     return res;
 }
 
 TASK_IMPL_6(QDD, qdd_cgate_range_rec_amp, QDD, q, uint32_t, gate, BDDVAR, c_first, BDDVAR, c_last, BDDVAR, t, BDDVAR, k)
 {
+    // Past last control (done with "control part" of controlled gate)
+    if (k > c_last) {
+        return CALL(qdd_gate_rec_amp, q, gate, t);
+    }
+
     // Check cache
     QDD res;
     bool cachenow = ((k % granularity) == 0);
     if (cachenow) {
-        if (cache_get3(CACHE_QDD_CGATE_RANGE, sylvan_false, q,
+        if (cache_get3(CACHE_QDD_CGATE_RANGE, sylvan_false, QDD_PTR(q),
                        GATE_OPID_64(gate, c_first, c_last, k, t, 0),
                        &res)) {
             sylvan_stats_count(QDD_CGATE_CACHED);
+            // Multiply root amp of result with the input root amp
+            AMP new_root_amp = amp_mul(QDD_AMP(q), QDD_AMP(res));
+            res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
             return res;
         }
     }
 
-    // Past last control
-    if (k > c_last) {
-        res = CALL(qdd_gate_rec_amp, q, gate, t);
+    BDDVAR var;
+    QDD low, high;
+    // Not at first control qubit yet, apply to both children
+    if (k < c_first) {
+        var++;
+        qdd_get_topvar(q, c_first, &var, &low, &high);
+        qdd_refs_spawn(SPAWN(qdd_cgate_range_rec_amp, high, gate, c_first, c_last, t, var));
+        low = CALL(qdd_cgate_range_rec_amp, low, gate, c_first, c_last, t, var);
+        qdd_refs_push(low);
+        high = qdd_refs_sync(SYNC(qdd_cgate_range_rec_amp));
+        qdd_refs_pop(1);
+        var--;
     }
+    // k is a control qubit, control on q_k = |1> (high edge)
     else {
-        BDDVAR var;
-        QDD low, high;
-        // Not at first control qubit yet, apply to both children
-        if (k < c_first) {
-            qdd_get_topvar(q, c_first, &var, &low, &high);
-            qdd_refs_spawn(SPAWN(qdd_cgate_range_rec_amp, high, gate, c_first, c_last, t, var));
-            low = CALL(qdd_cgate_range_rec_amp, low, gate, c_first, c_last, t, var);
-            qdd_refs_push(low);
-            high = qdd_refs_sync(SYNC(qdd_cgate_range_rec_amp));
-            qdd_refs_pop(1);
-        }
-        // k is a control qubit, control on q_k = |1> (high edge)
-        else {
-            assert(c_first <= k && k <= c_last);
-            qdd_get_topvar(q, k, &var, &low, &high);
-            assert(var == k);
-            k++;
-            high = CALL(qdd_cgate_range_rec_amp, high, gate, c_first, c_last, t, k);
-            k--;
-        }
-        res = qdd_makenode(var, low, high);
-
-        // Multiply root amp of result with the input root amp
-        AMP new_root_amp = amp_mul(QDD_AMP(q), QDD_AMP(res));
-        res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
+        assert(c_first <= k && k <= c_last);
+        qdd_get_topvar(q, k, &var, &low, &high);
+        assert(var == k);
+        k++;
+        high = CALL(qdd_cgate_range_rec_amp, high, gate, c_first, c_last, t, k);
+        k--;
     }
+    res = qdd_makenode(var, low, high);
 
-    // Add to cache, return
+    // Store not yet "root normalized" result in cache
     if (cachenow) {
-        if (cache_put3(CACHE_QDD_CGATE_RANGE, sylvan_false, q,
+        if (cache_put3(CACHE_QDD_CGATE_RANGE, sylvan_false, QDD_PTR(q),
                        GATE_OPID_64(gate, c_first, c_last, k, t, 0),
                        res)) {
             sylvan_stats_count(QDD_CGATE_CACHEDPUT);
         }
     }
+    // Multiply root amp of result with the input root amp
+    AMP new_root_amp = amp_mul(QDD_AMP(q), QDD_AMP(res));
+    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     return res;
 }
 
 TASK_IMPL_6(QDD, qdd_cgate_range_rec_complex, QDD, q, uint32_t, gate, BDDVAR, c_first, BDDVAR, c_last, BDDVAR, t, BDDVAR, k)
 {
+    // Past last control (done with "control part" of controlled gate)
+    if (k > c_last) {
+        return CALL(qdd_gate_rec_complex, q, gate, t);
+    }
+
     // Check cache
     QDD res;
     bool cachenow = ((k % granularity) == 0);
     if (cachenow) {
-        if (cache_get3(CACHE_QDD_CGATE_RANGE, sylvan_false, q,
+        if (cache_get3(CACHE_QDD_CGATE_RANGE, sylvan_false, QDD_PTR(q),
                        GATE_OPID_64(gate, c_first, c_last, k, t, 0),
                        &res)) {
             sylvan_stats_count(QDD_CGATE_CACHED);
@@ -1328,51 +1353,62 @@ TASK_IMPL_6(QDD, qdd_cgate_range_rec_complex, QDD, q, uint32_t, gate, BDDVAR, c_
         }
     }
 
-    // Past last control
-    if (k > c_last) {
-        res = CALL(qdd_gate_rec_complex, q, gate, t);
+    BDDVAR var;
+    QDD low, high;
+    // Not at first control qubit yet, apply to both children
+    if (k < c_first) {
+        var++;
+        qdd_get_topvar(q, c_first, &var, &low, &high);
+        qdd_refs_spawn(SPAWN(qdd_cgate_range_rec_complex, high, gate, c_first, c_last, t, var));
+        low = CALL(qdd_cgate_range_rec_complex, low, gate, c_first, c_last, t, var);
+        qdd_refs_push(low);
+        high = qdd_refs_sync(SYNC(qdd_cgate_range_rec_complex));
+        qdd_refs_pop(1);
+        var--;
     }
+    // k is a control qubit, control on q_k = |1> (high edge)
     else {
-        BDDVAR var;
-        QDD low, high;
-        // Not at first control qubit yet, apply to both children
-        if (k < c_first) {
-            qdd_get_topvar(q, c_first, &var, &low, &high);
-            qdd_refs_spawn(SPAWN(qdd_cgate_range_rec_complex, high, gate, c_first, c_last, t, var));
-            low = CALL(qdd_cgate_range_rec_complex, low, gate, c_first, c_last, t, var);
-            qdd_refs_push(low);
-            high = qdd_refs_sync(SYNC(qdd_cgate_range_rec_complex));
-            qdd_refs_pop(1);
-        }
-        // k is a control qubit, control on q_k = |1> (high edge)
-        else {
-            assert(c_first <= k && k <= c_last);
-            qdd_get_topvar(q, k, &var, &low, &high);
-            assert(var == k);
-            k++;
-            high = CALL(qdd_cgate_range_rec_complex, high, gate, c_first, c_last, t, k);
-            k--;
-        }
-        res = qdd_makenode(var, low, high);
-
-        // Multiply root amp of sum with input root amp
-        complex_t comp = comp_mul(comp_value(QDD_AMP(q)), comp_value(QDD_AMP(res)));
-        AMP new_root_amp = qdd_comp_lookup(comp);
-        res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
+        assert(c_first <= k && k <= c_last);
+        qdd_get_topvar(q, k, &var, &low, &high);
+        assert(var == k);
+        k++;
+        high = CALL(qdd_cgate_range_rec_complex, high, gate, c_first, c_last, t, k);
+        k--;
     }
+    res = qdd_makenode(var, low, high);
 
-    // Add to cache, return
+    // Store not yet "root normalized" result in cache
     if (cachenow) {
-        if (cache_put3(CACHE_QDD_CGATE_RANGE, sylvan_false, q,
+        if (cache_put3(CACHE_QDD_CGATE_RANGE, sylvan_false, QDD_PTR(q),
                        GATE_OPID_64(gate, c_first, c_last, k, t, 0),
                        res)) {
             sylvan_stats_count(QDD_CGATE_CACHEDPUT);
         }
     }
+    // Multiply root amp of sum with input root amp
+    complex_t comp = comp_mul(comp_value(QDD_AMP(q)), comp_value(QDD_AMP(res)));
+    AMP new_root_amp = qdd_comp_lookup(comp);
+    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     return res;
 }
 
-TASK_IMPL_4(QDD, qdd_matvec_mult, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR, nextvar)
+/* Wrapper for matrix vector multiplication. */
+TASK_IMPL_3(QDD, qdd_matvec_mult, QDD, mat, QDD, vec, BDDVAR, nvars)
+{
+    assert(!auto_gc_ctable && "auto gc of ctable not implemented for mult operations");
+    qdd_do_before_gate(&vec);
+    return CALL(qdd_matvec_mult_rec, mat, vec, nvars, 0);
+}
+
+/* Wrapper for matrix vector multiplication. */
+TASK_IMPL_3(QDD, qdd_matmat_mult, QDD, a, QDD, b, BDDVAR, nvars)
+{
+    assert(!auto_gc_ctable && "auto gc of ctable not implemented for mult operations");
+    //qdd_do_before_gate(&vec);
+    return CALL(qdd_matmat_mult_rec, a, b, nvars, 0);
+}
+
+TASK_IMPL_4(QDD, qdd_matvec_mult_rec, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR, nextvar)
 {
     // Trivial case: either one is all 0
     if (QDD_AMP(mat) == C_ZERO || QDD_AMP(vec) == C_ZERO)
@@ -1425,14 +1461,14 @@ TASK_IMPL_4(QDD, qdd_matvec_mult, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR, nex
     // |u10 u11| |vec_high|          |u10|           |u11|
     QDD res_low00, res_low10, res_high01, res_high11;
     nextvar++;
-    qdd_refs_spawn(SPAWN(qdd_matvec_mult, u00, vec_low,  nvars, nextvar)); // 1
-    qdd_refs_spawn(SPAWN(qdd_matvec_mult, u10, vec_low,  nvars, nextvar)); // 2
-    qdd_refs_spawn(SPAWN(qdd_matvec_mult, u01, vec_high, nvars, nextvar)); // 3
-    res_high11 = CALL(qdd_matvec_mult, u11, vec_high, nvars, nextvar);
+    qdd_refs_spawn(SPAWN(qdd_matvec_mult_rec, u00, vec_low,  nvars, nextvar)); // 1
+    qdd_refs_spawn(SPAWN(qdd_matvec_mult_rec, u10, vec_low,  nvars, nextvar)); // 2
+    qdd_refs_spawn(SPAWN(qdd_matvec_mult_rec, u01, vec_high, nvars, nextvar)); // 3
+    res_high11 = CALL(qdd_matvec_mult_rec, u11, vec_high, nvars, nextvar);
     qdd_refs_push(res_high11);
-    res_high01 = qdd_refs_sync(SYNC(qdd_matvec_mult)); // 3
-    res_low10  = qdd_refs_sync(SYNC(qdd_matvec_mult)); // 2
-    res_low00  = qdd_refs_sync(SYNC(qdd_matvec_mult)); // 1
+    res_high01 = qdd_refs_sync(SYNC(qdd_matvec_mult_rec)); // 3
+    res_low10  = qdd_refs_sync(SYNC(qdd_matvec_mult_rec)); // 2
+    res_low00  = qdd_refs_sync(SYNC(qdd_matvec_mult_rec)); // 1
     qdd_refs_pop(1);
     nextvar--;
 
@@ -1453,7 +1489,7 @@ TASK_IMPL_4(QDD, qdd_matvec_mult, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR, nex
     return res;
 }
 
-TASK_IMPL_4(QDD, qdd_matmat_mult, QDD, a, QDD, b, BDDVAR, nvars, BDDVAR, nextvar)
+TASK_IMPL_4(QDD, qdd_matmat_mult_rec, QDD, a, QDD, b, BDDVAR, nvars, BDDVAR, nextvar)
 {
     // Trivial case: either one is all 0
     if (QDD_AMP(a) == C_ZERO || QDD_AMP(b) == C_ZERO)
@@ -1512,22 +1548,22 @@ TASK_IMPL_4(QDD, qdd_matmat_mult, QDD, a, QDD, b, BDDVAR, nvars, BDDVAR, nextvar
     // |a10 a11| |b10 b11|      |a10|      |a11|      |a10|      |a11|
     QDD a00_b00, a00_b01, a10_b00, a10_b01, a01_b10, a01_b11, a11_b10, a11_b11;
     nextvar++;
-    qdd_refs_spawn(SPAWN(qdd_matmat_mult, a00, b00, nvars, nextvar)); // 1
-    qdd_refs_spawn(SPAWN(qdd_matmat_mult, a00, b01, nvars, nextvar)); // 2
-    qdd_refs_spawn(SPAWN(qdd_matmat_mult, a10, b00, nvars, nextvar)); // 3
-    qdd_refs_spawn(SPAWN(qdd_matmat_mult, a10, b01, nvars, nextvar)); // 4
-    qdd_refs_spawn(SPAWN(qdd_matmat_mult, a01, b10, nvars, nextvar)); // 5
-    qdd_refs_spawn(SPAWN(qdd_matmat_mult, a01, b11, nvars, nextvar)); // 6
-    qdd_refs_spawn(SPAWN(qdd_matmat_mult, a11, b10, nvars, nextvar)); // 7
-    a11_b11 = CALL(qdd_matmat_mult, a11, b11, nvars, nextvar);
+    qdd_refs_spawn(SPAWN(qdd_matmat_mult_rec, a00, b00, nvars, nextvar)); // 1
+    qdd_refs_spawn(SPAWN(qdd_matmat_mult_rec, a00, b01, nvars, nextvar)); // 2
+    qdd_refs_spawn(SPAWN(qdd_matmat_mult_rec, a10, b00, nvars, nextvar)); // 3
+    qdd_refs_spawn(SPAWN(qdd_matmat_mult_rec, a10, b01, nvars, nextvar)); // 4
+    qdd_refs_spawn(SPAWN(qdd_matmat_mult_rec, a01, b10, nvars, nextvar)); // 5
+    qdd_refs_spawn(SPAWN(qdd_matmat_mult_rec, a01, b11, nvars, nextvar)); // 6
+    qdd_refs_spawn(SPAWN(qdd_matmat_mult_rec, a11, b10, nvars, nextvar)); // 7
+    a11_b11 = CALL(qdd_matmat_mult_rec, a11, b11, nvars, nextvar);
     qdd_refs_push(a11_b11);
-    a11_b10 = qdd_refs_sync(SYNC(qdd_matmat_mult)); // 7
-    a01_b11 = qdd_refs_sync(SYNC(qdd_matmat_mult)); // 6
-    a01_b10 = qdd_refs_sync(SYNC(qdd_matmat_mult)); // 5
-    a10_b01 = qdd_refs_sync(SYNC(qdd_matmat_mult)); // 4
-    a10_b00 = qdd_refs_sync(SYNC(qdd_matmat_mult)); // 3
-    a00_b01 = qdd_refs_sync(SYNC(qdd_matmat_mult)); // 2
-    a00_b00 = qdd_refs_sync(SYNC(qdd_matmat_mult)); // 1
+    a11_b10 = qdd_refs_sync(SYNC(qdd_matmat_mult_rec)); // 7
+    a01_b11 = qdd_refs_sync(SYNC(qdd_matmat_mult_rec)); // 6
+    a01_b10 = qdd_refs_sync(SYNC(qdd_matmat_mult_rec)); // 5
+    a10_b01 = qdd_refs_sync(SYNC(qdd_matmat_mult_rec)); // 4
+    a10_b00 = qdd_refs_sync(SYNC(qdd_matmat_mult_rec)); // 3
+    a00_b01 = qdd_refs_sync(SYNC(qdd_matmat_mult_rec)); // 2
+    a00_b00 = qdd_refs_sync(SYNC(qdd_matmat_mult_rec)); // 1
     qdd_refs_pop(1);
     nextvar--;
 
@@ -1644,7 +1680,7 @@ qdd_circuit_QFT_inv(QDD qdd, BDDVAR first, BDDVAR last)
     // Note that we're not swapping the qubit order in this function
     
     // H gates and phase gates (but now backwards)
-    for (a = last + 1; a-- > first; ) { // weird for loop because BDDVARs are unsigned
+    for (a = last + 1; a-- > first; ) { // weird for-loop because BDDVARs are unsigned
 
         // Controlled phase gates (negative angles this time)
         for (b = last; b >= (a+1); b--){
@@ -1662,16 +1698,11 @@ qdd_circuit_QFT_inv(QDD qdd, BDDVAR first, BDDVAR last)
 QDD
 qdd_circuit(QDD qdd, uint32_t circ_id, BDDVAR t1, BDDVAR t2)
 {
-    // TODO? caching here?
     switch (circ_id) {  // don't judge me please
         case CIRCID_swap          : return qdd_circuit_swap(qdd, t1, t2);
         case CIRCID_reverse_range : return qdd_circuit_reverse_range(qdd, t1, t2);
         case CIRCID_QFT           : return qdd_circuit_QFT(qdd, t1, t2);
         case CIRCID_QFT_inv       : return qdd_circuit_QFT_inv(qdd, t1, t2);
-        case CIRCID_phi_add_a     : return qdd_phi_add(qdd, t1, t2, shor_bits_a);
-        case CIRCID_phi_add_N     : return qdd_phi_add(qdd, t1, t2, shor_bits_N);
-        case CIRCID_phi_add_a_inv : return qdd_phi_add_inv(qdd, t1, t2, shor_bits_a);
-        case CIRCID_phi_add_N_inv : return qdd_phi_add_inv(qdd, t1, t2, shor_bits_N);
         default :
             assert ("Invalid circuit ID" && false);
     }
@@ -1812,482 +1843,6 @@ qdd_all_control_phase(QDD qdd, BDDVAR n, bool *x)
 
 
 
-/*******************************<Shor components>******************************/
-
-uint64_t 
-inverse_mod(uint64_t a, uint64_t N) {
-    int t = 0;
-    int newt = 1;
-    int r = N;
-    int newr = a;
-    int h;
-    while(newr != 0) {
-        int quotient = r / newr;
-        h = t;
-        t = newt;
-        newt = h - quotient * newt;
-        h = r;
-        r = newr;
-        newr = h - quotient * newr;
-    }
-    if(r > 1)
-        printf("ERROR: a is not invertible\n");
-    if(t < 0)
-        t = t + N;
-    return t;
-}
-
-QDD 
-qdd_phi_add(QDD qdd, BDDVAR first, BDDVAR last, bool* a) 
-{
-    LACE_ME;
-
-    QDD res = qdd;
-
-    int k;
-    int num_qubits = (last - first) + 1;
-    BDDVAR qubit;
-    for (int i = 0; i < num_qubits; i++) {
-        qubit = first + i;
-        for (int j = 0; j < (num_qubits-i); j++) {
-            if (a[j] == 1) {
-                k = num_qubits-j-i; // Rk = 2pi/2^k rotation
-                res = qdd_gate(res, GATEID_Rk(k), qubit);
-            }
-        }
-    }
-    return res;
-}
-
-QDD 
-qdd_phi_add_inv(QDD qdd, BDDVAR first, BDDVAR last, bool* a) 
-{
-    // These are all phase gates, so they'll all commute, so this is the exact
-    // same function als qdd_phi_add() but with inversed angles.
-    LACE_ME;
-
-    QDD res = qdd;
-
-    int k;
-    int num_qubits = (last - first) + 1;
-    BDDVAR qubit;
-    for (int i = 0; i < num_qubits; i++) {
-        qubit = first + i;
-        for (int j = 0; j < (num_qubits-i); j++) {
-            if (a[j] == 1) {
-                k = num_qubits-j-i; // Rk_dag = -2pi/2^k rotation
-                res = qdd_gate(res, GATEID_Rk_dag(k), qubit);
-            }
-        }
-    }
-    return res;
-}
-
-QDD
-qdd_phi_add_mod(QDD qdd, BDDVAR* cs, uint64_t a, uint64_t N)
-{
-    LACE_ME;
-    // clear cache (this function is called with different a, and cached results
-    // are not parameterized on a)
-    sylvan_clear_cache();
-    shor_set_globals(a, N); // set bitvalues of a/N (N says the same though)
-
-    // 1.  controlled(c1,c2) phi_add(a)
-    qdd = qdd_ccircuit(qdd, CIRCID_phi_add_a, cs, shor_wires.targ_first, shor_wires.targ_last);
-    // 2.  phi_add_inv(N)
-    qdd = qdd_circuit(qdd, CIRCID_phi_add_N_inv, shor_wires.targ_first, shor_wires.targ_last);
-    // 3.  QFT_inv
-    qdd = qdd_circuit(qdd, CIRCID_QFT_inv, shor_wires.targ_first, shor_wires.targ_last);
-    // 4.  CNOT (control = carry wire? = first of phi ADD, target = helper)
-    qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
-    qdd = qdd_cgate(qdd, GATEID_Z, shor_wires.helper, shor_wires.targ_first);
-    qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
-    // 5.  QFT
-    qdd = qdd_circuit(qdd, CIRCID_QFT, shor_wires.targ_first, shor_wires.targ_last);
-    // 6.  controlled phi_add(N) (control = helper)
-    BDDVAR controls[] = {shor_wires.helper, QDD_INVALID_VAR, QDD_INVALID_VAR};
-    qdd = qdd_ccircuit(qdd, CIRCID_phi_add_N, controls, shor_wires.targ_first, shor_wires.targ_last);
-    // 7. controlled(c1, c2) phi_add_inv(a)
-    qdd = qdd_ccircuit(qdd, CIRCID_phi_add_a_inv, cs, shor_wires.targ_first, shor_wires.targ_last);
-    // 8.  QFT_inv
-    qdd = qdd_circuit(qdd, CIRCID_QFT_inv, shor_wires.targ_first, shor_wires.targ_last);
-    // 9.  X on same wire as control of CNOT in 4/10
-    qdd = qdd_gate(qdd, GATEID_X, shor_wires.targ_first);
-    // 10. CNOT
-    qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
-    qdd = qdd_cgate(qdd, GATEID_Z, shor_wires.helper, shor_wires.targ_first);
-    qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
-    // 11. X on same wire as control of CNOT in 4/10
-    qdd = qdd_gate(qdd, GATEID_X, shor_wires.targ_first);
-    // 12. QFT
-    qdd = qdd_circuit(qdd, CIRCID_QFT, shor_wires.targ_first, shor_wires.targ_last);
-    // 13. controlled(c1,c2) phi_add(a)
-    qdd = qdd_ccircuit(qdd, CIRCID_phi_add_a, cs, shor_wires.targ_first, shor_wires.targ_last);
-
-    return qdd;
-}
-
-QDD
-qdd_phi_add_mod_inv(QDD qdd, BDDVAR* cs, uint64_t a, uint64_t N)
-{
-    // Inverse of function above
-    LACE_ME;
-    // clear cache (this function is called with different a, and cached results
-    // are not parameterized on a)
-    sylvan_clear_cache();
-    shor_set_globals(a, N); // set bitvalues of a/N (N says the same though)
-
-    // 13. controlled(c1,c2) phi_add_inv(a)
-    qdd = qdd_ccircuit(qdd, CIRCID_phi_add_a_inv, cs, shor_wires.targ_first, shor_wires.targ_last);
-    // 12. QFT^-1
-    qdd = qdd_circuit(qdd, CIRCID_QFT_inv, shor_wires.targ_first, shor_wires.targ_last);
-    // 11. X^-1 = X
-    qdd = qdd_gate(qdd, GATEID_X, shor_wires.targ_first);
-    // 10. CNOT^-1 = CNOT
-    qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
-    qdd = qdd_cgate(qdd, GATEID_Z, shor_wires.helper, shor_wires.targ_first);
-    qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
-    // 9.  X^-1 = X
-    qdd = qdd_gate(qdd, GATEID_X, shor_wires.targ_first);
-    // 8.  (QFT^-1)^-1 = QFT
-    qdd = qdd_circuit(qdd, CIRCID_QFT, shor_wires.targ_first, shor_wires.targ_last);
-    // 7.  controlled(c1, c2) phi_add(a)
-    qdd = qdd_ccircuit(qdd, CIRCID_phi_add_a, cs, shor_wires.targ_first, shor_wires.targ_last);
-    // 6.  controlled phi_add_inv(N) (control = helper)
-    BDDVAR controls[] = {shor_wires.helper, QDD_INVALID_VAR, QDD_INVALID_VAR};
-    qdd = qdd_ccircuit(qdd, CIRCID_phi_add_N_inv, controls, shor_wires.targ_first, shor_wires.targ_last);
-    // 5.  QFT^-1
-    qdd = qdd_circuit(qdd, CIRCID_QFT_inv, shor_wires.targ_first, shor_wires.targ_last);
-    // 4. CNOT^-1 = CNOT (control = carry wire? = first of phi ADD, target = helper)
-    qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
-    qdd = qdd_cgate(qdd, GATEID_Z, shor_wires.helper, shor_wires.targ_first);
-    qdd = qdd_gate(qdd, GATEID_H, shor_wires.helper);
-    // 3. (QFT^-1)^-1 = QFT
-    qdd = qdd_circuit(qdd, CIRCID_QFT, shor_wires.targ_first, shor_wires.targ_last);
-    // 2.  phi_add(N)
-    qdd = qdd_circuit(qdd, CIRCID_phi_add_N, shor_wires.targ_first, shor_wires.targ_last);
-    // 1.  controlled(c1,c2) phi_add_inv(a)
-    qdd = qdd_ccircuit(qdd, CIRCID_phi_add_a_inv, cs, shor_wires.targ_first, shor_wires.targ_last);
-
-    return qdd;
-}
-
-
-QDD
-qdd_cmult(QDD qdd, uint64_t a, uint64_t N)
-{
-    // this implements the _controlled_ cmult operation
-    // 1. QFT on bottom register
-    qdd = qdd_circuit(qdd, CIRCID_QFT, shor_wires.targ_first, shor_wires.targ_last);
-
-    // 2. loop over k = {0, n-1}
-    uint64_t t = a;
-    BDDVAR cs[] = {shor_wires.top, QDD_INVALID_VAR, QDD_INVALID_VAR};
-    for (BDDVAR i = shor_wires.ctrl_last; i >= shor_wires.ctrl_first; i--) {
-        // 2a. double controlled phi_add_mod(a* 2^k)
-        cs[1] = i;
-        qdd = qdd_phi_add_mod(qdd, cs, t, N);
-        t = (2*t) % N;
-    }
-
-    // 3. QFT^-1 on bottom register
-    qdd = qdd_circuit(qdd, CIRCID_QFT_inv, shor_wires.targ_first, shor_wires.targ_last);
-
-    return qdd;
-}
-
-QDD
-qdd_cmult_inv(QDD qdd, uint64_t a, uint64_t N)
-{
-    // not quite inverse of above
-    // 1. QFT on bottom register
-    qdd = qdd_circuit(qdd, CIRCID_QFT, shor_wires.targ_first, shor_wires.targ_last);
-    
-    // 2. same loop over k but with phi_add_mod_inv
-    uint64_t t = a;
-    BDDVAR cs[] = {shor_wires.top, QDD_INVALID_VAR, QDD_INVALID_VAR};
-    for (BDDVAR i = shor_wires.ctrl_last; i >= shor_wires.ctrl_first; i--) {
-        // 2a. double controlled phi_add_mod_inv(a* 2^k)
-        cs[1] = i;
-        qdd = qdd_phi_add_mod_inv(qdd, cs, t, N);
-        t = (2*t) % N;
-    }
-
-    // 3. QFT^-1 on bottom register
-    qdd = qdd_circuit(qdd, CIRCID_QFT_inv, shor_wires.targ_first, shor_wires.targ_last);
-
-    return qdd;
-}
-
-QDD
-qdd_shor_ua(QDD qdd,  uint64_t a, uint64_t N)
-{
-    LACE_ME;
-
-    // 1. controlled Cmult(a)
-    qdd = qdd_cmult(qdd, a, N);
-
-    // 2. controlled swap top/bottom registers
-    BDDVAR cs[] = {shor_wires.top, QDD_INVALID_VAR, QDD_INVALID_VAR};
-    for (uint32_t i = shor_wires.ctrl_first; i <= shor_wires.ctrl_last; i++) {
-        qdd = qdd_ccircuit(qdd, CIRCID_swap, cs, i, shor_wires.targ_first+i);
-    }
-
-    // 3. controlled Cmult_inv(a^-1)
-    uint64_t a_inv = inverse_mod(a, N);
-    qdd = qdd_cmult_inv(qdd, a_inv, N);
-
-    return qdd;
-}
-
-uint64_t
-shor_period_finding(uint64_t a, uint64_t N)
-{
-    // Circuit (quantum period finding of f(x) = a^x mod N)
-    // create QDD |0>|0..001>|0>|0..00>
-    uint32_t num_qubits = 2*shor_n + 3;
-    bool x[num_qubits];
-    for (BDDVAR k = 0; k < num_qubits; k++) x[k] = 0;
-    x[shor_wires.ctrl_last] = 1; // set the input reg. to |0...001> = |1>
-
-    QDD qdd = qdd_create_basis_state(num_qubits, x);
-
-    uint64_t as[2*shor_n];
-    as[2*shor_n-1] = a;
-    uint64_t new_a = a;
-    for(int i = 2*shor_n-2; i >= 0; i--) {
-        new_a = new_a * new_a;
-        new_a = new_a % N;
-        as[i] = new_a;
-    }
-
-    LACE_ME;
-
-    int m_outcomes[2*shor_n];
-    int m_outcome;
-    double m_prob;
-
-    for (uint32_t i = 0; i < 2*shor_n; i++) {
-        if (testing_mode) assert(qdd_is_unitvector(qdd, num_qubits));
-
-        // H on top wire
-        qdd = qdd_gate(qdd, GATEID_H, shor_wires.top);
-
-        // controlled Ua^...
-        qdd = qdd_shor_ua(qdd, as[i], N);
-
-        // phase gates based on previous measurement
-        int k = 2; // First gate needs to be R^dag(2) = S^dag
-        for (int j = i-1; j >= 0; j--) {
-            if (m_outcomes[j] == 1)
-                qdd = qdd_gate(qdd, GATEID_Rk_dag(k), shor_wires.top);
-            k += 1; // R(k) is a (2*pi / 2^k) rotation
-        }
-
-        // H on top wire
-        qdd = qdd_gate(qdd, GATEID_H, shor_wires.top);
-
-        // measure q0
-        //sylvan_clear_cache();
-        qdd = qdd_measure_qubit(qdd, shor_wires.top, num_qubits, &m_outcome, &m_prob);
-        m_outcomes[i] = m_outcome;
-
-        // make sure q0 is in the |0> state
-        if (m_outcome == 1) qdd = qdd_gate(qdd, GATEID_X, shor_wires.top);
-        qddnode_t node = QDD_GETNODE(QDD_PTR(qdd));
-        assert(qddnode_getptrhigh(node) == QDD_TERMINAL);
-    }
-
-    // turn measurement outcomes into an integer
-    uint64_t res = 0;
-    for (uint32_t i = 0; i < 2*shor_n; i++) {
-        int index = 2*shor_n-1-i;
-        res = (res << 1) + m_outcomes[index];
-    }
-    return res;
-}
-
-void
-shor_set_globals(uint64_t a, uint64_t N) 
-{
-    shor_n = ceil(log2(N)); // number of bits for N (not the number of qubits!)  
-    uint64_t p2 = 1;
-    for (uint32_t i = 0; i < shor_n; i++) { // LSB in bits[0], MSB in bits[63]
-        shor_bits_a[i] = a & p2;
-        shor_bits_N[i] = N & p2;
-        p2 = p2 << 1;
-    }
-    // Set wire numbers
-    shor_wires.top        = 0;
-    shor_wires.ctrl_first = 1;
-    shor_wires.ctrl_last  = shor_n;
-    shor_wires.helper     = shor_n + 1; // easier to have this in the middle
-    shor_wires.targ_first = shor_n + 2;
-    shor_wires.targ_last  = 2*shor_n + 2;
-}
-
-uint64_t 
-my_gcd (uint64_t a, uint64_t b) // clash with gcd in sylvan_mtbdd.c ...
-{
-  uint64_t c;
-  while ( a != 0 ) { c = a; a = b%a;  b = c; }
-  return b;
-}
-
-uint64_t modpow(uint64_t base, uint64_t exp, uint64_t modulus) {
-  base %= modulus;
-  uint64_t result = 1;
-  while (exp > 0) {
-    if (exp & 1) result = (result * base) % modulus;
-    base = (base * base) % modulus;
-    exp >>= 1;
-  }
-  return result;
-}
-
-uint64_t
-shor_post_process(uint64_t N, uint64_t a, uint64_t b, uint64_t denom, bool verbose)
-{
-    // For b the following is true:
-    // b/denom = x/r, where denom = 2^num bits, and r = the period we want.
-    // This function tries to find that r.
-    // Implementation from [zulehner2018advanced]
-    if (b == 0) {
-        if (verbose)
-            printf("Factorization failed (measured 0)\n");
-        return 0;
-    }
-
-    int cf_max_size = 100;
-    int cf_entries = 0;
-    uint64_t cf[cf_max_size];
-    uint64_t old_b = b;
-	uint64_t old_denom = denom;
-	while(b != 0) {
-        if (cf_entries >= cf_max_size) {
-            printf("please hardcode cf_max_size to something bigger\n"); // I'm sorry
-            exit(1);
-        }
-        cf[cf_entries] = (denom/b);
-        cf_entries++;
-		uint64_t tmp = denom % b;
-		denom = b;
-		b = tmp;
-	}
-
-    if (verbose) {
-        printf("Continued fraction expansion of %ld/%ld = ", b, denom);
-        for(int i = 0; i < cf_entries; i++) printf("%ld ", cf[i]);
-        printf("\n");
-    }
-
-	for(int i=0; i < cf_entries; i++) {
-		//determine candidate
-		uint64_t denominator = cf[i];
-		uint64_t numerator = 1;
-
-		for(int j=i-1; j >= 0; j--) {
-			uint64_t tmp = numerator + cf[j]*denominator;
-			numerator = denominator;
-			denominator = tmp;
-		}
-        if (verbose)
-            printf(" Candidate %ld/%ld: ", numerator, denominator);
-		if(denominator > N) {
-            if (verbose) {
-                printf(" denominator too large (greater than %ld)\n", N);
-                printf("Factorization failed\n");
-            }
-            return 0;
-		} else {
-			double delta = (double)old_b / (double)old_denom - (double)numerator / (double) denominator;
-			if(fabs(delta) < 1.0/(2.0*old_denom)) {
-				if(modpow(a, denominator, N) == 1) {
-                    if (verbose)
-                        printf("found period = %ld\n", denominator);
-					if(denominator & 1) {
-                        if (verbose)
-                            printf("Factorization failed (period is odd)\n");
-                        return 0;
-					} else {
-						uint64_t f1, f2;
-						f1 = modpow(a, denominator>>1, N);
-						f2 = (f1+1)%N;
-						f1 = (f1 == 0) ? N-1 : f1-1;
-						f1 = my_gcd(f1, N);
-						f2 = my_gcd(f2, N);
-                        if (f1 == 1 || f1 == N) {
-                            if (verbose)
-                                printf("Factorization found trivial factor\n");
-                            return 0;
-                        }
-                        if (verbose) {
-                            printf("Factorization succeeded! Non-trivial factors are:\n");
-                            printf(" -- gcd(%ld^(%ld/2)-1,%ld)=%ld\n", N, denominator, N, f1);
-                            printf(" -- gcd(%ld^(%ld/2)+1,%ld)=%ld\n", N, denominator, N, f2);
-                        }
-                        return f1;
-					}
-					break;
-				} else {
-                    if (verbose)
-                        printf("failed\n");
-				}
-			} else {
-                if (verbose)
-                    printf("delta is too big (%lf)\n", delta);
-			}
-		}
-	}
-    return 0;
-}
-
-uint64_t
-shor_generate_a(uint64_t N)
-{
-    uint64_t a;
-    do {
-        a = rand() % N;
-    } while (my_gcd(a, N) != 1 || a == 1);
-    return a;
-}
-
-uint64_t
-run_shor(uint64_t N, uint64_t a, bool verbose)
-{
-    // The classical part
-    if (a == 0) a = shor_generate_a(N);
-
-    shor_set_globals(a, N);
-    
-    if (verbose) {
-        printf("input N        = %ld [", N);
-        for (uint32_t i=0; i<shor_n; i++) printf("%d", shor_bits_N[i]);
-        printf("]\n");
-        printf("n (bits for N) = %d\n",  shor_n);
-        printf("random a       = %ld [", a);
-        for (uint32_t i=0; i<shor_n; i++) printf("%d", shor_bits_a[i]);
-        printf("]\n\n");
-
-        printf("wires:\n");
-        printf("top:        %d\n", shor_wires.top);
-        printf("ctrl_first: %d\n", shor_wires.ctrl_first);
-        printf("ctrl_last:  %d\n", shor_wires.ctrl_last);
-        printf("helper:     %d\n", shor_wires.helper);
-        printf("targ_first: %d\n", shor_wires.targ_first);
-        printf("targ_last:  %d\n\n", shor_wires.targ_last);
-    }
-
-    uint64_t b = shor_period_finding(a, N);
-    uint64_t denom = 1 << (2*shor_n);
-
-    return shor_post_process(N, a, b, denom, verbose);
-}
-
-/******************************</Shor components>******************************/
-
-
-
 /***********************<measurements and probabilities>***********************/
 
 QDD
@@ -2309,7 +1864,7 @@ qdd_measure_q0(QDD qdd, BDDVAR nvars, int *m, double *p)
     prob_root = comp_to_prob(comp_value(QDD_AMP(qdd)));
     prob_low  *= prob_root;
     prob_high *= prob_root;
-    if (fabs(prob_low + prob_high - 1.0) > cmap_get_tolerance()) {
+    if (fabs(prob_low + prob_high - 1.0) > cmap_get_tolerance()*1000) {
         printf("prob sum = %.5lf (%.5lf + %.5lf)\n", prob_low + prob_high, prob_low, prob_high);
         assert("probabilities don't sum to 1" && false);
     }
@@ -2839,13 +2394,13 @@ bit_from_int(uint64_t a, uint8_t index)
 /*******************************<logging stats>********************************/
 
 bool qdd_stats_logging = false;
+uint32_t statslog_granularity = 1;
 uint64_t statslog_buffer = 1024;
-uint64_t in_buffer = 0;
-uint64_t *nodelog;
-uint64_t *amp_log;
 FILE *qdd_logfile;
 uint64_t nodes_peak = 0;
+double nodes_avg = 0;
 uint64_t logcounter = 0;
+uint64_t logtrycounter = 0;
 
 void
 qdd_stats_start(FILE *out)
@@ -2854,29 +2409,16 @@ qdd_stats_start(FILE *out)
     qdd_stats_logging = true;
     qdd_logfile = out;
     fprintf(qdd_logfile, "nodes, amps\n");
-    // NOTE: logging with multiple workers active seems to allow for the 
-    // 'in_buffer' variable to become to high. For now just allocate a buffer
-    // with more leeway.
-    // TODO: find a better solution. It seems to be the case only with shor
-    // - I think because of the ccirc function, so implementing shor without 
-    // this might fix the problem
-    // - Or just only log with a single worker
-    // - Or find a generally better solution involving stopping the workers 
-    // when loggin
-    nodelog = (uint64_t*) malloc(statslog_buffer*2 * sizeof(uint64_t));
-    amp_log = (uint64_t*) malloc(statslog_buffer*2 * sizeof(uint64_t));
-    in_buffer = 0;
     nodes_peak = 0;
     logcounter = 0;
+    logtrycounter = 0;
 }
 
 void
-qdd_stats_flush_buffer()
+qdd_stats_set_granularity(uint32_t g)
 {
-    for (uint64_t i = 0; i < in_buffer; i++) {
-        fprintf(qdd_logfile, "%ld,%ld\n", nodelog[i], amp_log[i]);
-    }
-    in_buffer = 0;
+    if (g == 0) statslog_granularity = 1;
+    else statslog_granularity = g;
 }
 
 void
@@ -2884,20 +2426,27 @@ qdd_stats_log(QDD qdd)
 {
     if (!qdd_stats_logging) return;
 
-    if (in_buffer >= statslog_buffer) {
-        qdd_stats_flush_buffer();
-    }
+    // only log every 'statslog_granularity' calls of this function
+    if (logtrycounter++ % statslog_granularity != 0) return;
 
     // Insert info
     uint64_t num_nodes = qdd_countnodes(qdd);
     uint64_t num_amps  = count_amplitude_table_enries();
-    nodelog[in_buffer] = num_nodes;
-    amp_log[in_buffer] = num_amps;
-    in_buffer++;
+    fprintf(qdd_logfile, "%ld,%ld\n", num_nodes, num_amps);
     logcounter++;
 
+    // manually flush every 'statslog_buffer' entries
+    if (logcounter % statslog_buffer == 0)
+        fflush(qdd_logfile);
+
+    // peak nodes
     if (num_nodes > nodes_peak)
         nodes_peak = num_nodes;
+    
+    // (online) avg nodes
+    double a = 1.0/(double)logcounter;
+    double b = 1.0 - a;
+    nodes_avg = a * (double)num_nodes + b * nodes_avg;
 }
 
 uint64_t
@@ -2906,22 +2455,27 @@ qdd_stats_get_nodes_peak()
     return nodes_peak;
 }
 
+double
+qdd_stats_get_nodes_avg()
+{
+    return nodes_avg;
+}
+
 uint64_t
 qdd_stats_get_logcounter()
 {
-    return logcounter;
+    return logtrycounter;
 }
 
 void
 qdd_stats_finish()
 {
     if (!qdd_stats_logging) return;
-    qdd_stats_flush_buffer();
+    fflush(qdd_logfile);
     qdd_stats_logging = false;
     nodes_peak = 0;
     logcounter = 0;
-    free(nodelog);
-    free(amp_log);
+    logtrycounter = 0;
 }
 
 /******************************</logging stats>********************************/

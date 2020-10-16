@@ -104,6 +104,9 @@ typedef uint64_t QDD; // QDD edge (contains AMP and PTR)
 typedef uint64_t AMP; // amplitude index
 typedef uint64_t PTR; // node index
 
+typedef struct __attribute__((packed)) qddnode {
+    QDD low, high;
+} *qddnode_t; // 16 bytes
 
 static const PTR        QDD_TERMINAL = 1;
 static const BDDVAR     QDD_INVALID_VAR = UINT8_MAX;
@@ -161,20 +164,20 @@ QDD qdd_refs_sync(QDD qdd);
 
 /*******************************<applying gates>*******************************/
 
-// Applies given (single qubit) gate to |q>. (Wrapper function)
-#define qdd_gate(qdd,gate,target) (CALL(qdd_gate,qdd,gate,target));
+/* Applies given (single qubit) gate to |q>. (Wrapper function) */
+#define qdd_gate(qdd,gate,target) (CALL(qdd_gate,qdd,gate,target))
 TASK_DECL_3(QDD, qdd_gate, QDD, uint32_t, BDDVAR);
 
-// Applies given controlled gate to |q>. (Wrapper function)
-#define qdd_cgate(qdd,gate,c,t) (CALL(qdd_cgate,qdd,gate,c,t));
-#define qdd_cgate2(qdd,gate,c1,c2,t) (CALL(qdd_cgate2,qdd,gate,c1,c2,t));
-#define qdd_cgate3(qdd,gate,c1,c2,c3,t) (CALL(qdd_cgate3,qdd,gate,c1,c2,c3,t));
+/* Applies given controlled gate to |q>. (Wrapper function) */
+#define qdd_cgate(qdd,gate,c,t) (CALL(qdd_cgate,qdd,gate,c,t))
+#define qdd_cgate2(qdd,gate,c1,c2,t) (CALL(qdd_cgate2,qdd,gate,c1,c2,t))
+#define qdd_cgate3(qdd,gate,c1,c2,c3,t) (CALL(qdd_cgate3,qdd,gate,c1,c2,c3,t))
 TASK_DECL_4(QDD, qdd_cgate,  QDD, uint32_t, BDDVAR, BDDVAR);
 TASK_DECL_5(QDD, qdd_cgate2, QDD, uint32_t, BDDVAR, BDDVAR, BDDVAR);
 TASK_DECL_6(QDD, qdd_cgate3, QDD, uint32_t, BDDVAR, BDDVAR, BDDVAR, BDDVAR);
 
-// Applies given controlled gate to |q>. (Wrapper function)
-#define qdd_cgate_range(qdd,gate,c_first,c_last,t) (CALL(qdd_cgate_range,qdd,gate,c_first,c_last,t));
+/* Applies given controlled gate to |q>. (Wrapper function) */
+#define qdd_cgate_range(qdd,gate,c_first,c_last,t) (CALL(qdd_cgate_range,qdd,gate,c_first,c_last,t))
 TASK_DECL_5(QDD, qdd_cgate_range, QDD, uint32_t, BDDVAR, BDDVAR, BDDVAR);
 
 /**
@@ -182,15 +185,15 @@ TASK_DECL_5(QDD, qdd_cgate_range, QDD, uint32_t, BDDVAR, BDDVAR, BDDVAR);
  */
 #define propagate_complex false
 #if propagate_complex
-    #define qdd_plus(a,b) (CALL(qdd_plus_comp_wrap,a,b));
-    #define qdd_gate_rec(q,gate,target) (CALL(qdd_gate_rec_complex,q,gate,target));
-    #define qdd_cgate_rec(q,gate,cs,t) (CALL(qdd_cgate_rec_complex,q,gate,cs,0,t));
-    #define qdd_cgate_range_rec(q,gate,c_first,c_last,t) (CALL(qdd_cgate_range_rec_complex,q,gate,c_first,c_last,t,0));
+    #define qdd_plus(a,b) (CALL(qdd_plus_comp_wrap,a,b))
+    #define qdd_gate_rec(q,gate,target) (CALL(qdd_gate_rec_complex,q,gate,target))
+    #define qdd_cgate_rec(q,gate,cs,t) (CALL(qdd_cgate_rec_complex,q,gate,cs,0,t))
+    #define qdd_cgate_range_rec(q,gate,c_first,c_last,t) (CALL(qdd_cgate_range_rec_complex,q,gate,c_first,c_last,t,0))
 #else
-    #define qdd_plus(a,b) (CALL(qdd_plus_amp,a,b));
-    #define qdd_gate_rec(q,gate,target) (CALL(qdd_gate_rec_amp,q,gate,target));
-    #define qdd_cgate_rec(q,gate,cs,t) (CALL(qdd_cgate_rec_amp,q,gate,cs,0,t));
-    #define qdd_cgate_range_rec(q,gate,c_first,c_last,t) (CALL(qdd_cgate_range_rec_amp,q,gate,c_first,c_last,t,0));
+    #define qdd_plus(a,b) (CALL(qdd_plus_amp,a,b))
+    #define qdd_gate_rec(q,gate,target) (CALL(qdd_gate_rec_amp,q,gate,target))
+    #define qdd_cgate_rec(q,gate,cs,t) (CALL(qdd_cgate_rec_amp,q,gate,cs,0,t))
+    #define qdd_cgate_range_rec(q,gate,c_first,c_last,t) (CALL(qdd_cgate_range_rec_amp,q,gate,c_first,c_last,t,0))
 #endif
 
 /**
@@ -226,15 +229,22 @@ TASK_DECL_5(QDD, qdd_cgate_rec_complex, QDD, uint32_t, BDDVAR*, uint32_t, BDDVAR
 TASK_DECL_6(QDD, qdd_cgate_range_rec_amp, QDD, uint32_t, BDDVAR, BDDVAR, BDDVAR, BDDVAR);
 TASK_DECL_6(QDD, qdd_cgate_range_rec_complex, QDD, uint32_t, BDDVAR, BDDVAR, BDDVAR, BDDVAR);
 
-// Computes Mat * |vec>
-#define qdd_matvec_mult(mat,vec,nvars) (CALL(qdd_matvec_mult,mat,vec,nvars,0));
-TASK_DECL_4(QDD, qdd_matvec_mult, QDD, QDD, BDDVAR, BDDVAR);
 
-// Computes A*B (note that matrix multiplication does not generally commute)
-#define qdd_matmat_mult(a,b,nvars) (CALL(qdd_matmat_mult,a,b,nvars,0));
-TASK_DECL_4(QDD, qdd_matmat_mult, QDD, QDD, BDDVAR, BDDVAR);
+/* Computes Mat * |vec> (Wrapper function) */
+#define qdd_matvec_mult(mat,vec,nvars) (CALL(qdd_matvec_mult,mat,vec,nvars))
+TASK_DECL_3(QDD, qdd_matvec_mult, QDD, QDD, BDDVAR);
 
-// Multiply some qdd by a scalar.
+/* Computes A*B (note generally AB != BA) (Wrapper function) */
+#define qdd_matmat_mult(a,b,nvars) (CALL(qdd_matmat_mult,a,b,nvars))
+TASK_DECL_3(QDD, qdd_matmat_mult, QDD, QDD, BDDVAR);
+
+/**
+ * Recursive implementation of matrix-vector mult and matrix-matrix mult.
+ */
+TASK_DECL_4(QDD, qdd_matvec_mult_rec, QDD, QDD, BDDVAR, BDDVAR);
+TASK_DECL_4(QDD, qdd_matmat_mult_rec, QDD, QDD, BDDVAR, BDDVAR);
+
+/* Multiply some qdd by a scalar. */
 QDD qdd_scalar_mult(QDD qdd, complex_t c);
 
 /******************************</applying gates>*******************************/
@@ -248,10 +258,6 @@ QDD qdd_scalar_mult(QDD qdd, complex_t c);
 #define CIRCID_reverse_range 1
 #define CIRCID_QFT           2
 #define CIRCID_QFT_inv       3
-#define CIRCID_phi_add_a     4 // call phi_add(shor_bits_a)
-#define CIRCID_phi_add_N     5 // call phi_add(shor_bits_N)
-#define CIRCID_phi_add_a_inv 6 // call phi_add_inv(shor_bits_a)
-#define CIRCID_phi_add_N_inv 7 // call phi_add_inv(shor_bits_N)
 
 // For now we have at most 3 control qubits
 static const uint32_t MAX_CONTROLS = 3;
@@ -308,56 +314,6 @@ TASK_DECL_6(QDD, qdd_ccircuit, QDD, uint32_t, BDDVAR*, uint32_t, BDDVAR, BDDVAR)
 QDD qdd_all_control_phase(QDD qdd, BDDVAR n, bool *x);
 
 /********************</applying (controlled) sub-circuits>*********************/
-
-
-/**
- * The flollowing functions are a breakdown of the components needed for Shor
- * as in Beauregard, "Circuit for Shor's algorithm using 2n+ 3 qubits." (2002).
- */
-/**
- * Implements circuit in Fig. 3.
- * Addition in Fourier space. Important here to note is the endianess:
- * - Input/output statevector |x> = |q0, q1, q2>, then q0 contains the MSB.
- * - Classical bit-array a has a[0] as LSB. This is done to easier allow for 
- *   leading zeros (in a[] now trailing zeros) when enoding the number in more 
- *   bits than it needs.
- * - Carries happen from q(k) -> q(k-1), i.e. towards the MSB, so if we write
- *   the state as |q0, q1, q2> carries go to the left (as normal).
- * 
- * @param qdd A QDD encoding a state |phi(x)> = QFT|x> with |x> a z-basis state.
- * @param a A big-endian (MSB first) encoding of some integer.
- * 
- * @return A QDD encoding |phi(x + a)>, with (x+a)
- */
-QDD qdd_phi_add(QDD qdd, BDDVAR first, BDDVAR last, bool* a); // Fig. 3
-QDD qdd_phi_add_inv(QDD qdd, BDDVAR first, BDDVAR last, bool* a);
-QDD qdd_phi_add_mod(QDD qdd, BDDVAR* cs, uint64_t a, uint64_t N); // Fig. 5
-QDD qdd_phi_add_mod_inv(QDD qdd, BDDVAR* cs, uint64_t a, uint64_t N);
-QDD qdd_cmult(QDD qdd, uint64_t a, uint64_t N); // Fig. 6
-QDD qdd_cmult_inv(QDD qdd, uint64_t a, uint64_t N);
-QDD qdd_shor_ua(QDD qdd, uint64_t a, uint64_t N); // Fig. 7
-uint64_t shor_period_finding(uint64_t a, uint64_t N); // Fig. 8
-uint64_t shor_generate_a(uint64_t N);
-void shor_set_globals(uint64_t a, uint64_t N);
-
-/**
- * N is the number to factor, and 'a' is the value to use in a^x mod N. 
- * If 'a' is set to 0 a random 'a' is chosen.
- */
-uint64_t run_shor(uint64_t N, uint64_t a, bool verbose);
-// global vars for Shor (not ideal but it is difficult enough as it is)
-// TODO: move shor to separate file, not in qdd source code
-uint32_t  shor_n;
-bool shor_bits_a[64];
-bool shor_bits_N[64];
-struct shor_wires_s {
-    BDDVAR top;
-    BDDVAR ctrl_first;
-    BDDVAR ctrl_last;
-    BDDVAR helper;
-    BDDVAR targ_first;
-    BDDVAR targ_last;
-} shor_wires;
 
 
 /**
@@ -524,7 +480,7 @@ void qdd_test_gc_ctable(QDD *keep);
 /**
  * Recursive function for moving amps from old to new amp table.
  */
-#define _fill_new_amp_table(qdd) (CALL(_fill_new_amp_table, qdd));
+#define _fill_new_amp_table(qdd) (CALL(_fill_new_amp_table, qdd))
 TASK_DECL_1(QDD, _fill_new_amp_table, QDD);
 
 /**
@@ -534,8 +490,10 @@ void qdd_fprintdot(FILE *out, QDD qdd, bool draw_zeros);
 
 /*******************************<logging stats>********************************/
 void qdd_stats_start(FILE *out);
+void qdd_stats_set_granularity(uint32_t g); // log every 'g' gates (default 1)
 void qdd_stats_log(QDD qdd);
 uint64_t qdd_stats_get_nodes_peak();
+double qdd_stats_get_nodes_avg();
 uint64_t qdd_stats_get_logcounter();
 void qdd_stats_finish();
 /******************************</logging stats>********************************/

@@ -7,6 +7,7 @@
 
 #include "grover.h"
 #include "grover_cnf.h"
+#include "shor.h"
 
 bool VERBOSE = true;
 
@@ -89,6 +90,8 @@ int test_grover()
 
 int test_grover_matrix()
 {
+    qdd_set_auto_gc_ctable(false); // no auto gc of ctable yet for mult operations
+    
     BDDVAR nqubits;
     AMP a;
     QDD grov;
@@ -134,6 +137,8 @@ int test_grover_matrix()
     prob = comp_to_prob(comp_value(qdd_get_amplitude(grov, x10)));
 
     if(VERBOSE) printf("matrix qdd %2d-qubit Grover: ok (Pr(flag) = %lf)\n", nqubits, prob);
+
+    qdd_set_auto_gc_ctable(true);
     return 0;
 }
 
@@ -249,6 +254,7 @@ int test_grover_cnf()
 
 int test_shor()
 {   
+    qdd_shor_set_testing_mode(true); // internal sanity checks in shor implementation
     QDD q, qref;
     bool x3[] = {0,0,0};
     bool as[] = {1,0,1};
@@ -258,13 +264,15 @@ int test_shor()
 
     // <Test qdd_phi_add>
     // Test inversion
+    // (no controls)
+    BDDVAR nc = QDD_INVALID_VAR;
     q = qdd_create_basis_state(3, x3);
     q = qdd_gate(q, GATEID_H, 0);
     q = qdd_gate(q, GATEID_H, 1);
     q = qdd_gate(q, GATEID_H, 2);
     qref = q;
-    q = qdd_phi_add(q, 0, 2, as);
-    q = qdd_phi_add_inv(q, 0, 2, as);
+    q = qdd_phi_add(q, 0, 2, nc, nc, as);
+    q = qdd_phi_add_inv(q, 0, 2, nc, nc, as);
     test_assert(qdd_equivalent(q, qref, 3, false, false));
     test_assert(qdd_equivalent(q, qref, 3, true, false));
     test_assert(q == qref);
@@ -275,7 +283,7 @@ int test_shor()
     as[0] = 1; as[1] = 0; as[2] = 0;          // a = 100 = 1 (LSB first)
     q = qdd_create_basis_state(3, x3);        // create state |x>
     q = qdd_circuit(q, CIRCID_QFT, 0, 2);     // QFT|x> = |phi(x)>
-    q = qdd_phi_add(q, 0, 2, as);             // addition in Fourier space gives |phi(x+a)>
+    q = qdd_phi_add(q, 0, 2, nc, nc, as);     // addition in Fourier space gives |phi(x+a)>
     q = qdd_circuit(q, CIRCID_QFT_inv, 0, 2); // expected out = |3> = |011> (MSB first)
     x3[0]=0; x3[1]=0; x3[2]=0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[0]=0; x3[1]=0; x3[2]=1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
@@ -291,7 +299,7 @@ int test_shor()
     as[0] = 0; as[1] = 1; as[2] = 0;          // a = 010 = 2 (LSB first)
     q = qdd_create_basis_state(3, x3);        // create state |x>
     q = qdd_circuit(q, CIRCID_QFT, 0, 2);     // QFT|x> = |phi(x)>
-    q = qdd_phi_add(q, 0, 2, as);             // addition in Fourier space gives |phi(x+a)>
+    q = qdd_phi_add(q, 0, 2, nc, nc, as);     // addition in Fourier space gives |phi(x+a)>
     q = qdd_circuit(q, CIRCID_QFT_inv, 0, 2); // expected out = |4> = |100> (MSB first)
     x3[0]=0; x3[1]=0; x3[2]=0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[0]=0; x3[1]=0; x3[2]=1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
@@ -307,7 +315,7 @@ int test_shor()
     as[0] = 1; as[1] = 1; as[2] = 0;          // a = 110 = 3 (LSB first)
     q = qdd_create_basis_state(3, x3);        // create state |x>
     q = qdd_circuit(q, CIRCID_QFT, 0, 2);     // QFT|x> = |phi(x)>
-    q = qdd_phi_add(q, 0, 2, as);             // addition in Fourier space gives |phi(x+a)>
+    q = qdd_phi_add(q, 0, 2, nc, nc, as);     // addition in Fourier space gives |phi(x+a)>
     q = qdd_circuit(q, CIRCID_QFT_inv, 0, 2); // expected out = |5> = |101> (MSB first)
     x3[0]=0; x3[1]=0; x3[2]=0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[0]=0; x3[1]=0; x3[2]=1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
@@ -323,7 +331,7 @@ int test_shor()
     as[0] = 0; as[1] = 1; as[2] = 0;          // a = 010 = 2 (LSB first)
     q = qdd_create_basis_state(3, x3);        // create state |x>
     q = qdd_circuit(q, CIRCID_QFT, 0, 2);     // QFT|x> = |phi(x)>
-    q = qdd_phi_add(q, 0, 2, as);             // addition in Fourier space gives |phi(x+a)>
+    q = qdd_phi_add(q, 0, 2, nc, nc, as);     // addition in Fourier space gives |phi(x+a)>
     q = qdd_circuit(q, CIRCID_QFT_inv, 0, 2); // expected out = |5> = |101> (MSB first)
     x3[0]=0; x3[1]=0; x3[2]=0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[0]=0; x3[1]=0; x3[2]=1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
@@ -339,7 +347,7 @@ int test_shor()
     as[0] = 1; as[1] = 1; as[2] = 0;          // a = 110 = 3 (LSB first)
     q = qdd_create_basis_state(3, x3);        // create state |x>
     q = qdd_circuit(q, CIRCID_QFT, 0, 2);     // QFT|x> = |phi(x)>
-    q = qdd_phi_add(q, 0, 2, as);             // addition in Fourier space gives |phi(x+a)>
+    q = qdd_phi_add(q, 0, 2, nc, nc, as);     // addition in Fourier space gives |phi(x+a)>
     q = qdd_circuit(q, CIRCID_QFT_inv, 0, 2); // expected out = |6> = |110> (MSB first)
     x3[0]=0; x3[1]=0; x3[2]=0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[0]=0; x3[1]=0; x3[2]=1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);

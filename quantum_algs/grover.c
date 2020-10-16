@@ -1,6 +1,14 @@
 #include "grover.h"
 #include "sylvan_qdd_complex.h"
 
+uint64_t
+qdd_grover_approx_number_of_gates(BDDVAR nbits)
+{
+    uint64_t iterations = floor( 3.14159265359/4.0 * sqrt( pow(2,nbits) ) );
+    uint64_t init_gates = (nbits + 1);
+    uint64_t gts_per_it = (4 + 4*nbits);
+    return (init_gates + iterations*gts_per_it);
+}
 
 bool *
 qdd_grover_random_flag(BDDVAR nbits)
