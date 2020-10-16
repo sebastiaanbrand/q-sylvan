@@ -75,8 +75,5 @@ qdd_grover_cnf(BDDVAR n, bool* oracle, BDDVAR clauses, BDDVAR n_answers)
         qdd = qdd_grover_cnf_iteration(qdd, n, clauses, oracle);
     }
 
-    // TODO: EXTRA HADAMARD, WHY DOES THIS WORK?
-    qdd = qdd_gate(qdd, GATEID_H, n);
-
     return qdd;
 }

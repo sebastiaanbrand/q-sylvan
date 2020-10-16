@@ -174,6 +174,7 @@ int test_grover_cnf()
             prob += comp_to_prob(comp_value(a));
     }
     test_assert(qdd_is_unitvector(grov, nqubits+1+clauses));
+    test_assert(prob > 0.999);
 
     if(VERBOSE) printf("qdd %2d-qubit cnf Grover: ok (Pr(flag) = %lf)\n", nqubits, prob);
 
