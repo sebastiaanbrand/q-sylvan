@@ -164,12 +164,12 @@ int test_grover_cnf()
     for (int k = 0; k < (1<<(nqubits+1+clauses)); k++) {
         bool *x = int_to_bitarray(k, nqubits+1+clauses, true);
         a = qdd_get_amplitude(grov, x);
-        if (a != 0) {
-            _print_bitstring(x,nqubits+1+clauses,false);
-            printf("\t");
-            printf("%lf",comp_to_prob(comp_value(a)));
-            printf("\n");
-        }
+        // if (a != 0) {
+        //     _print_bitstring(x,nqubits+1+clauses,false);
+        //     printf("\t");
+        //     printf("%lf",comp_to_prob(comp_value(a)));
+        //     printf("\n");
+        // }
         if (x[0] == ans2[0] && x[1] == ans2[1])
             prob += comp_to_prob(comp_value(a));
     }
@@ -182,9 +182,9 @@ int test_grover_cnf()
     // 3 qubit test
     nqubits = 3;
     // "flagged" cnf (~x1 V ~x2 V ~x3)^(~x1 V ~x2 V x3)^(~x1 V x2 V ~x3)^(x1 V ~x2 V ~x3)^(x1 V ~x2 V x3)^(x1 V x2 V ~x3)^(x1 V x2 V x3)
-    bool cnf3[] = {0,0,0,0,0,1,0,1,0,1,0,0,1,0,1,1,1,0,1,1,1}; // In the order c1(x3,x2,x1),c2(x3,x2,x1), etc.
+    bool cnf3[] = {0,0,0,0,0,1,0,1,0,1,0,0,0,1,1,1,0,1,1,1,0}; // In the order c1(x3,x2,x1),c2(x3,x2,x1), etc.
     bool ans3[] = {1,1,1};
-    clauses = 3;
+    clauses = 7;
     answers = 1;
     grov = qdd_grover_cnf(nqubits, cnf3, clauses, answers);
     // test probabilities
@@ -192,12 +192,12 @@ int test_grover_cnf()
     for (int k = 0; k < (1<<(nqubits+1+clauses)); k++) {
         bool *x = int_to_bitarray(k, nqubits+1+clauses, true);
         a = qdd_get_amplitude(grov, x);
-        if (a != 0) {
-            _print_bitstring(x,nqubits+1+clauses,false);
-            printf("\t");
-            printf("%lf",comp_to_prob(comp_value(a)));
-            printf("\n");
-        }
+        // if (a != 0) {
+        //     _print_bitstring(x,nqubits+1+clauses,false);
+        //     printf("\t");
+        //     printf("%lf",comp_to_prob(comp_value(a)));
+        //     printf("\n");
+        // }
         if (x[0] == ans3[0] && x[1] == ans3[1] && x[2] == ans3[2])
             prob += comp_to_prob(comp_value(a));
     }
