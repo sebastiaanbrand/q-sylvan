@@ -1,0 +1,223 @@
+11 qubits
+3: X
+0: H
+1: H
+2: H
+3: H
+barrier
+0: X
+1: X
+2: X
+0/1/2->4: X
+0: X
+1: X
+2: X
+barrier
+0: X
+1: X
+0/1/2->5: X
+0: X
+1: X
+barrier
+0: X
+2: X
+0/1/2->6: X
+0: X
+2: X
+barrier
+1: X
+2: X
+0/1/2->7: X
+1: X
+2: X
+barrier
+0: X
+0/1/2->8: X
+0: X
+barrier
+1: X
+0/1/2->9: X
+1: X
+barrier
+2: X
+0/1/2->10: X
+2: X
+barrier
+4: X
+5: X
+6: X
+7: X
+8: X
+9: X
+10: X
+3: H
+3/4/5/6/7/8/9->10: Z
+3: H
+4: X
+5: X
+6: X
+7: X
+8: X
+9: X
+10: X
+barrier
+2: X
+0/1/2->10: X
+2: X
+barrier
+1: X
+0/1/2->9: X
+1: X
+barrier
+0: X
+0/1/2->8: X
+0: X
+barrier
+1: X
+2: X
+0/1/2->7: X
+1: X
+2: X
+barrier
+0: X
+2: X
+0/1/2->6: X
+0: X
+2: X
+barrier
+0: X
+1: X
+0/1/2->5: X
+0: X
+1: X
+barrier
+0: X
+1: X
+2: X
+0/1/2->4: X
+0: X
+1: X
+2: X
+barrier
+0: H
+1: H
+2: H
+0: X
+1: X
+2: X
+0/1/2->3: X
+0: X
+1: X
+2: X
+0: H
+1: H
+2: H
+barrier
+0: X
+1: X
+2: X
+0/1/2->4: X
+0: X
+1: X
+2: X
+barrier
+0: X
+1: X
+0/1/2->5: X
+0: X
+1: X
+barrier
+0: X
+2: X
+0/1/2->6: X
+0: X
+2: X
+barrier
+1: X
+2: X
+0/1/2->7: X
+1: X
+2: X
+barrier
+0: X
+0/1/2->8: X
+0: X
+barrier
+1: X
+0/1/2->9: X
+1: X
+barrier
+2: X
+0/1/2->10: X
+2: X
+barrier
+4: X
+5: X
+6: X
+7: X
+8: X
+9: X
+10: X
+3: H
+3/4/5/6/7/8/9->10: Z
+3: H
+4: X
+5: X
+6: X
+7: X
+8: X
+9: X
+10: X
+barrier
+2: X
+0/1/2->10: X
+2: X
+barrier
+1: X
+0/1/2->9: X
+1: X
+barrier
+0: X
+0/1/2->8: X
+0: X
+barrier
+1: X
+2: X
+0/1/2->7: X
+1: X
+2: X
+barrier
+0: X
+2: X
+0/1/2->6: X
+0: X
+2: X
+barrier
+0: X
+1: X
+0/1/2->5: X
+0: X
+1: X
+barrier
+0: X
+1: X
+2: X
+0/1/2->4: X
+0: X
+1: X
+2: X
+barrier
+0: H
+1: H
+2: H
+0: X
+1: X
+2: X
+0/1/2->3: X
+0: X
+1: X
+2: X
+0: H
+1: H
+2: H
+barrier
