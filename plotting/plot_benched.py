@@ -1,10 +1,10 @@
 import os
+import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 
 plt_format = '.png'
 bench_path = '../build/benchmark_data/'
-alg_names  = ['grover', 'shor', 'supremacy', 'random_circuit']
 group_by = {'grover':'qubits',
             'shor':'qubits',
             'supremacy':'depth',
@@ -14,11 +14,18 @@ avg_over = {'grover':'flag',
             'supremacy':'rseed',
             'random_circuit':'rseed'}
 
-replot_all = True
+args = 0
 plot_concur_perf_bool = True
 plot_peaknodes_bool   = True
 plot_histories_bool   = True
 plot_runtimes_bool    = True
+
+def parse_stuff():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--replot', help='redo all existing plots',
+                        dest='replot', default=False, action='store_true')
+    global args 
+    args = parser.parse_args()
 
 
 def plot_history(input_path, output_path, alg_name):
@@ -104,7 +111,7 @@ def plot_concurrency_performance(data_folder, alg_name):
         speedups /= group_ids.shape
 
         # actually plot stuff
-        plt.scatter(workers, speedups)
+        plt.plot(workers, speedups)
         w1_times = np.round(subset[np.where(subset['workers'] == 1)]['runtime'], 3)
         leg = '{} {}, time $w_1$ ({},{})'.format(int(g_id), group_by[alg_name], np.min(w1_times), np.max(w1_times))
         lengend_entries.append(leg)
@@ -151,13 +158,13 @@ def plot_runtimes(data_folder, alg_name, x_axis='qubits'):
 def plot_all():
 
     # iterate over all algorithms
-    for alg_name in alg_names:
+    for alg_name in os.listdir(bench_path):
         alg_path = bench_path + alg_name + '/'
 
         # iterate over all experiments
         for exp_folder in os.listdir(alg_path):
             exp_path = alg_path + exp_folder + '/'
-            if (not replot_all and 'concurrency.png' in os.listdir(exp_path)):
+            if (not args.replot and 'concurrency.png' in os.listdir(exp_path)):
                 print('skipping {}/{}'.format(alg_name, exp_folder))
             else:
                 print('plotting {}/{}'.format(alg_name, exp_folder))
@@ -184,4 +191,5 @@ def plot_all():
 
 
 if __name__ == '__main__':
+    parse_stuff()
     plot_all()
