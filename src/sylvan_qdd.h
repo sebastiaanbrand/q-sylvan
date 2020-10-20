@@ -467,6 +467,10 @@ bool qdd_equivalent(QDD a, QDD b, int n, bool exact, bool verbose);
 bool qdd_is_close_to_unitvector(QDD qdd, BDDVAR n, double tol);
 bool qdd_is_unitvector(QDD qdd, BDDVAR n);
 
+/** Sanity check to see if the QDD variables are ordered and < nvars. */
+#define qdd_is_ordered(qdd,nvars) (CALL(qdd_is_ordered,qdd,0,nvars))
+TASK_DECL_3(bool, qdd_is_ordered, QDD, BDDVAR, BDDVAR);
+
 // counts the nodes by recursively marking them (and unmarks when done)
 uint64_t qdd_countnodes(QDD qdd);
 

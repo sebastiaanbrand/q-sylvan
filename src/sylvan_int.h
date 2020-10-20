@@ -113,6 +113,7 @@ static const uint64_t CACHE_QDD_MATMAT_MULT         = (65LL<<40);
 static const uint64_t CACHE_QDD_SUBCIRC             = (66LL<<40);
 static const uint64_t CACHE_QDD_PROB                = (67LL<<40);
 static const uint64_t CACHE_QDD_CLEAN_AMP_TABLE     = (68LL<<40);
+static const uint64_t CACHE_QDD_IS_ORDERED          = (69LL<<40);
 
 // Complex number operations for QDDs
 static const uint64_t CACHE_AMP_ADD                 = (80LL<<40);

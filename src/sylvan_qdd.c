@@ -2391,11 +2391,47 @@ bit_from_int(uint64_t a, uint8_t index)
     return (bool) res;
 }
 
+TASK_IMPL_3(bool, qdd_is_ordered, QDD, qdd, BDDVAR, nextvar, BDDVAR, nvars)
+{
+    // Terminal case
+    if (QDD_PTR(qdd) == QDD_TERMINAL) return true;
+
+    // Get top node
+    BDDVAR var;
+    QDD low, high;
+    qdd_get_topvar(qdd, QDD_INVALID_VAR, &var, &low, &high);
+
+    // Check variable order
+    if (var >= nvars || var < nextvar) return false;
+
+    // Check cache
+    uint64_t res;
+    bool cachenow = ((var % granularity) == 0);
+    if (cachenow) {
+        if (cache_get3(CACHE_QDD_IS_ORDERED, QDD_PTR(qdd), sylvan_false, sylvan_false, &res)) {
+            return (bool) res;
+        }
+    }
+
+    // Recursive calls
+    bool res_low, res_high;
+    var++;
+    SPAWN(qdd_is_ordered, high, var, nvars);
+    res_low  = CALL(qdd_is_ordered, low, var, nvars);
+    res_high = SYNC(qdd_is_ordered);
+    var--;
+    res = (res_low && res_high);
+
+    // Put res in cache and return
+    if (cachenow) cache_put3(CACHE_QDD_IS_ORDERED, QDD_PTR(qdd), sylvan_false, sylvan_false, res);
+    return res;
+}
+
 /*******************************<logging stats>********************************/
 
 bool qdd_stats_logging = false;
 uint32_t statslog_granularity = 1;
-uint64_t statslog_buffer = 1024;
+uint64_t statslog_buffer = 10; // TODO: remove manual buffer flushing
 FILE *qdd_logfile;
 uint64_t nodes_peak = 0;
 double nodes_avg = 0;
