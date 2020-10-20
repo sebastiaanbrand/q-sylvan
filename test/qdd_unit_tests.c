@@ -710,7 +710,7 @@ int test_ccz_gate()
 
 int test_controlled_range_gate()
 {
-    QDD q10;
+    QDD q10, qres;
     bool x10[] = {0,0,0,0,0,0,0,0,0,0};
     AMP a, aRef, aRefMin;
     bool *x_bits;
@@ -731,12 +731,28 @@ int test_controlled_range_gate()
         test_assert(a == aRef);
     }
 
-    // CZ gate on c=2,3,4,5 t=8
-    q10 = qdd_cgate_range(q10, GATEID_Z, 2, 5, 8);
-    test_assert(qdd_is_ordered(q10, nqubits));
+    // CZ gate on c=0,1,2,3 t=7
+    qres = qdd_cgate_range(q10, GATEID_Z, 0, 3, 7);
+    test_assert(qdd_is_ordered(qres, nqubits));
     for (uint64_t x = 0; x < (1UL<<nqubits); x++) {
         x_bits = int_to_bitarray(x, nqubits, true);
-        a = qdd_get_amplitude(q10, x_bits);
+        a = qdd_get_amplitude(qres, x_bits);
+        // for all amps |1111***1**> we should have a phase flip
+        if (x_bits[0] && x_bits[1] && x_bits[2] && x_bits[3] && x_bits[7]) {
+            test_assert(a == aRefMin);
+        }
+        // all others should remain the same
+        else {
+            test_assert(a == aRef);
+        }
+    }
+
+    // CZ gate on c=2,3,4,5 t=8
+    qres = qdd_cgate_range(q10, GATEID_Z, 2, 5, 8);
+    test_assert(qdd_is_ordered(qres, nqubits));
+    for (uint64_t x = 0; x < (1UL<<nqubits); x++) {
+        x_bits = int_to_bitarray(x, nqubits, true);
+        a = qdd_get_amplitude(qres, x_bits);
         // for all amps |**1111**1*> we should have a phase flip
         if (x_bits[2] && x_bits[3] && x_bits[4] && x_bits[5] && x_bits[8]) {
             test_assert(a == aRefMin);
@@ -1477,7 +1493,7 @@ int runtests()
     if (test_phase_gates()) return 1;
     if (test_cx_gate()) return 1;
     if (test_cz_gate()) return 1;
-    //if (test_controlled_range_gate()) return 1;
+    if (test_controlled_range_gate()) return 1;
     if (test_ccz_gate()) return 1;
     if (test_swap_circuit()) return 1;
     if (test_cswap_circuit()) return 1;

@@ -878,7 +878,7 @@ TASK_IMPL_6(QDD, qdd_cgate3, QDD, qdd, uint32_t, gate, BDDVAR, c1, BDDVAR, c2, B
 TASK_IMPL_5(QDD, qdd_cgate_range, QDD, qdd, uint32_t, gate, BDDVAR, c_first, BDDVAR, c_last, BDDVAR, t)
 {
     qdd_do_before_gate(&qdd);
-    return qdd_cgate_range_rec(qdd,gate,c_first,c_last,t) ;
+    return qdd_cgate_range_rec(qdd,gate,c_first,c_last,t);
 }
 
 TASK_IMPL_2(QDD, qdd_plus_amp, QDD, a, QDD, b)
@@ -1296,27 +1296,33 @@ TASK_IMPL_6(QDD, qdd_cgate_range_rec_amp, QDD, q, uint32_t, gate, BDDVAR, c_firs
         }
     }
 
-    BDDVAR var;
+    // Get top node
+    BDDVAR var, nextvar;
     QDD low, high;
-    // Not at first control qubit yet, apply to both children
     if (k < c_first) {
+        // possibly skip to c_first if we are before c_first
         qdd_get_topvar(q, c_first, &var, &low, &high);
-        var++;
-        qdd_refs_spawn(SPAWN(qdd_cgate_range_rec_amp, high, gate, c_first, c_last, t, var));
+        assert(var <= c_first);
+    }
+    else {
+        // k is a control qubit, so get node with var = k (insert if skipped)
+        assert(c_first <= k && k <= c_last);
+        qdd_get_topvar(q, k, &var, &low, &high);
+        assert(var == k);
+    }
+    nextvar = var + 1;
+    
+    // Not at first control qubit yet, apply to both children
+    if (var < c_first) {
+        qdd_refs_spawn(SPAWN(qdd_cgate_range_rec_amp, high, gate, c_first, c_last, t, nextvar));
         low = CALL(qdd_cgate_range_rec_amp, low, gate, c_first, c_last, t, var);
         qdd_refs_push(low);
         high = qdd_refs_sync(SYNC(qdd_cgate_range_rec_amp));
         qdd_refs_pop(1);
-        var--;
     }
-    // k is a control qubit, control on q_k = |1> (high edge)
+    // Current var is a control qubit, control on q_k = |1> (high edge)
     else {
-        assert(c_first <= k && k <= c_last);
-        qdd_get_topvar(q, k, &var, &low, &high);
-        assert(var == k);
-        k++;
-        high = CALL(qdd_cgate_range_rec_amp, high, gate, c_first, c_last, t, k);
-        k--;
+        high = CALL(qdd_cgate_range_rec_amp, high, gate, c_first, c_last, t, nextvar);
     }
     res = qdd_makenode(var, low, high);
 
@@ -1353,27 +1359,33 @@ TASK_IMPL_6(QDD, qdd_cgate_range_rec_complex, QDD, q, uint32_t, gate, BDDVAR, c_
         }
     }
 
-    BDDVAR var;
+    // Get top node
+    BDDVAR var, nextvar;
     QDD low, high;
-    // Not at first control qubit yet, apply to both children
     if (k < c_first) {
+        // possibly skip to c_first if we are before c_first
         qdd_get_topvar(q, c_first, &var, &low, &high);
-        var++;
-        qdd_refs_spawn(SPAWN(qdd_cgate_range_rec_complex, high, gate, c_first, c_last, t, var));
-        low = CALL(qdd_cgate_range_rec_complex, low, gate, c_first, c_last, t, var);
-        qdd_refs_push(low);
-        high = qdd_refs_sync(SYNC(qdd_cgate_range_rec_complex));
-        qdd_refs_pop(1);
-        var--;
+        assert(var <= c_first);
     }
-    // k is a control qubit, control on q_k = |1> (high edge)
     else {
+        // k is a control qubit, so get node with var = k (insert if skipped)
         assert(c_first <= k && k <= c_last);
         qdd_get_topvar(q, k, &var, &low, &high);
         assert(var == k);
-        k++;
-        high = CALL(qdd_cgate_range_rec_complex, high, gate, c_first, c_last, t, k);
-        k--;
+    }
+    nextvar = var + 1;
+    
+    // Not at first control qubit yet, apply to both children
+    if (var < c_first) {
+        qdd_refs_spawn(SPAWN(qdd_cgate_range_rec_amp, high, gate, c_first, c_last, t, nextvar));
+        low = CALL(qdd_cgate_range_rec_amp, low, gate, c_first, c_last, t, var);
+        qdd_refs_push(low);
+        high = qdd_refs_sync(SYNC(qdd_cgate_range_rec_amp));
+        qdd_refs_pop(1);
+    }
+    // Current var is a control qubit, control on q_k = |1> (high edge)
+    else {
+        high = CALL(qdd_cgate_range_rec_amp, high, gate, c_first, c_last, t, nextvar);
     }
     res = qdd_makenode(var, low, high);
 
