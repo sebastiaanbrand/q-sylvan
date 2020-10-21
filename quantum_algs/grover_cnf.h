@@ -9,9 +9,9 @@
  * Implementation of Grover where the gates are seen as functions applied to
  * the QDD.
  */
-QDD qdd_grover_cnf(BDDVAR n, bool* oracle, BDDVAR clauses, BDDVAR n_answers);
-#define qdd_grover_cnf_iteration(qdd,n,clauses,oracle) (CALL(qdd_grover_cnf_iteration,qdd,n,clauses,oracle));
-TASK_DECL_4(QDD, qdd_grover_cnf_iteration, QDD, BDDVAR, BDDVAR, bool*);
+QDD qdd_grover_cnf(BDDVAR n, int* oracle, BDDVAR k, BDDVAR clauses, BDDVAR n_answers);
+#define qdd_grover_cnf_iteration(qdd,n,k,clauses,oracle) (CALL(qdd_grover_cnf_iteration,qdd,n,k,clauses,oracle));
+TASK_DECL_5(QDD, qdd_grover_cnf_iteration, QDD, BDDVAR, BDDVAR,BDDVAR, int*);
 
 /**
  * Implementation of Grover where both the state vector and the gates are

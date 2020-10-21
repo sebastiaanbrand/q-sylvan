@@ -1,7 +1,7 @@
 #include "grover_cnf.h"
 #include "sylvan_qdd_complex.h"
 
-TASK_IMPL_4(QDD, qdd_grover_cnf_iteration, QDD, qdd, BDDVAR, n, BDDVAR, clauses, bool*, oracle)
+TASK_IMPL_5(QDD, qdd_grover_cnf_iteration, QDD, qdd, BDDVAR, n, BDDVAR, k, BDDVAR, clauses, int*, oracle)
 {
     char *filename = malloc(strlen("../plotting/Grover_.txt")+10);
     sprintf(filename, "../plotting/Grover%d_%d.txt", n, clauses);
@@ -12,31 +12,30 @@ TASK_IMPL_4(QDD, qdd_grover_cnf_iteration, QDD, qdd, BDDVAR, n, BDDVAR, clauses,
         exit(1);
     }
     // Compute the results of each clause
-    for (BDDVAR k = 0; k < clauses; k++) {
+    for (BDDVAR clause = 0; clause < clauses; clause++) {
         // Satisfy clause rules by applying X gates
-        for (BDDVAR l = 0; l < n; l++) {
-            if(!oracle[k*n+l]) {
-                qdd = qdd_gate(qdd, GATEID_X, l);
-                fprintf(f, "%d: X\n",l);
+        for (BDDVAR l = 0; l < k; l++) {
+            if(oracle[clause*k+l] < 0) {
+                qdd = qdd_gate(qdd, GATEID_X, abs(oracle[clause*k+l])-1);
+                fprintf(f, "%d: X\n",abs(oracle[clause*k+l])-1);
             }
         }
         // "oracle" call (Save results of clause in ancilla)
-        qdd = qdd_cgate_range(qdd,GATEID_X,0,n-1,n+1+k);
-        for(BDDVAR i = 0; i < n-1; i++) { fprintf(f, "%d/",i); }
-        fprintf(f, "%d->%d: X\n",n-1,n+1+k);
+        qdd = qdd_cgate3(qdd,GATEID_X,abs(oracle[clause*k])-1,abs(oracle[clause*k+1])-1,abs(oracle[clause*k+2])-1,n+1+clause);
+        fprintf(f, "%d/%d/%d->%d: X\n",abs(oracle[clause*k])-1,abs(oracle[clause*k+1])-1,abs(oracle[clause*k+2])-1,n+1+clause);
         // Uncompute X gates
-        for (BDDVAR l = 0; l < n; l++) {
-            if(!oracle[k*n+l]) {
-                qdd = qdd_gate(qdd, GATEID_X, l);
-                fprintf(f, "%d: X\n",l);
+        for (BDDVAR l = 0; l < k; l++) {
+            if(oracle[clause*k+l] < 0) {
+                qdd = qdd_gate(qdd, GATEID_X, abs(oracle[clause*k+l])-1);
+                fprintf(f, "%d: X\n",abs(oracle[clause*k+l])-1);
             }
         }
         fprintf(f, "barrier\n");
     }
     // Oracle flip (since the MCX is in the wrong direction, we use a Z and 2*H around the target)
-    for (BDDVAR k = 0; k < clauses; k++) {
-        qdd = qdd_gate(qdd, GATEID_X, n+1+k);
-        fprintf(f, "%d: X\n",n+1+k);
+    for (BDDVAR clause = 0; clause < clauses; clause++) {
+        qdd = qdd_gate(qdd, GATEID_X, n+1+clause);
+        fprintf(f, "%d: X\n",n+1+clause);
     }
     qdd = qdd_gate(qdd, GATEID_H, n);
     fprintf(f, "%d: H\n",n);
@@ -45,43 +44,42 @@ TASK_IMPL_4(QDD, qdd_grover_cnf_iteration, QDD, qdd, BDDVAR, n, BDDVAR, clauses,
     fprintf(f, "%d->%d: Z\n",n+clauses-1,n+clauses);
     qdd = qdd_gate(qdd, GATEID_H, n);
     fprintf(f, "%d: H\n",n);
-    for (BDDVAR k = 0; k < clauses; k++) {
-        qdd = qdd_gate(qdd, GATEID_X, n+1+k);
-        fprintf(f, "%d: X\n",n+1+k);
+    for (BDDVAR clause = 0; clause < clauses; clause++) {
+        qdd = qdd_gate(qdd, GATEID_X, n+1+clause);
+        fprintf(f, "%d: X\n",n+1+clause);
     }
     fprintf(f, "barrier\n");
     // Uncompute all clauses
-    for (BDDVAR k = 0; k < clauses; k++) {
+    for (BDDVAR clause = clauses; clause != 0; clause--) {
         // Satisfy clause rules by applying X gates
-        for (BDDVAR l = 0; l < n; l++) {
-            if(!oracle[(clauses-1-k)*n+l]) {
-                qdd = qdd_gate(qdd, GATEID_X, l);
-                fprintf(f, "%d: X\n",l);
+        for (BDDVAR l = 0; l < k; l++) {
+            if(oracle[(clause-1)*k+l] < 0) {
+                qdd = qdd_gate(qdd, GATEID_X, abs(oracle[(clause-1)*k+l])-1);
+                fprintf(f, "%d: X\n",abs(oracle[(clause-1)*k+l])-1);
             }
         }
-        qdd = qdd_cgate_range(qdd,GATEID_X,0,n-1,n+1+(clauses-1-k));
-        for(BDDVAR i = 0; i < n-1; i++) { fprintf(f, "%d/",i); }
-        fprintf(f, "%d->%d: X\n",n-1,n+1+(clauses-1-k));
+        qdd = qdd_cgate3(qdd,GATEID_X,abs(oracle[(clause-1)*k])-1,abs(oracle[(clause-1)*k+1])-1,abs(oracle[(clause-1)*k+2])-1,n+1+(clause-1));
+        fprintf(f, "%d/%d/%d->%d: X\n",abs(oracle[(clause-1)*k])-1,abs(oracle[(clause-1)*k+1])-1,abs(oracle[(clause-1)*k+2])-1,n+1+(clause-1));
         // Uncompute X gates
-        for (BDDVAR l = 0; l < n; l++) {
-            if(!oracle[(clauses-1-k)*n+l]) {
-                qdd = qdd_gate(qdd, GATEID_X, l);
-                fprintf(f, "%d: X\n",l);
+        for (BDDVAR l = 0; l < k; l++) {
+            if(oracle[(clause-1)*k+l] < 0) {
+                qdd = qdd_gate(qdd, GATEID_X, abs(oracle[(clause-1)*k+l])-1);
+                fprintf(f, "%d: X\n",abs(oracle[(clause-1)*k+l])-1);
             }
         }
         fprintf(f, "barrier\n");
     }
 
     // H on all qubits (also ancilla to make CZ a CX)
-    for (BDDVAR k = 0; k < n; k++) {
-        qdd = qdd_gate(qdd, GATEID_H, k);
-        fprintf(f, "%d: H\n",k);
+    for (BDDVAR qubit = 0; qubit < n; qubit++) {
+        qdd = qdd_gate(qdd, GATEID_H, qubit);
+        fprintf(f, "%d: H\n",qubit);
     }
 
     // X on all qubits (except ancilla)
-    for (BDDVAR k = 0; k < n; k++) {
-        qdd = qdd_gate(qdd, GATEID_X, k);
-        fprintf(f, "%d: X\n",k);
+    for (BDDVAR qubit = 0; qubit < n; qubit++) {
+        qdd = qdd_gate(qdd, GATEID_X, qubit);
+        fprintf(f, "%d: X\n",qubit);
     }
 
     // Controlled-NOT over all qubits (on ancilla)
@@ -90,15 +88,15 @@ TASK_IMPL_4(QDD, qdd_grover_cnf_iteration, QDD, qdd, BDDVAR, n, BDDVAR, clauses,
     fprintf(f, "%d->%d: X\n",n-1,n);
 
     // X on all qubits (except ancilla)
-    for (BDDVAR k = 0; k < n; k++) {
-        qdd = qdd_gate(qdd, GATEID_X, k);
-        fprintf(f, "%d: X\n",k);
+    for (BDDVAR qubit = 0; qubit < n; qubit++) {
+        qdd = qdd_gate(qdd, GATEID_X, qubit);
+        fprintf(f, "%d: X\n",qubit);
     }
 
-    // H on all qubits (also ancilla to make CZ a CX)
-    for (BDDVAR k = 0; k < n; k++) {
-        qdd = qdd_gate(qdd, GATEID_H, k);
-        fprintf(f, "%d: H\n",k);
+    // H on all qubits (also ancilla to maqubite CZ a CX)
+    for (BDDVAR qubit = 0; qubit < n; qubit++) {
+        qdd = qdd_gate(qdd, GATEID_H, qubit);
+        fprintf(f, "%d: H\n",qubit);
     }
     fprintf(f, "barrier\n");
     fclose(f);
@@ -107,7 +105,7 @@ TASK_IMPL_4(QDD, qdd_grover_cnf_iteration, QDD, qdd, BDDVAR, n, BDDVAR, clauses,
 }
 
 QDD
-qdd_grover_cnf(BDDVAR n, bool* oracle, BDDVAR clauses, BDDVAR n_answers)
+qdd_grover_cnf(BDDVAR n, int* oracle, BDDVAR k, BDDVAR clauses, BDDVAR n_answers)
 {
     char *filename = malloc(strlen("../plotting/Grover_.txt")+10);
     sprintf(filename, "../plotting/Grover%d_%d.txt", n, clauses);
@@ -122,7 +120,7 @@ qdd_grover_cnf(BDDVAR n, bool* oracle, BDDVAR clauses, BDDVAR n_answers)
     uint32_t R = floor( 3.14159265359/4.0 * sqrt( pow(2,n) / n_answers ) );
     // start with all zero state + ancilla: |000...0>|1>
     bool *init = malloc( sizeof(bool)*(n+1+clauses) );
-    for (BDDVAR k = 0; k < n+1+clauses; k++) init[k] = 0;
+    for (BDDVAR qubit = 0; qubit < n+1+clauses; qubit++) init[qubit] = 0;
     // init[n] = 1; 
     fprintf(f, "%d qubits\n", n+1+clauses);
     QDD qdd = qdd_create_basis_state(n+1+clauses, init);
@@ -130,16 +128,16 @@ qdd_grover_cnf(BDDVAR n, bool* oracle, BDDVAR clauses, BDDVAR n_answers)
         fprintf(f, "%d: X\n", n);
 
     // H on all qubits
-    for (BDDVAR k = 0; k < n+1; k++) {
-        qdd = qdd_gate(qdd, GATEID_H, k);
-        fprintf(f, "%d: H\n", k);
+    for (BDDVAR qubit = 0; qubit < n+1; qubit++) {
+        qdd = qdd_gate(qdd, GATEID_H, qubit);
+        fprintf(f, "%d: H\n", qubit);
     }
     fprintf(f, "barrier\n");
     fclose(f);
 
     // Grover iterations
     for (uint32_t i = 1; i <= R; i++) {
-        qdd = qdd_grover_cnf_iteration(qdd, n, clauses, oracle);
+        qdd = qdd_grover_cnf_iteration(qdd, n, k, clauses, oracle);
     }
 
     return qdd;
