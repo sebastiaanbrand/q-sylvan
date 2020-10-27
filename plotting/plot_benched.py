@@ -179,7 +179,7 @@ def plot_all():
                 
                 # plot runtimes vs number of qubits
                 if (plot_runtimes):
-                    plot_runtimes(exp_path, alg_name, 'qubits')
+                    plot_runtimes(exp_path, alg_name, group_by[alg_name])
                     if (alg_name == 'random_circuit'):
                         plot_runtimes(exp_path, alg_name, 'avg_nodes')
 
