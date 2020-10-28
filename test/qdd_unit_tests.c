@@ -614,6 +614,117 @@ int test_phase_gates()
     return 0;
 }
 
+int test_pauli_rotation_gates()
+{
+    QDD qInit, qTest, qRef;
+    BDDVAR nqubits, t;
+
+    LACE_ME;
+
+    // Rz rotations
+    nqubits = 3, t = 1;
+    qInit = qdd_create_all_zero_state(nqubits);
+    qInit = qdd_gate(qInit, GATEID_H, t);
+
+    // I gate
+    qRef  = qdd_gate(qInit, GATEID_I, t);
+    qTest = qdd_gate(qInit, GATEID_Rz(1.0), t);
+    qTest = qdd_remove_global_phase(qTest);
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, false, false));
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, true, false));
+    test_assert(qTest == qRef);
+
+    // Z gate
+    qRef  = qdd_gate(qInit, GATEID_Z, t);
+    qTest = qdd_gate(qInit, GATEID_Rz(0.5), t);
+    qTest = qdd_remove_global_phase(qTest);
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, false, false));
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, true, false));
+    test_assert(qTest == qRef);
+
+    // S gate
+    qRef  = qdd_gate(qInit, GATEID_S, t);
+    qTest = qdd_gate(qInit, GATEID_Rz(0.25), t);
+    qTest = qdd_remove_global_phase(qTest);
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, false, false));
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, true, false));
+    test_assert(qTest == qRef);
+
+    // T gate
+    qRef  = qdd_gate(qInit, GATEID_T, t);
+    qTest = qdd_gate(qInit, GATEID_Rz(0.125), t);
+    qTest = qdd_remove_global_phase(qTest);
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, false, false));
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, true, false));
+    test_assert(qTest == qRef);
+
+
+    // Rx rotations
+    nqubits = 3, t = 1;
+    qInit = qdd_create_all_zero_state(nqubits);
+
+    // I gate
+    qRef  = qdd_gate(qInit, GATEID_I, t);
+    qTest = qdd_gate(qInit, GATEID_Rx(1.0), t);
+    qTest = qdd_remove_global_phase(qTest);
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, false, false));
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, true, false));
+    test_assert(qTest == qRef);
+
+    // X gate
+    qRef  = qdd_gate(qInit, GATEID_X, t);
+    qTest = qdd_gate(qInit, GATEID_Rx(0.5), t);
+    qTest = qdd_remove_global_phase(qTest);
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, false, false));
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, true, false));
+    test_assert(qTest == qRef);
+
+    // sqrt(X) gate
+    qRef  = qdd_gate(qInit, GATEID_sqrtX, t);
+    qTest = qdd_gate(qInit, GATEID_Rx(0.25), t);
+    qRef  = qdd_remove_global_phase(qRef);
+    qTest = qdd_remove_global_phase(qTest);
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, false, false));
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, true, false));
+    test_assert(qTest == qRef);
+
+
+    // Ry rotations
+    nqubits = 3, t = 1;
+    qInit = qdd_create_all_zero_state(nqubits);
+    qInit = qdd_gate(qInit, GATEID_H, t);
+
+    // I gate
+    qRef  = qdd_gate(qInit, GATEID_I, t);
+    qTest = qdd_gate(qInit, GATEID_Ry(1.0), t);
+    qTest = qdd_remove_global_phase(qTest);
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, false, false));
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, true, false));
+    test_assert(qTest == qRef);
+
+    // Y gate
+    qRef  = qdd_gate(qInit, GATEID_Y, t);
+    qTest = qdd_gate(qInit, GATEID_Ry(0.5), t);
+    qRef  = qdd_remove_global_phase(qRef);
+    qTest = qdd_remove_global_phase(qTest);
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, false, false));
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, true, false));
+    test_assert(qTest == qRef);
+
+    // sqrt(Y) gate
+    qRef  = qdd_gate(qInit, GATEID_sqrtY, t);
+    qTest = qdd_gate(qInit, GATEID_Ry(0.25), t);
+    qRef  = qdd_remove_global_phase(qRef);
+    qTest = qdd_remove_global_phase(qTest);
+
+
+    // TODO: more tests
+
+
+    if(VERBOSE) printf("qdd Rx, Ry, Rz gates:     ok\n");
+    return 0;
+}
+
 int test_cx_gate()
 {
     QDD qBell;
@@ -1491,6 +1602,7 @@ int runtests()
     if (test_x_gate()) return 1;
     if (test_h_gate()) return 1;
     if (test_phase_gates()) return 1;
+    if (test_pauli_rotation_gates()) return 1;
     if (test_cx_gate()) return 1;
     if (test_cz_gate()) return 1;
     if (test_controlled_range_gate()) return 1;

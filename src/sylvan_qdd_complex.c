@@ -451,6 +451,83 @@ comp_print_bits(AMP a)
 }
 
 
+/*************************** <dynamic custom gates> ***************************/
+
+uint32_t next_custom_id; // set to 0 in init
+
+uint32_t
+get_custom_gate_id()
+{
+    next_custom_id++;
+    if (next_custom_id >= num_dynamic_gates) {
+        // max custom gates used, reset ID counter to 0 and clear opcache
+        next_custom_id = 0;
+        LACE_ME;
+        sylvan_clear_cache();
+    }
+    return num_static_gates + next_custom_id; // index offset by num_static_gates
+}
+
+uint32_t
+GATEID_Rz(double a)
+{
+    // get gate id for this gate
+    uint32_t gate_id = get_custom_gate_id();
+
+    // initialize gate
+    double theta_over_2 = Pi * a;
+    AMP u00, u11;
+    u00 = comp_lookup(comp_make_angle(-theta_over_2));
+    u11 = comp_lookup(comp_make_angle(theta_over_2));
+    gates[gate_id][0] = u00;    gates[gate_id][1] = C_ZERO;
+    gates[gate_id][2] = C_ZERO; gates[gate_id][3] = u11;
+
+    // return (temporary) gate_id for this gate
+    return gate_id;
+}
+
+uint32_t
+GATEID_Rx(double a)
+{
+    // get gate id for this gate
+    uint32_t gate_id = get_custom_gate_id();
+
+    // initialize gate
+    double theta_over_2 = Pi * a;
+    AMP u00, u01, u10, u11;
+    u00 = comp_lookup(comp_make(cos(theta_over_2), 0.0));
+    u01 = comp_lookup(comp_make(0.0, -sin(theta_over_2)));
+    u10 = comp_lookup(comp_make(0.0, -sin(theta_over_2)));
+    u11 = comp_lookup(comp_make(cos(theta_over_2), 0.0));
+    gates[gate_id][0] = u00; gates[gate_id][1] = u01;
+    gates[gate_id][2] = u10; gates[gate_id][3] = u11;
+
+    // return (temporary) gate_id for this gate
+    return gate_id;
+}
+
+uint32_t
+GATEID_Ry(double a)
+{
+    // get gate id for this gate
+    uint32_t gate_id = get_custom_gate_id();
+
+    // initialize gate
+    double theta_over_2 = Pi * a;
+    AMP u00, u01, u10, u11;
+    u00 = comp_lookup(comp_make(cos(theta_over_2),  0.0));
+    u01 = comp_lookup(comp_make(-sin(theta_over_2), 0.0));
+    u10 = comp_lookup(comp_make(sin(theta_over_2),  0.0));
+    u11 = comp_lookup(comp_make(cos(theta_over_2),  0.0));
+    gates[gate_id][0] = u00; gates[gate_id][1] = u01;
+    gates[gate_id][2] = u10; gates[gate_id][3] = u11;
+
+    // return (temporary) gate_id for this gate
+    return gate_id;
+}
+
+/************************** </dynamic custom gates> ***************************/
+
 
 /* Managing the complex value table */
 
@@ -527,6 +604,8 @@ init_gates()
     gates[k][2] = comp_lookup(comp_make(0.5, 0.5)); gates[k][3] = comp_lookup(comp_make(0.5, 0.5));
 
     init_phase_gates(255);
+
+    next_custom_id = 0;
 }
 
 void
