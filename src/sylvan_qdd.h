@@ -450,13 +450,13 @@ QDD qdd_remove_global_phase(QDD qdd);
  * root edges of these QDDs should always be the same if they represent the
  * same state, so this is mostly a debug/testing function.
  * 
- * @param a A QDD representing a quantum state |\psi>
- * @param b A QDD representing a quantum state |\phi>
+ * @param a A QDD representing a quantum state |psi>
+ * @param b A QDD representing a quantum state |phi>
  * @param n Number of qubits
- * @param exact If true, |\psi> should equal |\phi> exactly (float equal),
+ * @param exact If true, |psi> should equal |phi> exactly (float equal),
  * otherwise allow for preset float equivalence margine.
  * 
- * @returns True iff |\psi> == |\phi>.
+ * @returns True iff |psi> == |phi>.
  */
 bool qdd_equivalent(QDD a, QDD b, int n, bool exact, bool verbose);
 
