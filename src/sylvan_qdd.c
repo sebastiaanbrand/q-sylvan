@@ -2204,6 +2204,54 @@ qdd_create_controlled_gate(BDDVAR n, BDDVAR c, BDDVAR t, uint32_t gateid)
 }
 
 QDD
+qdd_create_multi_cgate_rec(BDDVAR n, int *c_options, uint32_t gateid, BDDVAR k)
+{
+    // (assumes controls above target)
+    // c_options[k] = -1 -> ignore qubit k (apply I)
+    // c_options[k] =  0 -> control on q_k = |0>
+    // c_options[k] =  1 -> control on q_k = |1>
+    // c_options[k] =  2 -> target qubit (for now assume 1 target)
+
+    // TODO: might require caching, or other method of preventing blow-up of
+    // construction complexity when there are a lot of controls
+
+    // Terminal case
+    if (k == n) {
+        return qdd_bundle_ptr_amp(QDD_TERMINAL, C_ONE);
+    }
+
+    // Recursively build matrix
+    BDDVAR next_k = k + 1;
+
+    // -1 : Ignore qubit (apply I)
+    if (c_options[k] == -1) {
+        QDD below = qdd_create_multi_cgate_rec(n, c_options, gateid, next_k);
+        return qdd_stack_matrix(below, k, GATEID_I);
+    }
+    // 0 : control on q_k = |0> (apply gateid to low branch)
+    else if (c_options[k] == 0) {
+        QDD case0 = qdd_create_multi_cgate_rec(n, c_options, gateid, next_k);
+        QDD case1 = qdd_create_multi_cgate_rec(n, c_options, GATEID_I, next_k);
+        return qdd_stack_control(case0, case1, k);
+    }
+    // 1 : control on q_k = |1> (apply gateid to high branch)
+    else if (c_options[k] == 1) {
+        QDD case0 = qdd_create_multi_cgate_rec(n, c_options, GATEID_I, next_k);
+        QDD case1 = qdd_create_multi_cgate_rec(n, c_options, gateid, next_k);
+        return qdd_stack_control(case0, case1, k);
+    }
+    // 2 : target qubit
+    else if (c_options[k] == 2) {
+        QDD below = qdd_create_multi_cgate_rec(n, c_options, gateid, next_k);
+        return qdd_stack_matrix(below, k, gateid);
+    }
+    else {
+        printf("Invalid option %d for qubit %d (options = {-1,0,1,2}\n", c_options[k], k);
+        exit(1);
+    }
+}
+
+QDD
 qdd_create_all_control_phase(BDDVAR n, bool *x)
 {
     QDD identity = qdd_bundle_ptr_amp(QDD_TERMINAL, C_ONE);
