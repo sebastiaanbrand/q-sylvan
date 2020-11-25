@@ -4,6 +4,7 @@
 #include "sylvan.h"
 #include "test_assert.h"
 #include "sylvan_qdd_complex.h"
+#include "sylvan_qdd_algebraic.h"
 
 bool VERBOSE = true;
 
@@ -1588,6 +1589,13 @@ int test_20qubit_circuit()
     return 0;
 }
 
+int
+test_algebraic()
+{
+    algebraic_init();
+    return 0;
+}
+
 
 
 int runtests()
@@ -1614,6 +1622,7 @@ int runtests()
     if (test_10qubit_circuit()) return 1;
     if (test_20qubit_circuit()) return 1;
     if (test_QFT()) return 1;
+    if (test_algebraic()) return 1;
 
     return 0;
 }
