@@ -153,6 +153,112 @@ int test_complex_operations()
     return 0;
 }
 
+int
+test_algebraic()
+{
+    double test_tol = 1e-9;
+    algebraic_t alg_a, alg_b, alg_c;
+    complex_t cmp_r, cmp_a, cmp_c;
+
+    algebraic_init();
+
+    /* test creation */
+    // 0
+    alg_a = algebraic_zero();
+    cmp_a = algebraic_to_comp(alg_a);
+    cmp_r = comp_zero();
+    test_assert(comp_epsilon_close(cmp_a, cmp_r, test_tol));
+
+    // 1
+    alg_a = algebraic_one();
+    cmp_a = algebraic_to_comp(alg_a);
+    cmp_r = comp_one();
+    test_assert(comp_epsilon_close(cmp_a, cmp_r, test_tol));
+
+    // sqrt(2)
+    alg_a = algebraic_sqrt2(1);
+    cmp_a = algebraic_to_comp(alg_a);
+    cmp_r = comp_make(sqrt(2.0), 0.0);
+    test_assert(comp_epsilon_close(cmp_a, cmp_r, test_tol));
+
+    // 1/sqrt(2)
+    alg_a = algebraic_sqrt2(-1);
+    cmp_a = algebraic_to_comp(alg_a);
+    cmp_r = comp_make(1.0/sqrt(2.0), 0.0);
+    test_assert(comp_epsilon_close(cmp_a, cmp_r, test_tol));
+
+
+    /* test multiplication */
+    // 0 x 1
+    alg_a = algebraic_zero();
+    alg_b = algebraic_one();
+    alg_c = algebraic_mult(alg_a, alg_b);
+    cmp_c = algebraic_to_comp(alg_c);
+    cmp_r = comp_zero();
+    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
+
+    // 1 x 1
+    alg_a = algebraic_one();
+    alg_b = algebraic_one();
+    alg_c = algebraic_mult(alg_a, alg_b);
+    cmp_c = algebraic_to_comp(alg_c);
+    cmp_r = comp_one();
+    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
+
+    // 1 x sqrt(2)
+    alg_a = algebraic_one();
+    alg_b = algebraic_sqrt2(1);
+    alg_c = algebraic_mult(alg_a, alg_b);
+    cmp_c = algebraic_to_comp(alg_c);
+    cmp_r = comp_make(sqrt(2.0), 0.0);
+    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
+
+    // sqrt(2) x 1
+    alg_a = algebraic_sqrt2(1);
+    alg_b = algebraic_one();
+    alg_c = algebraic_mult(alg_a, alg_b);
+    cmp_c = algebraic_to_comp(alg_c);
+    cmp_r = comp_make(sqrt(2.0), 0.0);
+    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
+
+    // sqrt(2) x sqrt(2)
+    alg_a = algebraic_sqrt2(1);
+    alg_b = algebraic_sqrt2(1);
+    alg_c = algebraic_mult(alg_a, alg_b);
+    cmp_c = algebraic_to_comp(alg_c);
+    cmp_r = comp_make(2.0, 0.0);
+    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
+
+    // 1/sqrt(2) x 1/sqrt(2)
+    alg_a = algebraic_sqrt2(-1);
+    alg_b = algebraic_sqrt2(-1);
+    alg_c = algebraic_mult(alg_a, alg_b);
+    cmp_c = algebraic_to_comp(alg_c);
+    cmp_r = comp_make(0.5, 0.0);
+    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
+
+    // 1/sqrt(2) x sqrt(2)
+    alg_a = algebraic_sqrt2(-1);
+    alg_b = algebraic_sqrt2(1);
+    alg_c = algebraic_mult(alg_a, alg_b);
+    cmp_c = algebraic_to_comp(alg_c);
+    cmp_r = comp_make(1.0, 0.0);
+    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
+
+    // sqrt(2) x 1/sqrt(2)
+    alg_a = algebraic_sqrt2(1);
+    alg_b = algebraic_sqrt2(-1);
+    alg_c = algebraic_mult(alg_a, alg_b);
+    cmp_c = algebraic_to_comp(alg_c);
+    cmp_r = comp_make(1.0, 0.0);
+    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
+    
+
+
+    if(VERBOSE) printf("algebraic amps:           WIP\n");
+    return 0;
+}
+
 int test_basis_state_creation()
 {
     bool x[] = {0};
@@ -1589,12 +1695,6 @@ int test_20qubit_circuit()
     return 0;
 }
 
-int
-test_algebraic()
-{
-    algebraic_init();
-    return 0;
-}
 
 
 
@@ -1605,6 +1705,7 @@ int runtests()
 
     if (test_cmap()) return 1;
     if (test_complex_operations()) return 1;
+    if (test_algebraic()) return 1;
     if (test_basis_state_creation()) return 1;
     if (test_vector_addition()) return 1;
     if (test_x_gate()) return 1;
@@ -1622,7 +1723,6 @@ int runtests()
     if (test_10qubit_circuit()) return 1;
     if (test_20qubit_circuit()) return 1;
     if (test_QFT()) return 1;
-    if (test_algebraic()) return 1;
 
     return 0;
 }

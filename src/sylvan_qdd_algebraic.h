@@ -17,10 +17,20 @@ typedef struct algebraic_s {
 } algebraic_t;
 
 
-algebraic_t algebraic_create(int64_t a, int64_t b, int64_t c, int64_t d, int64_t k);
+algebraic_t algebraic_create(int64_t k, int64_t a, int64_t b, int64_t c, int64_t d);
+
+/* Algebraic representation of 0 */
 algebraic_t algebraic_zero();
+
+/* Algebraic representation of 1 */
 algebraic_t algebraic_one();
-algebraic_t algebraic_add(algebraic_t a, algebraic_t b);
-algebraic_t algebraic_mult(algebraic_t a, algebraic_t b);
+
+/* Algebraic representation of sqrt(2)^k */
+algebraic_t algebraic_sqrt2(int64_t k);
+
+algebraic_t algebraic_minimal(algebraic_t x);
+algebraic_t algebraic_add(algebraic_t x, algebraic_t y);
+algebraic_t algebraic_mult(algebraic_t x, algebraic_t y);
+complex_t algebraic_to_comp(algebraic_t x);
 
 void algebraic_init();
