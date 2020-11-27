@@ -1,4 +1,5 @@
 set(SOURCES
+    QASM_to_Sylvan.c
     grover.c
     supremacy.c
 )
