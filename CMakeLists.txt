@@ -59,6 +59,7 @@ include(CTest)
 
 add_subdirectory(src)
 add_subdirectory(test)
+add_subdirectory(parser)
 add_subdirectory(quantum_algs)
 
 option(SYLVAN_BUILD_EXAMPLES "Build example tools" OFF)

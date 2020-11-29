@@ -3,4 +3,4 @@
 #include "sylvan.h"
 
 void read_QASM(char *filename);
-void handle_tokens(char **tokens);
+QDD handle_tokens(QDD qdd, char **tokens);

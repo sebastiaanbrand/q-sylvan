@@ -1,13 +1,9 @@
 set(SOURCES
-    grover.c
-    supremacy.c
+    QASM_to_Sylvan.c
 )
 
-add_executable(bench_algs bench_algs.c ${SOURCES})
-target_link_libraries(bench_algs sylvan)
-
-add_executable(test_algs test_algs.c ${SOURCES})
-target_link_libraries(test_algs sylvan)
+add_executable(QASM_to_Sylvan QASM_to_Sylvan.c ${SOURCES})
+target_link_libraries(QASM_to_Sylvan sylvan)
 
 # Include profiler if installed
 include(CheckIncludeFiles)
