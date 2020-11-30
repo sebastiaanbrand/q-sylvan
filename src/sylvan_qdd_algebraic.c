@@ -67,19 +67,6 @@ algebraic_minimal(algebraic_t x)
 
 
 algebraic_t
-algebraic_mult_without_norm(algebraic_t x, algebraic_t y)
-{
-    algebraic_t res;
-    res.k =  (x.k + y.k);
-    res.a =  (x.a * y.d) + (x.b * y.c) + (x.c * y.b) + (x.d * y.a);
-    res.b = -(x.a * y.a) + (x.b * y.d) + (x.c * y.c) + (x.d * y.b);
-    res.c = -(x.a * y.b) - (x.b * y.a) + (x.c * y.d) + (x.d * y.c);
-    res.d = -(x.a * y.c) - (x.b * y.b) - (x.c * y.a) + (x.d * y.d);
-    return res;
-}
-
-
-algebraic_t
 algebraic_mult(algebraic_t x, algebraic_t y)
 {
     algebraic_t res;
@@ -93,6 +80,24 @@ algebraic_mult(algebraic_t x, algebraic_t y)
 
 
 algebraic_t
+algebraic_move_sqrt2_inside(algebraic_t x)
+{
+    algebraic_t res;
+
+    // take factor sqrt(2) out of first term
+    res.k = x.k + 1;
+
+    // multiply (a,b,c,d) with sqrt(2) = (a=-1, b=0, c=1, d=0)
+    res.a = x.b - x.d;
+    res.b = x.c + x.a;
+    res.c = x.b + x.d;
+    res.d = x.c - x.a;
+
+    return res;
+}
+
+
+algebraic_t
 algebraic_add(algebraic_t x, algebraic_t y)
 {
     // TODO: LaTeX mathematical writeup of this function.
@@ -102,18 +107,15 @@ algebraic_add(algebraic_t x, algebraic_t y)
         // either x.k or y.k is odd. Out of x and y, multiply the one 
         // with the odd exponent with sqrt(2) by changing (a,b,c,d),
         // rather than k, such that we can increase k by 1 and make it even.
-        algebraic_t sqrt2 = algebraic_pack(0, -1, 0, 1, 0);
         if (x.k % 2 != 0) {
             assert(y.k % 2 == 0);
-            temp_x = algebraic_mult_without_norm(x, sqrt2);
-            temp_x.k = temp_x.k + 1;
+            temp_x = algebraic_move_sqrt2_inside(x);
             temp_y = y;
         }
         else {
             assert(y.k % 2 != 0);
             temp_x = x;
-            temp_y = algebraic_mult_without_norm(y, sqrt2);
-            temp_y.k = temp_y.k + 1;
+            temp_y = algebraic_move_sqrt2_inside(y);
         }
     }
     else {

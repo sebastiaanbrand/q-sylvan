@@ -29,8 +29,14 @@ algebraic_t algebraic_one();
 algebraic_t algebraic_sqrt2(int64_t k);
 
 algebraic_t algebraic_minimal(algebraic_t x);
+
+/* Returns the minimized algebraic representation of x + y */
 algebraic_t algebraic_add(algebraic_t x, algebraic_t y);
+
+/* Returns the minimized algebraic representation of x * y */
 algebraic_t algebraic_mult(algebraic_t x, algebraic_t y);
+
+/* Returns the complex number encoded in x in cartesian coordinates form */
 complex_t algebraic_to_comp(algebraic_t x);
 
 void algebraic_init();
