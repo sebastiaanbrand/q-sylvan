@@ -40,7 +40,7 @@ algebraic_create(int64_t k, int64_t a, int64_t b, int64_t c, int64_t d)
 algebraic_t
 algebraic_zero()
 {
-    return algebraic_create(0, 0, 0, 0, 0);
+    return algebraic_pack(0, 0, 0, 0, 0);
 }
 
 
@@ -59,27 +59,6 @@ algebraic_sqrt2(int64_t k)
 
 
 algebraic_t
-algebraic_minimal(algebraic_t x)
-{
-    // TODO
-    return x;
-}
-
-
-algebraic_t
-algebraic_mult(algebraic_t x, algebraic_t y)
-{
-    algebraic_t res;
-    res.k =  (x.k + y.k);
-    res.a =  (x.a * y.d) + (x.b * y.c) + (x.c * y.b) + (x.d * y.a);
-    res.b = -(x.a * y.a) + (x.b * y.d) + (x.c * y.c) + (x.d * y.b);
-    res.c = -(x.a * y.b) - (x.b * y.a) + (x.c * y.d) + (x.d * y.c);
-    res.d = -(x.a * y.c) - (x.b * y.b) - (x.c * y.a) + (x.d * y.d);
-    return algebraic_minimal(res);
-}
-
-
-algebraic_t
 algebraic_move_sqrt2_inside(algebraic_t x)
 {
     algebraic_t res;
@@ -94,6 +73,73 @@ algebraic_move_sqrt2_inside(algebraic_t x)
     res.d = x.c - x.a;
 
     return res;
+}
+
+
+algebraic_t
+algebraic_take_sqrt2_outside(algebraic_t x)
+{
+    algebraic_t res;
+
+    // (1) multiply inside by sqrt(2)
+    res.a = x.a - x.d;
+    res.b = x.c + x.a;
+    res.c = x.b + x.d;
+    res.d = x.c - x.a;
+
+    // (2) divide by 2
+    assert(res.a % 2 == 0);
+    assert(res.b % 2 == 0);
+    assert(res.c % 2 == 0);
+    assert(res.d % 2 == 0);
+    res.a = res.a / 2;
+    res.b = res.b / 2;
+    res.c = res.c / 2;
+    res.d = res.d / 2;
+
+    // put factor sqrt(2) into the first term
+    res.k = x.k - 1;
+
+    return res;
+}
+
+
+bool
+algebraic_equal(algebraic_t x, algebraic_t y)
+{
+    return ((x.k == y.k) && 
+            (x.a == y.a) && (x.b == y.b) && 
+            (x.c == y.c) && (x.d == y.d));
+}
+
+
+algebraic_t
+algebraic_minimal(algebraic_t x)
+{
+    // use all 0s as canonical representation of 0
+    if (algebraic_equal(x, algebraic_zero()))
+        return x;
+    
+    // x != 0
+    algebraic_t res = algebraic_pack(x.k, x.a, x.b, x.c, x.d);
+    while ( ((res.a % 2) == (res.c % 2))  && ((res.b % 2) == (res.d % 2)) ) {
+        res = algebraic_take_sqrt2_outside(res);
+    }
+    
+    return res;
+}
+
+
+algebraic_t
+algebraic_mult(algebraic_t x, algebraic_t y)
+{
+    algebraic_t res;
+    res.k =  (x.k + y.k);
+    res.a =  (x.a * y.d) + (x.b * y.c) + (x.c * y.b) + (x.d * y.a);
+    res.b = -(x.a * y.a) + (x.b * y.d) + (x.c * y.c) + (x.d * y.b);
+    res.c = -(x.a * y.b) - (x.b * y.a) + (x.c * y.d) + (x.d * y.c);
+    res.d = -(x.a * y.c) - (x.b * y.b) - (x.c * y.a) + (x.d * y.d);
+    return algebraic_minimal(res);
 }
 
 

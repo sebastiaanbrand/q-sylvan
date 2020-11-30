@@ -28,12 +28,13 @@ algebraic_t algebraic_one();
 /* Algebraic representation of sqrt(2)^k */
 algebraic_t algebraic_sqrt2(int64_t k);
 
+/* Returns the mimimal (canonical) representation of x */
 algebraic_t algebraic_minimal(algebraic_t x);
 
-/* Returns the minimized algebraic representation of x + y */
+/* Returns the minimal algebraic representation of x + y */
 algebraic_t algebraic_add(algebraic_t x, algebraic_t y);
 
-/* Returns the minimized algebraic representation of x * y */
+/* Returns the minimal algebraic representation of x * y */
 algebraic_t algebraic_mult(algebraic_t x, algebraic_t y);
 
 /* Returns the complex number encoded in x in cartesian coordinates form */
