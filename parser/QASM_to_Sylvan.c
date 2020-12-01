@@ -105,9 +105,11 @@ void read_QASM(char *filename)
 
     char *line = NULL, *c;
     BDDVAR *nvars = malloc(sizeof(BDDVAR));
+    *nvars = 0;
     // Since we dont know yet how many qubits the circuit will contain,
     // we initialize measurements with size 1024 (since bool takes up minimal space)
     bool *measurements = malloc(1024*sizeof(bool));
+    for(int i = 0; i < 1024; i++) { measurements[i] = false; }
     size_t len = 0;
     ssize_t read;
     char *tokens[2];
@@ -125,17 +127,19 @@ void read_QASM(char *filename)
             qdd = handle_tokens(qdd, tokens, measurements, nvars);
         }
     }
-    // 10 qubit test (random flag)
-    double prob;
-    bool x[] = {0, 0};
-    for(int i = 0; i < 4; i++)
+
+    // test probabilities
+    AMP a;
+    BDDVAR sum = 0;
+    for(BDDVAR i = 0; i < *nvars; i++) { if(measurements[i]) sum++; }
+    double *prob = malloc(pow(sum,2)*sizeof(double));
+    for (int k = 0; k < (1<<(*nvars+1)); k++)
     {
-        x[0] = i % 2;
-        x[1] = i / 2;
-        prob = comp_to_prob(comp_value(qdd_get_amplitude(qdd, x)));
-        printf("%d%d: %f\n", x[1], x[0], prob);
+        bool *x = int_to_bitarray(k, *nvars+1, true);
+        a = qdd_get_amplitude(qdd, x);
+        if (x[0] == flag3[0] && x[1] == flag3[1] && x[2] == flag3[2])
+            prob += comp_to_prob(comp_value(a));
     }
-    printf("qdd test: ok (Pr(flag) = %lf)\n", prob);
 
     fclose(f);
 }
