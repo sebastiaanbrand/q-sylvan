@@ -20,61 +20,73 @@
 //     }
 // }
 
-QDD handle_tokens(QDD qdd, char **tokens)
+TASK_IMPL_3(QDD, handle_intermediate_measure, QDD, qdd, bool*, measurements, BDDVAR, nvars)
+{
+    int *m = malloc(sizeof(int));
+    double *p = malloc(sizeof(double));
+    for(BDDVAR i = 0; i < nvars; i++)
+    {
+        if(measurements[i])
+        {
+            qdd = qdd_measure_qubit(qdd, i, nvars, m, p);
+            measurements[i] = false;
+        }
+    }
+    return qdd;
+}
+
+TASK_IMPL_3(QDD, handle_single_qubit_gate, QDD, qdd, char*, target, uint32_t, gate_id)
+{
+    target = strtok(target, "[");
+    target = strtok(NULL, "]");
+    return qdd_gate(qdd, gate_id, atoi(target));
+}
+
+
+TASK_IMPL_4(QDD, handle_tokens, QDD, qdd, char**, tokens, bool*, measurements, BDDVAR*, nvars)
 {
     char *temp;
     if(strcmp(tokens[0], "qreg") == 0)
     {
-        printf("command: %s\n",tokens[0]);
         temp = strtok(tokens[1], "[");
         temp = strtok(NULL, "]");
+        *nvars = (BDDVAR)atoi(temp);
         qdd = qdd_create_all_zero_state(atoi(temp));
     }
-    else if(strcmp(tokens[0], "h") == 0)
+    else if(strcmp(tokens[0], "measure") == 0)
     {
-        printf("command: %s\n",tokens[0]);
         temp = strtok(tokens[1], "[");
         temp = strtok(NULL, "]");
-        qdd = qdd_gate(qdd, GATEID_H, atoi(temp));
+        measurements[atoi(temp)] = true;
+    }
+    if(strcmp(tokens[0], "h") == 0)
+    {
+        qdd = handle_intermediate_measure(qdd, measurements, *nvars);
+        qdd = handle_single_qubit_gate(qdd, tokens[1], GATEID_H);
     }
     else if(strcmp(tokens[0], "x") == 0)
     {
-        printf("command: %s\n",tokens[0]);
-        temp = strtok(tokens[1], "[");
-        temp = strtok(NULL, "]");
-        qdd = qdd_gate(qdd, GATEID_X, atoi(temp));
+        qdd = handle_intermediate_measure(qdd, measurements, *nvars);
+        qdd = handle_single_qubit_gate(qdd, tokens[1], GATEID_X);
     }
     else if(strcmp(tokens[0], "y") == 0)
     {
-        printf("command: %s\n",tokens[0]);
-        temp = strtok(tokens[1], "[");
-        temp = strtok(NULL, "]");
-        qdd = qdd_gate(qdd, GATEID_Y, atoi(temp));
+        qdd = handle_intermediate_measure(qdd, measurements, *nvars);
+        qdd = handle_single_qubit_gate(qdd, tokens[1], GATEID_Y);
     }
     else if(strcmp(tokens[0], "z") == 0)
     {
-        printf("command: %s\n",tokens[0]);
-        temp = strtok(tokens[1], "[");
-        temp = strtok(NULL, "]");
-        qdd = qdd_gate(qdd, GATEID_Z, atoi(temp));
+        qdd = handle_intermediate_measure(qdd, measurements, *nvars);
+        qdd = handle_single_qubit_gate(qdd, tokens[1], GATEID_Z);
     }
     else if(strcmp(tokens[0], "cx") == 0)
     {
-        printf("command: %s\n",tokens[0]);
         temp = strtok(tokens[1], "[");
         temp = strtok(NULL, "]");
         char *temp2 = strtok(NULL, "[");
         temp2 = strtok(NULL, "]");
-        printf("arg2: %d\n",atoi(temp2));
         qdd = qdd_cgate(qdd, GATEID_X, atoi(temp), atoi(temp2));
     }
-    else if(strcmp(tokens[0], "measure") == 0)
-    {
-        printf("command: %s\n",tokens[0]);
-        temp = strtok(tokens[1], "[");
-        temp = strtok(NULL, "]");
-    }
-    printf("arg1: %d\n",atoi(temp));
     return qdd;
 
 }
@@ -88,8 +100,14 @@ void read_QASM(char *filename)
         perror("Error while opening the file.\n");
         exit(-1);
     }
-    
+
+    LACE_ME;
+
     char *line = NULL, *c;
+    BDDVAR *nvars = malloc(sizeof(BDDVAR));
+    // Since we dont know yet how many qubits the circuit will contain,
+    // we initialize measurements with size 1024 (since bool takes up minimal space)
+    bool *measurements = malloc(1024*sizeof(bool));
     size_t len = 0;
     ssize_t read;
     char *tokens[2];
@@ -99,15 +117,26 @@ void read_QASM(char *filename)
         while ((*line == ' ') || (*line == '\t')) line++;
         // remove empty lines, trailing information after ';'
         c=strchr(line,';');
-        printf("line: %s",line);
         if (c != NULL) {
             line[c-line] = '\0';
             // tokenize string
             tokens[0] = strtok(line, " ");
             tokens[1] = strtok(NULL, "");
-            qdd = handle_tokens(qdd, tokens);
+            qdd = handle_tokens(qdd, tokens, measurements, nvars);
         }
     }
+    // 10 qubit test (random flag)
+    double prob;
+    bool x[] = {0, 0};
+    for(int i = 0; i < 4; i++)
+    {
+        x[0] = i % 2;
+        x[1] = i / 2;
+        prob = comp_to_prob(comp_value(qdd_get_amplitude(qdd, x)));
+        printf("%d%d: %f\n", x[1], x[0], prob);
+    }
+    printf("qdd test: ok (Pr(flag) = %lf)\n", prob);
+
     fclose(f);
 }
 
@@ -121,14 +150,12 @@ int main(int argc, char *argv[])
     }
     else
     {
-        printf("%s: Exactly two arguments is needed!\n", argv[0]);
         return -1;
     }
 
     // Standard Lace initialization
     int workers = 1;
     lace_init(workers, 0);
-    printf("%d worker(s)\n", workers);
     lace_startup(0, NULL, NULL);
 
     // Simple Sylvan initialization
