@@ -46,6 +46,7 @@ TASK_IMPL_3(QDD, handle_single_qubit_gate, QDD, qdd, char*, target, uint32_t, ga
 TASK_IMPL_4(QDD, handle_tokens, QDD, qdd, char**, tokens, bool*, measurements, BDDVAR*, nvars)
 {
     char *temp;
+    // Create all-zero state with "temp" qubits
     if(strcmp(tokens[0], "qreg") == 0)
     {
         temp = strtok(tokens[1], "[");
@@ -53,6 +54,7 @@ TASK_IMPL_4(QDD, handle_tokens, QDD, qdd, char**, tokens, bool*, measurements, B
         *nvars = (BDDVAR)atoi(temp);
         qdd = qdd_create_all_zero_state(atoi(temp));
     }
+    // Set measure marker on qubit "temp"
     else if(strcmp(tokens[0], "measure") == 0)
     {
         temp = strtok(tokens[1], "[");
@@ -79,7 +81,46 @@ TASK_IMPL_4(QDD, handle_tokens, QDD, qdd, char**, tokens, bool*, measurements, B
         qdd = handle_intermediate_measure(qdd, measurements, *nvars);
         qdd = handle_single_qubit_gate(qdd, tokens[1], GATEID_Z);
     }
-    else if(strcmp(tokens[0], "cx") == 0)
+    else if(strcmp(tokens[0], "s") == 0)
+    {
+        qdd = handle_intermediate_measure(qdd, measurements, *nvars);
+        qdd = handle_single_qubit_gate(qdd, tokens[1], GATEID_S);
+    }
+    else if(strcmp(tokens[0], "sdg") == 0)
+    {
+        printf("TODO: sdg does not exist");
+        // qdd = handle_intermediate_measure(qdd, measurements, *nvars);
+        // qdd = handle_single_qubit_gate(qdd, tokens[1], GATEID);
+    }
+    else if(strcmp(tokens[0], "t") == 0)
+    {
+        qdd = handle_intermediate_measure(qdd, measurements, *nvars);
+        qdd = handle_single_qubit_gate(qdd, tokens[1], GATEID_T);
+    }
+    else if(strcmp(tokens[0], "tdg") == 0)
+    {
+        qdd = handle_intermediate_measure(qdd, measurements, *nvars);
+        qdd = handle_single_qubit_gate(qdd, tokens[1], GATEID_Tdag);
+    }
+    else if(strcmp(tokens[0][0], "r") == 0)
+    {
+        else if(strcmp(tokens[0][1], "x") == 0)
+        {
+            qdd = handle_intermediate_measure(qdd, measurements, *nvars);
+            qdd = handle_single_qubit_gate(qdd, tokens[1], GATEID_Rx);
+        }
+        else if(strcmp(tokens[0][1], "y") == 0)
+        {
+            qdd = handle_intermediate_measure(qdd, measurements, *nvars);
+            qdd = handle_single_qubit_gate(qdd, tokens[1], GATEID_Ry);
+        }
+        else if(strcmp(tokens[0][1], "z") == 0)
+        {
+            qdd = handle_intermediate_measure(qdd, measurements, *nvars);
+            qdd = handle_single_qubit_gate(qdd, tokens[1], GATEID_Rz);
+        }
+    }
+    else if(strcmp(tokens[0][0], "cx") == 0)
     {
         temp = strtok(tokens[1], "[");
         temp = strtok(NULL, "]");
