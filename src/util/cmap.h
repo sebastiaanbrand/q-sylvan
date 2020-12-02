@@ -25,10 +25,6 @@
 #include <stdint.h>
 #include <string.h>
 
-// float "equality" tolerance
-static const double TOLERANCE = 1e-14f; // 1.16415321826934814453125e-10;
-static const double INV_TOLERANCE = 1e14f; // 8589934592
-
 typedef struct complex_s {
   double r,i;
 } complex_t;
@@ -45,7 +41,9 @@ typedef size_t ref_t;
 \param len The length of the vectors to be stored here
 \return the hashtable
 */
-extern cmap_t *cmap_create (uint64_t size);
+extern cmap_t *cmap_create (uint64_t size, double tolerance);
+
+extern double cmap_get_tolerance();
 
 /**
 \brief Free the memory used by a dbs.

@@ -9,7 +9,7 @@ bool VERBOSE = true;
 
 int test_cmap()
 {
-    cmap_t *ctable = cmap_create(1<<10);
+    cmap_t *ctable = cmap_create(1<<10, 1e-14);
 
     ref_t index1, index2;
     complex_t val1, val2, val3;
@@ -35,8 +35,8 @@ int test_cmap()
     found = cmap_find_or_put(ctable, &val2, &index2); test_assert(found == 1);
     test_assert(index1 == index2);
     val3 = *cmap_get(ctable, index1);
-    test_assert(fabs(val3.r - val1.r) < TOLERANCE);
-    test_assert(fabs(val3.i - val1.i) < TOLERANCE);
+    test_assert(fabs(val3.r - val1.r) < cmap_get_tolerance());
+    test_assert(fabs(val3.i - val1.i) < cmap_get_tolerance());
 
     val1 = comp_make(2.99999999999999855, 0.0);
     val2 = comp_make(3.00000000000000123, 0.0);
@@ -155,6 +155,8 @@ int test_complex_operations()
 int test_basis_state_creation()
 {
     bool x[] = {0};
+
+    LACE_ME;
     
     QDD q0, q1;
     x[0] = 0; q0 = qdd_create_basis_state(1, x);
@@ -163,6 +165,8 @@ int test_basis_state_creation()
     test_assert(qdd_countnodes(q1) == 2);
     test_assert(qdd_is_unitvector(q0, 1));
     test_assert(qdd_is_unitvector(q1, 1));
+    test_assert(qdd_is_ordered(q0, 1));
+    test_assert(qdd_is_ordered(q1, 1));
 
     AMP a;
     x[0] = 0; a = qdd_get_amplitude(q0, x); test_assert(a == C_ONE);
@@ -178,6 +182,8 @@ int test_basis_state_creation()
     test_assert(qdd_countnodes(q3) == 4);
     test_assert(qdd_is_unitvector(q2, 3));
     test_assert(qdd_is_unitvector(q3, 3));
+    test_assert(qdd_is_ordered(q2, 3));
+    test_assert(qdd_is_ordered(q3, 3));
 
     x3[2] = 0; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q2, x3); test_assert(a == C_ONE);
     x3[2] = 0; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q2, x3); test_assert(a == C_ZERO);
@@ -209,6 +215,7 @@ int test_vector_addition()
     bool x[] = {0};
     bool x4[] = {0, 0, 0, 0};
     AMP a;
+    BDDVAR nqubits;
 
     LACE_ME;
 
@@ -246,12 +253,12 @@ int test_vector_addition()
     test_assert(q001 == q010);
     test_assert(q001 == q100);
     test_assert(!qdd_is_unitvector(q001, 1));
-    
 
 
     // 4 qubit test
-    x4[3] = 0; x4[2] = 0; x4[1] = 1; x4[0] = 0; q0 = qdd_create_basis_state(4, x4);
-    x4[3] = 1; x4[2] = 0; x4[1] = 1; x4[0] = 0; q1 = qdd_create_basis_state(4, x4);
+    nqubits = 4;
+    x4[3] = 0; x4[2] = 0; x4[1] = 1; x4[0] = 0; q0 = qdd_create_basis_state(nqubits, x4);
+    x4[3] = 1; x4[2] = 0; x4[1] = 1; x4[0] = 0; q1 = qdd_create_basis_state(nqubits, x4);
     q00 = qdd_plus(q0, q0);
     q01 = qdd_plus(q0, q1);
     q10 = qdd_plus(q1, q0);
@@ -260,6 +267,10 @@ int test_vector_addition()
     q001 = qdd_plus(q00, q1);
     q010 = qdd_plus(q01, q0);
     q100 = qdd_plus(q10, q0);
+    test_assert(qdd_is_ordered(q000, nqubits));
+    test_assert(qdd_is_ordered(q001, nqubits));
+    test_assert(qdd_is_ordered(q010, nqubits));
+    test_assert(qdd_is_ordered(q100, nqubits));
 
     // TODO: better way to assert "all others 0" --> creating function which
     // returns array x from int will help
@@ -370,6 +381,7 @@ int test_x_gate()
     QDD q0, q1, q2, q3, q4, q5;
     bool x[] = {0};
     bool x3[] = {0, 0, 0};
+    BDDVAR nqubits;
 
     LACE_ME;
 
@@ -384,35 +396,45 @@ int test_x_gate()
     q0 = qdd_gate(q0, GATEID_X, 0); test_assert(q0 == q2);
 
     // 3 qubit test
-    x3[2] = 0; x3[1] = 0; x3[0] = 0; q3 = qdd_create_basis_state(3, x3);
-    x3[2] = 0; x3[1] = 1; x3[0] = 0; q4 = qdd_create_basis_state(3, x3);
-    x3[2] = 0; x3[1] = 1; x3[0] = 1; q5 = qdd_create_basis_state(3, x3);
+    nqubits = 3;
+    x3[2] = 0; x3[1] = 0; x3[0] = 0; q3 = qdd_create_basis_state(nqubits, x3);
+    x3[2] = 0; x3[1] = 1; x3[0] = 0; q4 = qdd_create_basis_state(nqubits, x3);
+    x3[2] = 0; x3[1] = 1; x3[0] = 1; q5 = qdd_create_basis_state(nqubits, x3);
     test_assert(qdd_countnodes(q3) == 4);
     test_assert(qdd_countnodes(q4) == 4);
     test_assert(qdd_countnodes(q5) == 4);
+    test_assert(qdd_is_ordered(q3, nqubits));
+    test_assert(qdd_is_ordered(q4, nqubits));
+    test_assert(qdd_is_ordered(q5, nqubits));
     
     q3 = qdd_gate(q3, GATEID_X, 1); test_assert(q3 == q4);
     q3 = qdd_gate(q3, GATEID_X, 0); test_assert(q3 == q5);
     test_assert(qdd_countnodes(q3) == 4);
     test_assert(qdd_countnodes(q4) == 4);
     test_assert(qdd_countnodes(q5) == 4);
+    test_assert(qdd_is_ordered(q3, nqubits));
+    test_assert(qdd_is_ordered(q4, nqubits));
+    test_assert(qdd_is_ordered(q5, nqubits));
     
     // Same 3 qubit test with sqrt(X)
-    x3[2] = 0; x3[1] = 0; x3[0] = 0; q3 = qdd_create_basis_state(3, x3);
-    x3[2] = 0; x3[1] = 1; x3[0] = 0; q4 = qdd_create_basis_state(3, x3);
-    x3[2] = 0; x3[1] = 1; x3[0] = 1; q5 = qdd_create_basis_state(3, x3);
+    x3[2] = 0; x3[1] = 0; x3[0] = 0; q3 = qdd_create_basis_state(nqubits, x3);
+    x3[2] = 0; x3[1] = 1; x3[0] = 0; q4 = qdd_create_basis_state(nqubits, x3);
+    x3[2] = 0; x3[1] = 1; x3[0] = 1; q5 = qdd_create_basis_state(nqubits, x3);
 
-    q3 = qdd_gate(q3, GATEID_sqrtX, 1); test_assert(qdd_is_unitvector(q3, 3));
-    q3 = qdd_gate(q3, GATEID_sqrtX, 1); test_assert(qdd_is_unitvector(q3, 3));
+    q3 = qdd_gate(q3, GATEID_sqrtX, 1); test_assert(qdd_is_unitvector(q3, nqubits));
+    q3 = qdd_gate(q3, GATEID_sqrtX, 1); test_assert(qdd_is_unitvector(q3, nqubits));
     test_assert(q3 == q4);
 
-    q3 = qdd_gate(q3, GATEID_sqrtX, 0); test_assert(qdd_is_unitvector(q3, 3));
-    q3 = qdd_gate(q3, GATEID_sqrtX, 0); test_assert(qdd_is_unitvector(q3, 3));
+    q3 = qdd_gate(q3, GATEID_sqrtX, 0); test_assert(qdd_is_unitvector(q3, nqubits));
+    q3 = qdd_gate(q3, GATEID_sqrtX, 0); test_assert(qdd_is_unitvector(q3, nqubits));
     test_assert(q3 == q5);
     
     test_assert(qdd_countnodes(q3) == 4);
     test_assert(qdd_countnodes(q4) == 4);
     test_assert(qdd_countnodes(q5) == 4);
+    test_assert(qdd_is_ordered(q3, nqubits));
+    test_assert(qdd_is_ordered(q4, nqubits));
+    test_assert(qdd_is_ordered(q5, nqubits));
 
 
     if(VERBOSE) printf("qdd x gates:              ok\n");
@@ -425,6 +447,7 @@ int test_h_gate()
     bool x[] = {0};
     bool x2[] = {0,0};
     AMP a;
+    BDDVAR nqubits;
 
     LACE_ME;
 
@@ -442,15 +465,20 @@ int test_h_gate()
 
 
     // Two qubit test
-    x2[1] = 0; x2[0] = 0; q2 = qdd_create_basis_state(2, x2); // |00>
-    x2[1] = 0; x2[0] = 1; q3 = qdd_create_basis_state(2, x2); // |01>
-    x2[1] = 0; x2[0] = 0; q4 = qdd_create_basis_state(2, x2); // |00>
-    x2[1] = 0; x2[0] = 0; q5 = qdd_create_basis_state(2, x2); // |00>
+    nqubits = 2;
+    x2[1] = 0; x2[0] = 0; q2 = qdd_create_basis_state(nqubits, x2); // |00>
+    x2[1] = 0; x2[0] = 1; q3 = qdd_create_basis_state(nqubits, x2); // |01>
+    x2[1] = 0; x2[0] = 0; q4 = qdd_create_basis_state(nqubits, x2); // |00>
+    x2[1] = 0; x2[0] = 0; q5 = qdd_create_basis_state(nqubits, x2); // |00>
     q2 = qdd_gate(q2, GATEID_H, 0); // q2 = |0+>
     q3 = qdd_gate(q3, GATEID_H, 0); // q3 = |0->
     q4 = qdd_gate(q4, GATEID_H, 1); // q4 = |+0>
     q5 = qdd_gate(q5, GATEID_H, 0);
     q5 = qdd_gate(q5, GATEID_H, 1); // q5 = |++>
+    test_assert(qdd_is_ordered(q2, nqubits));
+    test_assert(qdd_is_ordered(q3, nqubits));
+    test_assert(qdd_is_ordered(q4, nqubits));
+    test_assert(qdd_is_ordered(q5, nqubits));
 
     // q2 = |0+>
     x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q2, x2); test_assert(a == comp_lookup(comp_make(1.0/sqrt(2.0),0)));
@@ -669,13 +697,75 @@ int test_ccz_gate()
     x3[2] = 0; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q3, x3); test_assert(a == aRef);
     x3[2] = 0; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(q3, x3); test_assert(a == aRef);
     x3[2] = 1; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q3, x3); test_assert(a == aRef);    
-    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q3, x3); test_assert(a == amp_mul(aRef,comp_lookup(comp_make(-1.0,0.0))));
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q3, x3); test_assert(a == amp_mul(aRef,comp_lookup(comp_minus_one())));
     x3[2] = 1; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q3, x3); test_assert(a == aRef);
     x3[2] = 1; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(q3, x3); test_assert(a == aRef);
+    test_assert(qdd_is_ordered(q3, 3));
 
     // TODO: few more tests
 
     if(VERBOSE) printf("qdd all-control z gate:   ok\n");
+    return 0;
+}
+
+int test_controlled_range_gate()
+{
+    QDD q10, qres;
+    bool x10[] = {0,0,0,0,0,0,0,0,0,0};
+    AMP a, aRef, aRefMin;
+    bool *x_bits;
+
+    LACE_ME;
+
+    BDDVAR nqubits = 10;
+    q10 = qdd_create_basis_state(10, x10);
+    for (BDDVAR k = 0; k < nqubits; k++) q10 = qdd_gate(q10, GATEID_H, k);
+    aRef = qdd_get_amplitude(q10, x10);
+    aRefMin = amp_mul(aRef, comp_lookup(comp_minus_one()));
+
+    // assert |++..+> state
+    test_assert(qdd_is_ordered(q10, nqubits));
+    for (uint64_t x = 0; x < (1UL<<nqubits); x++) {
+        x_bits = int_to_bitarray(x, nqubits, true);
+        a = qdd_get_amplitude(q10, x_bits); 
+        test_assert(a == aRef);
+    }
+
+    // CZ gate on c=0,1,2,3 t=7
+    qres = qdd_cgate_range(q10, GATEID_Z, 0, 3, 7);
+    test_assert(qdd_is_ordered(qres, nqubits));
+    for (uint64_t x = 0; x < (1UL<<nqubits); x++) {
+        x_bits = int_to_bitarray(x, nqubits, true);
+        a = qdd_get_amplitude(qres, x_bits);
+        // for all amps |1111***1**> we should have a phase flip
+        if (x_bits[0] && x_bits[1] && x_bits[2] && x_bits[3] && x_bits[7]) {
+            test_assert(a == aRefMin);
+        }
+        // all others should remain the same
+        else {
+            test_assert(a == aRef);
+        }
+    }
+
+    // CZ gate on c=2,3,4,5 t=8
+    qres = qdd_cgate_range(q10, GATEID_Z, 2, 5, 8);
+    test_assert(qdd_is_ordered(qres, nqubits));
+    for (uint64_t x = 0; x < (1UL<<nqubits); x++) {
+        x_bits = int_to_bitarray(x, nqubits, true);
+        a = qdd_get_amplitude(qres, x_bits);
+        // for all amps |**1111**1*> we should have a phase flip
+        if (x_bits[2] && x_bits[3] && x_bits[4] && x_bits[5] && x_bits[8]) {
+            test_assert(a == aRefMin);
+        }
+        // all others should remain the same
+        else {
+            test_assert(a == aRef);
+        }
+    }
+
+    // TODO: test other gates as well
+
+    if(VERBOSE) printf("qdd controlled range:     ok\n");
     return 0;
 }
 
@@ -697,6 +787,7 @@ int test_swap_circuit()
     x3[2] = 1; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 1; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 1; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
+    test_assert(qdd_is_ordered(q, 3));
 
     q = qdd_circuit_swap(q, 0, 2);
     x3[2] = 0; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
@@ -707,6 +798,7 @@ int test_swap_circuit()
     x3[2] = 1; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 1; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 1; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
+    test_assert(qdd_is_ordered(q, 3));
 
     q = qdd_circuit_swap(q, 0, 1);
     x3[2] = 0; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
@@ -717,6 +809,7 @@ int test_swap_circuit()
     x3[2] = 1; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 1; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 1; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
+    test_assert(qdd_is_ordered(q, 3));
 
     // TODO: more tests
 
@@ -836,10 +929,14 @@ int test_measure_random_state(QDD qdd, BDDVAR nvars)
     QDD qm;
     int m; double p;
 
+    LACE_ME;
+
+    test_assert(qdd_is_ordered(qdd, nvars));
     test_assert(qdd_is_unitvector(qdd, nvars));
     qm = qdd_measure_q0(qdd, nvars, &m, &p);
+    test_assert(qdd_is_ordered(qdd, nvars));
     test_assert(qdd_is_unitvector(qm, nvars));
-    if ((fabs(p - 1.0) < TOLERANCE) || (fabs(p - 0.0) < TOLERANCE)){
+    if ((fabs(p - 1.0) < cmap_get_tolerance()) || (fabs(p - 0.0) < cmap_get_tolerance())){
         qdd = qdd_remove_global_phase(qdd); // measurement removes global phase
         test_assert(qdd_equivalent(qdd, qm, nvars, false, false));
         test_assert(qdd_equivalent(qdd, qm, nvars, true,  false));
@@ -901,7 +998,7 @@ int test_measurements()
         q   = qdd_create_basis_state(3, x3);
         q   = qdd_gate(q, GATEID_H, 0);
         qPM = qdd_measure_qubit(q, 0, 3, &m, &prob);
-        test_assert(fabs(prob - 0.5) < TOLERANCE);
+        test_assert(fabs(prob - 0.5) < cmap_get_tolerance());
         x3[2]=0; x3[1]=0; x3[0]=m; // either |000> or |001> depending on m
         q = qdd_create_basis_state(3, x3); 
         test_assert(qdd_equivalent(q, qPM, 3, false, true));
@@ -913,7 +1010,7 @@ int test_measurements()
         q   = qdd_create_basis_state(3, x3);
         q   = qdd_gate(q, GATEID_H, 1);
         qPM = qdd_measure_qubit(q, 1, 3, &m, &prob);
-        test_assert(fabs(prob - 0.5) < TOLERANCE);
+        test_assert(fabs(prob - 0.5) < cmap_get_tolerance());
         x3[2]=0; x3[1]=m; x3[0]=0; // either |000> or |010> depending on m
         q = qdd_create_basis_state(3, x3);
         test_assert(qdd_equivalent(q, qPM, 3, false, true));
@@ -925,7 +1022,7 @@ int test_measurements()
         q   = qdd_create_basis_state(3, x3);
         q   = qdd_gate(q, GATEID_H, 2);
         qPM = qdd_measure_qubit(q, 2, 3, &m, &prob);
-        test_assert(fabs(prob - 0.5) < TOLERANCE);
+        test_assert(fabs(prob - 0.5) < cmap_get_tolerance());
         x3[2]=m; x3[1]=0; x3[0]=0; // either |000> or |100> depending on m
         q = qdd_create_basis_state(3, x3);
         test_assert(qdd_equivalent(q, qPM, 3, false, true));
@@ -937,7 +1034,7 @@ int test_measurements()
         q   = qdd_create_basis_state(3, x3);
         q   = qdd_gate(q, GATEID_H, 0);
         qPM = qdd_measure_qubit(q, 0, 3, &m, &prob);
-        test_assert(fabs(prob - 0.5) < TOLERANCE);
+        test_assert(fabs(prob - 0.5) < cmap_get_tolerance());
         x3[2]=0; x3[1]=0; x3[0]=m; // either |000> or |001> depending on m
         q = qdd_create_basis_state(3, x3); 
         test_assert(qdd_equivalent(q, qPM, 3, false, true));
@@ -951,7 +1048,7 @@ int test_measurements()
         q   = qdd_gate(q, GATEID_H, 1);
         q   = qdd_gate(q, GATEID_H, 2);
         qPM = qdd_measure_qubit(q, 0, 3, &m, &prob); 
-        test_assert(fabs(prob - 0.5) < TOLERANCE);
+        test_assert(fabs(prob - 0.5) < cmap_get_tolerance());
         x3[2]=0; x3[1]=0; x3[0]=m; // either |++0> or |++1> depending on m
         q = qdd_create_basis_state(3, x3); 
         q = qdd_gate(q, GATEID_H, 1);
@@ -967,7 +1064,7 @@ int test_measurements()
         q   = qdd_gate(q, GATEID_H, 1);
         q   = qdd_gate(q, GATEID_H, 2);
         qPM = qdd_measure_qubit(q, 1, 3, &m, &prob);
-        test_assert(fabs(prob - 0.5) < TOLERANCE);
+        test_assert(fabs(prob - 0.5) < cmap_get_tolerance());
         x3[2]=0; x3[1]=m; x3[0]=0; // either |+0+> or |+1+> depending on m
         q = qdd_create_basis_state(3, x3); 
         q = qdd_gate(q, GATEID_H, 0);
@@ -987,7 +1084,7 @@ int test_measurements()
         x2[1]=1; x2[0]=0; a = qdd_get_amplitude(q, x2); test_assert(a == comp_lookup(comp_make(0.5,0)));
         x2[1]=1; x2[0]=1; a = qdd_get_amplitude(q, x2); test_assert(a == comp_lookup(comp_make(-0.5,0)));
         qPM = qdd_measure_qubit(q, 0, 2, &m, &prob);
-        test_assert(fabs(prob - 0.5) < TOLERANCE);
+        test_assert(fabs(prob - 0.5) < cmap_get_tolerance());
         if (m == 0) { // expect 1/sqrt(2)(|00> + |10>)
             x2[1]=0; x2[0]=0; a = qdd_get_amplitude(qPM, x2); test_assert(a == comp_lookup(comp_make(1.0/sqrt(2.0),0)));
             x2[1]=0; x2[0]=1; a = qdd_get_amplitude(qPM, x2); test_assert(a == C_ZERO);
@@ -1048,7 +1145,7 @@ int test_measurements()
         q   = qdd_create_basis_state(3, x3);
         q   = qdd_gate(q, GATEID_H, 0);
         qPM = qdd_measure_all(q, 3, ms, &prob);
-        test_assert(fabs(prob - 0.5) < TOLERANCE);
+        test_assert(fabs(prob - 0.5) < cmap_get_tolerance());
         x3[2]=0; x3[1]=0; x3[0]=ms[0]; // either |000> or |001> depending on m
         q = qdd_create_basis_state(3, x3); 
         test_assert(qdd_equivalent(q, qPM, 3, false, true));
@@ -1061,7 +1158,7 @@ int test_measurements()
         q   = qdd_create_basis_state(3, x3);
         q   = qdd_gate(q, GATEID_H, 1);
         qPM = qdd_measure_all(q, 3, ms, &prob);
-        test_assert(fabs(prob - 0.5) < TOLERANCE);
+        test_assert(fabs(prob - 0.5) < cmap_get_tolerance());
         x3[2]=0; x3[1]=ms[1]; x3[0]=0; // either |000> or |010> depending on m
         q = qdd_create_basis_state(3, x3);
         test_assert(qdd_equivalent(q, qPM, 3, false, true));
@@ -1074,7 +1171,7 @@ int test_measurements()
         q   = qdd_create_basis_state(3, x3);
         q   = qdd_gate(q, GATEID_H, 2);
         qPM = qdd_measure_all(q, 3, ms, &prob);
-        test_assert(fabs(prob - 0.5) < TOLERANCE);
+        test_assert(fabs(prob - 0.5) < cmap_get_tolerance());
         x3[2]=ms[2]; x3[1]=0; x3[0]=0; // either |000> or |100> depending on m
         q = qdd_create_basis_state(3, x3);
         test_assert(qdd_equivalent(q, qPM, 3, false, true));
@@ -1101,6 +1198,8 @@ int test_QFT()
     QDD q3, q5, qref3, qref5;
     AMP a;
 
+    LACE_ME;
+
     // 3 qubit QFT
     bool x3[] = {0,1,1}; // little endian (q0, q1, q2)
     q3 = qdd_create_basis_state(3, x3);
@@ -1118,6 +1217,7 @@ int test_QFT()
     x3[2]=1; x3[1]=1; x3[0]=0; a = qdd_get_amplitude(q3, x3); test_assert(comp_approx_equal(comp_value(a),comp_make(2.5000000000000017e-01,2.5000000000000000e-01)));
     x3[2]=1; x3[1]=1; x3[0]=1; a = qdd_get_amplitude(q3, x3); test_assert(comp_approx_equal(comp_value(a),comp_make(-2.5000000000000017e-01,-2.5000000000000000e-01)));
     test_assert(qdd_is_unitvector(q3, 3));
+    test_assert(qdd_is_ordered(q3, 3));
 
     // inverse QFT
     q3 = qdd_circuit(q3, CIRCID_reverse_range, 0, 2);
@@ -1126,13 +1226,13 @@ int test_QFT()
     test_assert(qdd_equivalent(q3, qref3, 3, true, false));
     test_assert(q3 == qref3);
 
-
     // 5 qubit QFT
     bool x5[] = {0,1,1,0,1};
     q5 = qdd_create_basis_state(5, x5);
     qref5 = qdd_create_basis_state(5, x5);
     q5 = qdd_circuit(q5, CIRCID_QFT, 0, 4);
     q5 = qdd_circuit(q5, CIRCID_reverse_range, 0, 4);
+    test_assert(qdd_is_ordered(q5, 5));
 
     // check approx equal against output from qiskit
     x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=0; a = qdd_get_amplitude(q5, x5); test_assert(comp_approx_equal(comp_value(a), comp_make(1.7677669529663692e-01,-6.4946704217662027e-17)));
@@ -1393,6 +1493,7 @@ int runtests()
     if (test_phase_gates()) return 1;
     if (test_cx_gate()) return 1;
     if (test_cz_gate()) return 1;
+    if (test_controlled_range_gate()) return 1;
     if (test_ccz_gate()) return 1;
     if (test_swap_circuit()) return 1;
     if (test_cswap_circuit()) return 1;
@@ -1416,7 +1517,7 @@ int main()
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<19);
+    sylvan_init_qdd(1LL<<19, -1);
     qdd_set_testing_mode(true); // turn on internal sanity tests
 
     int res = runtests();

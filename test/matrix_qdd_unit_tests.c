@@ -314,7 +314,7 @@ int test_phase_gates()
     v0 = qdd_matvec_mult(mTdag1, v0, nqubits);
     v0 = qdd_matvec_mult(mTdag1, v0, nqubits);
     v0 = qdd_matvec_mult(mTdag1, v0, nqubits);
-    v0 = qdd_matvec_mult(mTdag1, v0, nqubits)
+    v0 = qdd_matvec_mult(mTdag1, v0, nqubits);
 
     x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(v0, x2); test_assert(a == comp_lookup(comp_make(0.5, 0)));
     x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(v0, x2); test_assert(a == comp_lookup(comp_make(0.5, 0)));
@@ -538,8 +538,9 @@ int main()
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<23);
+    sylvan_init_qdd(1LL<<23, -1);
     qdd_set_testing_mode(true); // turn on internal sanity tests
+    qdd_set_auto_gc_ctable(false); // no auto gc of ctable yet for mult operations
 
     int res = runtests();
 

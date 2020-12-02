@@ -95,7 +95,7 @@ void comp_print_digits_sci(complex_t c, uint32_t digits);
 void comp_print_bits(AMP a);
 
 /* Managing the complex value table */
-void init_amplitude_table(size_t size);
+void init_amplitude_table(size_t size, double tolerance);
 uint64_t count_amplitude_table_enries();
 uint64_t get_ctable_entries_estimate();
 uint64_t get_ctable_size();
