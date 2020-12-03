@@ -15,12 +15,46 @@
 //     c=strchr(c,'/');
 //     if (c != NULL) {
 //         if (str[c-str+1] == '*') {
-
 //         }
 //     }
 // }
 
-TASK_IMPL_3(QDD, handle_intermediate_measure, QDD, qdd, bool *, measurements, BDDVAR, nvars)
+TASK_IMPL_3(double*, final_measuring, QDD, qdd, bool*, measurements, BDDVAR*, nvars)
+{
+    AMP a;
+    BDDVAR index, j, sum = 0;
+    for (BDDVAR i = 0; i < *nvars; i++) { if (measurements[i]) sum++; }
+    double *probs = malloc(pow(2, sum) * sizeof(double));
+    for (int k = 0; k < (1 << (*nvars)); k++)
+    {
+        bool *x = int_to_bitarray(k, *nvars, false);
+        a = qdd_get_amplitude(qdd, x);
+        j = sum-1;
+        index = 0;
+        for (BDDVAR i = *nvars; i > 0; i--)
+            if (measurements[i-1]) { index += x[i-1] * pow(2, j--); }
+        probs[index] += comp_to_prob(comp_value(a));
+    }
+    for(int k = 0; k < pow(2, sum); k++)
+    {
+        bool *x = int_to_bitarray(k, *nvars, false);
+        j = sum-1;
+        for (BDDVAR i = *nvars; i > 0 ; i--)
+        {
+            if (measurements[i-1])
+            {
+                printf("%d", x[j]);
+                j--;
+            }
+            else
+                printf("_");
+        }
+        printf(": %lf\n", probs[k]);
+    }
+    return probs;
+}
+
+TASK_IMPL_3(QDD, handle_intermediate_measure, QDD, qdd, bool*, measurements, BDDVAR, nvars)
 {
     int *m = malloc(sizeof(int));
     double *p = malloc(sizeof(double));
@@ -35,14 +69,14 @@ TASK_IMPL_3(QDD, handle_intermediate_measure, QDD, qdd, bool *, measurements, BD
     return qdd;
 }
 
-TASK_IMPL_3(QDD, handle_single_qubit_gate, QDD, qdd, char *, target, uint32_t, gate_id)
+TASK_IMPL_3(QDD, handle_single_qubit_gate, QDD, qdd, char*, target, uint32_t, gate_id)
 {
     target = strtok(target, "[");
     target = strtok(NULL, "]");
     return qdd_gate(qdd, gate_id, atoi(target));
 }
 
-TASK_IMPL_4(QDD, handle_tokens, QDD, qdd, char **, tokens, bool *, measurements, BDDVAR *, nvars)
+TASK_IMPL_4(QDD, handle_tokens, QDD, qdd, char**, tokens, bool*, measurements, BDDVAR*, nvars)
 {
     char *temp;
     // Create all-zero state with "temp" qubits
@@ -101,20 +135,23 @@ TASK_IMPL_4(QDD, handle_tokens, QDD, qdd, char **, tokens, bool *, measurements,
         qdd = handle_intermediate_measure(qdd, measurements, *nvars);
         qdd = handle_single_qubit_gate(qdd, tokens[1], GATEID_Tdag);
     }
-    else if (strcmp(tokens[0], "rx") == 0)
+    else if (strcmp(strtok(tokens[0], "("), "rx") == 0)
     {
+        temp = strtok(NULL, ")");
         qdd = handle_intermediate_measure(qdd, measurements, *nvars);
-        // qdd = handle_single_qubit_gate(qdd, tokens[1], GATEID_Rx());
+        qdd = handle_single_qubit_gate(qdd, tokens[1], GATEID_Rx(atof(temp)));
     }
-    else if (strcmp(tokens[0], "ry") == 0)
+    else if (strcmp(strtok(tokens[0], "("), "ry") == 0)
     {
+        temp = strtok(NULL, ")");
         qdd = handle_intermediate_measure(qdd, measurements, *nvars);
-        // qdd = handle_single_qubit_gate(qdd, tokens[1], GATEID_Ry);
+        qdd = handle_single_qubit_gate(qdd, tokens[1], GATEID_Ry(atof(temp)));
     }
-    else if (strcmp(tokens[0], "rz") == 0)
+    else if (strcmp(strtok(tokens[0], "("), "rz") == 0)
     {
+        temp = strtok(NULL, ")");
         qdd = handle_intermediate_measure(qdd, measurements, *nvars);
-        // qdd = handle_single_qubit_gate(qdd, tokens[1], GATEID_Rz);
+        qdd = handle_single_qubit_gate(qdd, tokens[1], GATEID_Rz(atof(temp)));
     }
     else if (strcmp(tokens[0], "cx") == 0)
     {
@@ -170,47 +207,7 @@ void read_QASM(char *filename)
         }
     }
     // test probabilities
-    AMP a;
-    BDDVAR index, j, sum = 0;
-    for (BDDVAR i = 0; i < *nvars; i++)
-    {
-        if (measurements[i])
-            sum++;
-    }
-    double *prob = malloc(pow(sum, 2) * sizeof(double));
-    sum--;
-    for (int k = 0; k < (1 << (*nvars + 1)); k++)
-    {
-        bool *x = int_to_bitarray(k, *nvars + 1, true);
-        a = qdd_get_amplitude(qdd, x);
-        j = sum;
-        index = 0;
-        for (BDDVAR i = 0; i < *nvars; i++)
-        {
-            if (measurements[i])
-            {
-                index += x[i] * pow(2, j);
-                j--;
-            }
-            prob[index] = comp_to_prob(comp_value(a));
-        }
-    }
-    for(int i = 0; i < pow(sum, 2); i++)
-    {
-        j = 0;
-        bool *x = int_to_bitarray(i, *nvars + 1, true);
-        for (BDDVAR i = 0; i < *nvars; i++)
-        {
-            if (measurements[i])
-            {
-                printf("%d", x[j]);
-                j++;
-            }
-            else
-                printf("_");
-        }
-        printf(": %lf\n",prob[i]);
-    }
+    final_measuring(qdd, measurements, nvars);
     fclose(f);
 }
 
@@ -231,7 +228,7 @@ int main(int argc, char *argv[])
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL << 25, 1LL << 25, 1LL << 16, 1LL << 16);
     sylvan_init_package();
-    sylvan_init_qdd(1LL << 19);
+    sylvan_init_qdd(1LL << 19, -1);
     qdd_set_testing_mode(true); // turn on internal sanity tests
 
     read_QASM(filename);
