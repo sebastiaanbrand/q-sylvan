@@ -427,7 +427,6 @@ int bench_supremacy()
 
     // different number of workers to test
     int n_workers[] = {1, 2, 4, 8};
-    int nn_workers  = 3;
 
     // re-runs for different depths
     int re_runs = 2;
@@ -441,7 +440,7 @@ int bench_supremacy()
     for (uint32_t i = 0; i < len(depths); i++) {
         for (int r = 0; r < re_runs; r++) {
             uint64_t rseed = rand();
-            for (int w = 0; w < nn_workers; w++) {
+            for (uint32_t w = 0; w < len(n_workers); w++) {
 
                 // output file for history of this run
                 char history_path[256];
@@ -532,10 +531,10 @@ int bench_grover()
     int f_int;
 
     // runtimes are written to single file
-    double runtime, avg_gate_time, avg_nodes;
-    uint64_t nodes_peak, n_gates;
-    uint64_t plus_cacheput, gate_cacheput, cgate_cacheput;
-    uint64_t plus_cached, gate_cached, cgate_cached;
+    double runtime = 0, avg_gate_time = 0, avg_nodes = 0;
+    uint64_t nodes_peak = 0, n_gates = 0;
+    uint64_t plus_cacheput = 0, gate_cacheput = 0, cgate_cacheput = 0;
+    uint64_t plus_cached = 0, gate_cached = 0, cgate_cached = 0;
 
     // run benchmarks
     srand(42);
@@ -649,22 +648,22 @@ int bench_shor()
     int re_runs = 3;
     
     // different number of workers to test
-    int n_workers[] = {1, 2, 4};
+    int n_workers[] = {1, 2, 4, 8};
 
     // runtimes are written to single file
-    double runtime, avg_gate_time, avg_nodes;
-    uint64_t nodes_peak, n_gates;
-    uint64_t plus_cacheput, gate_cacheput, cgate_cacheput;
-    uint64_t plus_cached, gate_cached, cgate_cached;
+    double runtime = 0, avg_gate_time = 0, avg_nodes = 0;
+    uint64_t nodes_peak = 0, n_gates = 0;
+    uint64_t plus_cacheput = 0, gate_cacheput = 0, cgate_cacheput = 0;
+    uint64_t plus_cached = 0, gate_cached = 0, cgate_cached = 0;
 
     // run benchmarks
     srand(42);
     for (uint32_t q = 0; q < len(Ns); q++) {
         N = Ns[q];
-        a = shor_generate_a(N);
         nqubits = (int)ceil(log2(N))*2 + 3;
         for (int r = 0; r < re_runs; r++) {
             uint64_t rseed = rand();
+            a = shor_generate_a(N);
             for (uint32_t w = 0; w < len(n_workers); w++) {
                 
                 // output file for history of this run

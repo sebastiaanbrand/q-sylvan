@@ -78,47 +78,67 @@ qdd_grover(BDDVAR n, bool *flag)
     return qdd;
 }
 
-QDD
-qdd_grover_phase_flips(BDDVAR n)
-{
-    // flip all the phases except for |00..0>
-    bool x[n]; 
-    for(BDDVAR k = 0; k < n; k++) x[k] = 0;
-    QDD phase = qdd_create_all_control_phase(n, x);
-    phase = qdd_scalar_mult(phase, comp_minus_one());
-    return phase;
-}
 
 QDD
 qdd_grover_matrix(BDDVAR n, bool *flag)
 {
     LACE_ME;
 
+    BDDVAR nqubits = n + 1;
+
     // Number of Grover iterations
     uint32_t R = floor( 3.14159265359/4.0 * sqrt( pow(2,n) ) );
 
     // Create matrix QDDs
-    QDD all_H, oracle, phase, grov_it;
-    all_H  = qdd_create_single_qubit_gates_same(n, GATEID_H);
-    oracle = qdd_create_all_control_phase(n, flag);
-    phase  = qdd_grover_phase_flips(n);
-
-    // Grover iteration matrix G = H * Phase * H * oracle
-    // (oracle on the left because we apply G|\psi> from right to left)
-    grov_it = oracle;
-    grov_it = qdd_matmat_mult(all_H, grov_it, n);
-    grov_it = qdd_matmat_mult(phase, grov_it, n);
-    grov_it = qdd_matmat_mult(all_H, grov_it, n);
-
-    // Actual circuit, start with all 0 state
-    QDD state = qdd_create_all_zero_state(n);
+    QDD all_H, first_n_H, first_n_X, oracle, first_n_CZ, grov_it;
+    uint32_t *gate_list = malloc( sizeof(uint32_t)*(nqubits) );
+    int *cgate_options = malloc( sizeof(int)*(nqubits) );
 
     // H on all qubits
-    state = qdd_matvec_mult(all_H, state, n);
+    all_H = qdd_create_single_qubit_gates_same(nqubits, GATEID_H);
 
-    // Grover iterations
+    // H on first n qubits (all qubits except ancilla)
+    for (BDDVAR k = 0; k < n; k++) gate_list[k] = GATEID_H;
+    gate_list[n] = GATEID_I;
+    first_n_H = qdd_create_single_qubit_gates(nqubits, gate_list);
+
+    // oracle
+    for (BDDVAR k = 0; k < n; k++) cgate_options[k] = flag[k];
+    cgate_options[n] = 2; // ancilla qubit is target qubit of this multi-cgate
+    oracle = qdd_create_multi_cgate(nqubits, cgate_options, GATEID_X);
+
+    // X on first n qubits (all qubits except ancilla)
+    for (BDDVAR k = 0; k < n; k++) gate_list[k] = GATEID_X;
+    gate_list[n] = GATEID_I;
+    first_n_X = qdd_create_single_qubit_gates(nqubits, gate_list);
+
+    // CZ gate on all qubits except ancilla
+    for (BDDVAR k = 0; k < n-1; k++) cgate_options[k] = 1; // controls"
+    cgate_options[n-1] = 2; // target last qubit before ancilla
+    cgate_options[n] = -1; // do nothing to ancilla
+    first_n_CZ = qdd_create_multi_cgate(nqubits, cgate_options, GATEID_Z);
+    
+    // Grover iteration = oracle + mean inversion
+    grov_it = oracle;
+    grov_it = qdd_matmat_mult(first_n_H,  grov_it, nqubits);
+    grov_it = qdd_matmat_mult(first_n_X,  grov_it, nqubits);
+    grov_it = qdd_matmat_mult(first_n_CZ, grov_it, nqubits);
+    grov_it = qdd_matmat_mult(first_n_X,  grov_it, nqubits);
+    grov_it = qdd_matmat_mult(first_n_H,  grov_it, nqubits);
+
+    // Now, actually apply the circuit:
+    // 1. Start with all zero state + ancilla: |000...0>|1>
+    bool *init = malloc( sizeof(bool)*(nqubits) );
+    for (BDDVAR k = 0; k < n; k++) init[k] = 0;
+    init[n] = 1; 
+    QDD state = qdd_create_basis_state(nqubits, init);
+
+    // 2. H on all qubits
+    state = qdd_matvec_mult(all_H, state, nqubits);
+
+    // 3. Grover iterations
     for (uint32_t i = 1; i <= R; i++) {
-        state = qdd_matvec_mult(grov_it, state, n);
+        state = qdd_matvec_mult(grov_it, state, nqubits);
     }
 
     return state;

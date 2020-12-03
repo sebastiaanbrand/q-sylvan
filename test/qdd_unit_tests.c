@@ -4,6 +4,7 @@
 #include "sylvan.h"
 #include "test_assert.h"
 #include "sylvan_qdd_complex.h"
+#include "sylvan_qdd_algebraic.h"
 
 bool VERBOSE = true;
 
@@ -149,6 +150,197 @@ int test_complex_operations()
     test_assert(index3 == index4);  test_assert(comp_exact_equal(val3, val4));
 
     if(VERBOSE) printf("complex operations:       ok\n");
+    return 0;
+}
+
+int
+test_algebraic()
+{
+    double test_tol = 1e-9;
+    algebraic_t alg_a, alg_b, alg_c;
+    complex_t cmp_r, cmp_a, cmp_c;
+
+    algebraic_init();
+
+    /* test creation */
+    // 0
+    alg_a = algebraic_zero();
+    cmp_a = algebraic_to_comp(alg_a);
+    cmp_r = comp_zero();
+    test_assert(comp_epsilon_close(cmp_a, cmp_r, test_tol));
+
+    // 1
+    alg_a = algebraic_one();
+    cmp_a = algebraic_to_comp(alg_a);
+    cmp_r = comp_one();
+    test_assert(comp_epsilon_close(cmp_a, cmp_r, test_tol));
+
+    // sqrt(2)
+    alg_a = algebraic_sqrt2(1);
+    cmp_a = algebraic_to_comp(alg_a);
+    cmp_r = comp_make(sqrt(2.0), 0.0);
+    test_assert(comp_epsilon_close(cmp_a, cmp_r, test_tol));
+
+    // 1/sqrt(2)
+    alg_a = algebraic_sqrt2(-1);
+    cmp_a = algebraic_to_comp(alg_a);
+    cmp_r = comp_make(1.0/sqrt(2.0), 0.0);
+    test_assert(comp_epsilon_close(cmp_a, cmp_r, test_tol));
+
+    // 2
+    alg_a = algebraic_sqrt2(2);
+    cmp_a = algebraic_to_comp(alg_a);
+    cmp_r = comp_make(2.0, 0.0);
+    test_assert(comp_epsilon_close(cmp_a, cmp_r, test_tol));
+
+    // 1/2
+    alg_a = algebraic_sqrt2(-2);
+    cmp_a = algebraic_to_comp(alg_a);
+    cmp_r = comp_make(0.5, 0.0);
+    test_assert(comp_epsilon_close(cmp_a, cmp_r, test_tol));
+
+
+    /* test multiplication */
+    // 0 x 1
+    alg_a = algebraic_zero();
+    alg_b = algebraic_one();
+    alg_c = algebraic_mult(alg_a, alg_b);
+    cmp_c = algebraic_to_comp(alg_c);
+    cmp_r = comp_zero();
+    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
+
+    // 1 x 1
+    alg_a = algebraic_one();
+    alg_b = algebraic_one();
+    alg_c = algebraic_mult(alg_a, alg_b);
+    cmp_c = algebraic_to_comp(alg_c);
+    cmp_r = comp_one();
+    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
+
+    // 1 x sqrt(2)
+    alg_a = algebraic_one();
+    alg_b = algebraic_sqrt2(1);
+    alg_c = algebraic_mult(alg_a, alg_b);
+    cmp_c = algebraic_to_comp(alg_c);
+    cmp_r = comp_make(sqrt(2.0), 0.0);
+    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
+
+    // sqrt(2) x 1
+    alg_a = algebraic_sqrt2(1);
+    alg_b = algebraic_one();
+    alg_c = algebraic_mult(alg_a, alg_b);
+    cmp_c = algebraic_to_comp(alg_c);
+    cmp_r = comp_make(sqrt(2.0), 0.0);
+    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
+
+    // sqrt(2) x sqrt(2)
+    alg_a = algebraic_sqrt2(1);
+    alg_b = algebraic_sqrt2(1);
+    alg_c = algebraic_mult(alg_a, alg_b);
+    cmp_c = algebraic_to_comp(alg_c);
+    cmp_r = comp_make(2.0, 0.0);
+    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
+
+    // 1/sqrt(2) x 1/sqrt(2)
+    alg_a = algebraic_sqrt2(-1);
+    alg_b = algebraic_sqrt2(-1);
+    alg_c = algebraic_mult(alg_a, alg_b);
+    cmp_c = algebraic_to_comp(alg_c);
+    cmp_r = comp_make(0.5, 0.0);
+    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
+
+    // 1/sqrt(2) x sqrt(2)
+    alg_a = algebraic_sqrt2(-1);
+    alg_b = algebraic_sqrt2(1);
+    alg_c = algebraic_mult(alg_a, alg_b);
+    cmp_c = algebraic_to_comp(alg_c);
+    cmp_r = comp_make(1.0, 0.0);
+    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
+
+    // sqrt(2) x 1/sqrt(2)
+    alg_a = algebraic_sqrt2(1);
+    alg_b = algebraic_sqrt2(-1);
+    alg_c = algebraic_mult(alg_a, alg_b);
+    cmp_c = algebraic_to_comp(alg_c);
+    cmp_r = comp_make(1.0, 0.0);
+    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
+    
+
+    /* test addition */
+    // 0 + 0
+    alg_a = algebraic_zero();
+    alg_b = algebraic_zero();
+    alg_c = algebraic_add(alg_a, alg_b);
+    cmp_c = algebraic_to_comp(alg_c);
+    cmp_r = comp_make(0.0, 0.0);
+    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
+
+    // 0 + 1
+    alg_a = algebraic_zero();
+    alg_b = algebraic_one();
+    alg_c = algebraic_add(alg_a, alg_b);
+    cmp_c = algebraic_to_comp(alg_c);
+    cmp_r = comp_make(1.0, 0.0);
+    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
+
+    // 1 + 1
+    alg_a = algebraic_one();
+    alg_b = algebraic_one();
+    alg_c = algebraic_add(alg_a, alg_b);
+    cmp_c = algebraic_to_comp(alg_c);
+    cmp_r = comp_make(2.0, 0.0);
+    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
+
+    // 1 + 2
+    alg_a = algebraic_one();
+    alg_b = algebraic_sqrt2(2);
+    alg_c = algebraic_add(alg_a, alg_b);
+    cmp_c = algebraic_to_comp(alg_c);
+    cmp_r = comp_make(3.0, 0.0);
+    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
+
+    // 2 + 1
+    alg_a = algebraic_sqrt2(2);
+    alg_b = algebraic_one();
+    alg_c = algebraic_add(alg_a, alg_b);
+    cmp_c = algebraic_to_comp(alg_c);
+    cmp_r = comp_make(3.0, 0.0);
+    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
+
+    // 1 + 1/2
+    alg_a = algebraic_one();
+    alg_b = algebraic_sqrt2(-2);
+    alg_c = algebraic_add(alg_a, alg_b);
+    cmp_c = algebraic_to_comp(alg_c);
+    cmp_r = comp_make(1.5, 0.0);
+    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
+
+    // sqrt(2) + sqrt(2)
+    alg_a = algebraic_sqrt2(1);
+    alg_b = algebraic_sqrt2(1);
+    alg_c = algebraic_add(alg_a, alg_b);
+    cmp_c = algebraic_to_comp(alg_c);
+    cmp_r = comp_make(2.0 * sqrt(2.0), 0.0);
+    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
+
+    // 1 + sqrt(2)
+    alg_a = algebraic_one();
+    alg_b = algebraic_sqrt2(1);
+    alg_c = algebraic_add(alg_a, alg_b);
+    cmp_c = algebraic_to_comp(alg_c);
+    cmp_r = comp_make(1.0 + sqrt(2.0), 0.0);
+    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
+
+    // sqrt(2) + 1
+    alg_a = algebraic_sqrt2(1);
+    alg_b = algebraic_one();
+    alg_c = algebraic_add(alg_a, alg_b);
+    cmp_c = algebraic_to_comp(alg_c);
+    cmp_r = comp_make(1.0 + sqrt(2.0), 0.0);
+    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
+
+
+    if(VERBOSE) printf("algebraic amps:           WIP\n");
     return 0;
 }
 
@@ -611,6 +803,117 @@ int test_phase_gates()
     test_assert(gates[GATEID_Rk_dag(3)][3] == gates[GATEID_Tdag][3]);
 
     if(VERBOSE) printf("qdd phase gates:          ok\n");
+    return 0;
+}
+
+int test_pauli_rotation_gates()
+{
+    QDD qInit, qTest, qRef;
+    BDDVAR nqubits, t;
+
+    LACE_ME;
+
+    // Rz rotations
+    nqubits = 3, t = 1;
+    qInit = qdd_create_all_zero_state(nqubits);
+    qInit = qdd_gate(qInit, GATEID_H, t);
+
+    // I gate
+    qRef  = qdd_gate(qInit, GATEID_I, t);
+    qTest = qdd_gate(qInit, GATEID_Rz(1.0), t);
+    qTest = qdd_remove_global_phase(qTest);
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, false, false));
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, true, false));
+    test_assert(qTest == qRef);
+
+    // Z gate
+    qRef  = qdd_gate(qInit, GATEID_Z, t);
+    qTest = qdd_gate(qInit, GATEID_Rz(0.5), t);
+    qTest = qdd_remove_global_phase(qTest);
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, false, false));
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, true, false));
+    test_assert(qTest == qRef);
+
+    // S gate
+    qRef  = qdd_gate(qInit, GATEID_S, t);
+    qTest = qdd_gate(qInit, GATEID_Rz(0.25), t);
+    qTest = qdd_remove_global_phase(qTest);
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, false, false));
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, true, false));
+    test_assert(qTest == qRef);
+
+    // T gate
+    qRef  = qdd_gate(qInit, GATEID_T, t);
+    qTest = qdd_gate(qInit, GATEID_Rz(0.125), t);
+    qTest = qdd_remove_global_phase(qTest);
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, false, false));
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, true, false));
+    test_assert(qTest == qRef);
+
+
+    // Rx rotations
+    nqubits = 3, t = 1;
+    qInit = qdd_create_all_zero_state(nqubits);
+
+    // I gate
+    qRef  = qdd_gate(qInit, GATEID_I, t);
+    qTest = qdd_gate(qInit, GATEID_Rx(1.0), t);
+    qTest = qdd_remove_global_phase(qTest);
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, false, false));
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, true, false));
+    test_assert(qTest == qRef);
+
+    // X gate
+    qRef  = qdd_gate(qInit, GATEID_X, t);
+    qTest = qdd_gate(qInit, GATEID_Rx(0.5), t);
+    qTest = qdd_remove_global_phase(qTest);
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, false, false));
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, true, false));
+    test_assert(qTest == qRef);
+
+    // sqrt(X) gate
+    qRef  = qdd_gate(qInit, GATEID_sqrtX, t);
+    qTest = qdd_gate(qInit, GATEID_Rx(0.25), t);
+    qRef  = qdd_remove_global_phase(qRef);
+    qTest = qdd_remove_global_phase(qTest);
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, false, false));
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, true, false));
+    test_assert(qTest == qRef);
+
+
+    // Ry rotations
+    nqubits = 3, t = 1;
+    qInit = qdd_create_all_zero_state(nqubits);
+    qInit = qdd_gate(qInit, GATEID_H, t);
+
+    // I gate
+    qRef  = qdd_gate(qInit, GATEID_I, t);
+    qTest = qdd_gate(qInit, GATEID_Ry(1.0), t);
+    qTest = qdd_remove_global_phase(qTest);
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, false, false));
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, true, false));
+    test_assert(qTest == qRef);
+
+    // Y gate
+    qRef  = qdd_gate(qInit, GATEID_Y, t);
+    qTest = qdd_gate(qInit, GATEID_Ry(0.5), t);
+    qRef  = qdd_remove_global_phase(qRef);
+    qTest = qdd_remove_global_phase(qTest);
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, false, false));
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, true, false));
+    test_assert(qTest == qRef);
+
+    // sqrt(Y) gate
+    qRef  = qdd_gate(qInit, GATEID_sqrtY, t);
+    qTest = qdd_gate(qInit, GATEID_Ry(0.25), t);
+    qRef  = qdd_remove_global_phase(qRef);
+    qTest = qdd_remove_global_phase(qTest);
+
+
+    // TODO: more tests
+
+
+    if(VERBOSE) printf("qdd Rx, Ry, Rz gates:     ok\n");
     return 0;
 }
 
@@ -1479,6 +1782,7 @@ int test_20qubit_circuit()
 
 
 
+
 int runtests()
 {
     // we are not testing garbage collection
@@ -1486,11 +1790,13 @@ int runtests()
 
     if (test_cmap()) return 1;
     if (test_complex_operations()) return 1;
+    if (test_algebraic()) return 1;
     if (test_basis_state_creation()) return 1;
     if (test_vector_addition()) return 1;
     if (test_x_gate()) return 1;
     if (test_h_gate()) return 1;
     if (test_phase_gates()) return 1;
+    if (test_pauli_rotation_gates()) return 1;
     if (test_cx_gate()) return 1;
     if (test_cz_gate()) return 1;
     if (test_controlled_range_gate()) return 1;

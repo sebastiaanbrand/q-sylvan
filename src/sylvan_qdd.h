@@ -430,6 +430,22 @@ QDD qdd_create_single_qubit_gates_same(BDDVAR n, uint32_t gateid);
 QDD qdd_create_controlled_gate(BDDVAR n, BDDVAR c, BDDVAR t, uint32_t gateid);
 
 /**
+ * Creates a QDD matrix which does gateid(c,t) and I on all other qubits.
+ * 
+ * @param n Total number of qubits.
+ * @param c_options Array of length n with option for each qubit k: {
+ *        -1 : ignore qubit k (apply I), 
+ *         0 : control on q_k = |0>
+ *         1 : control on q_k = |1>
+ *         2 : target qubit }
+ * @param gateid Gate ID of predefined single qubit gate U.
+ * 
+ * @return A matrix QDD encoding of the multi-controlled gate on given qubits.
+ */
+#define qdd_create_multi_cgate(n,c_options,gateid) qdd_create_multi_cgate_rec(n,c_options,gateid,0)
+QDD qdd_create_multi_cgate_rec(BDDVAR n, int *c_options, uint32_t gateid, BDDVAR k);
+
+/**
  * Creates an n-qubit controlled Z gate, controlled on all qubits. 
  * 
  * @param n Number of qubits.
@@ -450,13 +466,13 @@ QDD qdd_remove_global_phase(QDD qdd);
  * root edges of these QDDs should always be the same if they represent the
  * same state, so this is mostly a debug/testing function.
  * 
- * @param a A QDD representing a quantum state |\psi>
- * @param b A QDD representing a quantum state |\phi>
+ * @param a A QDD representing a quantum state |psi>
+ * @param b A QDD representing a quantum state |phi>
  * @param n Number of qubits
- * @param exact If true, |\psi> should equal |\phi> exactly (float equal),
+ * @param exact If true, |psi> should equal |phi> exactly (float equal),
  * otherwise allow for preset float equivalence margine.
  * 
- * @returns True iff |\psi> == |\phi>.
+ * @returns True iff |psi> == |phi>.
  */
 bool qdd_equivalent(QDD a, QDD b, int n, bool exact, bool verbose);
 

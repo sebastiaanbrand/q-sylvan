@@ -7,6 +7,9 @@
 
 bool VERBOSE = true;
 
+// don't use for heap / malloced arrays
+#define len(x) (sizeof(x) / sizeof(x[0]))
+
 int test_x_gate()
 {
     BDDVAR nqubits;
@@ -512,6 +515,101 @@ int test_ccz_gate()
     return 0;
 }
 
+int test_multi_cgate()
+{
+
+    BDDVAR nqubits;
+    QDD qTest, qRef, qInit, matrix;
+
+    LACE_ME;
+
+    uint32_t test_gates[] = {GATEID_X, GATEID_H, GATEID_Z, GATEID_sqrtX};
+
+    // just single qubit gates
+    nqubits = 3;
+    qInit   = qdd_create_all_zero_state(nqubits);
+    for (uint32_t i = 0; i < len(test_gates); i++) {
+        // t = 1
+        int c_options[] = {-1,2,-1};
+        qRef   = qdd_gate(qInit, test_gates[i], 1);
+        matrix = qdd_create_multi_cgate(nqubits, c_options, test_gates[i]);
+        qTest  = qdd_matvec_mult(matrix, qInit, nqubits);
+        test_assert(qdd_equivalent(qRef, qTest, nqubits, false, false));
+        test_assert(qdd_equivalent(qRef, qTest, nqubits, true, false));
+        test_assert(qTest == qRef);
+    }
+    for (uint32_t i = 0; i < len(test_gates); i++) {
+        // t = 0
+        int c_options[] = {2,-1,-1};
+        qRef   = qdd_gate(qInit, test_gates[i], 0);
+        matrix = qdd_create_multi_cgate(nqubits, c_options, test_gates[i]);
+        qTest  = qdd_matvec_mult(matrix, qInit, nqubits);
+        test_assert(qdd_equivalent(qRef, qTest, nqubits, false, false));
+        test_assert(qdd_equivalent(qRef, qTest, nqubits, true, false));
+        test_assert(qTest == qRef);
+    }
+
+    // single control gates
+    nqubits = 5;
+    qInit   = qdd_create_all_zero_state(nqubits);
+    qInit   = qdd_gate(qInit, GATEID_H, 1);
+    for (uint32_t i = 0; i < len(test_gates); i++) {
+        // c = 1, t = 2
+        int c_options[] = {-1, 1, 2, -1, -1};
+        qRef = qdd_cgate(qInit, test_gates[i], 1, 2);
+        matrix = qdd_create_multi_cgate(nqubits, c_options, test_gates[i]);
+        qTest = qdd_matvec_mult(matrix, qInit, nqubits);
+        test_assert(qdd_equivalent(qRef, qTest, nqubits, false, false));
+        test_assert(qdd_equivalent(qRef, qTest, nqubits, true, false));
+        test_assert(qTest == qRef);
+    }
+    for (uint32_t i = 0; i < len(test_gates); i++) {
+        // c = 1, t = 3
+        int c_options[] = {-1, 1, -1, 2, -1};
+        qRef = qdd_cgate(qInit, test_gates[i], 1, 3);
+        matrix = qdd_create_multi_cgate(nqubits, c_options, test_gates[i]);
+        qTest = qdd_matvec_mult(matrix, qInit, nqubits);
+        test_assert(qdd_equivalent(qRef, qTest, nqubits, false, false));
+        test_assert(qdd_equivalent(qRef, qTest, nqubits, true, false));
+        test_assert(qTest == qRef);
+    }
+
+    // double control gates
+    nqubits = 6;
+    qInit   = qdd_create_all_zero_state(nqubits);
+    qInit   = qdd_gate(qInit, GATEID_H, 0);
+    qInit   = qdd_gate(qInit, GATEID_H, 2);
+    for (uint32_t i = 0; i < len(test_gates); i++) {
+        // c1 = 0, c2 = 2, t = 5
+        int c_options[] = {1, -1, 1, -1, -1, 2};
+        qRef = qdd_cgate2(qInit, test_gates[i], 0, 2, 5);
+        matrix = qdd_create_multi_cgate(nqubits, c_options, test_gates[i]);
+        qTest = qdd_matvec_mult(matrix, qInit, nqubits);
+        test_assert(qdd_equivalent(qRef, qTest, nqubits, false, false));
+        test_assert(qdd_equivalent(qRef, qTest, nqubits, true, false));
+        test_assert(qTest == qRef);
+    }
+    for (uint32_t i = 0; i < len(test_gates); i++) { 
+        // c1 = 0, c2 = 2, t = 5 (but now control c2 on |0> instead of |1>)
+        int c_options[] = {1, -1, 0, -1, -1, 2};
+        qRef = qdd_gate(qInit, GATEID_X, 2);
+        qRef = qdd_cgate2(qRef, test_gates[i], 0, 2, 5);
+        qRef = qdd_gate(qRef, GATEID_X, 2);
+        matrix = qdd_create_multi_cgate(nqubits, c_options, test_gates[i]);
+        qTest = qdd_matvec_mult(matrix, qInit, nqubits);
+        test_assert(qdd_equivalent(qRef, qTest, nqubits, false, false));
+        test_assert(qdd_equivalent(qRef, qTest, nqubits, true, false));
+        test_assert(qTest == qRef);
+    }
+
+
+    // TODO: more tests
+
+
+    if(VERBOSE) printf("matrix qdd multi-cgate:     ok so far (WIP)\n");
+    return 0;
+}
+
 int runtests()
 {
     // we are not testing garbage collection
@@ -523,6 +621,7 @@ int runtests()
     if (test_cx_gate()) return 1;
     if (test_cz_gate()) return 1;
     if (test_ccz_gate()) return 1;
+    if (test_multi_cgate()) return 1;
 
     return 0;
 }
