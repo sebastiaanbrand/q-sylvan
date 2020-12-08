@@ -26,7 +26,7 @@ typedef union {
 } bucket_t;
 
 // float "equality" tolerance
-static double TOLERANCE = 1e-14f;
+static long double TOLERANCE = 1e-14l;
 static const uint64_t EMPTY = 14738995463583502973ull;
 static const uint64_t LOCK  = 14738995463583502974ull;
 static const uint64_t CL_MASK = -(1ULL << CACHE_LINE);
@@ -73,8 +73,8 @@ cmap_find_or_put (const cmap_t *cmap, const complex_t *v, ref_t *ret)
 
     // Round the value to compute the hash with, but store the actual value v
     complex_t round_v;
-    round_v.r = round(v->r / TOLERANCE) * TOLERANCE;
-    round_v.i = round(v->i / TOLERANCE) * TOLERANCE;
+    round_v.r = roundl((long double) v->r / TOLERANCE) * TOLERANCE;
+    round_v.i = roundl((long double) v->i / TOLERANCE) * TOLERANCE;
 
     // fix 0 possibly having a sign
     if(round_v.r == 0.0) round_v.r = 0.0;
