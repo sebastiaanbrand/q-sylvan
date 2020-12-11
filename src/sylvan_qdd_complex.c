@@ -16,6 +16,7 @@ mmiller@cs.uvic.ca
 #include "sylvan_int.h"
 #include "sylvan_qdd_complex.h"
 #include "util/cmap.h"
+#include "util/rmap.h"
 
 
 /**********************************************
