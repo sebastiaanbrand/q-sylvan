@@ -27,13 +27,14 @@
 
 static int granularity = 1; // operation cache access granularity
 static bool testing_mode = 0; // turns on/off (expensive) sanity checks
+static bool using_real_table = true; // using real table or complex table
 
 /****************< (bit level) manipulation of QDD / qddnode_t >***************/
 /**
  * QDD edge structure (64 bits)
  *       1 bit:  marked/unmarked flag (same place as MTBDD)
- *      23 bits: index of edge weight in ctable (AMP)
- *      40 bits: index of next node in node table (PTR)
+ *      33 bits: index of edge weight in ctable (AMP)
+ *      30 bits: index of next node in node table (PTR)
  * 
  * QDD node structure (128 bits)
  * (note: because of normalization of the amps, we only need 1 amp per node,
@@ -45,18 +46,20 @@ static bool testing_mode = 0; // turns on/off (expensive) sanity checks
  *       1 bit:  if 0 (1) normalized amp is on low (high)
  *       1 bit:  if 0 (1) normalized amp is C_ZERO (C_ONE)
  *      13 bits: unused
- *      40 bits: low edge pointer to next node (PTR)
+ *      30 bits: low edge pointer to next node (PTR)
  * 64 bits high:
  *       1 bit:  marked/unmarked flag (same place as MTBDD)
- *      23 bits: index of edge weight of high edge in ctable (AMP)
- *      40 bits: high edge pointer to next node (PTR)
+ *      33 bits: index of edge weight of high edge in ctable (AMP)
+ *      30 bits: high edge pointer to next node (PTR)
  */
 static const QDD qdd_marked_mask  = 0x8000000000000000LL;
 static const QDD qdd_var_mask_low = 0x7f80000000000000LL;
 static const QDD qdd_amp_pos_mask = 0x0040000000000000LL;
 static const QDD qdd_amp_val_mask = 0x0020000000000000LL;
-static const QDD qdd_amp_mask     = 0x7fffff0000000000LL;
-static const QDD qdd_ptr_mask     = 0x000000ffffffffffLL;
+static const QDD qdd_amp_mask_23  = 0x7fffff0000000000LL;
+static const QDD qdd_amp_mask_33  = 0x7fffffffc0000000LL;
+static const QDD qdd_ptr_mask_30  = 0x000000003fffffffLL;
+static const QDD qdd_ptr_mask_40  = 0x000000ffffffffffLL;
 
 /**
  * Gets only the AMP information of a QDD edge `q`.
@@ -64,7 +67,12 @@ static const QDD qdd_ptr_mask     = 0x000000ffffffffffLL;
 static inline AMP
 QDD_AMP(QDD q)
 {
-    return (q & qdd_amp_mask) >> 40; // 23 bits
+    if (using_real_table) {
+        return (q & qdd_amp_mask_33) >> 30; // 33 bits
+    }
+    else {
+        return (q & qdd_amp_mask_23) >> 40; // 23 bits
+    }
 }
 
 /**
@@ -73,7 +81,12 @@ QDD_AMP(QDD q)
 static inline PTR
 QDD_PTR(QDD q)
 {
-    return q & qdd_ptr_mask; // 40 bits
+    if (using_real_table) {
+        return q & qdd_ptr_mask_30; // 30 bits
+    }
+    else {
+        return q & qdd_ptr_mask_40; // 40 bits
+    }
 }
 
 /**
@@ -172,9 +185,15 @@ QDD_GETNODE(PTR p)
 static inline QDD
 qdd_bundle_ptr_amp(PTR p, AMP a)
 {
-    assert (p <= 0x000000fffffffffe);   // avoid clash with sylvan_invalid
-    assert (a <= (1<<23));
-    return (a << 40 | p);
+    if (using_real_table) {
+        assert (p <= 0x000000003ffffffe);   // avoid clash with sylvan_invalid
+        assert (a <= (1LL<<33));
+        return (a << 30 | p);
+    }else {
+        assert (p <= 0x000000fffffffffe);   // avoid clash with sylvan_invalid
+        assert (a <= (1<<23));
+        return (a << 40 | p);
+    }
 }
 
 static void
@@ -223,7 +242,12 @@ qddnode_pack(qddnode_t n, BDDVAR var, PTR low, PTR high, AMP a, AMP b)
     }
 
     n->low  = ((uint64_t)var)<<55 | ((uint64_t)norm_pos)<<54 | ((uint64_t)norm_val)<<53 | low;
-    n->high = amp_high<<40 | high;
+    if (using_real_table) {
+        n->high = amp_high<<30 | high;
+    }
+    else {
+        n->high = amp_high<<40 | high;
+    }
 }
 
 // Container for disguising doubles as ints so they can go in Sylvan's cache
