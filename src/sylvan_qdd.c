@@ -257,10 +257,12 @@ typedef union {
     uint64_t as_int;
 } double_hack_t;
 
+/*
 typedef union {
     complex_t as_comp;
     uint64_t  as_int[2];
 } comp_hack_t;
+*/
 
 /***************</ (bit level) manipulation of QDD / qddnode_t >***************/
 
@@ -971,6 +973,7 @@ TASK_IMPL_2(QDD, qdd_plus_amp, QDD, a, QDD, b)
     return res;
 }
 
+/*
 TASK_IMPL_2(QDD, qdd_plus_comp_wrap, QDD, a, QDD, b)
 {
     complex_t ca, cb;
@@ -978,6 +981,7 @@ TASK_IMPL_2(QDD, qdd_plus_comp_wrap, QDD, a, QDD, b)
     cb = comp_value(QDD_AMP(b));
     return CALL(qdd_plus_complex, QDD_PTR(a), QDD_PTR(b), ca, cb);
 }
+*/
 
 /**
  * Version of qdd_plus which propagates complex_t's down instead of first
@@ -986,6 +990,7 @@ TASK_IMPL_2(QDD, qdd_plus_comp_wrap, QDD, a, QDD, b)
  * table (which is shared between threads). Drawback is that now these complex 
  * structs (made of floating point values) are keys for the operation cache.
  */
+/*
 TASK_IMPL_4(QDD, qdd_plus_complex, PTR, a, PTR, b, complex_t, ca, complex_t, cb)
 {
     // Trivial cases // Q: use exact or approx?
@@ -1060,6 +1065,7 @@ TASK_IMPL_4(QDD, qdd_plus_complex, PTR, a, PTR, b, complex_t, ca, complex_t, cb)
     }
     return res;
 }
+*/
 
 TASK_IMPL_3(QDD, qdd_gate_rec_amp, QDD, q, uint32_t, gate, BDDVAR, target)
 {
@@ -1120,6 +1126,7 @@ TASK_IMPL_3(QDD, qdd_gate_rec_amp, QDD, q, uint32_t, gate, BDDVAR, target)
     return res;
 }
 
+/*
 TASK_IMPL_3(QDD, qdd_gate_rec_complex, QDD, qdd, uint32_t, gateid, BDDVAR, target)
 {
     // Trivial cases
@@ -1179,6 +1186,7 @@ TASK_IMPL_3(QDD, qdd_gate_rec_complex, QDD, qdd, uint32_t, gateid, BDDVAR, targe
     res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     return res;
 }
+*/
 
 TASK_IMPL_5(QDD, qdd_cgate_rec_amp, QDD, q, uint32_t, gate, BDDVAR*, cs, uint32_t, ci, BDDVAR, t)
 {
@@ -1238,6 +1246,7 @@ TASK_IMPL_5(QDD, qdd_cgate_rec_amp, QDD, q, uint32_t, gate, BDDVAR*, cs, uint32_
     return res;
 }
 
+/*
 TASK_IMPL_5(QDD, qdd_cgate_rec_complex, QDD, q, uint32_t, gate, BDDVAR*, cs, uint32_t, ci, BDDVAR, t)
 {
     // Get current control qubit. If no more control qubits, apply gate here
@@ -1297,6 +1306,7 @@ TASK_IMPL_5(QDD, qdd_cgate_rec_complex, QDD, q, uint32_t, gate, BDDVAR*, cs, uin
     res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     return res;
 }
+*/
 
 TASK_IMPL_6(QDD, qdd_cgate_range_rec_amp, QDD, q, uint32_t, gate, BDDVAR, c_first, BDDVAR, c_last, BDDVAR, t, BDDVAR, k)
 {
@@ -1364,6 +1374,7 @@ TASK_IMPL_6(QDD, qdd_cgate_range_rec_amp, QDD, q, uint32_t, gate, BDDVAR, c_firs
     return res;
 }
 
+/*
 TASK_IMPL_6(QDD, qdd_cgate_range_rec_complex, QDD, q, uint32_t, gate, BDDVAR, c_first, BDDVAR, c_last, BDDVAR, t, BDDVAR, k)
 {
     // Past last control (done with "control part" of controlled gate)
@@ -1427,6 +1438,7 @@ TASK_IMPL_6(QDD, qdd_cgate_range_rec_complex, QDD, q, uint32_t, gate, BDDVAR, c_
     res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     return res;
 }
+*/
 
 /* Wrapper for matrix vector multiplication. */
 TASK_IMPL_3(QDD, qdd_matvec_mult, QDD, mat, QDD, vec, BDDVAR, nvars)
@@ -2665,9 +2677,9 @@ qdd_fprintdot_label(FILE *out, AMP a)
     else if (a == C_ZERO) { fprintf(out, "0"); }
     else {
         complex_t val = comp_value(a);
-        if (val.r != 0.0) fprintf(out, "%.3lf", val.r);
-        if (val.i > 0.0) fprintf(out, "+%.3lfi", val.i);
-        else if (val.i < 0.0) fprintf(out, "%.3lfi", val.i);
+        if (val.r != 0.0) fprintf(out, "%.3lf", (double) val.r);
+        if (val.i > 0.0) fprintf(out, "+%.3lfi", (double) val.i);
+        else if (val.i < 0.0) fprintf(out, "%.3lfi", (double) val.i);
     }
     fprintf(out, "\"");
 }

@@ -202,8 +202,8 @@ TASK_DECL_5(QDD, qdd_cgate_range, QDD, uint32_t, BDDVAR, BDDVAR, BDDVAR);
  * servers as a wrapper around _complex to give it the same signature as _amp.
  */
 TASK_DECL_2(QDD, qdd_plus_amp, QDD, QDD);
-TASK_DECL_2(QDD, qdd_plus_comp_wrap, QDD, QDD);
-TASK_DECL_4(QDD, qdd_plus_complex, PTR, PTR, complex_t, complex_t);
+//TASK_DECL_2(QDD, qdd_plus_comp_wrap, QDD, QDD);
+//TASK_DECL_4(QDD, qdd_plus_complex, PTR, PTR, complex_t, complex_t);
 
 /**
  * Recursive implementation of applying single qubit gates
@@ -211,7 +211,7 @@ TASK_DECL_4(QDD, qdd_plus_complex, PTR, PTR, complex_t, complex_t);
  * Calls "qdd_plus_amp/comp_wrap".
  */
 TASK_DECL_3(QDD, qdd_gate_rec_amp, QDD, uint32_t, BDDVAR);
-TASK_DECL_3(QDD, qdd_gate_rec_complex, PTR, uint32_t, BDDVAR);
+//TASK_DECL_3(QDD, qdd_gate_rec_complex, PTR, uint32_t, BDDVAR);
 
 /**
  * Recursive implementation of applying controlled gates
@@ -219,7 +219,7 @@ TASK_DECL_3(QDD, qdd_gate_rec_complex, PTR, uint32_t, BDDVAR);
  * Calls "qdd_gate_rec_amp/complex".
  */
 TASK_DECL_5(QDD, qdd_cgate_rec_amp, QDD, uint32_t, BDDVAR*, uint32_t, BDDVAR);
-TASK_DECL_5(QDD, qdd_cgate_rec_complex, QDD, uint32_t, BDDVAR*, uint32_t, BDDVAR);
+//TASK_DECL_5(QDD, qdd_cgate_rec_complex, QDD, uint32_t, BDDVAR*, uint32_t, BDDVAR);
 
 /**
  * Recursive implementation of applying controlled gates where the controlles 
@@ -227,7 +227,7 @@ TASK_DECL_5(QDD, qdd_cgate_rec_complex, QDD, uint32_t, BDDVAR*, uint32_t, BDDVAR
  * Calls "qdd_gate_rec_amp/complex".
  */
 TASK_DECL_6(QDD, qdd_cgate_range_rec_amp, QDD, uint32_t, BDDVAR, BDDVAR, BDDVAR, BDDVAR);
-TASK_DECL_6(QDD, qdd_cgate_range_rec_complex, QDD, uint32_t, BDDVAR, BDDVAR, BDDVAR, BDDVAR);
+//TASK_DECL_6(QDD, qdd_cgate_range_rec_complex, QDD, uint32_t, BDDVAR, BDDVAR, BDDVAR, BDDVAR);
 
 
 /* Computes Mat * |vec> (Wrapper function) */

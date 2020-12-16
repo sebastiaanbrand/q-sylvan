@@ -30,7 +30,7 @@ Note use of cosl and sinl for long double computation
 static long double Pi;    // set value of global Pi
 
 
-static const double default_tolerance = 1e-14;
+static const long double default_tolerance = 1e-14;
 size_t ctable_size;
 size_t ctable_entries_est;
 DECLARE_THREAD_LOCAL(ctable_entries_local, size_t); // these are added to _est
@@ -43,7 +43,7 @@ static bool CACHE_AMP_OPS = true;
 /* Shorthand functions for making complex numbers */
 
 complex_t
-comp_make(double r, double i)
+comp_make(fl_t r, fl_t i)
 {
     complex_t res;
     res.r = r;
@@ -52,11 +52,11 @@ comp_make(double r, double i)
 }
 
 complex_t
-comp_make_angle(double theta)
+comp_make_angle(fl_t theta)
 {
     complex_t c;
-    c.r = cos(theta);
-    c.i = sin(theta);
+    c.r = (fl_t) cosl(theta);
+    c.i = (fl_t) sinl(theta);
     return c;
 }
 
@@ -78,12 +78,10 @@ comp_minus_one()
     return comp_make(-1.0, 0.0);
 }
 
-
-
-double
+fl_t
 comp_qmake(int a, int b, int c)
 {
-    return (((double) a + ((double) b) * sqrt (2.0)) / (double) (c));
+    return (((fl_t) a + ((fl_t) b) * (fl_t) sqrtl (2.0)) / (fl_t) (c));
 }
 
 
@@ -305,7 +303,7 @@ complex_t
 comp_div(complex_t a, complex_t b)
 {
     complex_t res;
-    double denom;
+    fl_t denom;
     if (b.i == 0.0) {
         res.r = a.r / b.r;
         res.i = a.i / b.r;
@@ -426,11 +424,11 @@ comp_print_digits(complex_t c, uint32_t digits)
 {
     if(c.r >= 0)
         printf(" ");
-    printf("%.*f", digits, c.r);
+    printf("%.*Lf", digits, (long double) c.r);
     if (c.i > 0)
-        printf("+%.*fi", digits, c.i);
+        printf("+%.*Lfi", digits, (long double) c.i);
     if (c.i < 0)
-        printf("%.*fi", digits, c.i);
+        printf("%.*Lfi", digits, (long double) c.i);
 }
 
 void
@@ -438,11 +436,11 @@ comp_print_digits_sci(complex_t c, uint32_t digits)
 {
     if(c.r >= 0)
         printf(" ");
-    printf("%.*e", digits, c.r);
+    printf("%.*Le", digits, (long double) c.r);
     if (c.i > 0)
-        printf("+%.*ei", digits, c.i);
+        printf("+%.*Lei", digits, (long double) c.i);
     if (c.i < 0)
-        printf("%.*ei", digits, c.i);
+        printf("%.*Lei", digits, (long double) c.i);
 }
 
 void
@@ -470,7 +468,7 @@ get_custom_gate_id()
 }
 
 uint32_t
-GATEID_Rz(double a)
+GATEID_Rz(fl_t a)
 {
     // get gate id for this gate
     uint32_t gate_id = get_custom_gate_id();
@@ -488,18 +486,18 @@ GATEID_Rz(double a)
 }
 
 uint32_t
-GATEID_Rx(double a)
+GATEID_Rx(fl_t a)
 {
     // get gate id for this gate
     uint32_t gate_id = get_custom_gate_id();
 
     // initialize gate
-    double theta_over_2 = Pi * a;
+    fl_t theta_over_2 = Pi * a;
     AMP u00, u01, u10, u11;
-    u00 = comp_lookup(comp_make(cos(theta_over_2), 0.0));
-    u01 = comp_lookup(comp_make(0.0, -sin(theta_over_2)));
-    u10 = comp_lookup(comp_make(0.0, -sin(theta_over_2)));
-    u11 = comp_lookup(comp_make(cos(theta_over_2), 0.0));
+    u00 = comp_lookup(comp_make(cosl(theta_over_2), 0.0));
+    u01 = comp_lookup(comp_make(0.0, -sinl(theta_over_2)));
+    u10 = comp_lookup(comp_make(0.0, -sinl(theta_over_2)));
+    u11 = comp_lookup(comp_make(cosl(theta_over_2), 0.0));
     gates[gate_id][0] = u00; gates[gate_id][1] = u01;
     gates[gate_id][2] = u10; gates[gate_id][3] = u11;
 
@@ -508,18 +506,18 @@ GATEID_Rx(double a)
 }
 
 uint32_t
-GATEID_Ry(double a)
+GATEID_Ry(fl_t a)
 {
     // get gate id for this gate
     uint32_t gate_id = get_custom_gate_id();
 
     // initialize gate
-    double theta_over_2 = Pi * a;
+    fl_t theta_over_2 = Pi * a;
     AMP u00, u01, u10, u11;
-    u00 = comp_lookup(comp_make(cos(theta_over_2),  0.0));
-    u01 = comp_lookup(comp_make(-sin(theta_over_2), 0.0));
-    u10 = comp_lookup(comp_make(sin(theta_over_2),  0.0));
-    u11 = comp_lookup(comp_make(cos(theta_over_2),  0.0));
+    u00 = comp_lookup(comp_make(cosl(theta_over_2),  0.0));
+    u01 = comp_lookup(comp_make(-sinl(theta_over_2), 0.0));
+    u10 = comp_lookup(comp_make(sinl(theta_over_2),  0.0));
+    u11 = comp_lookup(comp_make(cosl(theta_over_2),  0.0));
     gates[gate_id][0] = u00; gates[gate_id][1] = u01;
     gates[gate_id][2] = u10; gates[gate_id][3] = u11;
 
@@ -533,7 +531,7 @@ GATEID_Ry(double a)
 /* Managing the complex value table */
 
 void
-init_amplitude_table(size_t size, double tolerance)
+init_amplitude_table(size_t size, long double tolerance)
 {
     ctable_size = size;
     ctable_entries_est = 0;
@@ -615,18 +613,18 @@ init_phase_gates(int n)
     // add gate R_k to gates table
     // (note that R_0 = I, R_1 = Z, R_2 = S, R_4 = T)
     uint32_t gate_id;
-    double angle;
+    fl_t angle;
     complex_t cartesian;
     for (int k=0; k<=n; k++) {
         // forward rotation
-        angle = 2*Pi / pow(2.0, (double) k);
+        angle = 2*Pi / (fl_t)(1<<k);
         cartesian = comp_make_angle(angle);
         gate_id = GATEID_Rk(k);
         gates[gate_id][0] = C_ONE;  gates[gate_id][1] = C_ZERO;
         gates[gate_id][2] = C_ZERO; gates[gate_id][3] = comp_lookup(cartesian);
 
         // backward rotation
-        angle = -2*Pi / pow(2.0, (double) k);
+        angle = -2*Pi / (fl_t)(1<<k);
         cartesian = comp_make_angle(angle);
         gate_id = GATEID_Rk_dag(k);
         gates[gate_id][0] = C_ONE;  gates[gate_id][1] = C_ZERO;
@@ -665,7 +663,7 @@ init_new_empty_table()
     ctable_old = ctable;
 
     // re-init new (empty) ctable
-    double tolerance = cmap_get_tolerance();
+    long double tolerance = cmap_get_tolerance();
     init_amplitude_table(ctable_size, tolerance);
 }
 

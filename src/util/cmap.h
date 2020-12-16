@@ -25,8 +25,10 @@
 #include <stdint.h>
 #include <string.h>
 
+typedef double fl_t;
+
 typedef struct complex_s {
-  double r,i;
+  fl_t r,i;
 } complex_t;
 
 /**
@@ -43,7 +45,7 @@ typedef size_t ref_t;
 */
 extern cmap_t *cmap_create (uint64_t size, double tolerance);
 
-extern double cmap_get_tolerance();
+extern long double cmap_get_tolerance();
 
 /**
 \brief Free the memory used by a dbs.

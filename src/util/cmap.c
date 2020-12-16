@@ -19,10 +19,12 @@
 #define CACHE_LINE 8
 #define CACHE_LINE_SIZE 256
 
+// how many "blocks" of 64 bits for a single table entry
+#define entry_size (2*sizeof(fl_t)/8)
 
 typedef union {
     complex_t       c;
-    uint64_t        d[2];
+    uint64_t        d[entry_size];
 } bucket_t;
 
 // float "equality" tolerance
@@ -44,7 +46,7 @@ struct cmap_s {
 void 
 print_bucket_floats(bucket_t *b)
 {
-    printf("%.60f, %.60f\n", b->c.r, b->c.i);
+    printf("%.60Lf, %.60Lf\n", (long double) b->c.r, (long double) b->c.i);
 }
 
 void 
@@ -53,7 +55,7 @@ print_bucket_bits(bucket_t* b)
     printf("hex = %lx, %lx\n", b->d[0], b->d[1]);
 }
 
-double
+long double
 cmap_get_tolerance()
 {
     return TOLERANCE;
@@ -99,8 +101,10 @@ cmap_find_or_put (const cmap_t *cmap, const complex_t *v, ref_t *ret)
             if (bucket->d[0] == EMPTY) {
                 if (cas(&bucket->d[0], EMPTY, LOCK)) {
                     *ret = ref;
-                    atomic_write (&bucket->d[1], val->d[1]);
-                    atomic_write (&bucket->d[0], val->d[0]);
+                    // write backwards (overwrite bucket->d[0] last)
+                    for (int k = entry_size-1; k >= 0; k--) {
+                        atomic_write (&bucket->d[k], val->d[k]);
+                    }
                     return 0;
                 }
             }
@@ -146,7 +150,10 @@ void
 print_bitvalues(const cmap_t *cmap, const ref_t ref)
 {
     bucket_t *b = (bucket_t *) cmap_get(cmap, ref);
-    printf("%016lx %016lx", b->d[0], b->d[1]);
+    printf("%016lx", b->d[0]);
+    for (unsigned int k = 1; k < entry_size; k++) {
+        printf(" %016lx", b->d[k]);
+    }
 }
 
 cmap_t *
