@@ -36,8 +36,8 @@ int test_cmap()
     found = cmap_find_or_put(ctable, &val2, &index2); test_assert(found == 1);
     test_assert(index1 == index2);
     val3 = *cmap_get(ctable, index1);
-    test_assert(fabs(val3.r - val1.r) < cmap_get_tolerance());
-    test_assert(fabs(val3.i - val1.i) < cmap_get_tolerance());
+    test_assert(fabsl(val3.r - val1.r) < cmap_get_tolerance());
+    test_assert(fabsl(val3.i - val1.i) < cmap_get_tolerance());
 
     val1 = comp_make(2.99999999999999855, 0.0);
     val2 = comp_make(3.00000000000000123, 0.0);

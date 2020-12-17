@@ -68,8 +68,8 @@ cmap_get_tolerance()
 bool
 complex_close(complex_t *in_table, const complex_t* to_insert)
 {
-    return ((fabs(in_table->r - to_insert->r) < TOLERANCE) && 
-            (fabs(in_table->i - to_insert->i) < TOLERANCE));
+    return ((fabsl(in_table->r - to_insert->r) < TOLERANCE) && 
+            (fabsl(in_table->i - to_insert->i) < TOLERANCE));
 }
 
 int

@@ -107,7 +107,7 @@ double comp_to_prob(complex_t a);
 /* Comparing complex values */
 bool comp_exact_equal(complex_t a, complex_t b);
 bool comp_approx_equal(complex_t a, complex_t b);
-bool comp_epsilon_close(complex_t a, complex_t b, double epsilon);
+bool comp_epsilon_close(complex_t a, complex_t b, long double epsilon);
 
 /* Inserting / retrieving complex values from complex table */
 AMP comp_lookup(complex_t c);

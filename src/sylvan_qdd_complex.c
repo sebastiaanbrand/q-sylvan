@@ -335,9 +335,9 @@ bool comp_approx_equal(complex_t a, complex_t b)
     return comp_epsilon_close(a, b, cmap_get_tolerance());
 }
 
-bool comp_epsilon_close(complex_t a, complex_t b, double epsilon)
+bool comp_epsilon_close(complex_t a, complex_t b, long double epsilon)
 {
-    return ( (fabs(a.r - b.r) < epsilon) && (fabs(a.i - b.i) < epsilon) );
+    return ( (fabsl(a.r - b.r) < epsilon) && (fabsl(a.i - b.i) < epsilon) );
 }
 
 
