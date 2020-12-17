@@ -43,16 +43,20 @@ struct cmap_s {
     // long doubles for the real and imaginary components?
 };
 
-void 
+static void __attribute__((unused))
 print_bucket_floats(bucket_t *b)
 {
     printf("%.60Lf, %.60Lf\n", (long double) b->c.r, (long double) b->c.i);
 }
 
-void 
+static void __attribute__((unused))
 print_bucket_bits(bucket_t* b)
 {
-    printf("hex = %lx, %lx\n", b->d[0], b->d[1]);
+    printf("%016lx", b->d[0]);
+    for (unsigned int k = 1; k < entry_size; k++) {
+        printf(" %016lx", b->d[k]);
+    }
+    printf("\n");
 }
 
 long double
@@ -74,13 +78,15 @@ cmap_find_or_put (const cmap_t *cmap, const complex_t *v, ref_t *ret)
     bucket_t *val  = (bucket_t *) v;
 
     // Round the value to compute the hash with, but store the actual value v
-    complex_t round_v;
-    round_v.r = roundl((long double) v->r / TOLERANCE) * TOLERANCE;
-    round_v.i = roundl((long double) v->i / TOLERANCE) * TOLERANCE;
+    bucket_t round_v;
+    round_v.c.r = roundl((long double) v->r / TOLERANCE) * TOLERANCE;
+    round_v.c.i = roundl((long double) v->i / TOLERANCE) * TOLERANCE;
 
     // fix 0 possibly having a sign
-    if(round_v.r == 0.0) round_v.r = 0.0;
-    if(round_v.i == 0.0) round_v.i = 0.0;
+    if(round_v.c.r == 0.0) round_v.c.r = 0.0;
+    if(round_v.c.i == 0.0) round_v.c.i = 0.0;
+    printf("(%.3f,%.3f) ",(float)round_v.c.r,(float)round_v.c.i);
+    print_bucket_bits(&round_v); 
     
     uint32_t hash  = SuperFastHash(&round_v, sizeof(complex_t), 0);
     uint32_t prime = odd_primes[hash & PRIME_MASK];

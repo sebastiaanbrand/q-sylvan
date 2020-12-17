@@ -25,7 +25,7 @@
 #include <stdint.h>
 #include <string.h>
 
-typedef double fl_t;
+typedef long double fl_t;
 
 typedef struct complex_s {
   fl_t r,i;
