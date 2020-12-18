@@ -65,7 +65,7 @@ cmap_get_tolerance()
     return TOLERANCE;
 }
 
-bool
+static bool
 complex_close(complex_t *in_table, const complex_t* to_insert)
 {
     return ((fabsl(in_table->r - to_insert->r) < TOLERANCE) && 
@@ -79,14 +79,15 @@ cmap_find_or_put (const cmap_t *cmap, const complex_t *v, ref_t *ret)
 
     // Round the value to compute the hash with, but store the actual value v
     bucket_t round_v;
-    round_v.c.r = roundl((long double) v->r / TOLERANCE) * TOLERANCE;
-    round_v.c.i = roundl((long double) v->i / TOLERANCE) * TOLERANCE;
+    round_v.c.r = lrintq(v->r / TOLERANCE) * TOLERANCE;
+    round_v.c.i = lrintq(v->i / TOLERANCE) * TOLERANCE;
 
     // fix 0 possibly having a sign
     if(round_v.c.r == 0.0) round_v.c.r = 0.0;
     if(round_v.c.i == 0.0) round_v.c.i = 0.0;
-    printf("(%.3f,%.3f) ",(float)round_v.c.r,(float)round_v.c.i);
-    print_bucket_bits(&round_v); 
+
+    //printf("(%.3f,%.3f) ",(float)round_v.c.r,(float)round_v.c.i);
+    //print_bucket_bits(&round_v); 
     
     uint32_t hash  = SuperFastHash(&round_v, sizeof(complex_t), 0);
     uint32_t prime = odd_primes[hash & PRIME_MASK];

@@ -11,3 +11,5 @@ add_library(util STATIC
         fast_hash.h fast_hash.c
         MurmurHash3.h MurmurHash3.c
         util.h)
+
+target_link_libraries(util "-lquadmath")
