@@ -23,8 +23,8 @@ mmiller@cs.uvic.ca
 Compute trig functions for angle factor*Pi/div
 Note use of cosl and sinl for long double computation
 **********************************************/
-#define qdd_cos(fac,div) cosl((long double)(fac)*Pi/(long double)(div))
-#define qdd_sin(fac,div) sinl((long double)(fac)*Pi/(long double)(div))
+//#define qdd_cos(fac,div) cosl((long double)(fac)*Pi/(long double)(div))
+//#define qdd_sin(fac,div) sinl((long double)(fac)*Pi/(long double)(div))
 
 
 static long double Pi;    // set value of global Pi
@@ -55,8 +55,8 @@ complex_t
 comp_make_angle(fl_t theta)
 {
     complex_t c;
-    c.r = (fl_t) cosl(theta);
-    c.i = (fl_t) sinl(theta);
+    c.r = flt_cos(theta);
+    c.i = flt_sin(theta);
     return c;
 }
 
@@ -81,7 +81,7 @@ comp_minus_one()
 fl_t
 comp_qmake(int a, int b, int c)
 {
-    return (((fl_t) a + ((fl_t) b) * (fl_t) sqrtl (2.0)) / (fl_t) (c));
+    return (( a +  b * flt_sqrt(2.0)) / c);
 }
 
 
@@ -249,7 +249,7 @@ complex_t
 comp_abs(complex_t a)
 {
     complex_t res;
-    res.r = sqrt( (a.r*a.r) + (a.i*a.i) );
+    res.r = flt_sqrt( (a.r*a.r) + (a.i*a.i) );
     res.i = 0.0;
     return res;
 }
@@ -318,7 +318,7 @@ comp_div(complex_t a, complex_t b)
 double
 comp_to_prob(complex_t a)
 {
-    double abs = sqrt( (a.r*a.r) + (a.i*a.i) );
+    double abs = flt_sqrt ( (a.r*a.r) + (a.i*a.i) );
     return (abs*abs);
 }
 
@@ -337,7 +337,7 @@ bool comp_approx_equal(complex_t a, complex_t b)
 
 bool comp_epsilon_close(complex_t a, complex_t b, long double epsilon)
 {
-    return ( (fabsl(a.r - b.r) < epsilon) && (fabsl(a.i - b.i) < epsilon) );
+    return ( (flt_abs(a.r - b.r) < epsilon) && (flt_abs(a.i - b.i) < epsilon) );
 }
 
 
@@ -494,10 +494,10 @@ GATEID_Rx(fl_t a)
     // initialize gate
     fl_t theta_over_2 = Pi * a;
     AMP u00, u01, u10, u11;
-    u00 = comp_lookup(comp_make(cosl(theta_over_2), 0.0));
-    u01 = comp_lookup(comp_make(0.0, -sinl(theta_over_2)));
-    u10 = comp_lookup(comp_make(0.0, -sinl(theta_over_2)));
-    u11 = comp_lookup(comp_make(cosl(theta_over_2), 0.0));
+    u00 = comp_lookup(comp_make(flt_cos(theta_over_2), 0.0));
+    u01 = comp_lookup(comp_make(0.0, -flt_sin(theta_over_2)));
+    u10 = comp_lookup(comp_make(0.0, -flt_sin(theta_over_2)));
+    u11 = comp_lookup(comp_make(flt_cos(theta_over_2), 0.0));
     gates[gate_id][0] = u00; gates[gate_id][1] = u01;
     gates[gate_id][2] = u10; gates[gate_id][3] = u11;
 
@@ -514,10 +514,10 @@ GATEID_Ry(fl_t a)
     // initialize gate
     fl_t theta_over_2 = Pi * a;
     AMP u00, u01, u10, u11;
-    u00 = comp_lookup(comp_make(cosl(theta_over_2),  0.0));
-    u01 = comp_lookup(comp_make(-sinl(theta_over_2), 0.0));
-    u10 = comp_lookup(comp_make(sinl(theta_over_2),  0.0));
-    u11 = comp_lookup(comp_make(cosl(theta_over_2),  0.0));
+    u00 = comp_lookup(comp_make(flt_cos(theta_over_2),  0.0));
+    u01 = comp_lookup(comp_make(-flt_sin(theta_over_2), 0.0));
+    u10 = comp_lookup(comp_make(flt_sin(theta_over_2),  0.0));
+    u11 = comp_lookup(comp_make(flt_cos(theta_over_2),  0.0));
     gates[gate_id][0] = u00; gates[gate_id][1] = u01;
     gates[gate_id][2] = u10; gates[gate_id][3] = u11;
 
@@ -550,7 +550,7 @@ init_amplitude_table(size_t size, long double tolerance)
     C_ZERO    = comp_lookup(comp_zero());
     C_MIN_ONE = comp_lookup(comp_minus_one());
 
-    Pi = 2.0 * acos(0.0);
+    Pi = 2.0 * flt_acos(0.0);
 
     init_gates();
 }

@@ -24,9 +24,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
-#include <quadmath.h>
-
-typedef __float128 fl_t;
+#include "flt.h"
 
 typedef struct complex_s {
   fl_t r,i;
