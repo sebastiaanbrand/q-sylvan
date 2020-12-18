@@ -23,6 +23,10 @@ TASK_IMPL_3(double*, final_measuring, QDD, qdd, bool*, measurements, BDDVAR*, nv
 {
     AMP a;
     BDDVAR index, j, sum = 0;
+    // bool *ms = malloc(pow(2,*nvars) * sizeof(bool));
+    // double *p = malloc(pow(2,*nvars) * sizeof(double));
+    // qdd = qdd_measure_all(qdd, *nvars, ms, p);
+    // for(BDDVAR i = 0; i < pow(2,*nvars); i++) { printf("qubit %d: %d,%f\n",i,ms[i],p[i]); }
     for (BDDVAR i = 0; i < *nvars; i++) { if (measurements[i]) sum++; }
     double *probs = malloc(pow(2, sum) * sizeof(double));
     for (int k = 0; k < (1 << (*nvars)); k++)
@@ -76,6 +80,30 @@ TASK_IMPL_3(QDD, handle_single_qubit_gate, QDD, qdd, char*, target, uint32_t, ga
     return qdd_gate(qdd, gate_id, atoi(target));
 }
 
+TASK_IMPL_2(QDD, handle_controlled_qubit_gate, QDD, qdd, char**, tokens)
+{
+    BDDVAR i = 0;
+    while(tokens[0][i] == 'c') {
+        i++;
+    }
+    char **qubits = malloc((i+1) * sizeof(char));
+    qubits[0] = strtok(tokens[1], "[");
+    BDDVAR j = 0;
+    for(; j < i; j++) {
+        qubits[j] = strtok(NULL, "]");
+        qubits[j+1] = strtok(NULL, "[");
+    }
+    qubits[j] = strtok(NULL, "]");
+    if(i == 1)
+        qdd = qdd_cgate(qdd, GATEID_X, atoi(qubits[0]), atoi(qubits[1]));
+    else if(i == 2)
+        qdd = qdd_cgate2(qdd, GATEID_X, atoi(qubits[0]), atoi(qubits[1]), atoi(qubits[2]));
+    else if(i == 3)
+        qdd = qdd_cgate3(qdd, GATEID_X, atoi(qubits[0]), atoi(qubits[1]), atoi(qubits[2]), atoi(qubits[3]));
+    else exit(-1);
+    return qdd;
+}
+
 TASK_IMPL_4(QDD, handle_tokens, QDD, qdd, char**, tokens, bool*, measurements, BDDVAR*, nvars)
 {
     char *temp;
@@ -94,6 +122,7 @@ TASK_IMPL_4(QDD, handle_tokens, QDD, qdd, char**, tokens, bool*, measurements, B
         temp = strtok(NULL, "]");
         measurements[atoi(temp)] = true;
     }
+    // Handle gates
     if (strcmp(tokens[0], "h") == 0)
     {
         qdd = handle_intermediate_measure(qdd, measurements, *nvars);
@@ -122,7 +151,7 @@ TASK_IMPL_4(QDD, handle_tokens, QDD, qdd, char**, tokens, bool*, measurements, B
     else if (strcmp(tokens[0], "sdg") == 0)
     {
         printf("TODO: sdg does not exist");
-        // qdd = handle_intermediate_measure(qdd, measurements, *nvars);
+        qdd = handle_intermediate_measure(qdd, measurements, *nvars);
         // qdd = handle_single_qubit_gate(qdd, tokens[1], GATEID);
     }
     else if (strcmp(tokens[0], "t") == 0)
@@ -153,13 +182,10 @@ TASK_IMPL_4(QDD, handle_tokens, QDD, qdd, char**, tokens, bool*, measurements, B
         qdd = handle_intermediate_measure(qdd, measurements, *nvars);
         qdd = handle_single_qubit_gate(qdd, tokens[1], GATEID_Rz(atof(temp)));
     }
-    else if (strcmp(tokens[0], "cx") == 0)
+    else if (tokens[0][0] == 'c' && strcmp(tokens[0], "creg") != 0)
     {
-        temp = strtok(tokens[1], "[");
-        temp = strtok(NULL, "]");
-        char *temp2 = strtok(NULL, "[");
-        temp2 = strtok(NULL, "]");
-        qdd = qdd_cgate(qdd, GATEID_X, atoi(temp), atoi(temp2));
+        qdd = handle_intermediate_measure(qdd, measurements, *nvars);
+        qdd = handle_controlled_qubit_gate(qdd, tokens);
     }
     return qdd;
 }
