@@ -579,8 +579,8 @@ init_gates()
     gates[k][2] = C_ZERO; gates[k][3] = C_MIN_ONE;
 
     k = GATEID_H;
-    gates[k][0] = gates[k][1] = gates[k][2] = comp_lookup(comp_make(1.0/sqrt(2.0),0));
-    gates[k][3] = comp_lookup(comp_make(-1.0/sqrt(2.0),0));
+    gates[k][0] = gates[k][1] = gates[k][2] = comp_lookup(comp_make(1.0/flt_sqrt(2.0),0));
+    gates[k][3] = comp_lookup(comp_make(-1.0/flt_sqrt(2.0),0));
 
     k = GATEID_S;
     gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
@@ -588,11 +588,11 @@ init_gates()
 
     k = GATEID_T;
     gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
-    gates[k][2] = C_ZERO; gates[k][3] = comp_lookup(comp_make(1.0/sqrt(2.0), 1.0/sqrt(2.0)));
+    gates[k][2] = C_ZERO; gates[k][3] = comp_lookup(comp_make(1.0/flt_sqrt(2.0), 1.0/flt_sqrt(2.0)));
 
     k = GATEID_Tdag;
     gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
-    gates[k][2] = C_ZERO; gates[k][3] = comp_lookup(comp_make(1.0/sqrt(2.0), -1.0/sqrt(2.0)));
+    gates[k][2] = C_ZERO; gates[k][3] = comp_lookup(comp_make(1.0/flt_sqrt(2.0), -1.0/flt_sqrt(2.0)));
 
     k = GATEID_sqrtX;
     gates[k][0] = comp_lookup(comp_make(0.5, 0.5)); gates[k][1] = comp_lookup(comp_make(0.5,-0.5));
