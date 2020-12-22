@@ -30,8 +30,8 @@ int test_cmap()
     found = cmap_find_or_put(ctable, &val2, &index2); test_assert(found == 1);
     test_assert(index1 == index2);
 
-    val1 = comp_make(1.0/sqrt(2.0),0); // 1/sqrt(2)
-    val2 = comp_make(1.0/sqrt(2.0),0);
+    val1 = comp_make(1.0/flt_sqrt(2.0),0); // 1/sqrt(2)
+    val2 = comp_make(1.0/flt_sqrt(2.0),0);
     found = cmap_find_or_put(ctable, &val1, &index1); test_assert(found == 0);
     found = cmap_find_or_put(ctable, &val2, &index2); test_assert(found == 1);
     test_assert(index1 == index2);
@@ -47,8 +47,8 @@ int test_cmap()
     val3 = *cmap_get(ctable, index1);
     test_assert(val3.r == val1.r && val3.i == val1.i);
 
-    val1 = comp_make(0.0005000000000000012, 0.0);
-    val2 = comp_make(0.0004999999999999954, 0.0);
+    val1 = comp_make(0.0005000000000012, 0.0);
+    val2 = comp_make(0.0004999999999954, 0.0);
     found = cmap_find_or_put(ctable, &val1, &index1); test_assert(found == 0);
     found = cmap_find_or_put(ctable, &val2, &index2); test_assert(found == 1);
     test_assert(index1 == index2);
