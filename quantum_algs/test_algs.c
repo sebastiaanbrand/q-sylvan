@@ -11,6 +11,7 @@
 
 bool VERBOSE = true;
 
+
 int test_grover()
 {
     BDDVAR nbits;

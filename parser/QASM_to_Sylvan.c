@@ -19,43 +19,46 @@
 //     }
 // }
 
-TASK_IMPL_3(double*, final_measuring, QDD, qdd, bool*, measurements, BDDVAR*, nvars)
+TASK_IMPL_4(int, final_measuring, QDD, qdd, bool*, measurements, BDDVAR*, nvars, BDDVAR, shots)
 {
-    AMP a;
+    // Run the circuit x times, where x == shots
+    bool *ms = malloc(*nvars * sizeof(bool));
+    double *p = malloc(*nvars * sizeof(double));
+    int *hits = malloc(pow(2,*nvars) * sizeof(int));
+    for(int i = 0; i < pow(2,*nvars); i++) { hits[i] = 0; }
+    for(BDDVAR i = 0; i < shots; i++) { 
+        qdd_measure_all(qdd, *nvars, ms, p);
+        hits[bitarray_to_int(ms, *nvars, false)]++;
+    }
+
+    // Reformat circuit results based on what qubits were measured
     BDDVAR index, j, sum = 0;
-    // bool *ms = malloc(pow(2,*nvars) * sizeof(bool));
-    // double *p = malloc(pow(2,*nvars) * sizeof(double));
-    // qdd = qdd_measure_all(qdd, *nvars, ms, p);
-    // for(BDDVAR i = 0; i < pow(2,*nvars); i++) { printf("qubit %d: %d,%f\n",i,ms[i],p[i]); }
     for (BDDVAR i = 0; i < *nvars; i++) { if (measurements[i]) sum++; }
-    double *probs = malloc(pow(2, sum) * sizeof(double));
-    for (int k = 0; k < (1 << (*nvars)); k++)
-    {
+    int *probs = malloc(pow(2, sum) * sizeof(int));
+    for (int k = 0; k < (1 << (*nvars)); k++) {
         bool *x = int_to_bitarray(k, *nvars, false);
-        a = qdd_get_amplitude(qdd, x);
         j = sum-1;
         index = 0;
         for (BDDVAR i = *nvars; i > 0; i--)
             if (measurements[i-1]) { index += x[i-1] * pow(2, j--); }
-        probs[index] += comp_to_prob(comp_value(a));
+        probs[index] += hits[k];
     }
-    for(int k = 0; k < pow(2, sum); k++)
-    {
+
+    // Print reformatted circuit results
+    for(int k = 0; k < pow(2, sum); k++) {
         bool *x = int_to_bitarray(k, *nvars, false);
         j = sum-1;
-        for (BDDVAR i = *nvars; i > 0 ; i--)
-        {
-            if (measurements[i-1])
-            {
+        for (BDDVAR i = *nvars; i > 0 ; i--) {
+            if (measurements[i-1]) {
                 printf("%d", x[j]);
                 j--;
             }
             else
                 printf("_");
         }
-        printf(": %lf\n", probs[k]);
+        printf(": %d\n", probs[k]);
     }
-    return probs;
+    return 0;
 }
 
 TASK_IMPL_3(QDD, handle_intermediate_measure, QDD, qdd, bool*, measurements, BDDVAR, nvars)
@@ -190,7 +193,7 @@ TASK_IMPL_4(QDD, handle_tokens, QDD, qdd, char**, tokens, bool*, measurements, B
     return qdd;
 }
 
-void read_QASM(char *filename)
+void read_QASM(char *filename, BDDVAR shots)
 {
     FILE *f;
     f = fopen(filename, "r");
@@ -233,7 +236,7 @@ void read_QASM(char *filename)
         }
     }
     // test probabilities
-    final_measuring(qdd, measurements, nvars);
+    final_measuring(qdd, measurements, nvars, shots);
     fclose(f);
 }
 
@@ -241,11 +244,23 @@ int main(int argc, char *argv[])
 {
     // check for file
     char *filename = "";
-    if (argc == 2)
-        filename = argv[1];
-    else
-        return -1;
-
+    BDDVAR shots = 100;
+    int opt;
+    while((opt = getopt(argc, argv, "f:s:")) != -1) {
+        switch(opt) {
+            case 'f':
+                filename = optarg;
+                break;
+            case 's':
+                shots = atoi(optarg);
+                break;
+        }
+    }
+    if(strcmp(filename, "") == 0)
+    {
+        printf("Give filename of qasm file.\n");
+        exit(-1);
+    }
     // Standard Lace initialization
     int workers = 1;
     lace_init(workers, 0);
@@ -257,7 +272,7 @@ int main(int argc, char *argv[])
     sylvan_init_qdd(1LL << 19, -1);
     qdd_set_testing_mode(true); // turn on internal sanity tests
 
-    read_QASM(filename);
+    read_QASM(filename, shots);
 
     sylvan_quit();
     lace_exit();

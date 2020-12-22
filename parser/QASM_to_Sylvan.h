@@ -2,7 +2,7 @@
 
 #include "sylvan.h"
 
-void read_QASM(char *filename);
+void read_QASM(char *filename, BDDVAR shots);
 
 #define handle_intermediate_measure(qdd,measurements,nvars) (CALL(handle_intermediate_measure,qdd,measurements,nvars));
 TASK_DECL_3(QDD, handle_intermediate_measure, QDD, bool*, BDDVAR);
@@ -16,5 +16,5 @@ TASK_DECL_2(QDD, handle_controlled_qubit_gate, QDD, char**);
 #define handle_tokens(qdd,tokens,measurements,nvars) (CALL(handle_tokens,qdd,tokens,measurements,nvars));
 TASK_DECL_4(QDD, handle_tokens, QDD, char**,bool*, BDDVAR*);
 
-#define final_measuring(qdd,measurements,nvars) (CALL(final_measuring,qdd,measurements,nvars));
-TASK_DECL_3(double*, final_measuring, QDD, bool*, BDDVAR*);
+#define final_measuring(qdd,measurements,nvars,shots) (CALL(final_measuring,qdd,measurements,nvars,shots));
+TASK_DECL_4(int, final_measuring, QDD, bool*, BDDVAR*, BDDVAR);
