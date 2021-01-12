@@ -432,11 +432,12 @@ int bench_supremacy()
     int re_runs = 2;
 
     // runtimes are written to single file
-    double runtime, avg_gate_time, avg_nodes;
-    uint64_t nodes_peak, n_gates;
-    uint64_t plus_cacheput, gate_cacheput, cgate_cacheput;
-    uint64_t plus_cached, gate_cached, cgate_cached;
+    double runtime = 0, avg_gate_time = 0, avg_nodes = 0;
+    uint64_t nodes_peak = 0, n_gates = 0;
+    uint64_t plus_cacheput = 0, gate_cacheput = 0, cgate_cacheput = 0;
+    uint64_t plus_cached = 0, gate_cached = 0, cgate_cached = 0;
 
+    srand(42);
     for (uint32_t i = 0; i < len(depths); i++) {
         for (int r = 0; r < re_runs; r++) {
             uint64_t rseed = rand();
