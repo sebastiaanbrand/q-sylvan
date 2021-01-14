@@ -123,7 +123,7 @@ def plot_concurrency_performance(data_folder, alg_name):
         # add to combined plot if workers are 1,2,4,8
         if (np.all(workers == np.array([1,2,4,8]))):
             with  open(combined_file_8, "a") as f:
-                f.write("'{}-{}',".format(alg_name, int(g_id)))
+                f.write("{}-{},".format(alg_name, int(g_id)))
                 f.write("{},{},{},{}\n".format(speedups[0], speedups[1], speedups[2], speedups[3]))
 
     plt.ylabel('average speedup')
@@ -177,8 +177,19 @@ def plot_combined(workers=[1,2,4,8]):
 
     lengend_entries = []
 
+    # todo: make this prettier
+    shades = {'supremacy':['#0051ff', '#023ab5', '#002b87'],
+              'shor':['#ff2f00', '#cc2600', '#9c1d00'],
+              'grover':['#84ff00', '#5cb300', '#509c00']}
+    counters = {'supremacy':0, 'shor':0, 'grover':0}
+
     for index, row in df.iterrows():
-        plt.plot(workers, data[index])
+        if (row['name'][0] == '#'):
+            continue # skip 'commented' entries
+        alg_name = row['name'].split('-')[0]
+        color = shades[alg_name][counters[alg_name]]
+        counters[alg_name] += 1
+        plt.plot(workers, data[index], color=color)
         lengend_entries.append(row['name'])
 
     plt.ylabel('average speedup')
