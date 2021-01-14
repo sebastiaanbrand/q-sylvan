@@ -1,6 +1,7 @@
 import os
 import argparse
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 
 plt_format = '.png'
@@ -25,6 +26,8 @@ def parse_stuff():
     parser = argparse.ArgumentParser()
     parser.add_argument('--replot', help='redo all existing plots',
                         dest='replot', default=False, action='store_true')
+    parser.add_argument('--combined', help='plot current combined.csv data',
+                        dest='only_combined', default=False, action='store_true')
     global args 
     args = parser.parse_args()
 
@@ -120,8 +123,8 @@ def plot_concurrency_performance(data_folder, alg_name):
         # add to combined plot if workers are 1,2,4,8
         if (np.all(workers == np.array([1,2,4,8]))):
             with  open(combined_file_8, "a") as f:
-                f.write("'{}-{}',".format(alg_name, g_id))
-                f.write("{},{},{},{},\n".format(speedups[0], speedups[1], speedups[2], speedups[3]))
+                f.write("'{}-{}',".format(alg_name, int(g_id)))
+                f.write("{},{},{},{}\n".format(speedups[0], speedups[1], speedups[2], speedups[3]))
 
     plt.ylabel('average speedup')
     plt.xlabel('number of workers')
@@ -162,7 +165,31 @@ def plot_runtimes(data_folder, alg_name, x_axis='qubits'):
 
 def init_combined_file():
     with  open(combined_file_8, "w") as f:
-        f.write("'name',1,2,4,8\n")
+        f.write("name,1,2,4,8\n")
+
+
+def plot_combined(workers=[1,2,4,8]):
+
+    output_path = bench_path + 'concurrency_8' + plt_format
+    
+    df = pd.read_csv(combined_file_8)
+    data = df.loc[:,df.columns != 'name'].to_numpy()
+
+    lengend_entries = []
+
+    for index, row in df.iterrows():
+        plt.plot(workers, data[index])
+        lengend_entries.append(row['name'])
+
+    plt.ylabel('average speedup')
+    plt.xlabel('number of workers')
+    plt.xticks(workers)
+    plt.legend(lengend_entries)
+    plt.plot(workers, np.ones(len(workers)), color='grey', linestyle='--')
+    plt.savefig(output_path)
+    plt.clf()
+    plt.close()
+
 
 
 # iterates over all folders in the bench_path and plots everything it can plot
@@ -210,4 +237,7 @@ def plot_all():
 
 if __name__ == '__main__':
     parse_stuff()
-    plot_all()
+    if (args.only_combined):
+        plot_combined()
+    else:
+        plot_all()
