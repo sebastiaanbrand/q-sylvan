@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 
 plt_format = '.png'
 bench_path = '../build/benchmark_data/'
+combined_file_8 = bench_path + 'combined_8.csv'
 group_by = {'grover':'qubits',
             'shor':'qubits',
             'supremacy':'depth',
@@ -116,6 +117,12 @@ def plot_concurrency_performance(data_folder, alg_name):
         leg = '{} {}, time $w_1$ ({},{})'.format(int(g_id), group_by[alg_name], np.min(w1_times), np.max(w1_times))
         lengend_entries.append(leg)
 
+        # add to combined plot if workers are 1,2,4,8
+        if (np.all(workers == np.array([1,2,4,8]))):
+            with  open(combined_file_8, "a") as f:
+                f.write("'{}-{}',".format(alg_name, g_id))
+                f.write("{},{},{},{},\n".format(speedups[0], speedups[1], speedups[2], speedups[3]))
+
     plt.ylabel('average speedup')
     plt.xlabel('number of workers')
     plt.xticks(workers.astype(int))
@@ -153,17 +160,28 @@ def plot_runtimes(data_folder, alg_name, x_axis='qubits'):
     plt.clf()
     plt.close()
 
+def init_combined_file():
+    with  open(combined_file_8, "w") as f:
+        f.write("'name',1,2,4,8\n")
+
 
 # iterates over all folders in the bench_path and plots everything it can plot
 def plot_all():
 
+    if (plot_concur_perf_bool):
+        init_combined_file()
+
     # iterate over all algorithms
     for alg_name in os.listdir(bench_path):
-        alg_path = bench_path + alg_name + '/'
+
+        #alg_path = bench_path + alg_name + '/'
+        alg_path = os.path.join(bench_path, alg_name)
+        if (not os.path.isdir(alg_path)):
+            continue
 
         # iterate over all experiments
         for exp_folder in os.listdir(alg_path):
-            exp_path = alg_path + exp_folder + '/'
+            exp_path = os.path.join(alg_path, exp_folder) + '/'
             if (not args.replot and 'concurrency.png' in os.listdir(exp_path)):
                 print('skipping {}/{}'.format(alg_name, exp_folder))
             else:
