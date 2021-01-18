@@ -490,6 +490,8 @@ TASK_DECL_3(bool, qdd_is_ordered, QDD, BDDVAR, BDDVAR);
 // counts the nodes by recursively marking them (and unmarks when done)
 uint64_t qdd_countnodes(QDD qdd);
 
+// temp trigger for gc of node table every n gates
+void qdd_set_periodic_gc_nodetable(int every_n_gates);
 /* enabled by default */
 void qdd_set_auto_gc_ctable(bool enabled);
 /* default 0.5 */

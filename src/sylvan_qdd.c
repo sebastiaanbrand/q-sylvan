@@ -613,6 +613,7 @@ _qdd_makenode(BDDVAR var, PTR low, PTR high, AMP a, AMP b)
     int created;
     PTR index = llmsset_lookup(nodes, n.low, n.high, &created);
     if (index == 0) {
+        printf("auto gc of node table triggered\n");
         LACE_ME;
 
         qdd_refs_push(low);
@@ -859,11 +860,33 @@ qdd_test_gc_ctable(QDD *keep)
 
 /*******************************<applying gates>*******************************/
 
+// temp trigger for gc of node table
+static int periodic_gc_nodetable = 0;
+static uint64_t gate_counter = 0;
+void
+qdd_set_periodic_gc_nodetable(int every_n_gates)
+{
+    periodic_gc_nodetable = every_n_gates;
+}
+
+
+
+
 static void
 qdd_do_before_gate(QDD* qdd)
 {
     // check if ctable needs gc
     if (auto_gc_ctable) qdd_test_gc_ctable(qdd);
+
+    if (periodic_gc_nodetable) {
+        gate_counter++;
+        if (gate_counter % periodic_gc_nodetable ==  0) {
+            LACE_ME;
+            qdd_refs_push(*qdd);
+            sylvan_gc();
+            qdd_refs_pop(1);
+        }
+    }
 
     // log stuff (if logging is enabled)
     qdd_stats_log(*qdd);

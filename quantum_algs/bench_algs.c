@@ -629,6 +629,7 @@ int bench_shor()
     ctable_tolerance = 1e-14;
     caching_granularity = 1;
     write_parameters(param_file);
+    qdd_set_periodic_gc_nodetable(10000);
 
     // Different sized N to test
     //   3 x   5 =     15 (11 qubits)
@@ -702,6 +703,8 @@ int bench_shor()
             }
         }
     }
+
+    qdd_set_periodic_gc_nodetable(0);
 
     fclose(overview_file);
 
