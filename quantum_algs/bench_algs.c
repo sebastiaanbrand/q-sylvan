@@ -53,6 +53,7 @@ write_parameters(FILE *file)
     fprintf(file, "  \"max_cachesize\": %ld,\n", max_cachesize);
     fprintf(file, "  \"ctable_size\": %ld,\n", ctable_size);
     fprintf(file, "  \"ctable_tolerance\": %.5e,\n", ctable_tolerance);
+    fprintf(file, "  \"flt_quad\": %d,\n", flt_quad);
     fprintf(file, "  \"ctable_gc_thres\": %lf,\n", ctable_gc_thres);
     fprintf(file, "  \"propagate_complex\": %d,\n", propagate_complex);
     fprintf(file, "  \"caching_granularity\": %d\n", caching_granularity);
