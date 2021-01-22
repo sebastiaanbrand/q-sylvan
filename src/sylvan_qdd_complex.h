@@ -11,6 +11,7 @@
 #include <stdint.h>
 
 #include "util/cmap.h"
+#include "util/rmap.h"
 
 typedef uint64_t AMP;
 
@@ -51,21 +52,21 @@ static inline uint32_t GATEID_Rk_dag(int k){ return k + 266; };
  * guaranteed to correspond to the Rx(a) rotation until the next generation of 
  * a custom gate id.
  */
-uint32_t GATEID_Rx(double a);
+uint32_t GATEID_Rx(fl_t a);
 /**
  * Rotation around y-axis with angle 2pi*a.
  * NOTE: These gate IDs are dynamic. The returned ID (uint32_t) is only 
  * guaranteed to correspond to the Ry(a) rotation until the next generation of 
  * a custom gate id.
  */
-uint32_t GATEID_Ry(double a);
+uint32_t GATEID_Ry(fl_t a);
 /**
  * Rotation around z-axis with angle 2pi*a.
  * NOTE: These gate IDs are dynamic. The returned ID (uint32_t) is only 
  * guaranteed to correspond to the Rz(a) rotation until the next generation of 
  * a custom gate id.
  */
-uint32_t GATEID_Rz(double a);
+uint32_t GATEID_Rz(fl_t a);
 
 static const uint64_t num_static_gates  = 522;
 static const uint64_t num_dynamic_gates = 1000; // IDs in this rage are re-used 
@@ -79,12 +80,12 @@ AMP gates[522+1000][4]; // max 2^24 gates atm
 
 
 /* Shorthand functions for making complex numbers */
-complex_t comp_make(double r, double i);
-complex_t comp_make_angle(double theta);
+complex_t comp_make(fl_t r, fl_t i);
+complex_t comp_make_angle(fl_t theta);
 complex_t comp_zero();
 complex_t comp_one();
 complex_t comp_minus_one();
-double comp_qmake(int a, int b, int c);
+fl_t comp_qmake(int a, int b, int c);
 
 /* Arithmetic operations on AMPs */
 AMP amp_abs(AMP a);
@@ -107,7 +108,7 @@ double comp_to_prob(complex_t a);
 /* Comparing complex values */
 bool comp_exact_equal(complex_t a, complex_t b);
 bool comp_approx_equal(complex_t a, complex_t b);
-bool comp_epsilon_close(complex_t a, complex_t b, double epsilon);
+bool comp_epsilon_close(complex_t a, complex_t b, long double epsilon);
 
 /* Inserting / retrieving complex values from complex table */
 AMP comp_lookup(complex_t c);
@@ -122,10 +123,10 @@ void comp_print_digits_sci(complex_t c, uint32_t digits);
 void comp_print_bits(AMP a);
 
 /* Managing the complex value table */
-void init_amplitude_table(size_t size, double tolerance);
+void init_amplitude_table(size_t size, long double tolerance, bool real_table);
 uint64_t count_amplitude_table_enries();
-uint64_t get_ctable_entries_estimate();
-uint64_t get_ctable_size();
+uint64_t get_table_entries_estimate();
+uint64_t get_table_size();
 void free_amplitude_table();
 void init_new_empty_table();
 void delete_old_table();
