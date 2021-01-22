@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <time.h>
 
 // void remove_multiline_comments(char *str)
 // {
@@ -76,40 +77,15 @@ TASK_IMPL_3(QDD, handle_intermediate_measure, QDD, qdd, bool*, measurements, BDD
     return qdd;
 }
 
-TASK_IMPL_3(QDD, handle_single_qubit_gate, QDD, qdd, char*, target, uint32_t, gate_id)
-{
-    target = strtok(target, "[");
-    target = strtok(NULL, "]");
-    return qdd_gate(qdd, gate_id, atoi(target));
-}
-
-TASK_IMPL_2(QDD, handle_controlled_qubit_gate, QDD, qdd, char**, tokens)
-{
-    BDDVAR i = 0;
-    while(tokens[0][i] == 'c') {
-        i++;
-    }
-    char **qubits = malloc((i+1) * sizeof(char));
-    qubits[0] = strtok(tokens[1], "[");
-    BDDVAR j = 0;
-    for(; j < i; j++) {
-        qubits[j] = strtok(NULL, "]");
-        qubits[j+1] = strtok(NULL, "[");
-    }
-    qubits[j] = strtok(NULL, "]");
-    if(i == 1)
-        qdd = qdd_cgate(qdd, GATEID_X, atoi(qubits[0]), atoi(qubits[1]));
-    else if(i == 2)
-        qdd = qdd_cgate2(qdd, GATEID_X, atoi(qubits[0]), atoi(qubits[1]), atoi(qubits[2]));
-    else if(i == 3)
-        qdd = qdd_cgate3(qdd, GATEID_X, atoi(qubits[0]), atoi(qubits[1]), atoi(qubits[2]), atoi(qubits[3]));
-    else exit(-1);
-    return qdd;
-}
-
 TASK_IMPL_4(QDD, handle_tokens, QDD, qdd, char**, tokens, bool*, measurements, BDDVAR*, nvars)
 {
+    uint32_t *gateid = malloc(sizeof(uint32_t));
+    *gateid = 0;
+    bool isgate = false;
+    BDDVAR i = 0;
+    BDDVAR j = 0;
     char *temp;
+
     // Create all-zero state with "temp" qubits
     if (strcmp(tokens[0], "qreg") == 0)
     {
@@ -125,80 +101,77 @@ TASK_IMPL_4(QDD, handle_tokens, QDD, qdd, char**, tokens, bool*, measurements, B
         temp = strtok(NULL, "]");
         measurements[atoi(temp)] = true;
     }
-    // Handle gates
-    if (strcmp(tokens[0], "h") == 0)
-    {
+    else {
         qdd = handle_intermediate_measure(qdd, measurements, *nvars);
-        qdd = handle_single_qubit_gate(qdd, tokens[1], GATEID_H);
-    }
-    else if (strcmp(tokens[0], "x") == 0)
-    {
-        qdd = handle_intermediate_measure(qdd, measurements, *nvars);
-        qdd = handle_single_qubit_gate(qdd, tokens[1], GATEID_X);
-    }
-    else if (strcmp(tokens[0], "y") == 0)
-    {
-        qdd = handle_intermediate_measure(qdd, measurements, *nvars);
-        qdd = handle_single_qubit_gate(qdd, tokens[1], GATEID_Y);
-    }
-    else if (strcmp(tokens[0], "z") == 0)
-    {
-        qdd = handle_intermediate_measure(qdd, measurements, *nvars);
-        qdd = handle_single_qubit_gate(qdd, tokens[1], GATEID_Z);
-    }
-    else if (strcmp(tokens[0], "s") == 0)
-    {
-        qdd = handle_intermediate_measure(qdd, measurements, *nvars);
-        qdd = handle_single_qubit_gate(qdd, tokens[1], GATEID_S);
-    }
-    else if (strcmp(tokens[0], "sdg") == 0)
-    {
-        printf("TODO: sdg does not exist");
-        qdd = handle_intermediate_measure(qdd, measurements, *nvars);
-        // qdd = handle_single_qubit_gate(qdd, tokens[1], GATEID);
-    }
-    else if (strcmp(tokens[0], "t") == 0)
-    {
-        qdd = handle_intermediate_measure(qdd, measurements, *nvars);
-        qdd = handle_single_qubit_gate(qdd, tokens[1], GATEID_T);
-    }
-    else if (strcmp(tokens[0], "tdg") == 0)
-    {
-        qdd = handle_intermediate_measure(qdd, measurements, *nvars);
-        qdd = handle_single_qubit_gate(qdd, tokens[1], GATEID_Tdag);
-    }
-    else if (strcmp(strtok(tokens[0], "("), "rx") == 0)
-    {
-        temp = strtok(NULL, ")");
-        qdd = handle_intermediate_measure(qdd, measurements, *nvars);
-        qdd = handle_single_qubit_gate(qdd, tokens[1], GATEID_Rx(atof(temp)));
-    }
-    else if (strcmp(strtok(tokens[0], "("), "ry") == 0)
-    {
-        temp = strtok(NULL, ")");
-        qdd = handle_intermediate_measure(qdd, measurements, *nvars);
-        qdd = handle_single_qubit_gate(qdd, tokens[1], GATEID_Ry(atof(temp)));
-    }
-    else if (strcmp(strtok(tokens[0], "("), "rz") == 0)
-    {
-        temp = strtok(NULL, ")");
-        qdd = handle_intermediate_measure(qdd, measurements, *nvars);
-        qdd = handle_single_qubit_gate(qdd, tokens[1], GATEID_Rz(atof(temp)));
-    }
-    else if (tokens[0][0] == 'c' && strcmp(tokens[0], "creg") != 0)
-    {
-        qdd = handle_intermediate_measure(qdd, measurements, *nvars);
-        qdd = handle_controlled_qubit_gate(qdd, tokens);
+        while(tokens[0][i] == 'c' && strcmp(tokens[0], "creg") != 0) {
+            i++;
+        }
+        char **qubits = malloc((i+1) * sizeof(char));
+        qubits[0] = strtok(tokens[1], "[");
+        for(; j < i; j++) {
+            qubits[j] = strtok(NULL, "]");
+            qubits[j+1] = strtok(NULL, "[");
+        }
+        qubits[j] = strtok(NULL, "]");
+        isgate = get_gateid(tokens[0], gateid);
+        if (!isgate)
+            return qdd;
+
+        if(i == 0)
+            qdd = qdd_gate(qdd, *gateid, atoi(qubits[0]));
+        // else if(i == 1)
+        //     qdd = qdd_cgate(qdd, *gateid, atoi(qubits[0]), atoi(qubits[1]));
+        else if(i == 2)
+            qdd = qdd_cgate2(qdd, *gateid, atoi(qubits[0]), atoi(qubits[1]), atoi(qubits[2]));
+        else if(i == 3)
+            qdd = qdd_cgate3(qdd, *gateid, atoi(qubits[0]), atoi(qubits[1]), atoi(qubits[2]), atoi(qubits[3]));
+        else exit(-1);
     }
     return qdd;
+}
+
+TASK_IMPL_2(uint32_t, get_gateid, char*, gate, uint32_t*, gate_id)
+{
+    while(gate[0] == 'c' && strcmp(gate, "creg") != 0) {
+        gate++;
+    }
+    // Handle gates
+    if (strcmp(gate, "h") == 0)
+        *gate_id = GATEID_H;
+    else if (strcmp(gate, "x") == 0)
+        *gate_id = GATEID_X;
+    else if (strcmp(gate, "y") == 0)
+        *gate_id = GATEID_Y;
+    else if (strcmp(gate, "z") == 0)
+        *gate_id = GATEID_Z;
+    else if (strcmp(gate, "s") == 0)
+        *gate_id = GATEID_S;
+    else if (strcmp(gate, "sdg") == 0)
+        *gate_id = GATEID_Rk_dag(-2);
+    else if (strcmp(gate, "t") == 0)
+        *gate_id = GATEID_T;
+    else if (strcmp(gate, "tdg") == 0)
+        *gate_id = GATEID_Tdag;
+    else {
+        gate = strtok(gate, "(");
+        if (strcmp(gate, "rx") == 0)
+            *gate_id = GATEID_Rx(atof(strtok(NULL, ")")));
+        else if (strcmp(gate, "ry") == 0)
+            *gate_id = GATEID_Ry(atof(strtok(NULL, ")")));
+        else if (strcmp(gate, "rz") == 0)
+            *gate_id = GATEID_Rz(atof(strtok(NULL, ")")));
+        else {
+            return 0;
+        }
+    }
+    return 1;
 }
 
 void read_QASM(char *filename, BDDVAR shots)
 {
     FILE *f;
     f = fopen(filename, "r");
-    if (f == NULL)
-    {
+    if (f == NULL) {
         perror("Error while opening the file.\n");
         exit(-1);
     }
@@ -219,8 +192,7 @@ void read_QASM(char *filename, BDDVAR shots)
     ssize_t read;
     char *tokens[2];
     QDD qdd = qdd_create_all_zero_state(0);
-    while ((read = getline(&line, &len, f)) != -1)
-    {
+    while ((read = getline(&line, &len, f)) != -1) {
         // remove leading spaces
         while ((*line == ' ') || (*line == '\t'))
             line++;
@@ -245,8 +217,9 @@ int main(int argc, char *argv[])
     // check for file
     char *filename = "";
     BDDVAR shots = 100;
+    BDDVAR seed = 100;
     int opt;
-    while((opt = getopt(argc, argv, "f:s:")) != -1) {
+    while((opt = getopt(argc, argv, "f:s:r:")) != -1) {
         switch(opt) {
             case 'f':
                 filename = optarg;
@@ -254,8 +227,12 @@ int main(int argc, char *argv[])
             case 's':
                 shots = atoi(optarg);
                 break;
+            case 'r':
+                seed = atoi(optarg);
+                break;
         }
     }
+    srand(seed);
     if(strcmp(filename, "") == 0)
     {
         printf("Give filename of qasm file.\n");
