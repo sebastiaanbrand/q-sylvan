@@ -451,6 +451,7 @@ qdd_quit()
 void
 sylvan_init_qdd(size_t ctable_size, double ctable_tolerance)
 {
+    // TODO: add param using real table or comp table to store edge weights
     if (qdd_initialized) return;
     qdd_initialized = 1;
 

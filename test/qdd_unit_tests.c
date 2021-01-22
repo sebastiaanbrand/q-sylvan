@@ -60,6 +60,58 @@ int test_cmap()
     return 0;
 }
 
+int test_rmap()
+{
+    rmap_t *rtable = rmap_create(1<<10, 1e-14);
+
+    ref_t index1, index2;
+    fl_t val1, val2, val3;
+    int found;
+
+    val1 = 3.5;
+    found = rmap_find_or_put(rtable, &val1, &index1); test_assert(found == 0);
+    for(int k=0; k<10; k++){
+        found = rmap_find_or_put(rtable, &val1, &index2);
+        test_assert(found == 1);
+        test_assert(index2 == index2);
+    }
+
+    val1 = (2./3.);
+    val2 = (2./3.);
+    found = rmap_find_or_put(rtable, &val1, &index1); test_assert(found == 0);
+    found = rmap_find_or_put(rtable, &val2, &index2); test_assert(found == 1);
+    test_assert(index1 == index2);
+
+
+    val1 = 1.0/flt_sqrt(2.0);
+    val2 = 1.0/flt_sqrt(2.0);
+    found = rmap_find_or_put(rtable, &val1, &index1); test_assert(found == 0);
+    found = rmap_find_or_put(rtable, &val2, &index2); test_assert(found == 1);
+    test_assert(index1 == index2);
+    val3 = *rmap_get(rtable, index1);
+    test_assert((val3 - val1) < rmap_get_tolerance());
+
+    val1 = 2.99999999999999855;
+    val2 = 3.00000000000000123;
+    found = rmap_find_or_put(rtable, &val1, &index1); test_assert(found == 0);
+    found = rmap_find_or_put(rtable, &val2, &index2); test_assert(found == 1);
+    test_assert(index1 == index2);
+    val3 = *rmap_get(rtable, index1);
+    test_assert(val3 == val1);
+
+    val1 = 0.0005000000000012;
+    val2 = 0.0004999999999954;
+    found = rmap_find_or_put(rtable, &val1, &index1); test_assert(found == 0);
+    found = rmap_find_or_put(rtable, &val2, &index2); test_assert(found == 1);
+    test_assert(index1 == index2);
+    val3 = *rmap_get(rtable, index1);
+    test_assert(val3 == val1);
+
+    if(VERBOSE) printf("rmap tests:               ok\n");
+    rmap_free(rtable);
+    return 0;
+}
+
 int test_complex_operations()
 {
     complex_t ref1, ref2, ref3, ref4, val1, val2, val3, val4;
@@ -1791,6 +1843,7 @@ int runtests()
     sylvan_gc_disable();
 
     if (test_cmap()) return 1;
+    if (test_rmap()) return 1;
     if (test_complex_operations()) return 1;
     if (test_algebraic()) return 1;
     if (test_basis_state_creation()) return 1;
@@ -1825,7 +1878,7 @@ int main()
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<19, -1);
+    sylvan_init_qdd(1LL<<11, -1);
     qdd_set_testing_mode(true); // turn on internal sanity tests
 
     int res = runtests();

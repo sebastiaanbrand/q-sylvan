@@ -11,6 +11,7 @@
 #include <stdint.h>
 
 #include "util/cmap.h"
+#include "util/rmap.h"
 
 typedef uint64_t AMP;
 
