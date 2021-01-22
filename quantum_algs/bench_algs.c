@@ -86,8 +86,8 @@ double bench_supremacy_5_4_once(uint32_t depth, uint32_t workers, uint64_t rseed
     // Init Sylvan
     sylvan_set_sizes(min_tablesize, max_tablesize, min_cachesize, max_cachesize);
     sylvan_init_package();
-    sylvan_init_qdd(ctable_size, ctable_tolerance);
-    qdd_set_gc_ctable_thres(ctable_gc_thres);
+    sylvan_init_qdd(ctable_size, ctable_tolerance, false);
+    qdd_set_gc_amp_table_thres(ctable_gc_thres);
     qdd_set_caching_granularity(caching_granularity);
 
     qdd_stats_start(logfile);
@@ -139,8 +139,8 @@ double bench_random_circuit_once(int qubits, int gates, int workers, uint64_t rs
     // Init Sylvan
     sylvan_set_sizes(min_tablesize, max_tablesize, min_cachesize, max_cachesize);
     sylvan_init_package();
-    sylvan_init_qdd(ctable_size, ctable_tolerance);
-    qdd_set_gc_ctable_thres(ctable_gc_thres);
+    sylvan_init_qdd(ctable_size, ctable_tolerance, false);
+    qdd_set_gc_amp_table_thres(ctable_gc_thres);
     qdd_set_caching_granularity(caching_granularity);
 
     qdd_stats_start(logfile);
@@ -197,8 +197,8 @@ double bench_grover_once(int num_bits, bool flag[], int workers, char *fpath,
     // Init Sylvan
     sylvan_set_sizes(min_tablesize, max_tablesize, min_cachesize, max_cachesize);
     sylvan_init_package();
-    sylvan_init_qdd(ctable_size, ctable_tolerance);
-    qdd_set_gc_ctable_thres(ctable_gc_thres);
+    sylvan_init_qdd(ctable_size, ctable_tolerance, false);
+    qdd_set_gc_amp_table_thres(ctable_gc_thres);
     qdd_set_caching_granularity(caching_granularity);
 
     QDD grov;
@@ -256,8 +256,8 @@ double bench_shor_once(uint64_t N, uint64_t a, int workers, int rseed, bool *suc
     // Init Sylvan
     sylvan_set_sizes(min_tablesize, max_tablesize, min_cachesize, max_cachesize);
     sylvan_init_package();
-    sylvan_init_qdd(ctable_size, ctable_tolerance);
-    qdd_set_gc_ctable_thres(ctable_gc_thres);
+    sylvan_init_qdd(ctable_size, ctable_tolerance, false);
+    qdd_set_gc_amp_table_thres(ctable_gc_thres);
     qdd_set_caching_granularity(caching_granularity);
 
     qdd_stats_start(logfile);

@@ -114,8 +114,12 @@ static const BDDVAR     QDD_INVALID_VAR = UINT8_MAX;
 /**
  * Similar initialization as for MTBDDs + amplitude table init.
  * Setting tolerance to -1 uses default tolerance.
+ * real table: stores 2 real values per edge weight, instead of 1 tuple
+ * NOTE: this function doesn't currently check if the combination of table
+ * sizes (edge weight table + node table) works in combination with using 
+ * a real-table or complex-table.
  */
-void sylvan_init_qdd(size_t ctable_size, double ctable_tolerance);
+void sylvan_init_qdd(size_t ctable_size, double ctable_tolerance, bool real_table);
 void qdd_set_testing_mode(bool on);
 void qdd_set_caching_granularity(int granularity);
 
@@ -493,12 +497,12 @@ uint64_t qdd_countnodes(QDD qdd);
 // temp trigger for gc of node table every n gates
 void qdd_set_periodic_gc_nodetable(int every_n_gates);
 /* enabled by default */
-void qdd_set_auto_gc_ctable(bool enabled);
+void qdd_set_auto_gc_amp_table(bool enabled);
 /* default 0.5 */
-void qdd_set_gc_ctable_thres(double fraction_filled);
-double qdd_get_gc_ctable_thres();
-void qdd_gc_ctable(QDD *keep);
-void qdd_test_gc_ctable(QDD *keep);
+void qdd_set_gc_amp_table_thres(double fraction_filled);
+double qdd_get_gc_amp_table_thres();
+void qdd_gc_amp_table(QDD *keep);
+void qdd_test_gc_amptable(QDD *keep);
 /**
  * Recursive function for moving amps from old to new amp table.
  */

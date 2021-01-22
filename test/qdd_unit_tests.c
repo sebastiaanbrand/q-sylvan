@@ -1878,7 +1878,7 @@ int main()
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<11, -1);
+    sylvan_init_qdd(1LL<<11, -1, true);
     qdd_set_testing_mode(true); // turn on internal sanity tests
 
     int res = runtests();

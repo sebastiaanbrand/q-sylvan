@@ -23,26 +23,27 @@ Note use of cosl and sinl for long double computation
 **********************************************/
 //#define qdd_cos(fac,div) cosl((long double)(fac)*Pi/(long double)(div))
 //#define qdd_sin(fac,div) sinl((long double)(fac)*Pi/(long double)(div))
-
-static bool using_real_table = true;
-
-
 static long double Pi;    // set value of global Pi
 
+// Table parameters
+static const double default_tolerance = 1e-14;
+static double tolerance;
+static bool using_real_table;
+size_t table_size;
 
-static const long double default_tolerance = 1e-14;
-size_t ctable_size;
-size_t ctable_entries_est;
-DECLARE_THREAD_LOCAL(ctable_entries_local, size_t); // these are added to _est
-static const uint64_t ctable_entries_local_buffer = 1000; // every 1000 entries
+// Keep estimate for number of entries for gc purposes
+size_t table_entries_est;
+DECLARE_THREAD_LOCAL(table_entries_local, size_t); // these are added to _est
+static const uint64_t table_entries_local_buffer = 1000; // every 1000 entries
+
+// Actual table (old is used for gc purposes)
 cmap_t *ctable;
 cmap_t *ctable_old;
 
 // TODO: "merge" ctable and rtable code in a cleaner way
-size_t rtable_size;
-size_t rtable_entries_est;
-DECLARE_THREAD_LOCAL(rtable_entries_local, size_t); // these are added to _est
-static const uint64_t rtable_entries_local_buffer = 1000; // every 1000 entries
+//size_t rtable_entries_est;
+//DECLARE_THREAD_LOCAL(rtable_entries_local, size_t); // these are added to _est
+//static const uint64_t rtable_entries_local_buffer = 1000; // every 1000 entries
 rmap_t *rtable;
 rmap_t *rtable_old;
 
@@ -375,10 +376,10 @@ comp_try_lookup_ctable(complex_t c, bool *success)
     int present = cmap_find_or_put(ctable, &c, &res);
     if (present == 0) {
         *success = true;
-        ctable_entries_local += 1;
-        if (ctable_entries_local >= ctable_entries_local_buffer) {
-            __sync_fetch_and_add(&ctable_entries_est, ctable_entries_local);
-            ctable_entries_local = 0;
+        table_entries_local += 1;
+        if (table_entries_local >= table_entries_local_buffer) {
+            __sync_fetch_and_add(&table_entries_est, table_entries_local);
+            table_entries_local = 0;
         }
     }
     else if (present == 1) *success = true;
@@ -393,15 +394,31 @@ try_lookup_rtable(double a, bool *success) // TODO: change to fl_t
     int present = rmap_find_or_put(rtable, &a, &res);
     if (present == 0) {
         *success = true;
-        rtable_entries_local += 1;
-        if (rtable_entries_local >= rtable_entries_local_buffer) {
-            __sync_fetch_and_add(&rtable_entries_est, rtable_entries_local);
-            rtable_entries_local = 0;
+        table_entries_local += 1;
+        if (table_entries_local >= table_entries_local_buffer) {
+            __sync_fetch_and_add(&table_entries_est, table_entries_local);
+            table_entries_local = 0;
         }
     }
     else if (present == 1) *success = true;
     else                   *success = false;
     return (AMP) res;
+}
+
+static AMP
+pack_indices_rtable(AMP r, AMP i)
+{
+    uint64_t index_size = (int) ceil(log2(table_size));
+    AMP res = ((r << index_size) | i);
+    return res;
+}
+
+static void
+unpack_indices_rtable(AMP bundle, AMP *index_r, AMP *index_i)
+{
+    uint64_t index_size = (int) ceil(log2(table_size));
+    *index_r = (bundle >> index_size);
+    *index_i = (bundle & ((1<<index_size)-1));
 }
 
 static AMP
@@ -411,16 +428,7 @@ comp_try_lookup_rtable(complex_t c, bool *success)
     AMP amp1 = try_lookup_rtable(c.r, &suc1);
     AMP amp2 = try_lookup_rtable(c.i, &suc2);
     *success = (suc1 && suc2);
-
-    //printf("%lx %lx\n", amp1, amp2);
-
-    // bits needed for a single index
-    uint64_t index_size = (int) ceil(log2(rtable_size));
-    // put both indices into single 64 bit val
-    AMP res = ((amp1 << index_size) | amp2);
-
-    //printf("%lx\n\n", res);
-    return res;
+    return pack_indices_rtable(amp1, amp2);
 }
 
 AMP
@@ -445,12 +453,9 @@ comp_value(AMP a)
     // lookup
     complex_t res;
     if (using_real_table) {
-        // bits needed for a single index
-        uint64_t index_size = (int) ceil(log2(rtable_size));
         AMP idx_r, idx_i;
-        idx_r = (a >> index_size); // TODO: move this AMP <--> (AMP_r, AMP_i) to separate function
-        idx_i = (a & ((1<<index_size)-1));
         double *r, *i;
+        unpack_indices_rtable(a, &idx_r, &idx_i);
         r = rmap_get(rtable, idx_r);
         i = rmap_get(rtable, idx_i);
         res.r = *r;
@@ -471,9 +476,20 @@ comp_value_old(AMP a)
     if (a == C_ONE)     return comp_one();
     if (a == C_MIN_ONE) return comp_minus_one();
 
-    complex_t * res;
-    res = cmap_get(ctable_old, a);
-    return *res;
+    complex_t res;
+    if (using_real_table) {
+        AMP idx_r, idx_i;
+        double *r, *i;
+        unpack_indices_rtable(a, &idx_r, &idx_i);
+        r = rmap_get(rtable_old, idx_r);
+        i = rmap_get(rtable_old, idx_i);
+        res.r = *r;
+        res.i = *i;
+    }
+    else {
+        res = *cmap_get(ctable_old, a);
+    }
+    return res;
 }
 
 
@@ -603,21 +619,20 @@ GATEID_Ry(fl_t a)
 /* Managing the complex value table */
 
 void
-init_amplitude_table(size_t size, long double tolerance)
+init_amplitude_table(size_t size, long double tol, bool real_table)
 {
-    if (tolerance < 0) tolerance = default_tolerance;
+    tolerance = (tol < 0) ? default_tolerance : tol;
+    table_size = size;
+    using_real_table = real_table;
+
+    table_entries_est = 0;
+    table_entries_local = 0;
     
     if (using_real_table) {
-        rtable_size = size;
-        rtable_entries_est = 0;
-        rtable_entries_local = 0;
-        rtable = rmap_create(rtable_size, tolerance);
+        rtable = rmap_create(table_size, tolerance);
     }
     else {
-        ctable_size = size;
-        ctable_entries_est = 0;
-        ctable_entries_local = 0;
-        ctable = cmap_create(ctable_size, tolerance);
+        ctable = cmap_create(table_size, tolerance);
     }
     
     // NOTE: the sum of the local counters sometimes exceeds the actual total
@@ -721,15 +736,15 @@ count_amplitude_table_enries()
 }
 
 uint64_t
-get_ctable_entries_estimate()
+get_table_entries_estimate()
 {
-    return ctable_entries_est;
+    return table_entries_est;
 }
 
 uint64_t
-get_ctable_size()
+get_table_size()
 {
-    return ctable_size;
+    return table_size;
 }
 
 void
@@ -750,15 +765,26 @@ init_new_empty_table()
     ctable_old = ctable;
 
     // re-init new (empty) ctable
-    long double tolerance = cmap_get_tolerance();
-    init_amplitude_table(ctable_size, tolerance);
+    double tolerance;
+    if (using_real_table) {
+        tolerance = rmap_get_tolerance();
+    }
+    else {
+        tolerance = cmap_get_tolerance();
+    }
+    init_amplitude_table(table_size, tolerance, using_real_table);
 }
 
 void
 delete_old_table()
 {
     // delete  old (full) table
-    cmap_free(ctable_old);
+    if (using_real_table) {
+        rmap_free(rtable_old);
+    }
+    else {
+        cmap_free(ctable_old);
+    }
 }
 
 AMP

@@ -449,11 +449,13 @@ qdd_quit()
 }
 
 void
-sylvan_init_qdd(size_t ctable_size, double ctable_tolerance)
+sylvan_init_qdd(size_t ctable_size, double ctable_tolerance, bool real_table)
 {
     // TODO: add param using real table or comp table to store edge weights
     if (qdd_initialized) return;
     qdd_initialized = 1;
+
+    using_real_table = real_table;
 
     sylvan_register_quit(qdd_quit);
     sylvan_gc_add_mark(TASK(qdd_gc_mark_external_refs));
@@ -465,7 +467,7 @@ sylvan_init_qdd(size_t ctable_size, double ctable_tolerance)
         qdd_protected_created = 1;
     }
 
-    init_amplitude_table(ctable_size, ctable_tolerance);
+    init_amplitude_table(ctable_size, ctable_tolerance, real_table);
 
     LACE_ME;
     CALL(qdd_refs_init);
@@ -762,30 +764,30 @@ qdd_countnodes(QDD qdd)
 
 /**************************<cleaning amplitude table>**************************/
 
-static int auto_gc_ctable     = 1;
-static double ctable_gc_thres = 0.5;
+static int auto_gc_amp_table  = 1;
+static double amp_table_gc_thres = 0.5;
 
 void
-qdd_set_auto_gc_ctable(bool enabled)
+qdd_set_auto_gc_amp_table(bool enabled)
 {
-    auto_gc_ctable = enabled;
+    auto_gc_amp_table = enabled;
 }
 
 void
-qdd_set_gc_ctable_thres(double fraction_filled)
+qdd_set_gc_amp_table_thres(double fraction_filled)
 {
-    ctable_gc_thres = fraction_filled;
+    amp_table_gc_thres = fraction_filled;
 }
 
 double
-qdd_get_gc_ctable_thres()
+qdd_get_gc_amp_table_thres()
 {
-    return ctable_gc_thres;
+    return amp_table_gc_thres;
 }
 
 
 void
-qdd_gc_ctable(QDD *keep)
+qdd_gc_amp_table(QDD *keep)
 {
     LACE_ME;
     // 1. Create new amp table
@@ -847,12 +849,12 @@ TASK_IMPL_1(QDD, _fill_new_amp_table, QDD, qdd)
 }
 
 void
-qdd_test_gc_ctable(QDD *keep)
+qdd_test_gc_amp_table(QDD *keep)
 {
-    uint64_t entries = get_ctable_entries_estimate();
-    uint64_t size    = get_ctable_size();
-    if ( ((double)entries / (double)size) > ctable_gc_thres )
-        qdd_gc_ctable(keep);
+    uint64_t entries = get_table_entries_estimate();
+    uint64_t size    = get_table_size();
+    if ( ((double)entries / (double)size) > amp_table_gc_thres )
+        qdd_gc_amp_table(keep);
 }
 
 /*************************</cleaning amplitude table>**************************/
@@ -877,7 +879,7 @@ static void
 qdd_do_before_gate(QDD* qdd)
 {
     // check if ctable needs gc
-    if (auto_gc_ctable) qdd_test_gc_ctable(qdd);
+    if (auto_gc_amp_table) qdd_test_gc_amp_table(qdd);
 
     if (periodic_gc_nodetable) {
         gate_counter++;
@@ -1467,7 +1469,7 @@ TASK_IMPL_6(QDD, qdd_cgate_range_rec_complex, QDD, q, uint32_t, gate, BDDVAR, c_
 /* Wrapper for matrix vector multiplication. */
 TASK_IMPL_3(QDD, qdd_matvec_mult, QDD, mat, QDD, vec, BDDVAR, nvars)
 {
-    assert(!auto_gc_ctable && "auto gc of ctable not implemented for mult operations");
+    assert(!auto_gc_amp_table && "auto gc of ctable not implemented for mult operations");
     qdd_do_before_gate(&vec);
     return CALL(qdd_matvec_mult_rec, mat, vec, nvars, 0);
 }
@@ -1475,7 +1477,7 @@ TASK_IMPL_3(QDD, qdd_matvec_mult, QDD, mat, QDD, vec, BDDVAR, nvars)
 /* Wrapper for matrix vector multiplication. */
 TASK_IMPL_3(QDD, qdd_matmat_mult, QDD, a, QDD, b, BDDVAR, nvars)
 {
-    assert(!auto_gc_ctable && "auto gc of ctable not implemented for mult operations");
+    assert(!auto_gc_amp_table && "auto gc of ctable not implemented for mult operations");
     //qdd_do_before_gate(&vec);
     return CALL(qdd_matmat_mult_rec, a, b, nvars, 0);
 }
@@ -1937,8 +1939,8 @@ qdd_measure_q0(QDD qdd, BDDVAR nvars, int *m, double *p)
     prob_low  *= prob_root;
     prob_high *= prob_root;
     if (fabs(prob_low + prob_high - 1.0) > cmap_get_tolerance()*1000) {
-        printf("prob sum = %.5lf (%.5lf + %.5lf)\n", prob_low + prob_high, prob_low, prob_high);
-        assert("probabilities don't sum to 1" && false);
+        printf("WARNING: prob sum = %.10lf (%.5lf + %.5lf)\n", prob_low + prob_high, prob_low, prob_high);
+        //assert("probabilities don't sum to 1" && false);
     }
 
     // flip a coin
@@ -1950,11 +1952,11 @@ qdd_measure_q0(QDD qdd, BDDVAR nvars, int *m, double *p)
     complex_t norm;
     if (*m == 0) {
         high = qdd_bundle_ptr_amp(QDD_TERMINAL, C_ZERO);
-        norm = comp_make(sqrt(prob_low), 0.0);
+        norm = comp_make(flt_sqrt(prob_low), 0.0);
     }
     else {
         low  = qdd_bundle_ptr_amp(QDD_TERMINAL, C_ZERO);
-        norm = comp_make(sqrt(prob_high), 0.0);
+        norm = comp_make(flt_sqrt(prob_high), 0.0);
     }
 
     QDD res = qdd_makenode(0, low, high);

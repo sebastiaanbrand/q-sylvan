@@ -123,10 +123,10 @@ void comp_print_digits_sci(complex_t c, uint32_t digits);
 void comp_print_bits(AMP a);
 
 /* Managing the complex value table */
-void init_amplitude_table(size_t size, long double tolerance);
+void init_amplitude_table(size_t size, long double tolerance, bool real_table);
 uint64_t count_amplitude_table_enries();
-uint64_t get_ctable_entries_estimate();
-uint64_t get_ctable_size();
+uint64_t get_table_entries_estimate();
+uint64_t get_table_size();
 void free_amplitude_table();
 void init_new_empty_table();
 void delete_old_table();
