@@ -12,6 +12,7 @@
 
 #include "util/cmap.h"
 #include "util/rmap.h"
+#include "util/tree_map.h"
 
 typedef uint64_t AMP;
 

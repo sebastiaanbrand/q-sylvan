@@ -6,6 +6,7 @@ include_directories(..)
 
 
 add_library(util #STATIC
+        tree_map.cpp tree_map.h
         cmap.c cmap.h
         rmap.c rmap.h
         fast_hash.h fast_hash.c
