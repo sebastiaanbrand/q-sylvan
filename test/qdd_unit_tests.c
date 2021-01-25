@@ -1867,12 +1867,37 @@ int runtests()
     return 0;
 }
 
-int main()
+int test_with_cmap()
 {
+    
     // Standard Lace initialization
     int workers = 1;
     lace_init(workers, 0);
-    printf("%d worker(s)\n", workers);
+    printf("%d worker(s), ", workers);
+    lace_startup(0, NULL, NULL);
+
+    // Simple Sylvan initialization
+    sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
+    sylvan_init_package();
+    sylvan_init_qdd(1LL<<11, -1, false);
+    qdd_set_testing_mode(true); // turn on internal sanity tests
+
+    printf("using cmap:\n");
+    int res = runtests();
+
+    sylvan_quit();
+    lace_exit();
+
+    return res;
+}
+
+int test_with_rmap()
+{
+    
+    // Standard Lace initialization
+    int workers = 1;
+    lace_init(workers, 0);
+    printf("%d worker(s), ", workers);
     lace_startup(0, NULL, NULL);
 
     // Simple Sylvan initialization
@@ -1881,10 +1906,19 @@ int main()
     sylvan_init_qdd(1LL<<11, -1, true);
     qdd_set_testing_mode(true); // turn on internal sanity tests
 
+    printf("using rmap:\n");
     int res = runtests();
 
     sylvan_quit();
     lace_exit();
 
     return res;
+}
+
+int main()
+{
+    if (test_with_cmap()) return 1;
+    if (test_with_rmap()) return 1;
+
+    return 0;
 }
