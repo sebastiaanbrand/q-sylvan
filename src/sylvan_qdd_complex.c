@@ -750,7 +750,7 @@ get_table_size()
 void
 free_amplitude_table()
 {
-    if (using_real_table){
+    if (using_real_table) {
         rmap_free(rtable);
     }
     else {
@@ -762,7 +762,12 @@ void
 init_new_empty_table()
 {
     // point old to current (full) ctable
-    ctable_old = ctable;
+    if (using_real_table) {
+        rtable_old = rtable;
+    }
+    else {
+        ctable_old = ctable;
+    }
 
     // re-init new (empty) ctable
     double tolerance;
