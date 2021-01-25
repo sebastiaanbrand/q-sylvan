@@ -1222,6 +1222,10 @@ TASK_IMPL_5(QDD, qdd_cgate_rec_amp, QDD, q, uint32_t, gate, BDDVAR*, cs, uint32_
         return CALL(qdd_gate_rec_amp, q, gate, t);
     }
 
+    assert(c < t && "ctrl < target required");
+    if (ci > 0) 
+        assert(cs[ci-1] < cs[ci]  && "order required for multiple controls");
+
     BDDVAR var;
     QDD res, low, high;
     qdd_get_topvar(q, c, &var, &low, &high);
@@ -1280,6 +1284,10 @@ TASK_IMPL_5(QDD, qdd_cgate_rec_complex, QDD, q, uint32_t, gate, BDDVAR*, cs, uin
     if (c == QDD_INVALID_VAR || ci > MAX_CONTROLS) {
         return CALL(qdd_gate_rec_complex, q, gate, t);
     }
+
+    assert(c < t && "ctrl < target required");
+    if (ci > 0) 
+        assert(cs[ci-1] < cs[ci]  && "order required for multiple controls");
 
     BDDVAR var;
     QDD res, low, high;
@@ -1340,6 +1348,9 @@ TASK_IMPL_6(QDD, qdd_cgate_range_rec_amp, QDD, q, uint32_t, gate, BDDVAR, c_firs
     if (k > c_last) {
         return CALL(qdd_gate_rec_amp, q, gate, t);
     }
+
+    assert(c_first <= c_last);
+    assert(c_last < t);
 
     // Check cache
     QDD res;
@@ -1407,6 +1418,9 @@ TASK_IMPL_6(QDD, qdd_cgate_range_rec_complex, QDD, q, uint32_t, gate, BDDVAR, c_
     if (k > c_last) {
         return CALL(qdd_gate_rec_complex, q, gate, t);
     }
+
+    assert(c_first <= c_last);
+    assert(c_last < t);
 
     // Check cache
     QDD res;
