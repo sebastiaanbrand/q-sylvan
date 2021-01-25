@@ -112,6 +112,16 @@ int test_rmap()
     return 0;
 }
 
+int test_tree_map()
+{
+    void *tree_map = tree_map_create(1e-14);
+
+
+    if(VERBOSE) printf("tree map tests:           WIP\n");
+    tree_map_free(tree_map);
+    return 0;
+}
+
 int test_complex_operations()
 {
     complex_t ref1, ref2, ref3, ref4, val1, val2, val3, val4;
@@ -1837,13 +1847,11 @@ int test_20qubit_circuit()
 
 
 
-int runtests()
+int run_qdd_tests()
 {
     // we are not testing garbage collection
     sylvan_gc_disable();
 
-    if (test_cmap()) return 1;
-    if (test_rmap()) return 1;
     if (test_complex_operations()) return 1;
     if (test_algebraic()) return 1;
     if (test_basis_state_creation()) return 1;
@@ -1883,7 +1891,7 @@ int test_with_cmap()
     qdd_set_testing_mode(true); // turn on internal sanity tests
 
     printf("using cmap:\n");
-    int res = runtests();
+    int res = run_qdd_tests();
 
     sylvan_quit();
     lace_exit();
@@ -1907,7 +1915,7 @@ int test_with_rmap()
     qdd_set_testing_mode(true); // turn on internal sanity tests
 
     printf("using rmap:\n");
-    int res = runtests();
+    int res = run_qdd_tests();
 
     sylvan_quit();
     lace_exit();
@@ -1915,10 +1923,17 @@ int test_with_rmap()
     return res;
 }
 
-int main()
+int runtests()
 {
+    if (test_cmap()) return 1;
+    if (test_rmap()) return 1;
+    if (test_tree_map()) return 1;
     if (test_with_cmap()) return 1;
     if (test_with_rmap()) return 1;
-
     return 0;
+}
+
+int main()
+{
+    return runtests();
 }
