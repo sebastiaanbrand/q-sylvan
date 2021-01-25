@@ -27,6 +27,7 @@ static size_t max_cachesize;
 static size_t ctable_size;
 static double ctable_tolerance;
 static double ctable_gc_thres;
+static bool using_rtable;
 static int caching_granularity;
 
 /* for very deep circuits we don't want to log (i.e. count nodes, etc.) every gate */
@@ -51,8 +52,9 @@ write_parameters(FILE *file)
     fprintf(file, "  \"max_tablesize\": %ld,\n", max_tablesize);
     fprintf(file, "  \"min_cachesize\": %ld,\n", min_cachesize);
     fprintf(file, "  \"max_cachesize\": %ld,\n", max_cachesize);
-    fprintf(file, "  \"ctable_size\": %ld,\n", ctable_size);
-    fprintf(file, "  \"ctable_tolerance\": %.5e,\n", ctable_tolerance);
+    fprintf(file, "  \"amp_table_size\": %ld,\n", ctable_size);
+    fprintf(file, "  \"amp_table_tolerance\": %.5e,\n", ctable_tolerance);
+    fprintf(file, "  \"using_rtable\": %d,\n", using_rtable);
     fprintf(file, "  \"flt_quad\": %d,\n", flt_quad);
     fprintf(file, "  \"ctable_gc_thres\": %lf,\n", ctable_gc_thres);
     fprintf(file, "  \"propagate_complex\": %d,\n", propagate_complex);
@@ -197,7 +199,7 @@ double bench_grover_once(int num_bits, bool flag[], int workers, char *fpath,
     // Init Sylvan
     sylvan_set_sizes(min_tablesize, max_tablesize, min_cachesize, max_cachesize);
     sylvan_init_package();
-    sylvan_init_qdd(ctable_size, ctable_tolerance, false);
+    sylvan_init_qdd(ctable_size, ctable_tolerance, using_rtable);
     qdd_set_gc_amp_table_thres(ctable_gc_thres);
     qdd_set_caching_granularity(caching_granularity);
 
@@ -515,17 +517,27 @@ int bench_grover()
     // sylvan / qdd params
     min_tablesize = max_tablesize = 1LL<<25;
     min_cachesize = max_cachesize = 1LL<<16;
-    ctable_size   = 1LL<<23;
+
+    
+    
+    // for {14, 19, 24}
+    ctable_size = 1LL<<18;
     ctable_tolerance = 1e-14;
+    using_rtable = false;
+    // for {29, 34, 38}
+    //ctable_size = 1LL<<23;
+    //ctable_tolerance = 1e-18; // note: use flt_quad 1 in flt.h
+    //using_rtable = false;
+
     ctable_gc_thres = 0.5;
     caching_granularity = 1;
     write_parameters(param_file);
 
     // different number of bits for the flag to test
-    int n_bits[] = {15, 20, 25, 30, 35, 40};
+    int n_bits[] = {14, 19, 24, 29, 34, 38};
     
     // different number of workers to test
-    int n_workers[] = {1, 2, 4, 8};
+    int n_workers[] = {1};//, 2, 4, 8};
 
     // different number of random flags to test
     int n_flags = 3;
