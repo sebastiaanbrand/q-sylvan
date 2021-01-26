@@ -8,33 +8,33 @@
 // float "equality" tolerance
 static long double TOLERANCE = 1e-14l;
 
-static inline bool double_close(double x, double y) 
+static inline bool flt_close(fl_t x, fl_t y) 
 {
-    return (fabs(x - y) < TOLERANCE);
+    return (flt_abs(x - y) < TOLERANCE);
 }
 
-static bool double_compare(double x, double y)
+static bool flt_compare(fl_t x, fl_t y)
 {
-    if (double_close(x, y)) return 0;
+    if (flt_close(x, y)) return 0;
     else return (x < y);
 }
 
 struct custom_comparator
 {
-    bool operator() ( double x, double y ) const {
-    	return double_compare(x,y);
+    bool operator() ( fl_t x, fl_t y ) const {
+    	return flt_compare(x,y);
     }
 };
 
 // map <key, val>
-typedef std::map<double, unsigned int, custom_comparator> map_double_to_int_t;
-typedef std::map<unsigned int, double> map_int_to_double_t;
+typedef std::map<fl_t, unsigned int, custom_comparator> map_flt_to_int_t;
+typedef std::map<unsigned int, fl_t> map_int_to_flt_t;
 
 
 // (two way) map to assign unique integers to doubles, using std::map (RB trees)
 struct tree_map_s {
-    map_double_to_int_t* double_to_int;
-    map_int_to_double_t* int_to_double;
+    map_flt_to_int_t* flt_to_int;
+    map_int_to_flt_t* int_to_flt;
     unsigned int entries;
 };
 
@@ -46,8 +46,8 @@ tree_map_create(double tol)
     tree_map_t *map = (tree_map_t *) calloc(1, sizeof(tree_map_t));
     TOLERANCE = tol;
     map->entries = 0;
-    map->double_to_int = new map_double_to_int_t;
-    map->int_to_double = new map_int_to_double_t;
+    map->flt_to_int = new map_flt_to_int_t;
+    map->int_to_flt = new map_int_to_flt_t;
     return map;
 }
 
@@ -55,29 +55,29 @@ tree_map_create(double tol)
 void
 tree_map_free(tree_map_t *map)
 {
-    delete map->double_to_int;
-    delete map->int_to_double;
+    delete map->flt_to_int;
+    delete map->int_to_flt;
     free(map);
 }
 
 // TODO: tree_map_find_or_put()
 int
-tree_map_find_or_put(tree_map_t *map, double val, unsigned int *ret)
+tree_map_find_or_put(tree_map_t *map, fl_t val, unsigned int *ret)
 {
-    map_double_to_int_t *d2i = map->double_to_int;
-    map_int_to_double_t *i2d = map->int_to_double;
+    map_flt_to_int_t *f2i = map->flt_to_int;
+    map_int_to_flt_t *i2f = map->int_to_flt;
 
     // look for double
-    auto it = d2i->find(val);
-    if ( it == d2i->end() ) {
+    auto it = f2i->find(val);
+    if ( it == f2i->end() ) {
         // if key not found, insert new pair
-        std::pair<double, unsigned int> d2i_pair = std::make_pair(val, map->entries);
-        d2i->insert(d2i_pair);
+        std::pair<fl_t, unsigned int> f2i_pair = std::make_pair(val, map->entries);
+        f2i->insert(f2i_pair);
         *ret = map->entries;
 
         // also insert in reverse table for lookup purposes
-        std::pair<unsigned int, double> i2d_pair = std::make_pair(map->entries, val);
-        i2d->insert(i2d_pair);
+        std::pair<unsigned int, fl_t> i2f_pair = std::make_pair(map->entries, val);
+        i2f->insert(i2f_pair);
 
         map->entries++;
         return 0;
@@ -90,12 +90,12 @@ tree_map_find_or_put(tree_map_t *map, double val, unsigned int *ret)
 }
 
 // tree_map_get()
-double *
+fl_t *
 tree_map_get(tree_map_t *map, unsigned int ref)
 {
     // both these syntactically beautiful statements should be equivalent
-    //return &(*(map->int_to_double))[ref];
-    return &(map->int_to_double->find(ref)->second);
+    //return &(*(map->int_to_flt))[ref];
+    return &(map->int_to_flt->find(ref)->second);
 }
 
 // tree_map_size()

@@ -65,7 +65,7 @@ int test_rmap()
     rmap_t *rtable = rmap_create(1<<10, 1e-14);
 
     ref_t index1, index2;
-    fl_t val1, val2, val3;
+    double val1, val2, val3;
     int found;
 
     val1 = 3.5;
@@ -117,7 +117,7 @@ int test_tree_map()
     tree_map_t *tree_map = tree_map_create(1e-14);
 
     unsigned int index1, index2;
-    double val1, val2, val3;
+    fl_t val1, val2, val3;
     int found;
 
     val1 = 3.5;
@@ -134,8 +134,8 @@ int test_tree_map()
     found = tree_map_find_or_put(tree_map, val2, &index2); test_assert(found == 1);
     test_assert(index1 == index2);
 
-    val1 = 1.0/sqrt(2.0);
-    val2 = 1.0/sqrt(2.0);
+    val1 = 1.0/flt_sqrt(2.0);
+    val2 = 1.0/flt_sqrt(2.0);
     found = tree_map_find_or_put(tree_map, val1, &index1); test_assert(found == 0);
     found = tree_map_find_or_put(tree_map, val2, &index2); test_assert(found == 1);
     test_assert(index1 == index2);
@@ -1976,7 +1976,10 @@ int runtests()
     if (test_rmap()) return 1;
     if (test_tree_map()) return 1;
     if (test_with_cmap()) return 1;
+    #if !flt_quad
+    // rmap currently only works with doubles (flt_quad = 0)
     if (test_with_rmap()) return 1;
+    #endif
     return 0;
 }
 
