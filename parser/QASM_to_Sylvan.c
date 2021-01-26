@@ -20,7 +20,7 @@
 //     }
 // }
 
-TASK_IMPL_4(int, final_measuring, QDD, qdd, bool*, measurements, BDDVAR*, nvars, BDDVAR, shots)
+TASK_IMPL_4(int, final_measuring, QDD, qdd, int16_t*, measurements, BDDVAR*, nvars, BDDVAR, shots)
 {
     // Run the circuit x times, where x == shots
     bool *ms = malloc(*nvars * sizeof(bool));
@@ -34,14 +34,14 @@ TASK_IMPL_4(int, final_measuring, QDD, qdd, bool*, measurements, BDDVAR*, nvars,
 
     // Reformat circuit results based on what qubits were measured
     BDDVAR index, j, sum = 0;
-    for (BDDVAR i = 0; i < *nvars; i++) { if (measurements[i]) sum++; }
+    for (BDDVAR i = 0; i < *nvars; i++) { if (measurements[i] != -1) sum++; }
     int *probs = malloc(pow(2, sum) * sizeof(int));
     for (int k = 0; k < (1 << (*nvars)); k++) {
         bool *x = int_to_bitarray(k, *nvars, false);
         j = sum-1;
         index = 0;
         for (BDDVAR i = *nvars; i > 0; i--)
-            if (measurements[i-1]) { index += x[i-1] * pow(2, j--); }
+            if (measurements[i-1] != -1) { index += x[i-1] * pow(2, j--); }
         probs[index] += hits[k];
     }
 
@@ -50,7 +50,7 @@ TASK_IMPL_4(int, final_measuring, QDD, qdd, bool*, measurements, BDDVAR*, nvars,
         bool *x = int_to_bitarray(k, *nvars, false);
         j = sum-1;
         for (BDDVAR i = *nvars; i > 0 ; i--) {
-            if (measurements[i-1]) {
+            if (measurements[i-1] != -1) {
                 printf("%d", x[j]);
                 j--;
             }
@@ -62,22 +62,21 @@ TASK_IMPL_4(int, final_measuring, QDD, qdd, bool*, measurements, BDDVAR*, nvars,
     return 0;
 }
 
-TASK_IMPL_3(QDD, handle_intermediate_measure, QDD, qdd, bool*, measurements, BDDVAR, nvars)
+TASK_IMPL_4(QDD, handle_intermediate_measure, QDD, qdd, int16_t*, measurements, BDDVAR, nvars, bool*, creg)
 {
     int *m = malloc(sizeof(int));
     double *p = malloc(sizeof(double));
-    for (BDDVAR i = 0; i < nvars; i++)
-    {
-        if (measurements[i])
-        {
+    for (BDDVAR i = 0; i < nvars; i++) {
+        if (measurements[i] != -1) {
             qdd = qdd_measure_qubit(qdd, i, nvars, m, p);
-            measurements[i] = false;
+            creg[measurements[i]] = *m;
+            measurements[i] = -1;
         }
     }
     return qdd;
 }
 
-TASK_IMPL_4(QDD, handle_tokens, QDD, qdd, char**, tokens, bool*, measurements, BDDVAR*, nvars)
+TASK_IMPL_5(QDD, handle_line, QDD, qdd, char*, line, int16_t*, measurements, BDDVAR*, nvars, bool*, creg)
 {
     uint32_t *gateid = malloc(sizeof(uint32_t));
     *gateid = 0;
@@ -85,24 +84,50 @@ TASK_IMPL_4(QDD, handle_tokens, QDD, qdd, char**, tokens, bool*, measurements, B
     BDDVAR i = 0;
     BDDVAR j = 0;
     char *temp;
-
+    char *tokens[2];
     // Create all-zero state with "temp" qubits
-    if (strcmp(tokens[0], "qreg") == 0)
-    {
-        temp = strtok(tokens[1], "[");
+    if (strstr(line, "qreg") != NULL) {
+        temp = strtok(line, "[");
         temp = strtok(NULL, "]");
         *nvars = (BDDVAR)atoi(temp);
-        qdd = qdd_create_all_zero_state(atoi(temp));
+        creg = malloc(sizeof(bool)*(*nvars));
+        for(BDDVAR i = 0; i < *nvars; i++)
+            creg[i] = 0;
+        qdd = qdd_create_all_zero_state(*nvars);
     }
     // Set measure marker on qubit "temp"
-    else if (strcmp(tokens[0], "measure") == 0)
-    {
-        temp = strtok(tokens[1], "[");
+    else if (strstr(line, "measure") != NULL) {
+        temp = strtok(line, "[");
         temp = strtok(NULL, "]");
-        measurements[atoi(temp)] = true;
+        char* temp2 = strtok(NULL, "[");
+        temp2 = strtok(NULL, "]");
+        measurements[atoi(temp)] = (int16_t)atoi(temp2);
     }
+    // Handle if statement
+    else if (strstr(line, "if") != NULL) {
+        qdd = handle_intermediate_measure(qdd, measurements, *nvars, creg);
+        temp = strtok(line, "=");
+        temp = strtok(NULL, "=");
+        temp = strtok(temp, ")");
+        int sum = 0;
+        for (BDDVAR i = 0; i < *nvars; i++)
+            sum += creg[i]*pow(2,i);
+        if (atoi(temp) == sum) {
+            line = strtok(NULL, "");
+            goto handleGate;
+        }
+    }
+    // // Handle for loop
+    // else if (strstr(line, "for") == 0) {
+    //     temp = strtok(line, "[");
+    //     temp = strtok(NULL, "]");
+    //     measurements[atoi(temp)] = true;
+    // }
     else {
-        qdd = handle_intermediate_measure(qdd, measurements, *nvars);
+        handleGate:
+        // tokenize string
+        tokens[0] = strtok(line, " ");
+        tokens[1] = strtok(NULL, "");
         while(tokens[0][i] == 'c' && strcmp(tokens[0], "creg") != 0) {
             i++;
         }
@@ -116,11 +141,16 @@ TASK_IMPL_4(QDD, handle_tokens, QDD, qdd, char**, tokens, bool*, measurements, B
         isgate = get_gateid(tokens[0], gateid);
         if (!isgate)
             return qdd;
-
+        for (BDDVAR i = 0; i < *nvars; i++) {
+            if (measurements[i] != -1) {
+                qdd = handle_intermediate_measure(qdd, measurements, *nvars, creg);
+                break;
+            }
+        }
         if(i == 0)
             qdd = qdd_gate(qdd, *gateid, atoi(qubits[0]));
-        // else if(i == 1)
-        //     qdd = qdd_cgate(qdd, *gateid, atoi(qubits[0]), atoi(qubits[1]));
+        else if(i == 1)
+            qdd = qdd_cgate(qdd, *gateid, atoi(qubits[0]), atoi(qubits[1]));
         else if(i == 2)
             qdd = qdd_cgate2(qdd, *gateid, atoi(qubits[0]), atoi(qubits[1]), atoi(qubits[2]));
         else if(i == 3)
@@ -136,7 +166,9 @@ TASK_IMPL_2(uint32_t, get_gateid, char*, gate, uint32_t*, gate_id)
         gate++;
     }
     // Handle gates
-    if (strcmp(gate, "h") == 0)
+    if (strcmp(gate, "i") == 0)
+        *gate_id = GATEID_I;
+    else if (strcmp(gate, "h") == 0)
         *gate_id = GATEID_H;
     else if (strcmp(gate, "x") == 0)
         *gate_id = GATEID_X;
@@ -181,18 +213,22 @@ void read_QASM(char *filename, BDDVAR shots)
     char *line = NULL, *c;
     BDDVAR *nvars = malloc(sizeof(BDDVAR));
     *nvars = 0;
+    bool *creg = malloc(1024 * sizeof(bool));
+
     // Since we dont know yet how many qubits the circuit will contain,
     // we initialize measurements with size 1024 (since bool takes up minimal space)
-    bool *measurements = malloc(1024 * sizeof(bool));
+    int16_t *measurements = malloc(1024 * sizeof(int16_t));
     for (BDDVAR i = 0; i < 1024; i++)
     {
-        measurements[i] = false;
+        measurements[i] = -1;
     }
     size_t len = 0;
     ssize_t read;
-    char *tokens[2];
     QDD qdd = qdd_create_all_zero_state(0);
     while ((read = getline(&line, &len, f)) != -1) {
+        // skip if comment
+        if(line[0] == '/' && line[1] == '/')
+            continue;
         // remove leading spaces
         while ((*line == ' ') || (*line == '\t'))
             line++;
@@ -201,10 +237,7 @@ void read_QASM(char *filename, BDDVAR shots)
         if (c != NULL)
         {
             line[c - line] = '\0';
-            // tokenize string
-            tokens[0] = strtok(line, " ");
-            tokens[1] = strtok(NULL, "");
-            qdd = handle_tokens(qdd, tokens, measurements, nvars);
+            qdd = handle_line(qdd, line, measurements, nvars, creg);
         }
     }
     // test probabilities
