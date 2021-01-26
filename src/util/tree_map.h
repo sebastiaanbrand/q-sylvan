@@ -9,7 +9,7 @@ extern "C" {
 
 typedef struct tree_map_s tree_map_t;
 
-tree_map_t *tree_map_create(double tolerance);
+tree_map_t *tree_map_create(unsigned int max_size, double tolerance);
 void tree_map_free(tree_map_t *map);
 int tree_map_find_or_put(tree_map_t *map, fl_t val, unsigned int *ret);
 fl_t *tree_map_get(tree_map_t *map, unsigned int ref);

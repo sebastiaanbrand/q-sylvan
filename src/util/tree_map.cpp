@@ -35,16 +35,18 @@ typedef std::map<unsigned int, fl_t> map_int_to_flt_t;
 struct tree_map_s {
     map_flt_to_int_t* flt_to_int;
     map_int_to_flt_t* int_to_flt;
+    unsigned int max_size;
     unsigned int entries;
 };
 
 
 // tree_map_create()
 tree_map_t *
-tree_map_create(double tol)
+tree_map_create(unsigned int ms, double tol)
 {
     tree_map_t *map = (tree_map_t *) calloc(1, sizeof(tree_map_t));
     TOLERANCE = tol;
+    map->max_size = ms;
     map->entries = 0;
     map->flt_to_int = new map_flt_to_int_t;
     map->int_to_flt = new map_int_to_flt_t;
@@ -70,6 +72,12 @@ tree_map_find_or_put(tree_map_t *map, fl_t val, unsigned int *ret)
     // look for double
     auto it = f2i->find(val);
     if ( it == f2i->end() ) {
+        // check if space
+        if (map->entries > map->max_size-2) {
+            printf("AMP map full\n");
+            return -1;
+        }
+
         // if key not found, insert new pair
         std::pair<fl_t, unsigned int> f2i_pair = std::make_pair(val, map->entries);
         f2i->insert(f2i_pair);

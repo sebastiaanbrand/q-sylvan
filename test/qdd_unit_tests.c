@@ -114,7 +114,7 @@ int test_rmap()
 
 int test_tree_map()
 {
-    tree_map_t *tree_map = tree_map_create(1e-14);
+    tree_map_t *tree_map = tree_map_create(1<<10, 1e-14);
 
     unsigned int index1, index2;
     fl_t val1, val2, val3;
@@ -1924,7 +1924,6 @@ int run_qdd_tests()
 
 int test_with_cmap()
 {
-    
     // Standard Lace initialization
     int workers = 1;
     lace_init(workers, 0);
@@ -1934,7 +1933,7 @@ int test_with_cmap()
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<11, -1, false);
+    sylvan_init_qdd(1LL<<11, -1, COMP_HASHMAP);
     qdd_set_testing_mode(true); // turn on internal sanity tests
 
     printf("using cmap:\n");
@@ -1948,7 +1947,6 @@ int test_with_cmap()
 
 int test_with_rmap()
 {
-    
     // Standard Lace initialization
     int workers = 1;
     lace_init(workers, 0);
@@ -1958,10 +1956,33 @@ int test_with_rmap()
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<11, -1, true);
+    sylvan_init_qdd(1LL<<11, -1, REAL_HASHMAP);
     qdd_set_testing_mode(true); // turn on internal sanity tests
 
     printf("using rmap:\n");
+    int res = run_qdd_tests();
+
+    sylvan_quit();
+    lace_exit();
+
+    return res;
+}
+
+int test_with_tree_map()
+{
+    // Standard Lace initialization
+    int workers = 1;
+    lace_init(workers, 0);
+    printf("%d worker(s), ", workers);
+    lace_startup(0, NULL, NULL);
+
+    // Simple Sylvan initialization
+    sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
+    sylvan_init_package();
+    sylvan_init_qdd(1LL<<11, -1, REAL_TREE);
+    qdd_set_testing_mode(true); // turn on internal sanity tests
+
+    printf("using real tree:\n");
     int res = run_qdd_tests();
 
     sylvan_quit();
@@ -1980,6 +2001,7 @@ int runtests()
     // rmap currently only works with doubles (flt_quad = 0)
     if (test_with_rmap()) return 1;
     #endif
+    if (test_with_tree_map()) return 1;
     return 0;
 }
 

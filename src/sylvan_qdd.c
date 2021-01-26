@@ -449,13 +449,13 @@ qdd_quit()
 }
 
 void
-sylvan_init_qdd(size_t ctable_size, double ctable_tolerance, bool real_table)
+sylvan_init_qdd(size_t ctable_size, double ctable_tolerance, int amps_backend)
 {
     // TODO: add param using real table or comp table to store edge weights
     if (qdd_initialized) return;
     qdd_initialized = 1;
 
-    using_real_table = real_table;
+    using_real_table = (amps_backend == REAL_HASHMAP || amps_backend == REAL_TREE);
 
     sylvan_register_quit(qdd_quit);
     sylvan_gc_add_mark(TASK(qdd_gc_mark_external_refs));
@@ -467,7 +467,7 @@ sylvan_init_qdd(size_t ctable_size, double ctable_tolerance, bool real_table)
         qdd_protected_created = 1;
     }
 
-    init_amplitude_table(ctable_size, ctable_tolerance, real_table);
+    init_amplitude_table(ctable_size, ctable_tolerance, amps_backend);
 
     LACE_ME;
     CALL(qdd_refs_init);
