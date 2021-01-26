@@ -114,10 +114,57 @@ int test_rmap()
 
 int test_tree_map()
 {
-    void *tree_map = tree_map_create(1e-14);
+    tree_map_t *tree_map = tree_map_create(1e-14);
 
+    unsigned int index1, index2;
+    double val1, val2, val3;
+    int found;
 
-    if(VERBOSE) printf("tree map tests:           WIP\n");
+    val1 = 3.5;
+    found = tree_map_find_or_put(tree_map, val1, &index1); test_assert(found == 0);
+    for(int k=0; k<10; k++){
+        found = tree_map_find_or_put(tree_map, val1, &index2);
+        test_assert(found == 1);
+        test_assert(index2 == index2);
+    }
+
+    val1 = (2./3.);
+    val2 = (2./3.);
+    found = tree_map_find_or_put(tree_map, val1, &index1); test_assert(found == 0);
+    found = tree_map_find_or_put(tree_map, val2, &index2); test_assert(found == 1);
+    test_assert(index1 == index2);
+
+    val1 = 1.0/sqrt(2.0);
+    val2 = 1.0/sqrt(2.0);
+    found = tree_map_find_or_put(tree_map, val1, &index1); test_assert(found == 0);
+    found = tree_map_find_or_put(tree_map, val2, &index2); test_assert(found == 1);
+    test_assert(index1 == index2);
+    val3 = *tree_map_get(tree_map, index1);
+    test_assert((val3 - val1) < tree_map_get_tolerance());
+
+    val1 = 2.99999999999999855;
+    val2 = 3.00000000000000123;
+    found = tree_map_find_or_put(tree_map, val1, &index1); test_assert(found == 0);
+    found = tree_map_find_or_put(tree_map, val2, &index2); test_assert(found == 1);
+    test_assert(index1 == index2);
+    val3 = *tree_map_get(tree_map, index1);
+    test_assert(val3 == val1);
+
+    val1 = 0.0005000000000012;
+    val2 = 0.0004999999999954;
+    found = tree_map_find_or_put(tree_map, val1, &index1); test_assert(found == 0);
+    found = tree_map_find_or_put(tree_map, val2, &index2); test_assert(found == 1);
+    test_assert(index1 == index2);
+    val3 = *tree_map_get(tree_map, index1);
+    test_assert(val3 == val1);
+
+    val1 = 14.2;
+    val2 = 14.25;
+    found = tree_map_find_or_put(tree_map, val1, &index1); test_assert(found == 0);
+    found = tree_map_find_or_put(tree_map, val2, &index2); test_assert(found == 0);
+    test_assert(index1 != index2);
+
+    if(VERBOSE) printf("tree map tests:           ok\n");
     tree_map_free(tree_map);
     return 0;
 }
