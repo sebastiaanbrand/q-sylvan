@@ -17,6 +17,10 @@
     typedef double fl_t;
 #endif
 
+typedef struct complex_s {
+  fl_t r,i;
+} complex_t;
+
 
 #if flt_quad
     #define flt_abs(a) fabsq(a)

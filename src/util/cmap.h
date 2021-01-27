@@ -26,9 +26,6 @@
 #include <string.h>
 #include "flt.h"
 
-typedef struct complex_s {
-  fl_t r,i;
-} complex_t;
 
 /**
 \typedef Lockless hastable database.

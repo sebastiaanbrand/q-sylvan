@@ -3,8 +3,6 @@
 #include <map>
 #include <math.h>
 
-// TODO: store fl_t instead of doubles
-
 // float "equality" tolerance
 static long double TOLERANCE = 1e-14l;
 
