@@ -131,16 +131,16 @@ TASK_IMPL_5(QDD, handle_line, QDD, qdd, char*, line, int16_t*, measurements, BDD
         while(tokens[0][i] == 'c' && strcmp(tokens[0], "creg") != 0) {
             i++;
         }
-        char **qubits = malloc((i+1) * sizeof(char));
-        qubits[0] = strtok(tokens[1], "[");
-        for(; j < i; j++) {
-            qubits[j] = strtok(NULL, "]");
-            qubits[j+1] = strtok(NULL, "[");
-        }
-        qubits[j] = strtok(NULL, "]");
         isgate = get_gateid(tokens[0], gateid);
         if (!isgate)
             return qdd;
+        int *qubits = malloc((i+1) * sizeof(uint16_t));
+        temp = strtok(tokens[1], "[");
+        for(; j < i; j++) {
+            qubits[j] = (uint16_t)atoi(strtok(NULL, "]"));
+            temp = strtok(NULL, "[");
+        }
+        qubits[j] = (uint16_t)atoi(strtok(NULL, "]"));
         for (BDDVAR i = 0; i < *nvars; i++) {
             if (measurements[i] != -1) {
                 qdd = handle_intermediate_measure(qdd, measurements, *nvars, creg);
@@ -148,13 +148,14 @@ TASK_IMPL_5(QDD, handle_line, QDD, qdd, char*, line, int16_t*, measurements, BDD
             }
         }
         if(i == 0)
-            qdd = qdd_gate(qdd, *gateid, atoi(qubits[0]));
+            qdd = qdd_gate(qdd, *gateid, qubits[0]);
         else if(i == 1)
-            qdd = qdd_cgate(qdd, *gateid, atoi(qubits[0]), atoi(qubits[1]));
+            qdd = qdd_cgate(qdd, *gateid, qubits[0], qubits[1]);
         else if(i == 2)
-            qdd = qdd_cgate2(qdd, *gateid, atoi(qubits[0]), atoi(qubits[1]), atoi(qubits[2]));
-        else if(i == 3)
-            qdd = qdd_cgate3(qdd, *gateid, atoi(qubits[0]), atoi(qubits[1]), atoi(qubits[2]), atoi(qubits[3]));
+            qdd = qdd_cgate2(qdd, *gateid, qubits[0], qubits[1], qubits[2]);
+        else if(i == 3) {
+            qdd = qdd_cgate3(qdd, *gateid, qubits[0], qubits[1], qubits[2], qubits[3]);
+        }
         else exit(-1);
     }
     return qdd;
