@@ -1900,7 +1900,6 @@ int run_qdd_tests()
     sylvan_gc_disable();
 
     if (test_complex_operations()) return 1;
-    if (test_algebraic()) return 1;
     if (test_basis_state_creation()) return 1;
     if (test_vector_addition()) return 1;
     if (test_x_gate()) return 1;
@@ -1996,6 +1995,7 @@ int runtests()
     if (test_cmap()) return 1;
     if (test_rmap()) return 1;
     if (test_tree_map()) return 1;
+    if (test_algebraic()) return 1;
     if (test_with_cmap()) return 1;
     #if !flt_quad
     // rmap currently only works with doubles (flt_quad = 0)
