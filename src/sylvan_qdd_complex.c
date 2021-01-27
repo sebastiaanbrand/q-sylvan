@@ -511,7 +511,7 @@ comp_value(AMP a)
         res.i = *i;
     }
     else {
-        printf("get value:backend not recognized\n");
+        printf("get value: backend not recognized\n");
         exit(1);
     }
     return res;
@@ -536,11 +536,20 @@ comp_value_old(AMP a)
         res.r = *r;
         res.i = *i;
     }
-    else if (amp_backend == COMP_HASHMAP){
+    else if (amp_backend == COMP_HASHMAP) {
         res = *cmap_get(ctable_old, a);
     }
+    else if (amp_backend == REAL_TREE) {
+        AMP idx_r, idx_i;
+        double *r, *i;
+        unpack_indices_rtable(a, &idx_r, &idx_i);
+        r = tree_map_get(rtree_old, idx_r);
+        i = tree_map_get(rtree_old, idx_i);
+        res.r = *r;
+        res.i = *i;
+    }
     else {
-        printf("backend not recognized\n");
+        printf("get value old: backend not recognized\n");
         exit(1);
     }
     return res;
