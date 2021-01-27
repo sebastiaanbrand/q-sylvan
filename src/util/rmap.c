@@ -20,6 +20,7 @@
 #define CACHE_LINE_SIZE 256
 
 
+// TODO: use fl_t to allow for using 128 bit floats (also requires d[2])
 typedef union {
     double r;
     uint64_t d;

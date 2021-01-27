@@ -65,7 +65,7 @@ int test_rmap()
     rmap_t *rtable = rmap_create(1<<10, 1e-14);
 
     ref_t index1, index2;
-    fl_t val1, val2, val3;
+    double val1, val2, val3;
     int found;
 
     val1 = 3.5;
@@ -109,6 +109,63 @@ int test_rmap()
 
     if(VERBOSE) printf("rmap tests:               ok\n");
     rmap_free(rtable);
+    return 0;
+}
+
+int test_tree_map()
+{
+    tree_map_t *tree_map = tree_map_create(1<<10, 1e-14);
+
+    unsigned int index1, index2;
+    fl_t val1, val2, val3;
+    int found;
+
+    val1 = 3.5;
+    found = tree_map_find_or_put(tree_map, val1, &index1); test_assert(found == 0);
+    for(int k=0; k<10; k++){
+        found = tree_map_find_or_put(tree_map, val1, &index2);
+        test_assert(found == 1);
+        test_assert(index2 == index2);
+    }
+
+    val1 = (2./3.);
+    val2 = (2./3.);
+    found = tree_map_find_or_put(tree_map, val1, &index1); test_assert(found == 0);
+    found = tree_map_find_or_put(tree_map, val2, &index2); test_assert(found == 1);
+    test_assert(index1 == index2);
+
+    val1 = 1.0/flt_sqrt(2.0);
+    val2 = 1.0/flt_sqrt(2.0);
+    found = tree_map_find_or_put(tree_map, val1, &index1); test_assert(found == 0);
+    found = tree_map_find_or_put(tree_map, val2, &index2); test_assert(found == 1);
+    test_assert(index1 == index2);
+    val3 = *tree_map_get(tree_map, index1);
+    test_assert((val3 - val1) < tree_map_get_tolerance());
+
+    val1 = 2.99999999999999855;
+    val2 = 3.00000000000000123;
+    found = tree_map_find_or_put(tree_map, val1, &index1); test_assert(found == 0);
+    found = tree_map_find_or_put(tree_map, val2, &index2); test_assert(found == 1);
+    test_assert(index1 == index2);
+    val3 = *tree_map_get(tree_map, index1);
+    test_assert(val3 == val1);
+
+    val1 = 0.0005000000000012;
+    val2 = 0.0004999999999954;
+    found = tree_map_find_or_put(tree_map, val1, &index1); test_assert(found == 0);
+    found = tree_map_find_or_put(tree_map, val2, &index2); test_assert(found == 1);
+    test_assert(index1 == index2);
+    val3 = *tree_map_get(tree_map, index1);
+    test_assert(val3 == val1);
+
+    val1 = 14.2;
+    val2 = 14.25;
+    found = tree_map_find_or_put(tree_map, val1, &index1); test_assert(found == 0);
+    found = tree_map_find_or_put(tree_map, val2, &index2); test_assert(found == 0);
+    test_assert(index1 != index2);
+
+    if(VERBOSE) printf("tree map tests:           ok\n");
+    tree_map_free(tree_map);
     return 0;
 }
 
@@ -1837,15 +1894,12 @@ int test_20qubit_circuit()
 
 
 
-int runtests()
+int run_qdd_tests()
 {
     // we are not testing garbage collection
     sylvan_gc_disable();
 
-    if (test_cmap()) return 1;
-    if (test_rmap()) return 1;
     if (test_complex_operations()) return 1;
-    if (test_algebraic()) return 1;
     if (test_basis_state_creation()) return 1;
     if (test_vector_addition()) return 1;
     if (test_x_gate()) return 1;
@@ -1869,7 +1923,6 @@ int runtests()
 
 int test_with_cmap()
 {
-    
     // Standard Lace initialization
     int workers = 1;
     lace_init(workers, 0);
@@ -1879,11 +1932,11 @@ int test_with_cmap()
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<11, -1, false);
+    sylvan_init_qdd(1LL<<11, -1, COMP_HASHMAP);
     qdd_set_testing_mode(true); // turn on internal sanity tests
 
     printf("using cmap:\n");
-    int res = runtests();
+    int res = run_qdd_tests();
 
     sylvan_quit();
     lace_exit();
@@ -1893,7 +1946,6 @@ int test_with_cmap()
 
 int test_with_rmap()
 {
-    
     // Standard Lace initialization
     int workers = 1;
     lace_init(workers, 0);
@@ -1903,11 +1955,11 @@ int test_with_rmap()
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<11, -1, true);
+    sylvan_init_qdd(1LL<<11, -1, REAL_HASHMAP);
     qdd_set_testing_mode(true); // turn on internal sanity tests
 
     printf("using rmap:\n");
-    int res = runtests();
+    int res = run_qdd_tests();
 
     sylvan_quit();
     lace_exit();
@@ -1915,10 +1967,45 @@ int test_with_rmap()
     return res;
 }
 
+int test_with_tree_map()
+{
+    // Standard Lace initialization
+    int workers = 1;
+    lace_init(workers, 0);
+    printf("%d worker(s), ", workers);
+    lace_startup(0, NULL, NULL);
+
+    // Simple Sylvan initialization
+    sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
+    sylvan_init_package();
+    sylvan_init_qdd(1LL<<11, -1, REAL_TREE);
+    qdd_set_testing_mode(true); // turn on internal sanity tests
+
+    printf("using real tree:\n");
+    int res = run_qdd_tests();
+
+    sylvan_quit();
+    lace_exit();
+
+    return res;
+}
+
+int runtests()
+{
+    if (test_cmap()) return 1;
+    if (test_rmap()) return 1;
+    if (test_tree_map()) return 1;
+    if (test_algebraic()) return 1;
+    if (test_with_cmap()) return 1;
+    #if !flt_quad
+    // rmap currently only works with doubles (flt_quad = 0)
+    if (test_with_rmap()) return 1;
+    #endif
+    if (test_with_tree_map()) return 1;
+    return 0;
+}
+
 int main()
 {
-    if (test_with_cmap()) return 1;
-    if (test_with_rmap()) return 1;
-
-    return 0;
+    return runtests();
 }

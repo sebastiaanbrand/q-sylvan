@@ -12,6 +12,13 @@
 
 #include "util/cmap.h"
 #include "util/rmap.h"
+#include "util/tree_map.h"
+
+typedef enum amp_storage_backend {
+    COMP_HASHMAP, 
+    REAL_HASHMAP, 
+    REAL_TREE
+} amp_storage_backend_t;
 
 typedef uint64_t AMP;
 
@@ -123,7 +130,7 @@ void comp_print_digits_sci(complex_t c, uint32_t digits);
 void comp_print_bits(AMP a);
 
 /* Managing the complex value table */
-void init_amplitude_table(size_t size, long double tolerance, bool real_table);
+void init_amplitude_table(size_t size, long double tolerance, amp_storage_backend_t backend);
 uint64_t count_amplitude_table_enries();
 uint64_t get_table_entries_estimate();
 uint64_t get_table_size();

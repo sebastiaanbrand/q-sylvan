@@ -9,13 +9,17 @@
 #include <quadmath.h>
 
 // What size float to use (double or __float128 (quad) )
-#define flt_quad 1
+#define flt_quad 0
 
 #if flt_quad
     typedef __float128 fl_t;
 #else
     typedef double fl_t;
 #endif
+
+typedef struct complex_s {
+  fl_t r,i;
+} complex_t;
 
 
 #if flt_quad

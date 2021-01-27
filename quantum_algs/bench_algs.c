@@ -27,7 +27,7 @@ static size_t max_cachesize;
 static size_t ctable_size;
 static double ctable_tolerance;
 static double ctable_gc_thres;
-static bool using_rtable;
+static int amp_backend;
 static int caching_granularity;
 
 /* for very deep circuits we don't want to log (i.e. count nodes, etc.) every gate */
@@ -54,7 +54,7 @@ write_parameters(FILE *file)
     fprintf(file, "  \"max_cachesize\": %ld,\n", max_cachesize);
     fprintf(file, "  \"amp_table_size\": %ld,\n", ctable_size);
     fprintf(file, "  \"amp_table_tolerance\": %.5e,\n", ctable_tolerance);
-    fprintf(file, "  \"using_rtable\": %d,\n", using_rtable);
+    fprintf(file, "  \"amp_storage_backend\": %d,\n", amp_backend);
     fprintf(file, "  \"flt_quad\": %d,\n", flt_quad);
     fprintf(file, "  \"ctable_gc_thres\": %lf,\n", ctable_gc_thres);
     fprintf(file, "  \"propagate_complex\": %d,\n", propagate_complex);
@@ -88,7 +88,7 @@ double bench_supremacy_5_4_once(uint32_t depth, uint32_t workers, uint64_t rseed
     // Init Sylvan
     sylvan_set_sizes(min_tablesize, max_tablesize, min_cachesize, max_cachesize);
     sylvan_init_package();
-    sylvan_init_qdd(ctable_size, ctable_tolerance, false);
+    sylvan_init_qdd(ctable_size, ctable_tolerance, COMP_HASHMAP);
     qdd_set_gc_amp_table_thres(ctable_gc_thres);
     qdd_set_caching_granularity(caching_granularity);
 
@@ -141,7 +141,7 @@ double bench_random_circuit_once(int qubits, int gates, int workers, uint64_t rs
     // Init Sylvan
     sylvan_set_sizes(min_tablesize, max_tablesize, min_cachesize, max_cachesize);
     sylvan_init_package();
-    sylvan_init_qdd(ctable_size, ctable_tolerance, false);
+    sylvan_init_qdd(ctable_size, ctable_tolerance, COMP_HASHMAP);
     qdd_set_gc_amp_table_thres(ctable_gc_thres);
     qdd_set_caching_granularity(caching_granularity);
 
@@ -199,7 +199,7 @@ double bench_grover_once(int num_bits, bool flag[], int workers, char *fpath,
     // Init Sylvan
     sylvan_set_sizes(min_tablesize, max_tablesize, min_cachesize, max_cachesize);
     sylvan_init_package();
-    sylvan_init_qdd(ctable_size, ctable_tolerance, using_rtable);
+    sylvan_init_qdd(ctable_size, ctable_tolerance, amp_backend);
     qdd_set_gc_amp_table_thres(ctable_gc_thres);
     qdd_set_caching_granularity(caching_granularity);
 
@@ -258,7 +258,7 @@ double bench_shor_once(uint64_t N, uint64_t a, int workers, int rseed, bool *suc
     // Init Sylvan
     sylvan_set_sizes(min_tablesize, max_tablesize, min_cachesize, max_cachesize);
     sylvan_init_package();
-    sylvan_init_qdd(ctable_size, ctable_tolerance, false);
+    sylvan_init_qdd(ctable_size, ctable_tolerance, amp_backend);
     qdd_set_gc_amp_table_thres(ctable_gc_thres);
     qdd_set_caching_granularity(caching_granularity);
 
@@ -521,9 +521,9 @@ int bench_grover()
     
     
     // for {14, 19, 24}
-    ctable_size = 1LL<<18;
+    ctable_size = 1LL<<16;
     ctable_tolerance = 1e-14;
-    using_rtable = false;
+    amp_backend = COMP_HASHMAP;
     // for {29, 34, 38}
     //ctable_size = 1LL<<23;
     //ctable_tolerance = 1e-18; // note: use flt_quad 1 in flt.h
@@ -640,6 +640,7 @@ int bench_shor()
     ctable_size   = 1LL<<20;
     ctable_gc_thres = 0.5;
     ctable_tolerance = 1e-14;
+    amp_backend = COMP_HASHMAP;
     caching_granularity = 1;
     write_parameters(param_file);
     qdd_set_periodic_gc_nodetable(10000);
