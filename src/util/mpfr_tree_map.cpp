@@ -15,9 +15,9 @@ static bool mpfr_close(mpfr_t x, mpfr_t y)
 }
 */
 
-static bool mpfr_custom_comp(mpfr_t *x, mpfr_t *y)
+static bool mpfr_custom_comp(mpfr_srcptr x, mpfr_srcptr y)
 {
-    return mpfr_less_p(*x, *y);
+    return mpfr_less_p(x, y);
     //if (flt_close(x, y)) return 0;
     //else return (x < y);
     return 0;
@@ -26,15 +26,15 @@ static bool mpfr_custom_comp(mpfr_t *x, mpfr_t *y)
 
 struct custom_comparator
 {
-    bool operator() ( mpfr_t *x, mpfr_t *y ) const {
-    	return mpfr_custom_comp(x,y);
+    bool operator() ( __mpfr_struct x, __mpfr_struct y ) const {
+    	return mpfr_custom_comp(&x, &y);
     }
 };
 
 
 // map <key, val>
-typedef std::map<mpfr_t *, unsigned int, custom_comparator> map_mpfr_to_int_t;
-typedef std::map<unsigned int, mpfr_t *> map_int_to_mpfr_t;
+typedef std::map<__mpfr_struct, unsigned int, custom_comparator> map_mpfr_to_int_t;
+typedef std::map<unsigned int, __mpfr_struct> map_int_to_mpfr_t;
 
 
 // (two way) map to assign unique ints to mpfr vals, using std::map (RB trees)
@@ -73,13 +73,18 @@ mpfr_tree_map_free(mpfr_tree_map_t *map)
 
 // find_or_put()
 int
-mpfr_tree_map_find_or_put(mpfr_tree_map_t *map, mpfr_t *val, unsigned int *ret)
+mpfr_tree_map_find_or_put(mpfr_tree_map_t *map, mpfr_t val, unsigned int *ret)
 {
     map_mpfr_to_int_t *f2i = map->mpfr_to_int;
     map_int_to_mpfr_t *i2f = map->int_to_mpfr;
 
+    // sigh... 
+    __mpfr_struct val_cp;
+    mpfr_init2(&val_cp, MPFR_PREC);
+    mpfr_set(&val_cp, val, DEFAULT_RND);
+
     // look for double
-    auto it = f2i->find(val);
+    auto it = f2i->find(val_cp);
     if ( it == f2i->end() ) {
         // check if space
         if (map->entries > map->max_size-2) {
@@ -88,12 +93,12 @@ mpfr_tree_map_find_or_put(mpfr_tree_map_t *map, mpfr_t *val, unsigned int *ret)
         }
 
         // if key not found, insert new pair
-        std::pair<mpfr_t *, unsigned int> f2i_pair = std::make_pair(val, map->entries);
+        std::pair<__mpfr_struct, unsigned int> f2i_pair = std::make_pair(val_cp, map->entries);
         f2i->insert(f2i_pair);
         *ret = map->entries;
 
         // also insert in reverse table for lookup purposes
-        std::pair<unsigned int, mpfr_t *> i2f_pair = std::make_pair(map->entries, val);
+        std::pair<unsigned int, __mpfr_struct> i2f_pair = std::make_pair(map->entries, val_cp);
         i2f->insert(i2f_pair);
 
         map->entries++;

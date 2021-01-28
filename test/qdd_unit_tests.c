@@ -203,8 +203,8 @@ int scope1(mpfr_tree_map_t *map)
     mpfr_t val1;
     mpfr_init2(val1, MPFR_PREC);
     mpfr_set_d(val1, 3.5, DEFAULT_RND);
-    found = mpfr_tree_map_find_or_put(map, &val1, &index1); test_assert(found == 0);
-    found = mpfr_tree_map_find_or_put(map, &val1, &index1); test_assert(found == 1);
+    found = mpfr_tree_map_find_or_put(map, val1, &index1); test_assert(found == 0);
+    found = mpfr_tree_map_find_or_put(map, val1, &index1); test_assert(found == 1);
 
     return 0;
 }
@@ -218,7 +218,7 @@ int scope2(mpfr_tree_map_t *map)
     mpfr_t val2;
     mpfr_init2(val2, MPFR_PREC);
     mpfr_set_d(val2, 3.5, DEFAULT_RND);
-    found = mpfr_tree_map_find_or_put(map, &val2, &index2); test_assert(found == 1);
+    found = mpfr_tree_map_find_or_put(map, val2, &index2); test_assert(found == 1);
 
     return 0;
 }
