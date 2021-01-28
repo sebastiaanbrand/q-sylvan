@@ -171,12 +171,68 @@ int test_tree_map()
 
 int test_mpfr_tree_map()
 {
+    /*
     mpfr_tree_map_t *map = mpfr_tree_map_create(1<<10, 1e-14);
 
+    unsigned int index1, index2;
+    mpfr_t val1, val2; //, val3;
+    mpfr_init2(val1, MPFR_PREC);
+    mpfr_init2(val2, MPFR_PREC);
+    int found;
+
+    
+    mpfr_set_d(val1, 3.5, DEFAULT_RND);
+    found = mpfr_tree_map_find_or_put(map, &val1, &index1); test_assert(found == 0);
+    for(int k=0; k<10; k++){
+        found = mpfr_tree_map_find_or_put(map, &val1, &index2);
+        test_assert(found == 1);
+        test_assert(index2 == index2);
+    }
     mpfr_tree_map_free(map);
+    */
     if(VERBOSE) printf("mpfr tree map tests:      WIP\n");
     return 0;
 }
+
+int scope1(mpfr_tree_map_t *map)
+{
+    bool found;
+    unsigned int index1;
+
+    // Insert mpfr(3.5) value into map
+    mpfr_t val1;
+    mpfr_init2(val1, MPFR_PREC);
+    mpfr_set_d(val1, 3.5, DEFAULT_RND);
+    found = mpfr_tree_map_find_or_put(map, &val1, &index1); test_assert(found == 0);
+    found = mpfr_tree_map_find_or_put(map, &val1, &index1); test_assert(found == 1);
+
+    return 0;
+}
+
+int scope2(mpfr_tree_map_t *map)
+{
+    bool found;
+    unsigned int index2;
+
+    // Can we still look up mpfr(3.5) in the map?
+    mpfr_t val2;
+    mpfr_init2(val2, MPFR_PREC);
+    mpfr_set_d(val2, 3.5, DEFAULT_RND);
+    found = mpfr_tree_map_find_or_put(map, &val2, &index2); test_assert(found == 1);
+
+    return 0;
+}
+
+int test_mpfr_tree_map_scope()
+{
+    mpfr_tree_map_t *map = mpfr_tree_map_create(1<<10, 1e-14);
+    if (scope1(map)) return 1;
+    if (scope2(map)) return 1;
+    mpfr_tree_map_free(map);
+    if(VERBOSE) printf("mpfr scope test:          WIP\n");
+    return 0;
+}
+
 
 int test_complex_operations()
 {
@@ -2005,6 +2061,7 @@ int runtests()
     if (test_rmap()) return 1;
     if (test_tree_map()) return 1;
     if (test_mpfr_tree_map()) return 1;
+    if (test_mpfr_tree_map_scope()) return 1;
     if (test_algebraic()) return 1;
     if (test_with_cmap()) return 1;
     #if !flt_quad

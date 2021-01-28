@@ -15,4 +15,5 @@ add_library(util #STATIC
         MurmurHash3.h MurmurHash3.c
         util.h)
 
-target_link_libraries(util "-lquadmath")
+target_link_libraries(util "-lquadmath" mpfr)
+
