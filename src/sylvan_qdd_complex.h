@@ -13,6 +13,7 @@
 #include "util/cmap.h"
 #include "util/rmap.h"
 #include "util/tree_map.h"
+#include "util/mpfr_tree_map.h"
 
 typedef enum amp_storage_backend {
     COMP_HASHMAP, 

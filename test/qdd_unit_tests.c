@@ -169,6 +169,15 @@ int test_tree_map()
     return 0;
 }
 
+int test_mpfr_tree_map()
+{
+    mpfr_tree_map_t *map = mpfr_tree_map_create(1<<10, 1e-14);
+
+    mpfr_tree_map_free(map);
+    if(VERBOSE) printf("mpfr tree map tests:      WIP\n");
+    return 0;
+}
+
 int test_complex_operations()
 {
     complex_t ref1, ref2, ref3, ref4, val1, val2, val3, val4;
@@ -1995,6 +2004,7 @@ int runtests()
     if (test_cmap()) return 1;
     if (test_rmap()) return 1;
     if (test_tree_map()) return 1;
+    if (test_mpfr_tree_map()) return 1;
     if (test_algebraic()) return 1;
     if (test_with_cmap()) return 1;
     #if !flt_quad
