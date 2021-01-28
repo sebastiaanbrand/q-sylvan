@@ -55,8 +55,8 @@ int test_cmap()
     val3 = *cmap_get(ctable, index1);
     test_assert(val3.r == val1.r && val3.i == val1.i);
     
-    if(VERBOSE) printf("cmap tests:               ok\n");
     cmap_free(ctable);
+    if(VERBOSE) printf("cmap tests:               ok\n");
     return 0;
 }
 
@@ -107,8 +107,8 @@ int test_rmap()
     val3 = *rmap_get(rtable, index1);
     test_assert(val3 == val1);
 
-    if(VERBOSE) printf("rmap tests:               ok\n");
     rmap_free(rtable);
+    if(VERBOSE) printf("rmap tests:               ok\n");
     return 0;
 }
 
@@ -164,8 +164,8 @@ int test_tree_map()
     found = tree_map_find_or_put(tree_map, val2, &index2); test_assert(found == 0);
     test_assert(index1 != index2);
 
-    if(VERBOSE) printf("tree map tests:           ok\n");
     tree_map_free(tree_map);
+    if(VERBOSE) printf("tree map tests:           ok\n");
     return 0;
 }
 
