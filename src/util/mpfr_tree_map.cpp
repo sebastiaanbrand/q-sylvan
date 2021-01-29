@@ -5,22 +5,21 @@
 // float "equality" tolerance
 static mpfr_t TOLERANCE; // default 1e-14
 
-/*
-static bool mpfr_close(mpfr_t x, mpfr_t y) 
+
+static bool mpfr_close(mpfr_srcptr x, mpfr_srcptr y) 
 {
     mpfr_t diff;
-    mpfr_sub(diff, x, y, MPFR_RNDN);
-    return 0;
-    //return (flt_abs(x - y) < TOLERANCE);
+    mpfr_init2(diff, MPFR_PREC);
+    mpfr_sub(diff, x, y, DEFAULT_RND);
+    int cmp = mpfr_cmpabs(TOLERANCE, diff); // 1 if |a| > |b|, 0 if |a| == |b|, -1 if |a| < |b|
+    mpfr_clear(diff); // not sure if we need to manually clear these
+    return (cmp >= 0);
 }
-*/
 
 static bool mpfr_custom_comp(mpfr_srcptr x, mpfr_srcptr y)
 {
-    return mpfr_less_p(x, y);
-    //if (flt_close(x, y)) return 0;
-    //else return (x < y);
-    return 0;
+    if (mpfr_close(x, y)) return 0;
+    else return mpfr_less_p(x, y);
 }
 
 
@@ -112,17 +111,16 @@ mpfr_tree_map_find_or_put(mpfr_tree_map_t *map, mpfr_t val, unsigned int *ret)
    return 0;
 }
 
-/*
+
 
 // get()
-fl_t *
-tree_map_get(tree_map_t *map, unsigned int ref)
+mpfr_ptr
+mpfr_tree_map_get(mpfr_tree_map_t *map, unsigned int ref)
 {
-    // both these syntactically beautiful statements should be equivalent
-    //return &(*(map->int_to_flt))[ref];
-    return &(map->int_to_flt->find(ref)->second);
+    return &(map->int_to_mpfr->find(ref)->second);   
 }
 
+/*
 // size()
 unsigned int
 tree_map_size(tree_map_t *map)
