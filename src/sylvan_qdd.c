@@ -27,13 +27,14 @@
 
 static int granularity = 1; // operation cache access granularity
 static bool testing_mode = 0; // turns on/off (expensive) sanity checks
+static bool using_real_table = true; // using real table or complex table
 
 /****************< (bit level) manipulation of QDD / qddnode_t >***************/
 /**
  * QDD edge structure (64 bits)
  *       1 bit:  marked/unmarked flag (same place as MTBDD)
- *      23 bits: index of edge weight in ctable (AMP)
- *      40 bits: index of next node in node table (PTR)
+ *      33 bits: index of edge weight in ctable (AMP)
+ *      30 bits: index of next node in node table (PTR)
  * 
  * QDD node structure (128 bits)
  * (note: because of normalization of the amps, we only need 1 amp per node,
@@ -45,18 +46,20 @@ static bool testing_mode = 0; // turns on/off (expensive) sanity checks
  *       1 bit:  if 0 (1) normalized amp is on low (high)
  *       1 bit:  if 0 (1) normalized amp is C_ZERO (C_ONE)
  *      13 bits: unused
- *      40 bits: low edge pointer to next node (PTR)
+ *      30 bits: low edge pointer to next node (PTR)
  * 64 bits high:
  *       1 bit:  marked/unmarked flag (same place as MTBDD)
- *      23 bits: index of edge weight of high edge in ctable (AMP)
- *      40 bits: high edge pointer to next node (PTR)
+ *      33 bits: index of edge weight of high edge in ctable (AMP)
+ *      30 bits: high edge pointer to next node (PTR)
  */
 static const QDD qdd_marked_mask  = 0x8000000000000000LL;
 static const QDD qdd_var_mask_low = 0x7f80000000000000LL;
 static const QDD qdd_amp_pos_mask = 0x0040000000000000LL;
 static const QDD qdd_amp_val_mask = 0x0020000000000000LL;
-static const QDD qdd_amp_mask     = 0x7fffff0000000000LL;
-static const QDD qdd_ptr_mask     = 0x000000ffffffffffLL;
+static const QDD qdd_amp_mask_23  = 0x7fffff0000000000LL;
+static const QDD qdd_amp_mask_33  = 0x7fffffffc0000000LL;
+static const QDD qdd_ptr_mask_30  = 0x000000003fffffffLL;
+static const QDD qdd_ptr_mask_40  = 0x000000ffffffffffLL;
 
 /**
  * Gets only the AMP information of a QDD edge `q`.
@@ -64,7 +67,12 @@ static const QDD qdd_ptr_mask     = 0x000000ffffffffffLL;
 static inline AMP
 QDD_AMP(QDD q)
 {
-    return (q & qdd_amp_mask) >> 40; // 23 bits
+    if (using_real_table) {
+        return (q & qdd_amp_mask_33) >> 30; // 33 bits
+    }
+    else {
+        return (q & qdd_amp_mask_23) >> 40; // 23 bits
+    }
 }
 
 /**
@@ -73,7 +81,12 @@ QDD_AMP(QDD q)
 static inline PTR
 QDD_PTR(QDD q)
 {
-    return q & qdd_ptr_mask; // 40 bits
+    if (using_real_table) {
+        return q & qdd_ptr_mask_30; // 30 bits
+    }
+    else {
+        return q & qdd_ptr_mask_40; // 40 bits
+    }
 }
 
 /**
@@ -172,9 +185,15 @@ QDD_GETNODE(PTR p)
 static inline QDD
 qdd_bundle_ptr_amp(PTR p, AMP a)
 {
-    assert (p <= 0x000000fffffffffe);   // avoid clash with sylvan_invalid
-    assert (a <= (1<<23));
-    return (a << 40 | p);
+    if (using_real_table) {
+        assert (p <= 0x000000003ffffffe);   // avoid clash with sylvan_invalid
+        assert (a <= (1LL<<33));
+        return (a << 30 | p);
+    }else {
+        assert (p <= 0x000000fffffffffe);   // avoid clash with sylvan_invalid
+        assert (a <= (1<<23));
+        return (a << 40 | p);
+    }
 }
 
 static void
@@ -223,7 +242,12 @@ qddnode_pack(qddnode_t n, BDDVAR var, PTR low, PTR high, AMP a, AMP b)
     }
 
     n->low  = ((uint64_t)var)<<55 | ((uint64_t)norm_pos)<<54 | ((uint64_t)norm_val)<<53 | low;
-    n->high = amp_high<<40 | high;
+    if (using_real_table) {
+        n->high = amp_high<<30 | high;
+    }
+    else {
+        n->high = amp_high<<40 | high;
+    }
 }
 
 // Container for disguising doubles as ints so they can go in Sylvan's cache
@@ -233,10 +257,12 @@ typedef union {
     uint64_t as_int;
 } double_hack_t;
 
+/*
 typedef union {
     complex_t as_comp;
     uint64_t  as_int[2];
 } comp_hack_t;
+*/
 
 /***************</ (bit level) manipulation of QDD / qddnode_t >***************/
 
@@ -423,10 +449,13 @@ qdd_quit()
 }
 
 void
-sylvan_init_qdd(size_t ctable_size, double ctable_tolerance)
+sylvan_init_qdd(size_t ctable_size, double ctable_tolerance, int amps_backend)
 {
+    // TODO: add param using real table or comp table to store edge weights
     if (qdd_initialized) return;
     qdd_initialized = 1;
+
+    using_real_table = (amps_backend == REAL_HASHMAP || amps_backend == REAL_TREE);
 
     sylvan_register_quit(qdd_quit);
     sylvan_gc_add_mark(TASK(qdd_gc_mark_external_refs));
@@ -438,7 +467,7 @@ sylvan_init_qdd(size_t ctable_size, double ctable_tolerance)
         qdd_protected_created = 1;
     }
 
-    init_amplitude_table(ctable_size, ctable_tolerance);
+    init_amplitude_table(ctable_size, ctable_tolerance, amps_backend);
 
     LACE_ME;
     CALL(qdd_refs_init);
@@ -587,6 +616,7 @@ _qdd_makenode(BDDVAR var, PTR low, PTR high, AMP a, AMP b)
     int created;
     PTR index = llmsset_lookup(nodes, n.low, n.high, &created);
     if (index == 0) {
+        printf("auto gc of node table triggered\n");
         LACE_ME;
 
         qdd_refs_push(low);
@@ -734,30 +764,30 @@ qdd_countnodes(QDD qdd)
 
 /**************************<cleaning amplitude table>**************************/
 
-static int auto_gc_ctable     = 1;
-static double ctable_gc_thres = 0.5;
+static int auto_gc_amp_table  = 1;
+static double amp_table_gc_thres = 0.5;
 
 void
-qdd_set_auto_gc_ctable(bool enabled)
+qdd_set_auto_gc_amp_table(bool enabled)
 {
-    auto_gc_ctable = enabled;
+    auto_gc_amp_table = enabled;
 }
 
 void
-qdd_set_gc_ctable_thres(double fraction_filled)
+qdd_set_gc_amp_table_thres(double fraction_filled)
 {
-    ctable_gc_thres = fraction_filled;
+    amp_table_gc_thres = fraction_filled;
 }
 
 double
-qdd_get_gc_ctable_thres()
+qdd_get_gc_amp_table_thres()
 {
-    return ctable_gc_thres;
+    return amp_table_gc_thres;
 }
 
 
 void
-qdd_gc_ctable(QDD *keep)
+qdd_gc_amp_table(QDD *keep)
 {
     LACE_ME;
     // 1. Create new amp table
@@ -819,12 +849,12 @@ TASK_IMPL_1(QDD, _fill_new_amp_table, QDD, qdd)
 }
 
 void
-qdd_test_gc_ctable(QDD *keep)
+qdd_test_gc_amp_table(QDD *keep)
 {
-    uint64_t entries = get_ctable_entries_estimate();
-    uint64_t size    = get_ctable_size();
-    if ( ((double)entries / (double)size) > ctable_gc_thres )
-        qdd_gc_ctable(keep);
+    uint64_t entries = get_table_entries_estimate();
+    uint64_t size    = get_table_size();
+    if ( ((double)entries / (double)size) > amp_table_gc_thres )
+        qdd_gc_amp_table(keep);
 }
 
 /*************************</cleaning amplitude table>**************************/
@@ -833,11 +863,33 @@ qdd_test_gc_ctable(QDD *keep)
 
 /*******************************<applying gates>*******************************/
 
+// temp trigger for gc of node table
+static int periodic_gc_nodetable = 0;
+static uint64_t gate_counter = 0;
+void
+qdd_set_periodic_gc_nodetable(int every_n_gates)
+{
+    periodic_gc_nodetable = every_n_gates;
+}
+
+
+
+
 static void
 qdd_do_before_gate(QDD* qdd)
 {
     // check if ctable needs gc
-    if (auto_gc_ctable) qdd_test_gc_ctable(qdd);
+    if (auto_gc_amp_table) qdd_test_gc_amp_table(qdd);
+
+    if (periodic_gc_nodetable) {
+        gate_counter++;
+        if (gate_counter % periodic_gc_nodetable ==  0) {
+            LACE_ME;
+            qdd_refs_push(*qdd);
+            sylvan_gc();
+            qdd_refs_pop(1);
+        }
+    }
 
     // log stuff (if logging is enabled)
     qdd_stats_log(*qdd);
@@ -947,6 +999,7 @@ TASK_IMPL_2(QDD, qdd_plus_amp, QDD, a, QDD, b)
     return res;
 }
 
+/*
 TASK_IMPL_2(QDD, qdd_plus_comp_wrap, QDD, a, QDD, b)
 {
     complex_t ca, cb;
@@ -954,6 +1007,7 @@ TASK_IMPL_2(QDD, qdd_plus_comp_wrap, QDD, a, QDD, b)
     cb = comp_value(QDD_AMP(b));
     return CALL(qdd_plus_complex, QDD_PTR(a), QDD_PTR(b), ca, cb);
 }
+*/
 
 /**
  * Version of qdd_plus which propagates complex_t's down instead of first
@@ -962,6 +1016,7 @@ TASK_IMPL_2(QDD, qdd_plus_comp_wrap, QDD, a, QDD, b)
  * table (which is shared between threads). Drawback is that now these complex 
  * structs (made of floating point values) are keys for the operation cache.
  */
+/*
 TASK_IMPL_4(QDD, qdd_plus_complex, PTR, a, PTR, b, complex_t, ca, complex_t, cb)
 {
     // Trivial cases // Q: use exact or approx?
@@ -1036,6 +1091,7 @@ TASK_IMPL_4(QDD, qdd_plus_complex, PTR, a, PTR, b, complex_t, ca, complex_t, cb)
     }
     return res;
 }
+*/
 
 TASK_IMPL_3(QDD, qdd_gate_rec_amp, QDD, q, uint32_t, gate, BDDVAR, target)
 {
@@ -1096,6 +1152,7 @@ TASK_IMPL_3(QDD, qdd_gate_rec_amp, QDD, q, uint32_t, gate, BDDVAR, target)
     return res;
 }
 
+/*
 TASK_IMPL_3(QDD, qdd_gate_rec_complex, QDD, qdd, uint32_t, gateid, BDDVAR, target)
 {
     // Trivial cases
@@ -1155,6 +1212,7 @@ TASK_IMPL_3(QDD, qdd_gate_rec_complex, QDD, qdd, uint32_t, gateid, BDDVAR, targe
     res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     return res;
 }
+*/
 
 TASK_IMPL_5(QDD, qdd_cgate_rec_amp, QDD, q, uint32_t, gate, BDDVAR*, cs, uint32_t, ci, BDDVAR, t)
 {
@@ -1163,6 +1221,10 @@ TASK_IMPL_5(QDD, qdd_cgate_rec_amp, QDD, q, uint32_t, gate, BDDVAR*, cs, uint32_
     if (c == QDD_INVALID_VAR || ci > MAX_CONTROLS) {
         return CALL(qdd_gate_rec_amp, q, gate, t);
     }
+
+    assert(c < t && "ctrl < target required");
+    if (ci > 0) 
+        assert(cs[ci-1] < cs[ci]  && "order required for multiple controls");
 
     BDDVAR var;
     QDD res, low, high;
@@ -1214,6 +1276,7 @@ TASK_IMPL_5(QDD, qdd_cgate_rec_amp, QDD, q, uint32_t, gate, BDDVAR*, cs, uint32_
     return res;
 }
 
+/*
 TASK_IMPL_5(QDD, qdd_cgate_rec_complex, QDD, q, uint32_t, gate, BDDVAR*, cs, uint32_t, ci, BDDVAR, t)
 {
     // Get current control qubit. If no more control qubits, apply gate here
@@ -1221,6 +1284,10 @@ TASK_IMPL_5(QDD, qdd_cgate_rec_complex, QDD, q, uint32_t, gate, BDDVAR*, cs, uin
     if (c == QDD_INVALID_VAR || ci > MAX_CONTROLS) {
         return CALL(qdd_gate_rec_complex, q, gate, t);
     }
+
+    assert(c < t && "ctrl < target required");
+    if (ci > 0) 
+        assert(cs[ci-1] < cs[ci]  && "order required for multiple controls");
 
     BDDVAR var;
     QDD res, low, high;
@@ -1273,6 +1340,7 @@ TASK_IMPL_5(QDD, qdd_cgate_rec_complex, QDD, q, uint32_t, gate, BDDVAR*, cs, uin
     res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     return res;
 }
+*/
 
 TASK_IMPL_6(QDD, qdd_cgate_range_rec_amp, QDD, q, uint32_t, gate, BDDVAR, c_first, BDDVAR, c_last, BDDVAR, t, BDDVAR, k)
 {
@@ -1280,6 +1348,9 @@ TASK_IMPL_6(QDD, qdd_cgate_range_rec_amp, QDD, q, uint32_t, gate, BDDVAR, c_firs
     if (k > c_last) {
         return CALL(qdd_gate_rec_amp, q, gate, t);
     }
+
+    assert(c_first <= c_last);
+    assert(c_last < t);
 
     // Check cache
     QDD res;
@@ -1340,12 +1411,16 @@ TASK_IMPL_6(QDD, qdd_cgate_range_rec_amp, QDD, q, uint32_t, gate, BDDVAR, c_firs
     return res;
 }
 
+/*
 TASK_IMPL_6(QDD, qdd_cgate_range_rec_complex, QDD, q, uint32_t, gate, BDDVAR, c_first, BDDVAR, c_last, BDDVAR, t, BDDVAR, k)
 {
     // Past last control (done with "control part" of controlled gate)
     if (k > c_last) {
         return CALL(qdd_gate_rec_complex, q, gate, t);
     }
+
+    assert(c_first <= c_last);
+    assert(c_last < t);
 
     // Check cache
     QDD res;
@@ -1403,11 +1478,12 @@ TASK_IMPL_6(QDD, qdd_cgate_range_rec_complex, QDD, q, uint32_t, gate, BDDVAR, c_
     res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     return res;
 }
+*/
 
 /* Wrapper for matrix vector multiplication. */
 TASK_IMPL_3(QDD, qdd_matvec_mult, QDD, mat, QDD, vec, BDDVAR, nvars)
 {
-    assert(!auto_gc_ctable && "auto gc of ctable not implemented for mult operations");
+    assert(!auto_gc_amp_table && "auto gc of ctable not implemented for mult operations");
     qdd_do_before_gate(&vec);
     return CALL(qdd_matvec_mult_rec, mat, vec, nvars, 0);
 }
@@ -1415,7 +1491,7 @@ TASK_IMPL_3(QDD, qdd_matvec_mult, QDD, mat, QDD, vec, BDDVAR, nvars)
 /* Wrapper for matrix vector multiplication. */
 TASK_IMPL_3(QDD, qdd_matmat_mult, QDD, a, QDD, b, BDDVAR, nvars)
 {
-    assert(!auto_gc_ctable && "auto gc of ctable not implemented for mult operations");
+    assert(!auto_gc_amp_table && "auto gc of ctable not implemented for mult operations");
     //qdd_do_before_gate(&vec);
     return CALL(qdd_matmat_mult_rec, a, b, nvars, 0);
 }
@@ -1877,8 +1953,8 @@ qdd_measure_q0(QDD qdd, BDDVAR nvars, int *m, double *p)
     prob_low  *= prob_root;
     prob_high *= prob_root;
     if (fabs(prob_low + prob_high - 1.0) > cmap_get_tolerance()*1000) {
-        printf("prob sum = %.5lf (%.5lf + %.5lf)\n", prob_low + prob_high, prob_low, prob_high);
-        assert("probabilities don't sum to 1" && false);
+        printf("WARNING: prob sum = %.10lf (%.5lf + %.5lf)\n", prob_low + prob_high, prob_low, prob_high);
+        //assert("probabilities don't sum to 1" && false);
     }
 
     // flip a coin
@@ -1890,11 +1966,11 @@ qdd_measure_q0(QDD qdd, BDDVAR nvars, int *m, double *p)
     complex_t norm;
     if (*m == 0) {
         high = qdd_bundle_ptr_amp(QDD_TERMINAL, C_ZERO);
-        norm = comp_make(sqrt(prob_low), 0.0);
+        norm = comp_make(flt_sqrt(prob_low), 0.0);
     }
     else {
         low  = qdd_bundle_ptr_amp(QDD_TERMINAL, C_ZERO);
-        norm = comp_make(sqrt(prob_high), 0.0);
+        norm = comp_make(flt_sqrt(prob_high), 0.0);
     }
 
     QDD res = qdd_makenode(0, low, high);
@@ -2641,9 +2717,9 @@ qdd_fprintdot_label(FILE *out, AMP a)
     else if (a == C_ZERO) { fprintf(out, "0"); }
     else {
         complex_t val = comp_value(a);
-        if (val.r != 0.0) fprintf(out, "%.3lf", val.r);
-        if (val.i > 0.0) fprintf(out, "+%.3lfi", val.i);
-        else if (val.i < 0.0) fprintf(out, "%.3lfi", val.i);
+        if (val.r != 0.0) fprintf(out, "%.3lf", (double) val.r);
+        if (val.i > 0.0) fprintf(out, "+%.3lfi", (double) val.i);
+        else if (val.i < 0.0) fprintf(out, "%.3lfi", (double) val.i);
     }
     fprintf(out, "\"");
 }

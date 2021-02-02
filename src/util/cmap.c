@@ -19,14 +19,16 @@
 #define CACHE_LINE 8
 #define CACHE_LINE_SIZE 256
 
+// how many "blocks" of 64 bits for a single table entry
+#define entry_size (2*sizeof(fl_t)/8)
 
 typedef union {
     complex_t       c;
-    uint64_t        d[2];
+    uint64_t        d[entry_size];
 } bucket_t;
 
 // float "equality" tolerance
-static double TOLERANCE = 1e-14f;
+static long double TOLERANCE = 1e-14l;
 static const uint64_t EMPTY = 14738995463583502973ull;
 static const uint64_t LOCK  = 14738995463583502974ull;
 static const uint64_t CL_MASK = -(1ULL << CACHE_LINE);
@@ -41,29 +43,33 @@ struct cmap_s {
     // long doubles for the real and imaginary components?
 };
 
-void 
+static void __attribute__((unused))
 print_bucket_floats(bucket_t *b)
 {
-    printf("%.60f, %.60f\n", b->c.r, b->c.i);
+    printf("%.60Lf, %.60Lf\n", (long double) b->c.r, (long double) b->c.i);
 }
 
-void 
+static void __attribute__((unused))
 print_bucket_bits(bucket_t* b)
 {
-    printf("hex = %lx, %lx\n", b->d[0], b->d[1]);
+    printf("%016lx", b->d[0]);
+    for (unsigned int k = 1; k < entry_size; k++) {
+        printf(" %016lx", b->d[k]);
+    }
+    printf("\n");
 }
 
-double
+long double
 cmap_get_tolerance()
 {
     return TOLERANCE;
 }
 
-bool
+static bool
 complex_close(complex_t *in_table, const complex_t* to_insert)
 {
-    return ((fabs(in_table->r - to_insert->r) < TOLERANCE) && 
-            (fabs(in_table->i - to_insert->i) < TOLERANCE));
+    return ((flt_abs(in_table->r - to_insert->r) < TOLERANCE) && 
+            (flt_abs(in_table->i - to_insert->i) < TOLERANCE));
 }
 
 int
@@ -72,13 +78,16 @@ cmap_find_or_put (const cmap_t *cmap, const complex_t *v, ref_t *ret)
     bucket_t *val  = (bucket_t *) v;
 
     // Round the value to compute the hash with, but store the actual value v
-    complex_t round_v;
-    round_v.r = round(v->r / TOLERANCE) * TOLERANCE;
-    round_v.i = round(v->i / TOLERANCE) * TOLERANCE;
+    bucket_t round_v;
+    round_v.c.r = flt_round(v->r / TOLERANCE) * TOLERANCE;
+    round_v.c.i = flt_round(v->i / TOLERANCE) * TOLERANCE;
 
     // fix 0 possibly having a sign
-    if(round_v.r == 0.0) round_v.r = 0.0;
-    if(round_v.i == 0.0) round_v.i = 0.0;
+    if(round_v.c.r == 0.0) round_v.c.r = 0.0;
+    if(round_v.c.i == 0.0) round_v.c.i = 0.0;
+
+    //printf("(%.3f,%.3f) ",(float)round_v.c.r,(float)round_v.c.i);
+    //print_bucket_bits(&round_v); 
     
     uint32_t hash  = SuperFastHash(&round_v, sizeof(complex_t), 0);
     uint32_t prime = odd_primes[hash & PRIME_MASK];
@@ -99,8 +108,10 @@ cmap_find_or_put (const cmap_t *cmap, const complex_t *v, ref_t *ret)
             if (bucket->d[0] == EMPTY) {
                 if (cas(&bucket->d[0], EMPTY, LOCK)) {
                     *ret = ref;
-                    atomic_write (&bucket->d[1], val->d[1]);
-                    atomic_write (&bucket->d[0], val->d[0]);
+                    // write backwards (overwrite bucket->d[0] last)
+                    for (int k = entry_size-1; k >= 0; k--) {
+                        atomic_write (&bucket->d[k], val->d[k]);
+                    }
                     return 0;
                 }
             }
@@ -146,7 +157,10 @@ void
 print_bitvalues(const cmap_t *cmap, const ref_t ref)
 {
     bucket_t *b = (bucket_t *) cmap_get(cmap, ref);
-    printf("%016lx %016lx", b->d[0], b->d[1]);
+    printf("%016lx", b->d[0]);
+    for (unsigned int k = 1; k < entry_size; k++) {
+        printf(" %016lx", b->d[k]);
+    }
 }
 
 cmap_t *

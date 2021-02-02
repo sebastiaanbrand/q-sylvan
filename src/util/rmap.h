@@ -1,8 +1,8 @@
-#ifndef CMAP_H
-#define CMAP_H
+#ifndef RMAP_H
+#define RMAP_H
 
 /**
-\file cmap.h
+\file rmap.h
 \brief Lockless non-resizing hash table implementation for fixed-length keys
 
 @inproceedings{Laarman:2010:BMR:1998496.1998541,
@@ -24,13 +24,12 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
-#include "flt.h"
 
 
 /**
 \typedef Lockless hastable database.
 */
-typedef struct cmap_s cmap_t;
+typedef struct rmap_s rmap_t;
 
 typedef size_t ref_t;
 
@@ -39,14 +38,14 @@ typedef size_t ref_t;
 \param len The length of the vectors to be stored here
 \return the hashtable
 */
-extern cmap_t *cmap_create (uint64_t size, double tolerance);
+extern rmap_t *rmap_create (uint64_t size, double tolerance);
 
-extern long double cmap_get_tolerance();
+extern double rmap_get_tolerance();
 
 /**
 \brief Free the memory used by a dbs.
 */
-extern void cmap_free (cmap_t *dbs);
+extern void rmap_free (rmap_t *dbs);
 
 /**
 \brief Find a vector with respect to a database and insert it if it cannot be fo
@@ -56,12 +55,12 @@ und.
 \retval idx The index that the vector was found or inserted at
 \return 1 if the vector was present, 0 if it was added, -1 if table was full
 */
-extern int cmap_find_or_put (const cmap_t *dbs, const complex_t *v, ref_t *ret);
+extern int rmap_find_or_put (const rmap_t *dbs, const double *v, ref_t *ret);
 
-extern complex_t *cmap_get (const cmap_t *dbs, const ref_t ref);
+extern double *rmap_get (const rmap_t *dbs, const ref_t ref);
 
-extern uint64_t cmap_count_entries (const cmap_t *cmap);
+extern uint64_t rmap_count_entries (const rmap_t *rmap);
 
-extern void print_bitvalues(const cmap_t *dbs, const ref_t ref);
+extern void rmap_print_bitvalues(const rmap_t *dbs, const ref_t ref);
 
-#endif // CMAP
+#endif // RMAP

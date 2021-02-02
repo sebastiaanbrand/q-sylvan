@@ -15,34 +15,48 @@ mmiller@cs.uvic.ca
 
 #include "sylvan_int.h"
 #include "sylvan_qdd_complex.h"
-#include "util/cmap.h"
 
 
 /**********************************************
 Compute trig functions for angle factor*Pi/div
 Note use of cosl and sinl for long double computation
 **********************************************/
-#define qdd_cos(fac,div) cosl((long double)(fac)*Pi/(long double)(div))
-#define qdd_sin(fac,div) sinl((long double)(fac)*Pi/(long double)(div))
-
-
+//#define qdd_cos(fac,div) cosl((long double)(fac)*Pi/(long double)(div))
+//#define qdd_sin(fac,div) sinl((long double)(fac)*Pi/(long double)(div))
 static long double Pi;    // set value of global Pi
 
-
+// Table parameters
 static const double default_tolerance = 1e-14;
-size_t ctable_size;
-size_t ctable_entries_est;
-DECLARE_THREAD_LOCAL(ctable_entries_local, size_t); // these are added to _est
-static const uint64_t ctable_entries_local_buffer = 1000; // every 1000 entries
+static double tolerance;
+static amp_storage_backend_t amp_backend;
+size_t table_size;
+
+// Keep estimate for number of entries for gc purposes
+size_t table_entries_est;
+DECLARE_THREAD_LOCAL(table_entries_local, size_t); // these are added to _est
+static const uint64_t table_entries_local_buffer = 1000; // every 1000 entries
+
+// Actual table (old is used for gc purposes)
 cmap_t *ctable;
 cmap_t *ctable_old;
+
+// TODO: "merge" ctable and rtable code in a cleaner way
+//size_t rtable_entries_est;
+//DECLARE_THREAD_LOCAL(rtable_entries_local, size_t); // these are added to _est
+//static const uint64_t rtable_entries_local_buffer = 1000; // every 1000 entries
+rmap_t *rtable;
+rmap_t *rtable_old;
+
+tree_map_t *rtree;
+tree_map_t *rtree_old;
+
 static bool CACHE_AMP_OPS = true;
 
 
 /* Shorthand functions for making complex numbers */
 
 complex_t
-comp_make(double r, double i)
+comp_make(fl_t r, fl_t i)
 {
     complex_t res;
     res.r = r;
@@ -51,11 +65,11 @@ comp_make(double r, double i)
 }
 
 complex_t
-comp_make_angle(double theta)
+comp_make_angle(fl_t theta)
 {
     complex_t c;
-    c.r = cos(theta);
-    c.i = sin(theta);
+    c.r = flt_cos(theta);
+    c.i = flt_sin(theta);
     return c;
 }
 
@@ -77,12 +91,10 @@ comp_minus_one()
     return comp_make(-1.0, 0.0);
 }
 
-
-
-double
+fl_t
 comp_qmake(int a, int b, int c)
 {
-    return (((double) a + ((double) b) * sqrt (2.0)) / (double) (c));
+    return (( a +  b * flt_sqrt(2.0)) / c);
 }
 
 
@@ -250,7 +262,7 @@ complex_t
 comp_abs(complex_t a)
 {
     complex_t res;
-    res.r = sqrt( (a.r*a.r) + (a.i*a.i) );
+    res.r = flt_sqrt( (a.r*a.r) + (a.i*a.i) );
     res.i = 0.0;
     return res;
 }
@@ -304,7 +316,7 @@ complex_t
 comp_div(complex_t a, complex_t b)
 {
     complex_t res;
-    double denom;
+    fl_t denom;
     if (b.i == 0.0) {
         res.r = a.r / b.r;
         res.i = a.i / b.r;
@@ -319,7 +331,7 @@ comp_div(complex_t a, complex_t b)
 double
 comp_to_prob(complex_t a)
 {
-    double abs = sqrt( (a.r*a.r) + (a.i*a.i) );
+    double abs = flt_sqrt ( (a.r*a.r) + (a.i*a.i) );
     return (abs*abs);
 }
 
@@ -336,9 +348,9 @@ bool comp_approx_equal(complex_t a, complex_t b)
     return comp_epsilon_close(a, b, cmap_get_tolerance());
 }
 
-bool comp_epsilon_close(complex_t a, complex_t b, double epsilon)
+bool comp_epsilon_close(complex_t a, complex_t b, long double epsilon)
 {
-    return ( (fabs(a.r - b.r) < epsilon) && (fabs(a.i - b.i) < epsilon) );
+    return ( (flt_abs(a.r - b.r) < epsilon) && (flt_abs(a.i - b.i) < epsilon) );
 }
 
 
@@ -359,22 +371,112 @@ comp_lookup(complex_t c)
     return (AMP) res;
 }
 
-AMP
-comp_try_lookup(complex_t c, bool *success)
+static AMP
+comp_try_lookup_ctable(complex_t c, bool *success)
 {
     uint64_t res;
     int present = cmap_find_or_put(ctable, &c, &res);
     if (present == 0) {
         *success = true;
-        ctable_entries_local += 1;
-        if (ctable_entries_local >= ctable_entries_local_buffer) {
-            __sync_fetch_and_add(&ctable_entries_est, ctable_entries_local);
-            ctable_entries_local = 0;
+        table_entries_local += 1;
+        if (table_entries_local >= table_entries_local_buffer) {
+            __sync_fetch_and_add(&table_entries_est, table_entries_local);
+            table_entries_local = 0;
         }
     }
     else if (present == 1) *success = true;
     else                   *success = false;
     return (AMP) res;
+}
+
+static AMP
+try_lookup_rtable(double a, bool *success) // TODO: change to fl_t
+{
+    uint64_t res;
+    int present = rmap_find_or_put(rtable, &a, &res);
+    if (present == 0) {
+        *success = true;
+        table_entries_local += 1;
+        if (table_entries_local >= table_entries_local_buffer) {
+            __sync_fetch_and_add(&table_entries_est, table_entries_local);
+            table_entries_local = 0;
+        }
+    }
+    else if (present == 1) *success = true;
+    else                   *success = false;
+    return (AMP) res;
+}
+
+static AMP
+try_lookup_rtree(fl_t a, bool *success)
+{
+    unsigned int res;
+    int present = tree_map_find_or_put(rtree, a, &res);
+    if (present == 0) {
+        *success = true;
+        table_entries_local += 1;
+        if (table_entries_local >= table_entries_local_buffer) {
+            __sync_fetch_and_add(&table_entries_est, table_entries_local);
+            table_entries_local = 0;
+        }
+    }
+    else if (present == 1) *success = true;
+    else                   *success = false;
+    return (AMP) res;
+}
+
+static AMP
+pack_indices_rtable(AMP r, AMP i)
+{
+    uint64_t index_size = (int) ceil(log2(table_size));
+    AMP res = ((r << index_size) | i);
+    return res;
+}
+
+static void
+unpack_indices_rtable(AMP bundle, AMP *index_r, AMP *index_i)
+{
+    uint64_t index_size = (int) ceil(log2(table_size));
+    *index_r = (bundle >> index_size);
+    *index_i = (bundle & ((1<<index_size)-1));
+}
+
+static AMP
+comp_try_lookup_rtable(complex_t c, bool *success)
+{
+    bool suc1, suc2;
+    AMP amp1 = try_lookup_rtable(c.r, &suc1);
+    AMP amp2 = try_lookup_rtable(c.i, &suc2);
+    *success = (suc1 && suc2);
+    return pack_indices_rtable(amp1, amp2);
+}
+
+static AMP
+comp_try_lookup_rtree(complex_t c, bool *success)
+{
+    bool suc1, suc2;
+    AMP amp1 = try_lookup_rtree(c.r, &suc1);
+    AMP amp2 = try_lookup_rtree(c.i, &suc2);
+    *success = (suc1 && suc2);
+    return pack_indices_rtable(amp1, amp2);
+}
+
+AMP
+comp_try_lookup(complex_t c, bool *success)
+{
+    if (amp_backend == REAL_HASHMAP) {
+        return comp_try_lookup_rtable(c, success);
+    }
+    else if (amp_backend == COMP_HASHMAP) {
+        return comp_try_lookup_ctable(c, success);
+    }
+    else if (amp_backend == REAL_TREE) {
+        return comp_try_lookup_rtree(c, success);
+    }
+    else {
+        printf("lookup: backend not recognized\n");
+        exit(1);
+    }
 }
 
 complex_t
@@ -386,9 +488,33 @@ comp_value(AMP a)
     if (a == C_MIN_ONE) return comp_minus_one();
 
     // lookup
-    complex_t * res;
-    res = cmap_get(ctable, a);
-    return *res;
+    complex_t res;
+    if (amp_backend == REAL_HASHMAP) {
+        AMP idx_r, idx_i;
+        double *r, *i;
+        unpack_indices_rtable(a, &idx_r, &idx_i);
+        r = rmap_get(rtable, idx_r);
+        i = rmap_get(rtable, idx_i);
+        res.r = *r;
+        res.i = *i;
+    }
+    else if (amp_backend == COMP_HASHMAP) {
+        res = *cmap_get(ctable, a);
+    }
+    else if (amp_backend == REAL_TREE) {
+        AMP idx_r, idx_i;
+        double *r, *i;
+        unpack_indices_rtable(a, &idx_r, &idx_i);
+        r = tree_map_get(rtree, idx_r);
+        i = tree_map_get(rtree, idx_i);
+        res.r = *r;
+        res.i = *i;
+    }
+    else {
+        printf("get value: backend not recognized\n");
+        exit(1);
+    }
+    return res;
 }
 
 /* used for gc of ctable */
@@ -400,9 +526,33 @@ comp_value_old(AMP a)
     if (a == C_ONE)     return comp_one();
     if (a == C_MIN_ONE) return comp_minus_one();
 
-    complex_t * res;
-    res = cmap_get(ctable_old, a);
-    return *res;
+    complex_t res;
+    if (amp_backend == REAL_HASHMAP) {
+        AMP idx_r, idx_i;
+        double *r, *i;
+        unpack_indices_rtable(a, &idx_r, &idx_i);
+        r = rmap_get(rtable_old, idx_r);
+        i = rmap_get(rtable_old, idx_i);
+        res.r = *r;
+        res.i = *i;
+    }
+    else if (amp_backend == COMP_HASHMAP) {
+        res = *cmap_get(ctable_old, a);
+    }
+    else if (amp_backend == REAL_TREE) {
+        AMP idx_r, idx_i;
+        double *r, *i;
+        unpack_indices_rtable(a, &idx_r, &idx_i);
+        r = tree_map_get(rtree_old, idx_r);
+        i = tree_map_get(rtree_old, idx_i);
+        res.r = *r;
+        res.i = *i;
+    }
+    else {
+        printf("get value old: backend not recognized\n");
+        exit(1);
+    }
+    return res;
 }
 
 
@@ -425,11 +575,11 @@ comp_print_digits(complex_t c, uint32_t digits)
 {
     if(c.r >= 0)
         printf(" ");
-    printf("%.*f", digits, c.r);
+    printf("%.*Lf", digits, (long double) c.r);
     if (c.i > 0)
-        printf("+%.*fi", digits, c.i);
+        printf("+%.*Lfi", digits, (long double) c.i);
     if (c.i < 0)
-        printf("%.*fi", digits, c.i);
+        printf("%.*Lfi", digits, (long double) c.i);
 }
 
 void
@@ -437,11 +587,11 @@ comp_print_digits_sci(complex_t c, uint32_t digits)
 {
     if(c.r >= 0)
         printf(" ");
-    printf("%.*e", digits, c.r);
+    printf("%.*Le", digits, (long double) c.r);
     if (c.i > 0)
-        printf("+%.*ei", digits, c.i);
+        printf("+%.*Lei", digits, (long double) c.i);
     if (c.i < 0)
-        printf("%.*ei", digits, c.i);
+        printf("%.*Lei", digits, (long double) c.i);
 }
 
 void
@@ -469,7 +619,7 @@ get_custom_gate_id()
 }
 
 uint32_t
-GATEID_Rz(double a)
+GATEID_Rz(fl_t a)
 {
     // get gate id for this gate
     uint32_t gate_id = get_custom_gate_id();
@@ -487,18 +637,18 @@ GATEID_Rz(double a)
 }
 
 uint32_t
-GATEID_Rx(double a)
+GATEID_Rx(fl_t a)
 {
     // get gate id for this gate
     uint32_t gate_id = get_custom_gate_id();
 
     // initialize gate
-    double theta_over_2 = Pi * a;
+    fl_t theta_over_2 = Pi * a;
     AMP u00, u01, u10, u11;
-    u00 = comp_lookup(comp_make(cos(theta_over_2), 0.0));
-    u01 = comp_lookup(comp_make(0.0, -sin(theta_over_2)));
-    u10 = comp_lookup(comp_make(0.0, -sin(theta_over_2)));
-    u11 = comp_lookup(comp_make(cos(theta_over_2), 0.0));
+    u00 = comp_lookup(comp_make(flt_cos(theta_over_2), 0.0));
+    u01 = comp_lookup(comp_make(0.0, -flt_sin(theta_over_2)));
+    u10 = comp_lookup(comp_make(0.0, -flt_sin(theta_over_2)));
+    u11 = comp_lookup(comp_make(flt_cos(theta_over_2), 0.0));
     gates[gate_id][0] = u00; gates[gate_id][1] = u01;
     gates[gate_id][2] = u10; gates[gate_id][3] = u11;
 
@@ -507,18 +657,18 @@ GATEID_Rx(double a)
 }
 
 uint32_t
-GATEID_Ry(double a)
+GATEID_Ry(fl_t a)
 {
     // get gate id for this gate
     uint32_t gate_id = get_custom_gate_id();
 
     // initialize gate
-    double theta_over_2 = Pi * a;
+    fl_t theta_over_2 = Pi * a;
     AMP u00, u01, u10, u11;
-    u00 = comp_lookup(comp_make(cos(theta_over_2),  0.0));
-    u01 = comp_lookup(comp_make(-sin(theta_over_2), 0.0));
-    u10 = comp_lookup(comp_make(sin(theta_over_2),  0.0));
-    u11 = comp_lookup(comp_make(cos(theta_over_2),  0.0));
+    u00 = comp_lookup(comp_make(flt_cos(theta_over_2),  0.0));
+    u01 = comp_lookup(comp_make(-flt_sin(theta_over_2), 0.0));
+    u10 = comp_lookup(comp_make(flt_sin(theta_over_2),  0.0));
+    u11 = comp_lookup(comp_make(flt_cos(theta_over_2),  0.0));
     gates[gate_id][0] = u00; gates[gate_id][1] = u01;
     gates[gate_id][2] = u10; gates[gate_id][3] = u11;
 
@@ -532,11 +682,32 @@ GATEID_Ry(double a)
 /* Managing the complex value table */
 
 void
-init_amplitude_table(size_t size, double tolerance)
+init_amplitude_table(size_t size, long double tol, amp_storage_backend_t backend)
 {
-    ctable_size = size;
-    ctable_entries_est = 0;
-    ctable_entries_local = 0;
+    tolerance = (tol < 0) ? default_tolerance : tol;
+    table_size = size;
+    amp_backend = backend;
+
+    table_entries_est = 0;
+    table_entries_local = 0;
+
+    // TODO: something cleaner than this if structure
+    if (amp_backend == REAL_HASHMAP) {
+        rtable = rmap_create(table_size, tolerance);
+    }
+    else if (amp_backend == COMP_HASHMAP) {
+        ctable = cmap_create(table_size, tolerance);
+    }
+    else if (amp_backend == REAL_TREE) {
+        rtree = tree_map_create(table_size, tolerance);
+        //printf("real tree not integrated into complex value handling yet\n");
+        //exit(1);
+    }
+    else {
+        printf("init amp table: backend not recognized\n");
+        exit(1);
+    }
+    
     // NOTE: the sum of the local counters sometimes exceeds the actual total
     // number of entries (when just counting the global value with atomic adds
     // after every insert). This might be because 'ctable_entries_local = 0' 
@@ -544,14 +715,12 @@ init_amplitude_table(size_t size, double tolerance)
     // not a huge issue though.
     // TODO: figure out how to get lace to handle this counting better
 
-    if (tolerance < 0) tolerance = default_tolerance;
-    ctable = cmap_create(ctable_size, tolerance);
 
     C_ONE     = comp_lookup(comp_one());
     C_ZERO    = comp_lookup(comp_zero());
     C_MIN_ONE = comp_lookup(comp_minus_one());
 
-    Pi = 2.0 * acos(0.0);
+    Pi = 2.0 * flt_acos(0.0);
 
     init_gates();
 }
@@ -580,8 +749,8 @@ init_gates()
     gates[k][2] = C_ZERO; gates[k][3] = C_MIN_ONE;
 
     k = GATEID_H;
-    gates[k][0] = gates[k][1] = gates[k][2] = comp_lookup(comp_make(1.0/sqrt(2.0),0));
-    gates[k][3] = comp_lookup(comp_make(-1.0/sqrt(2.0),0));
+    gates[k][0] = gates[k][1] = gates[k][2] = comp_lookup(comp_make(1.0/flt_sqrt(2.0),0));
+    gates[k][3] = comp_lookup(comp_make(-1.0/flt_sqrt(2.0),0));
 
     k = GATEID_S;
     gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
@@ -589,11 +758,11 @@ init_gates()
 
     k = GATEID_T;
     gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
-    gates[k][2] = C_ZERO; gates[k][3] = comp_lookup(comp_make(1.0/sqrt(2.0), 1.0/sqrt(2.0)));
+    gates[k][2] = C_ZERO; gates[k][3] = comp_lookup(comp_make(1.0/flt_sqrt(2.0), 1.0/flt_sqrt(2.0)));
 
     k = GATEID_Tdag;
     gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
-    gates[k][2] = C_ZERO; gates[k][3] = comp_lookup(comp_make(1.0/sqrt(2.0), -1.0/sqrt(2.0)));
+    gates[k][2] = C_ZERO; gates[k][3] = comp_lookup(comp_make(1.0/flt_sqrt(2.0), -1.0/flt_sqrt(2.0)));
 
     k = GATEID_sqrtX;
     gates[k][0] = comp_lookup(comp_make(0.5, 0.5)); gates[k][1] = comp_lookup(comp_make(0.5,-0.5));
@@ -614,18 +783,18 @@ init_phase_gates(int n)
     // add gate R_k to gates table
     // (note that R_0 = I, R_1 = Z, R_2 = S, R_4 = T)
     uint32_t gate_id;
-    double angle;
+    fl_t angle;
     complex_t cartesian;
     for (int k=0; k<=n; k++) {
         // forward rotation
-        angle = 2*Pi / pow(2.0, (double) k);
+        angle = 2*Pi / (fl_t)(1<<k);
         cartesian = comp_make_angle(angle);
         gate_id = GATEID_Rk(k);
         gates[gate_id][0] = C_ONE;  gates[gate_id][1] = C_ZERO;
         gates[gate_id][2] = C_ZERO; gates[gate_id][3] = comp_lookup(cartesian);
 
         // backward rotation
-        angle = -2*Pi / pow(2.0, (double) k);
+        angle = -2*Pi / (fl_t)(1<<k);
         cartesian = comp_make_angle(angle);
         gate_id = GATEID_Rk_dag(k);
         gates[gate_id][0] = C_ONE;  gates[gate_id][1] = C_ZERO;
@@ -640,39 +809,72 @@ count_amplitude_table_enries()
 }
 
 uint64_t
-get_ctable_entries_estimate()
+get_table_entries_estimate()
 {
-    return ctable_entries_est;
+    return table_entries_est;
 }
 
 uint64_t
-get_ctable_size()
+get_table_size()
 {
-    return ctable_size;
+    return table_size;
 }
 
 void
 free_amplitude_table()
 {
-    cmap_free(ctable);
+    if (amp_backend == REAL_HASHMAP) {
+        rmap_free(rtable);
+    }
+    else if (amp_backend == COMP_HASHMAP) {
+        cmap_free(ctable);
+    }
+    else if (amp_backend == REAL_TREE) {
+        tree_map_free(rtree);
+    }
 }
 
 void
 init_new_empty_table()
 {
     // point old to current (full) ctable
-    ctable_old = ctable;
+    if (amp_backend == REAL_HASHMAP) {
+        rtable_old = rtable;
+    }
+    else if (amp_backend == COMP_HASHMAP) {
+        ctable_old = ctable;
+    }
+    else if (amp_backend == REAL_TREE) {
+        rtree_old = rtree;
+    }
 
     // re-init new (empty) ctable
-    double tolerance = cmap_get_tolerance();
-    init_amplitude_table(ctable_size, tolerance);
+    double tolerance = 0;
+    if (amp_backend == REAL_HASHMAP) {
+        tolerance = rmap_get_tolerance();
+    }
+    else if (amp_backend == COMP_HASHMAP) {
+        tolerance = cmap_get_tolerance();
+    }
+    else if (amp_backend == REAL_TREE) {
+        tolerance = tree_map_get_tolerance();
+    }
+    init_amplitude_table(table_size, tolerance, amp_backend);
 }
 
 void
 delete_old_table()
 {
     // delete  old (full) table
-    cmap_free(ctable_old);
+    if (amp_backend == REAL_HASHMAP) {
+        rmap_free(rtable_old);
+    }
+    else if (amp_backend == COMP_HASHMAP) {
+        cmap_free(ctable_old);
+    }
+    else if (amp_backend == REAL_TREE) {
+        tree_map_free(rtree_old);
+    }
 }
 
 AMP

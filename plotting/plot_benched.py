@@ -1,10 +1,12 @@
 import os
 import argparse
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 
 plt_format = '.png'
 bench_path = '../build/benchmark_data/'
+combined_file_8 = bench_path + 'combined_8.csv'
 group_by = {'grover':'qubits',
             'shor':'qubits',
             'supremacy':'depth',
@@ -24,6 +26,8 @@ def parse_stuff():
     parser = argparse.ArgumentParser()
     parser.add_argument('--replot', help='redo all existing plots',
                         dest='replot', default=False, action='store_true')
+    parser.add_argument('--combined', help='plot current combined.csv data',
+                        dest='only_combined', default=False, action='store_true')
     global args 
     args = parser.parse_args()
 
@@ -116,6 +120,12 @@ def plot_concurrency_performance(data_folder, alg_name):
         leg = '{} {}, time $w_1$ ({},{})'.format(int(g_id), group_by[alg_name], np.min(w1_times), np.max(w1_times))
         lengend_entries.append(leg)
 
+        # add to combined plot if workers are 1,2,4,8
+        if (np.all(workers == np.array([1,2,4,8]))):
+            with  open(combined_file_8, "a") as f:
+                f.write("{}-{},".format(alg_name, int(g_id)))
+                f.write("{},{},{},{}\n".format(speedups[0], speedups[1], speedups[2], speedups[3]))
+
     plt.ylabel('average speedup')
     plt.xlabel('number of workers')
     plt.xticks(workers.astype(int))
@@ -153,17 +163,63 @@ def plot_runtimes(data_folder, alg_name, x_axis='qubits'):
     plt.clf()
     plt.close()
 
+def init_combined_file():
+    with  open(combined_file_8, "w") as f:
+        f.write("name,1,2,4,8\n")
+
+
+def plot_combined(workers=[1,2,4,8]):
+
+    output_path = bench_path + 'concurrency_8' + plt_format
+    
+    df = pd.read_csv(combined_file_8)
+    data = df.loc[:,df.columns != 'name'].to_numpy()
+
+    lengend_entries = []
+
+    # todo: make this prettier
+    shades = {'supremacy':['#0051ff', '#023ab5', '#002b87'],
+              'shor':['#ff2f00', '#cc2600', '#9c1d00'],
+              'grover':['#84ff00', '#5cb300', '#509c00']}
+    counters = {'supremacy':0, 'shor':0, 'grover':0}
+
+    for index, row in df.iterrows():
+        if (row['name'][0] == '#'):
+            continue # skip 'commented' entries
+        alg_name = row['name'].split('-')[0]
+        color = shades[alg_name][counters[alg_name]]
+        counters[alg_name] += 1
+        plt.plot(workers, data[index], color=color)
+        lengend_entries.append(row['name'])
+
+    plt.ylabel('average speedup')
+    plt.xlabel('number of workers')
+    plt.xticks(workers)
+    plt.legend(lengend_entries)
+    plt.plot(workers, np.ones(len(workers)), color='grey', linestyle='--')
+    plt.savefig(output_path)
+    plt.clf()
+    plt.close()
+
+
 
 # iterates over all folders in the bench_path and plots everything it can plot
 def plot_all():
 
+    if (plot_concur_perf_bool):
+        init_combined_file()
+
     # iterate over all algorithms
     for alg_name in os.listdir(bench_path):
-        alg_path = bench_path + alg_name + '/'
+
+        #alg_path = bench_path + alg_name + '/'
+        alg_path = os.path.join(bench_path, alg_name)
+        if (not os.path.isdir(alg_path)):
+            continue
 
         # iterate over all experiments
         for exp_folder in os.listdir(alg_path):
-            exp_path = alg_path + exp_folder + '/'
+            exp_path = os.path.join(alg_path, exp_folder) + '/'
             if (not args.replot and 'concurrency.png' in os.listdir(exp_path)):
                 print('skipping {}/{}'.format(alg_name, exp_folder))
             else:
@@ -192,4 +248,7 @@ def plot_all():
 
 if __name__ == '__main__':
     parse_stuff()
-    plot_all()
+    if (args.only_combined):
+        plot_combined()
+    else:
+        plot_all()

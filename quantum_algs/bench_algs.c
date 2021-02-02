@@ -27,6 +27,7 @@ static size_t max_cachesize;
 static size_t ctable_size;
 static double ctable_tolerance;
 static double ctable_gc_thres;
+static int amp_backend;
 static int caching_granularity;
 
 /* for very deep circuits we don't want to log (i.e. count nodes, etc.) every gate */
@@ -51,8 +52,10 @@ write_parameters(FILE *file)
     fprintf(file, "  \"max_tablesize\": %ld,\n", max_tablesize);
     fprintf(file, "  \"min_cachesize\": %ld,\n", min_cachesize);
     fprintf(file, "  \"max_cachesize\": %ld,\n", max_cachesize);
-    fprintf(file, "  \"ctable_size\": %ld,\n", ctable_size);
-    fprintf(file, "  \"ctable_tolerance\": %.5e,\n", ctable_tolerance);
+    fprintf(file, "  \"amp_table_size\": %ld,\n", ctable_size);
+    fprintf(file, "  \"amp_table_tolerance\": %.5e,\n", ctable_tolerance);
+    fprintf(file, "  \"amp_storage_backend\": %d,\n", amp_backend);
+    fprintf(file, "  \"flt_quad\": %d,\n", flt_quad);
     fprintf(file, "  \"ctable_gc_thres\": %lf,\n", ctable_gc_thres);
     fprintf(file, "  \"propagate_complex\": %d,\n", propagate_complex);
     fprintf(file, "  \"caching_granularity\": %d\n", caching_granularity);
@@ -85,8 +88,8 @@ double bench_supremacy_5_4_once(uint32_t depth, uint32_t workers, uint64_t rseed
     // Init Sylvan
     sylvan_set_sizes(min_tablesize, max_tablesize, min_cachesize, max_cachesize);
     sylvan_init_package();
-    sylvan_init_qdd(ctable_size, ctable_tolerance);
-    qdd_set_gc_ctable_thres(ctable_gc_thres);
+    sylvan_init_qdd(ctable_size, ctable_tolerance, COMP_HASHMAP);
+    qdd_set_gc_amp_table_thres(ctable_gc_thres);
     qdd_set_caching_granularity(caching_granularity);
 
     qdd_stats_start(logfile);
@@ -138,8 +141,8 @@ double bench_random_circuit_once(int qubits, int gates, int workers, uint64_t rs
     // Init Sylvan
     sylvan_set_sizes(min_tablesize, max_tablesize, min_cachesize, max_cachesize);
     sylvan_init_package();
-    sylvan_init_qdd(ctable_size, ctable_tolerance);
-    qdd_set_gc_ctable_thres(ctable_gc_thres);
+    sylvan_init_qdd(ctable_size, ctable_tolerance, COMP_HASHMAP);
+    qdd_set_gc_amp_table_thres(ctable_gc_thres);
     qdd_set_caching_granularity(caching_granularity);
 
     qdd_stats_start(logfile);
@@ -196,8 +199,8 @@ double bench_grover_once(int num_bits, bool flag[], int workers, char *fpath,
     // Init Sylvan
     sylvan_set_sizes(min_tablesize, max_tablesize, min_cachesize, max_cachesize);
     sylvan_init_package();
-    sylvan_init_qdd(ctable_size, ctable_tolerance);
-    qdd_set_gc_ctable_thres(ctable_gc_thres);
+    sylvan_init_qdd(ctable_size, ctable_tolerance, amp_backend);
+    qdd_set_gc_amp_table_thres(ctable_gc_thres);
     qdd_set_caching_granularity(caching_granularity);
 
     QDD grov;
@@ -255,8 +258,8 @@ double bench_shor_once(uint64_t N, uint64_t a, int workers, int rseed, bool *suc
     // Init Sylvan
     sylvan_set_sizes(min_tablesize, max_tablesize, min_cachesize, max_cachesize);
     sylvan_init_package();
-    sylvan_init_qdd(ctable_size, ctable_tolerance);
-    qdd_set_gc_ctable_thres(ctable_gc_thres);
+    sylvan_init_qdd(ctable_size, ctable_tolerance, amp_backend);
+    qdd_set_gc_amp_table_thres(ctable_gc_thres);
     qdd_set_caching_granularity(caching_granularity);
 
     qdd_stats_start(logfile);
@@ -432,11 +435,12 @@ int bench_supremacy()
     int re_runs = 2;
 
     // runtimes are written to single file
-    double runtime, avg_gate_time, avg_nodes;
-    uint64_t nodes_peak, n_gates;
-    uint64_t plus_cacheput, gate_cacheput, cgate_cacheput;
-    uint64_t plus_cached, gate_cached, cgate_cached;
+    double runtime = 0, avg_gate_time = 0, avg_nodes = 0;
+    uint64_t nodes_peak = 0, n_gates = 0;
+    uint64_t plus_cacheput = 0, gate_cacheput = 0, cgate_cacheput = 0;
+    uint64_t plus_cached = 0, gate_cached = 0, cgate_cached = 0;
 
+    srand(42);
     for (uint32_t i = 0; i < len(depths); i++) {
         for (int r = 0; r < re_runs; r++) {
             uint64_t rseed = rand();
@@ -513,17 +517,27 @@ int bench_grover()
     // sylvan / qdd params
     min_tablesize = max_tablesize = 1LL<<25;
     min_cachesize = max_cachesize = 1LL<<16;
-    ctable_size   = 1LL<<23;
+
+    
+    
+    // for {14, 19, 24}
+    ctable_size = 1LL<<16;
     ctable_tolerance = 1e-14;
+    amp_backend = COMP_HASHMAP;
+    // for {29, 34, 38}
+    //ctable_size = 1LL<<23;
+    //ctable_tolerance = 1e-18; // note: use flt_quad 1 in flt.h
+    //using_rtable = false;
+
     ctable_gc_thres = 0.5;
     caching_granularity = 1;
     write_parameters(param_file);
 
     // different number of bits for the flag to test
-    int n_bits[] = {15, 20, 25, 30, 35, 40};
+    int n_bits[] = {14, 19, 24, 29, 34, 38};
     
     // different number of workers to test
-    int n_workers[] = {1, 2, 4, 8};
+    int n_workers[] = {1};//, 2, 4, 8};
 
     // different number of random flags to test
     int n_flags = 3;
@@ -626,8 +640,10 @@ int bench_shor()
     ctable_size   = 1LL<<20;
     ctable_gc_thres = 0.5;
     ctable_tolerance = 1e-14;
+    amp_backend = COMP_HASHMAP;
     caching_granularity = 1;
     write_parameters(param_file);
+    qdd_set_periodic_gc_nodetable(10000);
 
     // Different sized N to test
     //   3 x   5 =     15 (11 qubits)
@@ -701,6 +717,8 @@ int bench_shor()
             }
         }
     }
+
+    qdd_set_periodic_gc_nodetable(0);
 
     fclose(overview_file);
 
