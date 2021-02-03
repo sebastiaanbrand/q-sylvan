@@ -4,7 +4,9 @@
 #include "sylvan.h"
 #include "test_assert.h"
 #include "sylvan_qdd_complex.h"
+#include "sylvan_qdd_complex_mpreal.h"
 #include "sylvan_qdd_algebraic.h"
+
 
 bool VERBOSE = true;
 
@@ -281,6 +283,18 @@ int test_mpfr_tree_map_scope()
     if (scope2(map)) return 1;
     mpfr_tree_map_free(map);
     if(VERBOSE) printf("mpfr scope test:          ok\n");
+    return 0;
+}
+
+int test_mpreal_complex_operations()
+{
+    init_mpreal_amplitude_table(1<<12, 1e-14);
+
+    // mostly just have this here for now to make sure the inclusion of the 
+    // relevant header allows a C file to compile.
+    
+    free_mpreal_amplitude_table();
+    if(VERBOSE) printf("complex ops w/ mpreal:    WIP\n");
     return 0;
 }
 
@@ -2112,6 +2126,7 @@ int runtests()
     if (test_rmap()) return 1;
     if (test_tree_map()) return 1;
     if (test_mpfr_tree_map()) return 1;
+    if (test_mpreal_complex_operations()) return 1;
     if (test_mpfr_tree_map_scope()) return 1;
     if (test_algebraic()) return 1;
     if (test_with_cmap()) return 1;

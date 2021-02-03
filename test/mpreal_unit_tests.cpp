@@ -3,6 +3,7 @@
 #include <stdbool.h>
 
 #include "util/mpreal_tree_map.h"
+#include "sylvan_qdd_complex_mpreal.h"
 #include "test_assert.h"
 
 bool VERBOSE = true;
@@ -107,10 +108,22 @@ int test_mpfr_tree_map_scope()
     return 0;
 }
 
+int test_mpreal_complex_operations()
+{
+    init_mpreal_amplitude_table(1<<12, 1e-14);
+
+    // TODO: tests
+    
+    free_mpreal_amplitude_table();
+    if(VERBOSE) printf("complex ops w/ mpreal:    WIP\n");
+    return 0;
+}
+
 int runtests()
 {
     if (test_mpreal_tree_map()) return 1;
     if (test_mpfr_tree_map_scope()) return 1;
+    if (test_mpreal_complex_operations()) return 1;
     return 0;
 }
 
