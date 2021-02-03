@@ -1,104 +1,98 @@
 #include "mpreal_tree_map.h"
 
 #include <map>
-#include <mpreal.h>
 
 // float "equality" tolerance
-static mpfr::mpreal TOLERANCE; // default 1e-14
+static mpfr::mpreal TOLERANCE = 1e-14;
 
-/*
-static bool mpfr_close(mpfr_srcptr x, mpfr_srcptr y) 
+
+static bool complex_custom_comp(mpreal_complex x, mpreal_complex y)
 {
-    mpfr_t diff;
-    mpfr_init2(diff, MPFR_PREC);
-    mpfr_sub(diff, x, y, DEFAULT_RND);
-    int cmp = mpfr_cmpabs(TOLERANCE, diff); // 1 if |a| > |b|, 0 if |a| == |b|, -1 if |a| < |b|
-    mpfr_clear(diff); // not sure if we need to manually clear these
-    return (cmp >= 0);
+    if ((mpfr::abs(x.r - y.r) < TOLERANCE)) {
+        if ((mpfr::abs(x.i - y.i) < TOLERANCE)) {
+            // both within tolerance
+            return 0;
+        }
+        else {
+            return (x.i < y.i);
+        }
+    }
+    else {
+        return (x.r < y.r);
+    }
 }
-
-static bool mpfr_custom_comp(mpfr_srcptr x, mpfr_srcptr y)
-{
-    if (mpfr_close(x, y)) return 0;
-    else return mpfr_less_p(x, y);
-}
-
 
 struct custom_comparator
 {
-    bool operator() ( __mpfr_struct x, __mpfr_struct y ) const {
-    	return mpfr_custom_comp(&x, &y);
+    bool operator() (mpreal_complex x, mpreal_complex y) const {
+    	return complex_custom_comp(x, y);
     }
 };
-*/
 
 // map <key, val>
-typedef std::map<mpfr::mpreal, unsigned int> map_mpreal_to_int_t; // custom_comparator
-typedef std::map<unsigned int, mpfr::mpreal> map_int_to_mpreal_t;
+typedef std::map<mpreal_complex, unsigned int, custom_comparator> map_mpreal_to_int_t; // custom_comparator
+typedef std::map<unsigned int, mpreal_complex> map_int_to_mpreal_t;
 
 
 // (two way) map to assign unique ints to mpfr vals, using std::map (RB trees)
 struct mpreal_tree_map_s {
-    map_mpreal_to_int_t* mpfr_to_int;
-    map_int_to_mpreal_t* int_to_mpfr;
+    map_mpreal_to_int_t* mpreal_to_int;
+    map_int_to_mpreal_t* int_to_mpreal;
     unsigned int max_size;
     unsigned int entries;
 };
 
-/*
+
+
 // create()
-mpfr_tree_map_t *
-mpfr_tree_map_create(unsigned int ms, double tol)
+mpreal_tree_map_t *
+mpreal_tree_map_create(unsigned int ms, double tol)
 {
-    mpfr_tree_map_t *map = (mpfr_tree_map_t *) calloc(1, sizeof(mpfr_tree_map_t));
-    mpfr_init2(TOLERANCE, MPFR_PREC);
-    mpfr_set_d(TOLERANCE, tol, DEFAULT_RND);
+    mpfr::mpreal::set_default_prec(MPREAL_PREC);
+    mpreal_tree_map_t *map = (mpreal_tree_map_t *) calloc(1, sizeof(mpreal_tree_map_t));
+    if (tol > 0) TOLERANCE = tol;
     map->max_size = ms;
     map->entries = 0;
-    map->mpfr_to_int = new map_mpfr_to_int_t;
-    map->int_to_mpfr = new map_int_to_mpfr_t;
+    map->mpreal_to_int = new map_mpreal_to_int_t;
+    map->int_to_mpreal = new map_int_to_mpreal_t;
     return map;
 }
 
 
 // free()
 void
-mpfr_tree_map_free(mpfr_tree_map_t *map)
+mpreal_tree_map_free(mpreal_tree_map_t *map)
 {
-    delete map->mpfr_to_int;
-    delete map->int_to_mpfr;
+    delete map->mpreal_to_int;
+    delete map->int_to_mpreal;
     free(map);
 }
 
 
 // find_or_put()
 int
-mpfr_tree_map_find_or_put(mpfr_tree_map_t *map, mpfr_t val, unsigned int *ret)
+mpreal_tree_map_find_or_put(mpreal_tree_map_t *map, mpreal_complex val, unsigned int *ret)
 {
-    map_mpfr_to_int_t *f2i = map->mpfr_to_int;
-    map_int_to_mpfr_t *i2f = map->int_to_mpfr;
+    map_mpreal_to_int_t *f2i = map->mpreal_to_int;
+    map_int_to_mpreal_t *i2f = map->int_to_mpreal;
 
-    // sigh... 
-    __mpfr_struct val_cp;
-    mpfr_init2(&val_cp, MPFR_PREC);
-    mpfr_set(&val_cp, val, DEFAULT_RND);
-
+    
     // look for double
-    auto it = f2i->find(val_cp);
+    auto it = f2i->find(val);
     if ( it == f2i->end() ) {
         // check if space
         if (map->entries > map->max_size-2) {
-            printf("AMP map full\n");
+            printf("MPREAL AMP map full\n");
             return -1;
         }
 
         // if key not found, insert new pair
-        std::pair<__mpfr_struct, unsigned int> f2i_pair = std::make_pair(val_cp, map->entries);
+        std::pair<mpreal_complex, unsigned int> f2i_pair = std::make_pair(val, map->entries);
         f2i->insert(f2i_pair);
         *ret = map->entries;
 
         // also insert in reverse table for lookup purposes
-        std::pair<unsigned int, __mpfr_struct> i2f_pair = std::make_pair(map->entries, val_cp);
+        std::pair<unsigned int, mpreal_complex> i2f_pair = std::make_pair(map->entries, val);
         i2f->insert(i2f_pair);
 
         map->entries++;
@@ -113,29 +107,26 @@ mpfr_tree_map_find_or_put(mpfr_tree_map_t *map, mpfr_t val, unsigned int *ret)
 }
 
 
-
 // get()
-mpfr_ptr
-mpfr_tree_map_get(mpfr_tree_map_t *map, unsigned int ref)
+mpreal_complex
+mpreal_tree_map_get(mpreal_tree_map_t *map, unsigned int ref)
 {
-    return &(map->int_to_mpfr->find(ref)->second);   
+    return map->int_to_mpreal->find(ref)->second;   
 }
-*/
 
-/*
+
 // size()
 unsigned int
-tree_map_size(tree_map_t *map)
+mpreal_tree_map_size(mpreal_tree_map_t *map)
 {
     return map->entries;
 }
 
 // get_tolerance
 double
-tree_map_get_tolerance()
+mpreal_tree_map_get_tolerance()
 {
-    return TOLERANCE;
+    return TOLERANCE.toDouble();
 }
-*/
 
 
