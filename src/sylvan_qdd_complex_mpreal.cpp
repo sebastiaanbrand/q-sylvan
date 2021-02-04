@@ -1,6 +1,9 @@
 #include "sylvan_qdd_complex_mpreal.h"
 #include "util/mpreal_tree_map.h"
 
+#include "sylvan_int.h"
+using namespace sylvan; // sylvan's internals are inside namespace in C++
+
 // Table parameters
 static const double default_tolerance = 1e-14;
 static double tolerance;
@@ -9,6 +12,8 @@ size_t table_size;
 // Actual table
 mpreal_tree_map_t *mpreal_cmap;
 mpreal_tree_map_t *mpreal_cmap_old;
+
+static bool CACHE_AMP_OPS = true;
 
 
 /* Comparing complex values */
@@ -213,8 +218,13 @@ mpreal_amp_add(AMP a, AMP b)
     if (a == C_ZERO) return b;
     if (b == C_ZERO) return a;
 
-    // TODO: check cache
+    // check cache
     AMP res;
+    if (CACHE_AMP_OPS) {
+        if (cache_get3(CACHE_AMP_ADD, a, b, sylvan_false, &res)) {
+            return res; // TODO: counters for these cache lookups/puts
+        }
+    }
 
     // compute and add result to ctable
     mpreal_complex ca, cb, cr;
@@ -223,7 +233,10 @@ mpreal_amp_add(AMP a, AMP b)
     cr = mpreal_comp_add(ca, cb);
     res = mpreal_comp_lookup(cr);
 
-    // TODO: insert in cache
+    // insert in cache
+    if (CACHE_AMP_OPS) {
+        cache_put3(CACHE_AMP_ADD, a, b, sylvan_false, res);
+    }
     return res;
 }
 
@@ -235,8 +248,13 @@ mpreal_amp_sub(AMP a, AMP b)
     if (b == C_ZERO) return a;
     if (a == C_ZERO) return mpreal_amp_neg(b);
 
-    // TODO: check cache
+    // check cache
     AMP res;
+    if (CACHE_AMP_OPS) {
+        if (cache_get3(CACHE_AMP_SUB, a, b, sylvan_false, &res)) {
+            return res; // TODO: counters for these cache lookups/puts
+        }
+    }
 
     // compute and add result to ctable
     mpreal_complex ca, cb, cr;
@@ -245,7 +263,10 @@ mpreal_amp_sub(AMP a, AMP b)
     cr = mpreal_comp_sub(ca, cb);
     res = mpreal_comp_lookup(cr);
 
-    // TODO: insert in cache
+    // insert in cache
+    if (CACHE_AMP_OPS) {
+        cache_put3(CACHE_AMP_SUB, a, b, sylvan_false, res);
+    }
     return res;
 }
 
@@ -257,8 +278,13 @@ mpreal_amp_mul(AMP a, AMP b)
     if (b == C_ONE) return a;
     if (a == C_ZERO || b == C_ZERO) return C_ZERO;
 
-    // TODO: check cache
+    // check cache
     AMP res;
+    if (CACHE_AMP_OPS) {
+        if (cache_get3(CACHE_AMP_MUL, a, b, sylvan_false, &res)) {
+            return res; // TODO: counters for these cache lookups/puts
+        }
+    }
 
     // compute and add result to ctable
     mpreal_complex ca, cb, cr;
@@ -267,7 +293,10 @@ mpreal_amp_mul(AMP a, AMP b)
     cr = mpreal_comp_mul(ca, cb);
     res = mpreal_comp_lookup(cr);
 
-    // TODO: insert in cache
+    // insert in cache
+    if (CACHE_AMP_OPS) {
+        cache_put3(CACHE_AMP_MUL, a, b, sylvan_false, res);
+    }
     return res;
 }
 
@@ -279,8 +308,13 @@ mpreal_amp_div(AMP a, AMP b)
     if (a == C_ZERO) return C_ZERO;
     if (b == C_ONE)  return a;
 
-    // TODO: check cache
+    // check cache
     AMP res;
+    if (CACHE_AMP_OPS) {
+        if (cache_get3(CACHE_AMP_DIV, a, b, sylvan_false, &res)) {
+            return res; // TODO: counters for these cache lookups/puts
+        }
+    }
 
     // compute and hash result to ctable
     mpreal_complex ca, cb, cr;
@@ -289,7 +323,10 @@ mpreal_amp_div(AMP a, AMP b)
     cr = mpreal_comp_div(ca, cb);
     res = mpreal_comp_lookup(cr);
 
-    // TODO: insert in cache
+    // insert in cache
+    if (CACHE_AMP_OPS) {
+        cache_put3(CACHE_AMP_DIV, a, b, sylvan_false, res);
+    }
     return res;
 }
 

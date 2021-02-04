@@ -6,6 +6,10 @@
 #include "sylvan_qdd_complex_mpreal.h"
 #include "test_assert.h"
 
+#include "sylvan.h"
+
+using namespace sylvan;
+
 bool VERBOSE = true;
 
 int test_mpreal_tree_map()
@@ -112,7 +116,6 @@ int test_mpreal_complex_operations()
 {
     init_mpreal_amplitude_table(1<<12, 1e-14);
 
-    // WIP: tests
     mpreal_complex ref1, ref2, ref3, ref4, val1, val2, val3, val4;
     AMP index1, index2, index3, index4;
 
@@ -223,9 +226,20 @@ int test_mpreal_complex_operations()
 
 int runtests()
 {
+    // Need Sylvan for caching of comnplex operations
+    int workers = 1;
+    lace_init(workers, 0);
+    lace_startup(0, NULL, NULL);
+    sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
+    sylvan_init_package();  
+
     if (test_mpreal_tree_map()) return 1;
     if (test_mpfr_tree_map_scope()) return 1;
     if (test_mpreal_complex_operations()) return 1;
+
+    sylvan_quit();
+    lace_exit();
+
     return 0;
 }
 
