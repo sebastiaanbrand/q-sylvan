@@ -112,7 +112,70 @@ int test_mpreal_complex_operations()
 {
     init_mpreal_amplitude_table(1<<12, 1e-14);
 
-    // TODO: tests
+    // WIP: tests
+    mpreal_complex ref1, ref2, ref3, ref4, val1, val2, val3, val4;
+    AMP index1, index2, index3, index4;
+
+    // comp_exact_equal / comp_approx_equal
+    ref1 = mpreal_comp_make((0.2+0.4), 0.0);
+    ref2 = mpreal_comp_make(0.6, 0.0);
+    test_assert(mpreal_comp_approx_equal(ref1, ref2));
+    test_assert(!mpreal_comp_exact_equal(ref1, ref2));
+
+    ref1 = mpreal_comp_make(1.0, 2.99999999999999855);
+    ref2 = mpreal_comp_make(1.0, 3.00000000000000123);
+    test_assert(mpreal_comp_approx_equal(ref1, ref2));
+    test_assert(!mpreal_comp_exact_equal(ref1, ref2));
+
+    ref1 = mpreal_comp_make((0.5+0.5), 0.0);
+    ref2 = mpreal_comp_make(1.0, 0.0);
+    test_assert(mpreal_comp_approx_equal(ref1, ref2));
+    test_assert(mpreal_comp_exact_equal(ref1, ref2));
+
+    // test C_ZERO
+    ref1 = mpreal_comp_make(0.0, 0.0);      index1 = mpreal_comp_lookup(ref1);
+    ref2 = mpreal_comp_make(0.0, 0.0);      index2 = mpreal_comp_lookup(ref2);
+    ref3 = mpreal_comp_zero();              index3 = mpreal_comp_lookup(ref3);
+    test_assert(index1 == index2);
+    test_assert(index1 == index3);
+    test_assert(index1 == C_ZERO);
+
+    // test C_ONE
+    ref1 = mpreal_comp_make(1.0, 0.0);      index1 = mpreal_comp_lookup(ref1);
+    ref2 = mpreal_comp_make(1.0, 0.0);      index2 = mpreal_comp_lookup(ref2);
+    ref3 = mpreal_comp_one();               index3 = mpreal_comp_lookup(ref3);
+    test_assert(index1 == index2);
+    test_assert(index1 == index3);
+    test_assert(index1 == C_ONE);
+
+    // Clookup, Cvalue
+    ref1 = mpreal_comp_make(0.5, 0.0);              index1 = mpreal_comp_lookup(ref1);   val1 = mpreal_comp_value(index1);
+    ref2 = mpreal_comp_make(0.5, 0.0);              index2 = mpreal_comp_lookup(ref2);   val2 = mpreal_comp_value(index2);
+    ref3 = mpreal_comp_make(mpreal_sqrt2(0.5),0);   index3 = mpreal_comp_lookup(ref3);   val3 = mpreal_comp_value(index3);
+    ref4 = mpreal_comp_make(mpreal_sqrt2(0.5),0);   index4 = mpreal_comp_lookup(ref4);   val4 = mpreal_comp_value(index4);
+    test_assert(index1 == index2);  test_assert(mpreal_comp_exact_equal(val1, val2));
+    test_assert(index3 == index4);  test_assert(mpreal_comp_exact_equal(val3, val4));
+
+    // amp_abs
+    ref1 = mpreal_comp_make(-2.0, 0.0);     index1 = mpreal_comp_lookup(ref1);
+    ref2 = mpreal_comp_make(2.0, 0.0);      index2 = mpreal_comp_lookup(ref2);
+    index3 = mpreal_amp_abs(index1);
+    test_assert(index3 == index2);
+    test_assert(index3 != index1);
+    ref1 = mpreal_comp_make(3.0, 4.0);      index1 = mpreal_comp_lookup(ref1);
+    ref2 = mpreal_comp_make(5.0, 0.0);      index2 = mpreal_comp_lookup(ref2);
+    index3 = mpreal_amp_abs(index1);
+    test_assert(index3 == index2);
+    test_assert(index3 != index1);
+
+    // amp_neg
+    ref1 = mpreal_comp_make(0.3, 4.2);      index1 = mpreal_comp_lookup(ref1);   val1 = mpreal_comp_value(index1);
+    ref2 = mpreal_comp_make(-0.3, -4.2);    index2 = mpreal_comp_lookup(ref2);   val2 = mpreal_comp_value(index2);
+    index3 = mpreal_amp_neg(index1);        val3 = mpreal_comp_value(index3);
+    index4 = mpreal_amp_neg(index2);        val4 = mpreal_comp_value(index4);
+    test_assert(index1 == index4);  test_assert(mpreal_comp_exact_equal(val1, val4));
+    test_assert(index2 == index3);  test_assert(mpreal_comp_exact_equal(val2, val3));
+
     
     free_mpreal_amplitude_table();
     if(VERBOSE) printf("complex ops w/ mpreal:    WIP\n");
