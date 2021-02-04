@@ -34,6 +34,10 @@ mpfr::mpreal mpreal_sqrt2(mpfr::mpreal a); // a * sqrt2
 /* Arithmetic operations on mpreal complex structs */
 mpreal_complex mpreal_comp_abs(mpreal_complex a);
 mpreal_complex mpreal_comp_neg(mpreal_complex a);
+mpreal_complex mpreal_comp_add(mpreal_complex a, mpreal_complex b);
+mpreal_complex mpreal_comp_sub(mpreal_complex a, mpreal_complex b);
+mpreal_complex mpreal_comp_mul(mpreal_complex a, mpreal_complex b);
+mpreal_complex mpreal_comp_div(mpreal_complex a, mpreal_complex b);
 
 
 #endif

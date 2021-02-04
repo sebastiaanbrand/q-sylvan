@@ -125,35 +125,49 @@ mpreal_comp_neg(mpreal_complex a)
     return res;
 }
 
-/*
+
 mpreal_complex
 mpreal_comp_add(mpreal_complex a, mpreal_complex b)
 {
-    // TODO
-    return 0;
+    mpreal_complex res;
+    res.r = a.r + b.r;
+    res.i = a.i + b.i;
+    return res;
 }
 
 mpreal_complex
 mpreal_comp_sub(mpreal_complex a, mpreal_complex b)
 {
-    // TODO
-    return 0;
+    mpreal_complex res;
+    res.r = a.r - b.r;
+    res.i = a.i - b.i;
+    return res;
 }
 
 mpreal_complex
 mpreal_comp_mul(mpreal_complex a, mpreal_complex b)
 {
-    // TODO
-    return 0;
+    mpreal_complex res;
+    res.r = a.r * b.r - a.i * b.i;
+    res.i = a.r * b.i + a.i * b.r;
+    return res;
 }
 
 mpreal_complex
 mpreal_comp_div(mpreal_complex a, mpreal_complex b)
 {
-    // TODO
-    return 0;
+    mpreal_complex res;
+    mpfr::mpreal denom;
+    if (b.i == 0.0) {
+        res.r = a.r / b.r;
+        res.i = a.i / b.r;
+    } else {
+        denom = b.r * b.r + b.i * b.i;
+        res.r = (a.r * b.r + a.i * b.i) / denom;
+        res.i = (a.i * b.r - a.r * b.i) / denom;
+    }
+    return res;
 }
-*/
 
 
 /* Arithmetic operations on AMPs */
@@ -174,7 +188,6 @@ mpreal_amp_abs(AMP a)
     return res;
 }
 
-
 AMP
 mpreal_amp_neg(AMP a)
 {
@@ -193,36 +206,92 @@ mpreal_amp_neg(AMP a)
     return res;
 }
 
-/*
-
 AMP
 mpreal_amp_add(AMP a, AMP b)
 {
-    // TODO
-    return 0;
+    // special cases
+    if (a == C_ZERO) return b;
+    if (b == C_ZERO) return a;
+
+    // TODO: check cache
+    AMP res;
+
+    // compute and add result to ctable
+    mpreal_complex ca, cb, cr;
+    ca = mpreal_comp_value(a);
+    cb = mpreal_comp_value(b);
+    cr = mpreal_comp_add(ca, cb);
+    res = mpreal_comp_lookup(cr);
+
+    // TODO: insert in cache
+    return res;
 }
+
 
 AMP
 mpreal_amp_sub(AMP a, AMP b)
 {
-    // TODO
-    return 0;
+    // special cases
+    if (b == C_ZERO) return a;
+    if (a == C_ZERO) return mpreal_amp_neg(b);
+
+    // TODO: check cache
+    AMP res;
+
+    // compute and add result to ctable
+    mpreal_complex ca, cb, cr;
+    ca = mpreal_comp_value(a);
+    cb = mpreal_comp_value(b);
+    cr = mpreal_comp_sub(ca, cb);
+    res = mpreal_comp_lookup(cr);
+
+    // TODO: insert in cache
+    return res;
 }
 
 AMP
 mpreal_amp_mul(AMP a, AMP b)
 {
-    // TODO
-    return 0;
+    // special cases
+    if (a == C_ONE) return b;
+    if (b == C_ONE) return a;
+    if (a == C_ZERO || b == C_ZERO) return C_ZERO;
+
+    // TODO: check cache
+    AMP res;
+
+    // compute and add result to ctable
+    mpreal_complex ca, cb, cr;
+    ca = mpreal_comp_value(a);
+    cb = mpreal_comp_value(b);
+    cr = mpreal_comp_mul(ca, cb);
+    res = mpreal_comp_lookup(cr);
+
+    // TODO: insert in cache
+    return res;
 }
 
 AMP
 mpreal_amp_div(AMP a, AMP b)
 {
-    // TODO
-    return 0;
+    // special cases
+    if (a == b)      return C_ONE;
+    if (a == C_ZERO) return C_ZERO;
+    if (b == C_ONE)  return a;
+
+    // TODO: check cache
+    AMP res;
+
+    // compute and hash result to ctable
+    mpreal_complex ca, cb, cr;
+    ca = mpreal_comp_value(a);
+    cb = mpreal_comp_value(b);
+    cr = mpreal_comp_div(ca, cb);
+    res = mpreal_comp_lookup(cr);
+
+    // TODO: insert in cache
+    return res;
 }
-*/
 
 
 
