@@ -331,6 +331,58 @@ mpreal_amp_div(AMP a, AMP b)
 }
 
 
+/* normalization of two amps */
+
+AMP
+mpreal_amp_normalize_low(AMP *low, AMP *high)
+{
+    // Normalize using low if low != 0
+    AMP norm;
+    if(*low != C_ZERO){
+        mpreal_complex cl = mpreal_comp_value(*low);
+        mpreal_complex ch = mpreal_comp_value(*high);
+        ch    = mpreal_comp_div(ch, cl);
+        *high = mpreal_comp_lookup(ch);
+        norm  = *low;
+        *low  = C_ONE;
+    }
+    else {
+        norm  = *high;
+        *high = C_ONE;
+    }
+    return norm;
+}
+
+AMP
+mpreal_amp_normalize_largest(AMP *low, AMP *high)
+{
+    AMP norm;
+    if (*low == *high) {
+        norm  = *low;
+        *low  = C_ONE;
+        *high = C_ONE;
+        return norm;
+    }
+
+    // Normalize using the absolute greatest value
+    mpreal_complex cl = mpreal_comp_value(*low);
+    mpreal_complex ch = mpreal_comp_value(*high);
+    if ( (cl.r*cl.r + cl.i*cl.i)  >=  (ch.r*ch.r + ch.i*ch.i) ) {
+        ch = mpreal_comp_div(ch, cl);
+        *high = mpreal_comp_lookup(ch);
+        norm = *low;
+        *low  = C_ONE;
+    }
+    else {
+        cl = mpreal_comp_div(cl, ch);
+        *low = mpreal_comp_lookup(cl);
+        norm  = *high;
+        *high = C_ONE;
+    }
+    return norm;
+}
+
+
 
 /* Managing the complex value table */
 

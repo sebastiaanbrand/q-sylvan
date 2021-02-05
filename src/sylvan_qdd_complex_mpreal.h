@@ -57,6 +57,10 @@ AMP mpreal_amp_sub(AMP a, AMP b);
 AMP mpreal_amp_mul(AMP a, AMP b);
 AMP mpreal_amp_div(AMP a, AMP b);
 
+/* normalization of two amps */
+AMP mpreal_amp_normalize_low(AMP *low, AMP *high);
+AMP mpreal_amp_normalize_largest(AMP *low, AMP *high);
+
 /* Managing the complex value table */
 void init_mpreal_amplitude_table(uint64_t size, long double tol);
 void free_mpreal_amplitude_table();

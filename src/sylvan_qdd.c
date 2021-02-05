@@ -23,7 +23,7 @@
 #include "sylvan_int.h"
 #include "sylvan_qdd.h"
 #include "sylvan_refs.h"
-#include "sylvan_qdd_complex.h"
+#include "sylvan_qdd_complex_include.h"
 
 static int granularity = 1; // operation cache access granularity
 static bool testing_mode = 0; // turns on/off (expensive) sanity checks
@@ -654,55 +654,6 @@ qdd_comp_lookup(complex_t c)
     return res;
 }
 
-static AMP __attribute__((unused))
-qdd_amp_normalize_low(AMP *low, AMP *high)
-{
-    // Normalize using low if low != 0
-    AMP norm;
-    if(*low != C_ZERO){
-        complex_t cl = comp_value(*low);
-        complex_t ch = comp_value(*high);
-        ch    = comp_div(ch, cl);
-        *high = qdd_comp_lookup(ch);
-        norm  = *low;
-        *low  = C_ONE;
-    }
-    else {
-        norm  = *high;
-        *high = C_ONE;
-    }
-    return norm;
-}
-
-static AMP __attribute__((unused))
-qdd_amp_normalize_largest(AMP *low, AMP *high)
-{
-    AMP norm;
-    if (*low == *high) {
-        norm  = *low;
-        *low  = C_ONE;
-        *high = C_ONE;
-        return norm;
-    }
-
-    // Normalize using the absolute greatest value
-    complex_t cl = comp_value(*low);
-    complex_t ch = comp_value(*high);
-    if ( (cl.r*cl.r + cl.i*cl.i)  >=  (ch.r*ch.r + ch.i*ch.i) ) {
-        ch = comp_div(ch, cl);
-        *high = qdd_comp_lookup(ch);
-        norm = *low;
-        *low  = C_ONE;
-    }
-    else {
-        cl = comp_div(cl, ch);
-        *low = qdd_comp_lookup(cl);
-        norm  = *high;
-        *high = C_ONE;
-    }
-    return norm;
-}
-
 static QDD // (PTR and AMP, but the amp is the norm weight from below)
 qdd_makenode(BDDVAR var, QDD low, QDD high)
 { 
@@ -719,7 +670,7 @@ qdd_makenode(BDDVAR var, QDD low, QDD high)
     if (low == high) return low;
     else {
         // If the edges are not the same
-        AMP norm = qdd_amp_normalize_largest(&low_amp, &high_amp);
+        AMP norm = amp_normalize_largest(&low_amp, &high_amp);
         PTR res  = _qdd_makenode(var, low_ptr, high_ptr, low_amp, high_amp);
         return qdd_bundle_ptr_amp(res, norm);
     }

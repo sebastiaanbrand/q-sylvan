@@ -113,6 +113,10 @@ complex_t comp_mul(complex_t a, complex_t b);
 complex_t comp_div(complex_t a, complex_t b);
 double comp_to_prob(complex_t a);
 
+/* normalization of two amps */
+AMP amp_normalize_low(AMP *low, AMP *high);
+AMP amp_normalize_largest(AMP *low, AMP *high);
+
 /* Comparing complex values */
 bool comp_exact_equal(complex_t a, complex_t b);
 bool comp_approx_equal(complex_t a, complex_t b);
