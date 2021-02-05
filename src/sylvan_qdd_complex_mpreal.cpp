@@ -15,6 +15,8 @@ mpreal_tree_map_t *mpreal_cmap_old;
 
 static bool CACHE_AMP_OPS = true;
 
+static mpfr::mpreal Pi;
+
 
 /* Comparing complex values */
 
@@ -409,9 +411,87 @@ init_mpreal_amplitude_table(size_t size, long double tol)
     C_ZERO    = mpreal_comp_lookup(mpreal_comp_zero());
     C_MIN_ONE = mpreal_comp_lookup(mpreal_comp_minus_one());
 
-    //Pi = 2.0 * flt_acos(0.0);
+    Pi = mpfr::const_pi();
 
-    //init_gates();
+    init_mpreal_gates();
+}
+
+void
+init_mpreal_gates()
+{
+    // initialize 2x2 gates (complex values from gates currently stored in 
+    // same table as complex amplitude values)
+    
+    uint32_t k;
+
+    k = GATEID_I;
+    gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
+    gates[k][2] = C_ZERO; gates[k][3] = C_ONE;
+
+    k = GATEID_X;
+    gates[k][0] = C_ZERO; gates[k][1] = C_ONE;
+    gates[k][2] = C_ONE;  gates[k][3] = C_ZERO;
+
+    k = GATEID_Y;
+    gates[k][0] = C_ZERO; gates[k][1] = mpreal_comp_lookup(mpreal_comp_make(0.0, -1.0));
+    gates[k][2] = mpreal_comp_lookup(mpreal_comp_make(0.0, 1.0));  gates[k][3] = C_ZERO;
+
+    k = GATEID_Z;
+    gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
+    gates[k][2] = C_ZERO; gates[k][3] = C_MIN_ONE;
+
+    k = GATEID_H;
+    gates[k][0] = gates[k][1] = gates[k][2] = mpreal_comp_lookup(mpreal_comp_make(1.0/mpfr::sqrt(2),0));
+    gates[k][3] = mpreal_comp_lookup(mpreal_comp_make(-1.0/mpfr::sqrt(2),0));
+
+    k = GATEID_S;
+    gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
+    gates[k][2] = C_ZERO; gates[k][3] = mpreal_comp_lookup(mpreal_comp_make(0.0, 1.0));
+
+    k = GATEID_T;
+    gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
+    gates[k][2] = C_ZERO; gates[k][3] = mpreal_comp_lookup(mpreal_comp_make(1.0/mpfr::sqrt(2), 1.0/mpfr::sqrt(2.0)));
+
+    k = GATEID_Tdag;
+    gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
+    gates[k][2] = C_ZERO; gates[k][3] = mpreal_comp_lookup(mpreal_comp_make(1.0/mpfr::sqrt(2), -1.0/mpfr::sqrt(2)));
+
+    k = GATEID_sqrtX;
+    gates[k][0] = mpreal_comp_lookup(mpreal_comp_make(0.5, 0.5)); gates[k][1] = mpreal_comp_lookup(mpreal_comp_make(0.5,-0.5));
+    gates[k][2] = mpreal_comp_lookup(mpreal_comp_make(0.5,-0.5)); gates[k][3] = mpreal_comp_lookup(mpreal_comp_make(0.5, 0.5));
+
+    k = GATEID_sqrtY;
+    gates[k][0] = mpreal_comp_lookup(mpreal_comp_make(0.5, 0.5)); gates[k][1] = mpreal_comp_lookup(mpreal_comp_make(-0.5,-0.5));
+    gates[k][2] = mpreal_comp_lookup(mpreal_comp_make(0.5, 0.5)); gates[k][3] = mpreal_comp_lookup(mpreal_comp_make(0.5, 0.5));
+
+    init_mpreal_phase_gates(255);
+
+    //next_custom_id = 0;
+}
+
+void
+init_mpreal_phase_gates(int n)
+{
+    // add gate R_k to gates table
+    // (note that R_0 = I, R_1 = Z, R_2 = S, R_4 = T)
+    uint32_t gate_id;
+    mpfr::mpreal angle;
+    mpreal_complex cartesian;
+    for (int k=0; k<=n; k++) {
+        // forward rotation
+        angle = 2*Pi / (1<<k);
+        cartesian = mpreal_comp_make_angle(angle);
+        gate_id = GATEID_Rk(k);
+        gates[gate_id][0] = C_ONE;  gates[gate_id][1] = C_ZERO;
+        gates[gate_id][2] = C_ZERO; gates[gate_id][3] = mpreal_comp_lookup(cartesian);
+
+        // backward rotation
+        angle = -2*Pi / (fl_t)(1<<k);
+        cartesian = mpreal_comp_make_angle(angle);
+        gate_id = GATEID_Rk_dag(k);
+        gates[gate_id][0] = C_ONE;  gates[gate_id][1] = C_ZERO;
+        gates[gate_id][2] = C_ZERO; gates[gate_id][3] = mpreal_comp_lookup(cartesian);
+    }
 }
 
 void

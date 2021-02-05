@@ -64,6 +64,8 @@ AMP mpreal_amp_normalize_largest(AMP *low, AMP *high);
 /* Managing the complex value table */
 void init_mpreal_amplitude_table(uint64_t size, long double tol);
 void free_mpreal_amplitude_table();
+void init_mpreal_gates();
+void init_mpreal_phase_gates(int n);
 
 #ifdef __cplusplus
 }
