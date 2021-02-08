@@ -69,7 +69,7 @@ int test_mpreal_tree_map()
     test_assert(index1 != index2);
 
     mpreal_tree_map_free(map);
-    if(VERBOSE) printf("mpfr tree map tests:      ok\n");
+    if(VERBOSE) printf("mpreal tree map tests:    ok\n");
     return 0;
 }
 
@@ -102,7 +102,7 @@ int scope2(mpreal_tree_map_t *map)
     return 0;
 }
 
-int test_mpfr_tree_map_scope()
+int test_mpreal_tree_map_scope()
 {
     mpreal_tree_map_t *map = mpreal_tree_map_create(1<<10, 1e-14);
     if (scope1(map)) return 1;
@@ -389,8 +389,7 @@ int test_mpreal_vector_addition()
     return 0;
 }
 
-/*
-int test_x_gate()
+int test_mpreal_x_gate()
 {
     QDD q0, q1, q2, q3, q4, q5;
     bool x[] = {0};
@@ -455,7 +454,7 @@ int test_x_gate()
     return 0;
 }
 
-int test_h_gate()
+int test_mpreal_h_gate()
 {
     QDD q0, q1, q2, q3, q4, q5;
     bool x[] = {0};
@@ -472,10 +471,10 @@ int test_h_gate()
     q0 = qdd_gate(q0, GATEID_H, 0);
     q1 = qdd_gate(q1, GATEID_H, 0);
 
-    x[0] = 0; a = qdd_get_amplitude(q0, x); test_assert(a == comp_lookup(comp_make(1.0/flt_sqrt(2.0),0)));
-    x[0] = 1; a = qdd_get_amplitude(q0, x); test_assert(a == comp_lookup(comp_make(1.0/flt_sqrt(2.0),0)));
-    x[0] = 0; a = qdd_get_amplitude(q1, x); test_assert(a == comp_lookup(comp_make(1.0/flt_sqrt(2.0),0)));
-    x[0] = 1; a = qdd_get_amplitude(q1, x); test_assert(a == comp_lookup(comp_make(-1.0/flt_sqrt(2.0),0)));
+    x[0] = 0; a = qdd_get_amplitude(q0, x); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(mpreal_sqrt2(0.5),0)));
+    x[0] = 1; a = qdd_get_amplitude(q0, x); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(mpreal_sqrt2(0.5),0)));
+    x[0] = 0; a = qdd_get_amplitude(q1, x); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(mpreal_sqrt2(0.5),0)));
+    x[0] = 1; a = qdd_get_amplitude(q1, x); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(mpreal_sqrt2(-0.5),0)));
 
 
     // Two qubit test
@@ -495,38 +494,38 @@ int test_h_gate()
     test_assert(qdd_is_ordered(q5, nqubits));
 
     // q2 = |0+>
-    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q2, x2); test_assert(a == comp_lookup(comp_make(1.0/flt_sqrt(2.0),0)));
-    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q2, x2); test_assert(a == comp_lookup(comp_make(1.0/flt_sqrt(2.0),0)));
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q2, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(mpreal_sqrt2(0.5),0)));
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q2, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(mpreal_sqrt2(0.5),0)));
     x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q2, x2); test_assert(a == C_ZERO);
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q2, x2); test_assert(a == C_ZERO);
     test_assert(qdd_countnodes(q2) == 2);
 
     // q3 = |0->
-    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q3, x2); test_assert(a == comp_lookup(comp_make(1.0/flt_sqrt(2.0),0)));
-    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q3, x2); test_assert(a == comp_lookup(comp_make(-1.0/flt_sqrt(2.0),0)));
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q3, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(mpreal_sqrt2(0.5),0)));
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q3, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(mpreal_sqrt2(-0.5),0)));
     x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q3, x2); test_assert(a == C_ZERO);
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q3, x2); test_assert(a == C_ZERO);
     test_assert(qdd_countnodes(q3) == 3);
 
     // q4 = |+0>
-    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q4, x2); test_assert(a == comp_lookup(comp_make(1.0/flt_sqrt(2.0),0)));
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q4, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(mpreal_sqrt2(0.5),0)));
     x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q4, x2); test_assert(a == C_ZERO);
-    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q4, x2); test_assert(a == comp_lookup(comp_make(1.0/flt_sqrt(2.0),0)));
+    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q4, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(mpreal_sqrt2(0.5),0)));
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q4, x2); test_assert(a == C_ZERO);
     test_assert(qdd_countnodes(q4) == 2);
 
     // q5 = |++>
-    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q5, x2); test_assert(a == comp_lookup(comp_make(0.5, 0)));
-    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q5, x2); test_assert(a == comp_lookup(comp_make(0.5, 0)));
-    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q5, x2); test_assert(a == comp_lookup(comp_make(0.5, 0)));
-    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q5, x2); test_assert(a == comp_lookup(comp_make(0.5, 0)));
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q5, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(0.5, 0)));
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q5, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(0.5, 0)));
+    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q5, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(0.5, 0)));
+    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q5, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(0.5, 0)));
     test_assert(qdd_countnodes(q5) == 1);
 
     if(VERBOSE) printf("qdd h gates:              ok\n");
     return 0;
 }
 
-int test_phase_gates()
+int test_mpreal_phase_gates()
 {
     QDD q0, qZ, qS, qSS, qT, qTT, qTTTT, qTTdag, qTdagT;
     bool x2[] = {0, 0};
@@ -553,41 +552,41 @@ int test_phase_gates()
 
     test_assert(qZ == qSS);
     test_assert(qS == qTT);
-    test_assert(qZ == qTTTT);
+    test_assert(qZ == qTTTT); // NOTE: this one doesn't work if normalize_largest instead of normalize_low
     test_assert(q0 == qTTdag);
     test_assert(q0 == qTdagT);
 
-    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == comp_lookup(comp_make(0.5, 0)));
-    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == comp_lookup(comp_make(0.5, 0)));
-    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == comp_lookup(comp_make(0.5, 0)));
-    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == comp_lookup(comp_make(0.5, 0)));
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(0.5, 0)));
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(0.5, 0)));
+    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(0.5, 0)));
+    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(0.5, 0)));
     test_assert(qdd_countnodes(q0) == 1);
 
     q0 = qdd_gate(q0, GATEID_Z, 0);
 
-    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == comp_lookup(comp_make(0.5, 0)));
-    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == comp_lookup(comp_make(-0.5,0)));
-    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == comp_lookup(comp_make(0.5, 0)));
-    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == comp_lookup(comp_make(-0.5,0)));
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(0.5, 0)));
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(-0.5,0)));
+    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(0.5, 0)));
+    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(-0.5,0)));
     test_assert(qdd_countnodes(q0) == 2);
 
     q0 = qdd_gate(q0, GATEID_Z, 0);
     q0 = qdd_gate(q0, GATEID_Z, 1);
 
-    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == comp_lookup(comp_make(0.5, 0)));
-    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == comp_lookup(comp_make(0.5, 0)));
-    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == comp_lookup(comp_make(-0.5,0)));
-    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == comp_lookup(comp_make(-0.5,0)));
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(0.5, 0)));
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(0.5, 0)));
+    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(-0.5,0)));
+    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(-0.5,0)));
     test_assert(qdd_countnodes(q0) == 2);
 
     q0 = qdd_gate(q0, GATEID_Z, 1);
     q0 = qdd_gate(q0, GATEID_S, 0);
     q0 = qdd_gate(q0, GATEID_S, 0);
 
-    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == comp_lookup(comp_make(0.5, 0)));
-    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == comp_lookup(comp_make(-0.5,0)));
-    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == comp_lookup(comp_make(0.5, 0)));
-    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == comp_lookup(comp_make(-0.5,0)));
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(0.5, 0)));
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(-0.5,0)));
+    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(0.5, 0)));
+    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(-0.5,0)));
     test_assert(qdd_countnodes(q0) == 2);
 
     q0 = qdd_gate(q0, GATEID_Z, 0);
@@ -596,10 +595,10 @@ int test_phase_gates()
     q0 = qdd_gate(q0, GATEID_T, 1);
     q0 = qdd_gate(q0, GATEID_T, 1);
 
-    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == comp_lookup(comp_make(0.5, 0)));
-    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == comp_lookup(comp_make(0.5, 0)));
-    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == comp_lookup(comp_make(-0.5,0)));
-    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == comp_lookup(comp_make(-0.5,0)));
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(0.5, 0)));
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(0.5, 0)));
+    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(-0.5,0)));
+    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(-0.5,0)));
     test_assert(qdd_countnodes(q0) == 2);
 
     q0 = qdd_gate(q0, GATEID_Z, 1);
@@ -608,10 +607,10 @@ int test_phase_gates()
     q0 = qdd_gate(q0, GATEID_Tdag, 1);
     q0 = qdd_gate(q0, GATEID_Tdag, 1);
 
-    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == comp_lookup(comp_make(0.5, 0)));
-    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == comp_lookup(comp_make(0.5, 0)));
-    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == comp_lookup(comp_make(-0.5,0)));
-    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == comp_lookup(comp_make(-0.5,0)));
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(0.5, 0)));
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(0.5, 0)));
+    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(-0.5,0)));
+    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(-0.5,0)));
     test_assert(qdd_countnodes(q0) == 2);
 
 
@@ -628,6 +627,7 @@ int test_phase_gates()
     return 0;
 }
 
+/*
 int test_pauli_rotation_gates()
 {
     QDD qInit, qTest, qRef;
@@ -738,8 +738,9 @@ int test_pauli_rotation_gates()
     if(VERBOSE) printf("qdd Rx, Ry, Rz gates:     ok\n");
     return 0;
 }
+*/
 
-int test_cx_gate()
+int test_mpreal_cx_gate()
 {
     QDD qBell;
     bool x2[] = {0,0};
@@ -751,18 +752,18 @@ int test_cx_gate()
     x2[1] = 0; x2[0] = 0; qBell = qdd_create_basis_state(2, x2);
     qBell = qdd_gate(qBell, GATEID_H, 0);
     
-    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(qBell, x2); test_assert(a == comp_lookup(comp_make(1.0/flt_sqrt(2.0),0)));
-    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(qBell, x2); test_assert(a == comp_lookup(comp_make(1.0/flt_sqrt(2.0),0)));
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(qBell, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(mpreal_sqrt2(0.5),0)));
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(qBell, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(mpreal_sqrt2(0.5),0)));
     x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(qBell, x2); test_assert(a == C_ZERO);
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(qBell, x2); test_assert(a == C_ZERO);
     test_assert(qdd_countnodes(qBell) == 2);
 
     qBell = qdd_cgate(qBell, GATEID_X, 0, 1);
 
-    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(qBell, x2); test_assert(a == comp_lookup(comp_make(1.0/flt_sqrt(2.0),0)));
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(qBell, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(mpreal_sqrt2(0.5),0)));
     x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(qBell, x2); test_assert(a == C_ZERO);
     x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(qBell, x2); test_assert(a == C_ZERO);
-    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(qBell, x2); test_assert(a == comp_lookup(comp_make(1.0/flt_sqrt(2.0),0)));
+    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(qBell, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(mpreal_sqrt2(0.5),0)));
     test_assert(qdd_countnodes(qBell) == 4);
 
     // TODO: more tests
@@ -771,7 +772,7 @@ int test_cx_gate()
     return 0;
 }
 
-int test_cz_gate()
+int test_mpreal_cz_gate()
 {
     QDD qGraph;
     bool x2[] = {0, 0};
@@ -784,25 +785,26 @@ int test_cz_gate()
     qGraph = qdd_gate(qGraph, GATEID_H, 0);
     qGraph = qdd_gate(qGraph, GATEID_H, 1);
 
-    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(qGraph, x2); test_assert(a == comp_lookup(comp_make(0.5, 0)));
-    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(qGraph, x2); test_assert(a == comp_lookup(comp_make(0.5, 0)));
-    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(qGraph, x2); test_assert(a == comp_lookup(comp_make(0.5, 0)));
-    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(qGraph, x2); test_assert(a == comp_lookup(comp_make(0.5, 0)));
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(qGraph, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(0.5, 0)));
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(qGraph, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(0.5, 0)));
+    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(qGraph, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(0.5, 0)));
+    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(qGraph, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(0.5, 0)));
     test_assert(qdd_countnodes(qGraph) == 1);
 
     qGraph = qdd_cgate(qGraph, GATEID_Z, 0, 1);
 
-    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(qGraph, x2); test_assert(a == comp_lookup(comp_make(0.5, 0)));
-    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(qGraph, x2); test_assert(a == comp_lookup(comp_make(0.5, 0)));
-    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(qGraph, x2); test_assert(a == comp_lookup(comp_make(0.5, 0)));
-    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(qGraph, x2); test_assert(a == comp_lookup(comp_make(-0.5,0)));
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(qGraph, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(0.5, 0)));
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(qGraph, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(0.5, 0)));
+    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(qGraph, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(0.5, 0)));
+    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(qGraph, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(-0.5,0)));
     test_assert(qdd_countnodes(qGraph) == 3);
 
     if(VERBOSE) printf("qdd CZ gates:             ok\n");
     return 0;
 }
 
-int test_ccz_gate()
+/*
+int test_mpreal_ccz_gate()
 {
     QDD q3;
     bool x3[] = {0,0,0};
@@ -822,7 +824,7 @@ int test_ccz_gate()
     x3[2] = 0; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q3, x3); test_assert(a == aRef);
     x3[2] = 0; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(q3, x3); test_assert(a == aRef);
     x3[2] = 1; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q3, x3); test_assert(a == aRef);    
-    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q3, x3); test_assert(a == amp_mul(aRef,comp_lookup(comp_minus_one())));
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q3, x3); test_assert(a == amp_mul(aRef, C_MIN_ONE));
     x3[2] = 1; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q3, x3); test_assert(a == aRef);
     x3[2] = 1; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(q3, x3); test_assert(a == aRef);
     test_assert(qdd_is_ordered(q3, 3));
@@ -1608,6 +1610,8 @@ int runtests()
     #if !USING_MPREAL
     printf("USING_MPREAL needs to be enabled for these tests\n");
     exit(1);
+    #else
+    printf("testing with mpreal backend\n");
     #endif
 
     int workers = 1;
@@ -1619,9 +1623,15 @@ int runtests()
     qdd_set_testing_mode(true);
 
     if (test_mpreal_tree_map()) return 1;
-    if (test_mpfr_tree_map_scope()) return 1;
+    if (test_mpreal_tree_map_scope()) return 1;
     if (test_mpreal_complex_operations()) return 1;
     if (test_mpreal_vector_addition()) return 1;
+    if (test_mpreal_x_gate()) return 1;
+    if (test_mpreal_h_gate()) return 1;
+    if (test_mpreal_phase_gates()) return 1;
+    if (test_mpreal_cx_gate()) return 1;
+    if (test_mpreal_cz_gate()) return 1;
+    //if (test_mpreal_ccz_gate()) return 1;
 
     sylvan_quit();
     lace_exit();

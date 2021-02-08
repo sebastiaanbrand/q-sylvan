@@ -16,9 +16,11 @@
     #define amp_to_prob(a) mpreal_amp_to_prob(a)
     #define amp_normalize_low(a,b) mpreal_amp_normalize_low(a,b)
     #define amp_normalize_largest(a,b) mpreal_amp_normalize_largest(a,b)
+    #define amp_default_normalize(a,b) mpreal_amp_normalize_low(a,b) // default normalize is low
     #define init_amplitude_table(size,tol,backend) init_mpreal_amplitude_table(size,tol)
     #define free_amplitude_table() free_mpreal_amplitude_table()
 #else
+    
     #define amp_abs(a)   amp_abs(a)
     #define amp_neg(a)   amp_neg(a)
     #define amp_add(a,b) amp_add(a,b)
@@ -28,6 +30,7 @@
     #define amp_to_prob(a) amp_to_prob(a)
     #define amp_normalize_low(a,b) amp_normalize_low(a,b)
     #define amp_normalize_largest(a,b) amp_normalize_largest(a,b)
+    #define amp_default_normalize(a,b) amp_normalize_largest(a,b) // default normalize is largest
     #define init_amplitude_table(size,tol,backend) init_amplitude_table(size,tol,backend)
     #define free_amplitude_table() free_amplitude_table()
 #endif

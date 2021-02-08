@@ -670,7 +670,7 @@ qdd_makenode(BDDVAR var, QDD low, QDD high)
     if (low == high) return low;
     else {
         // If the edges are not the same
-        AMP norm = amp_normalize_largest(&low_amp, &high_amp);
+        AMP norm = amp_default_normalize(&low_amp, &high_amp);
         PTR res  = _qdd_makenode(var, low_ptr, high_ptr, low_amp, high_amp);
         return qdd_bundle_ptr_amp(res, norm);
     }
@@ -2314,11 +2314,8 @@ QDD
 qdd_remove_global_phase(QDD qdd)
 {
     // Remove global phase by replacing amp of qdd with absolute value of amp
-    complex_t c = comp_value(QDD_AMP(qdd));
-    c.r = sqrt(c.r*c.r + c.i*c.i);
-    c.i = 0.0;
-    AMP new_root_amp = qdd_comp_lookup(c);
-    QDD res = qdd_bundle_ptr_amp(QDD_PTR(qdd), new_root_amp);
+    AMP abs = amp_abs(QDD_AMP(qdd));
+    QDD res = qdd_bundle_ptr_amp(QDD_PTR(qdd), abs);
     return res;
 }
 

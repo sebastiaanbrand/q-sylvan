@@ -404,7 +404,6 @@ mpreal_amp_normalize_largest(AMP *low, AMP *high)
 void
 init_mpreal_amplitude_table(size_t size, long double tol)
 {
-    printf("init mpreal amptable\n");
     tolerance = (tol < 0) ? default_tolerance : tol;
     table_size = size;
 
