@@ -103,6 +103,7 @@ AMP amp_sub(AMP a, AMP b);
 AMP amp_mul(AMP a, AMP b);
 AMP amp_div(AMP a, AMP b);
 double amp_to_prob(AMP a);
+AMP prob_to_amp(double a); // AMP of (sqrt(a), 0)
 
 /* Arithmetic operations on complex structs */
 complex_t comp_abs(complex_t a);
@@ -118,10 +119,15 @@ double comp_to_prob(complex_t a);
 AMP amp_normalize_low(AMP *low, AMP *high);
 AMP amp_normalize_largest(AMP *low, AMP *high);
 
+/* Comparing AMPs */
+bool amp_exact_equal(AMP a, AMP b);
+bool amp_approx_equal(AMP a, AMP b);
+bool amp_epsilon_close(AMP a, AMP b, double epsilon);
+
 /* Comparing complex values */
 bool comp_exact_equal(complex_t a, complex_t b);
 bool comp_approx_equal(complex_t a, complex_t b);
-bool comp_epsilon_close(complex_t a, complex_t b, long double epsilon);
+bool comp_epsilon_close(complex_t a, complex_t b, double epsilon);
 
 /* Inserting / retrieving complex values from complex table */
 AMP comp_lookup(complex_t c);

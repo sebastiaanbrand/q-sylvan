@@ -35,6 +35,21 @@ bool mpreal_comp_epsilon_close(mpreal_complex a, mpreal_complex b, double epsilo
     return ( (mpfr::abs(a.r - b.r) < epsilon) && (mpfr::abs(a.i - b.i) < epsilon) );
 }
 
+bool mpreal_amp_exact_equal(AMP a, AMP b)
+{
+    return mpreal_comp_exact_equal(mpreal_comp_value(a), mpreal_comp_value(b));
+}
+
+bool mpreal_amp_approx_equal(AMP a, AMP b)
+{
+    return mpreal_comp_approx_equal(mpreal_comp_value(a), mpreal_comp_value(b));
+}
+
+bool mpreal_amp_epsilon_close(AMP a, AMP b, double epsilon)
+{
+    return mpreal_comp_epsilon_close(mpreal_comp_value(a), mpreal_comp_value(b), epsilon);
+}
+
 
 /* Shorthand functions for making complex numbers */
 
@@ -343,6 +358,15 @@ double
 mpreal_amp_to_prob(AMP a)
 {
     return mpreal_comp_to_prob(mpreal_comp_value(a));
+}
+
+AMP
+mpreal_prob_to_amp(double a)
+{
+    mpreal_complex c;
+    c.r = mpfr::sqrt(a);
+    c.i = 0;
+    return mpreal_comp_lookup(c);
 }
 
 

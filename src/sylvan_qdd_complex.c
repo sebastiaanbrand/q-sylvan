@@ -260,6 +260,15 @@ amp_to_prob(AMP a)
     return comp_to_prob(comp_value(a));
 }
 
+AMP
+prob_to_amp(double a)
+{
+    complex_t c;
+    c.r = flt_sqrt(a);
+    c.i = 0;
+    return comp_lookup(c);
+}
+
 
 /* Arithmetic operations on complex structs */
 
@@ -353,9 +362,26 @@ bool comp_approx_equal(complex_t a, complex_t b)
     return comp_epsilon_close(a, b, cmap_get_tolerance());
 }
 
-bool comp_epsilon_close(complex_t a, complex_t b, long double epsilon)
+bool comp_epsilon_close(complex_t a, complex_t b, double epsilon)
 {
     return ( (flt_abs(a.r - b.r) < epsilon) && (flt_abs(a.i - b.i) < epsilon) );
+}
+
+/* Comparing AMPs */
+
+bool amp_exact_equal(AMP a, AMP b)
+{
+    return comp_exact_equal(comp_value(a), comp_value(b));
+}
+
+bool amp_approx_equal(AMP a, AMP b)
+{
+    return comp_approx_equal(comp_value(a), comp_value(b));
+}
+
+bool amp_epsilon_close(AMP a, AMP b, double epsilon)
+{
+    return comp_epsilon_close(comp_value(a), comp_value(b), epsilon);
 }
 
 

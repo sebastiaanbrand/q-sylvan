@@ -58,6 +58,12 @@ AMP mpreal_amp_sub(AMP a, AMP b);
 AMP mpreal_amp_mul(AMP a, AMP b);
 AMP mpreal_amp_div(AMP a, AMP b);
 double mpreal_amp_to_prob(AMP a);
+AMP mpreal_prob_to_amp(double a); // AMP of (sqrt(a), 0)
+
+/* Comparing AMPs */
+bool mpreal_amp_exact_equal(AMP a, AMP b);
+bool mpreal_amp_approx_equal(AMP a, AMP b);
+bool mpreal_amp_epsilon_close(AMP a, AMP b, double epsilon);
 
 /* normalization of two amps */
 AMP mpreal_amp_normalize_low(AMP *low, AMP *high);

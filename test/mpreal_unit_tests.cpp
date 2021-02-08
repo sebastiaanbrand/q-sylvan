@@ -1052,7 +1052,6 @@ int test_mpreal_cswap_circuit()
     return 0;
 }
 
-/*
 // measurement of q0 + sanity checks
 int test_measure_random_state(QDD qdd, BDDVAR nvars)
 {
@@ -1066,7 +1065,7 @@ int test_measure_random_state(QDD qdd, BDDVAR nvars)
     qm = qdd_measure_q0(qdd, nvars, &m, &p);
     test_assert(qdd_is_ordered(qdd, nvars));
     test_assert(qdd_is_unitvector(qm, nvars));
-    if ((flt_abs(p - 1.0) < cmap_get_tolerance()) || (flt_abs(p - 0.0) < cmap_get_tolerance())){
+    if ((fabs(p - 1.0) < mpreal_tree_map_get_tolerance()) || (fabs(p - 0.0) < mpreal_tree_map_get_tolerance())){
         qdd = qdd_remove_global_phase(qdd); // measurement removes global phase
         test_assert(qdd_equivalent(qdd, qm, nvars, false, false));
         test_assert(qdd_equivalent(qdd, qm, nvars, true,  false));
@@ -1078,7 +1077,8 @@ int test_measure_random_state(QDD qdd, BDDVAR nvars)
     return 0;
 }
 
-int test_measurements()
+
+int test_mpreal_measurements()
 {
     QDD q, qPM;
     AMP a;
@@ -1128,7 +1128,7 @@ int test_measurements()
         q   = qdd_create_basis_state(3, x3);
         q   = qdd_gate(q, GATEID_H, 0);
         qPM = qdd_measure_qubit(q, 0, 3, &m, &prob);
-        test_assert(flt_abs(prob - 0.5) < cmap_get_tolerance());
+        test_assert(flt_abs(prob - 0.5) < mpreal_tree_map_get_tolerance());
         x3[2]=0; x3[1]=0; x3[0]=m; // either |000> or |001> depending on m
         q = qdd_create_basis_state(3, x3); 
         test_assert(qdd_equivalent(q, qPM, 3, false, true));
@@ -1140,7 +1140,7 @@ int test_measurements()
         q   = qdd_create_basis_state(3, x3);
         q   = qdd_gate(q, GATEID_H, 1);
         qPM = qdd_measure_qubit(q, 1, 3, &m, &prob);
-        test_assert(flt_abs(prob - 0.5) < cmap_get_tolerance());
+        test_assert(fabs(prob - 0.5) < mpreal_tree_map_get_tolerance());
         x3[2]=0; x3[1]=m; x3[0]=0; // either |000> or |010> depending on m
         q = qdd_create_basis_state(3, x3);
         test_assert(qdd_equivalent(q, qPM, 3, false, true));
@@ -1152,7 +1152,7 @@ int test_measurements()
         q   = qdd_create_basis_state(3, x3);
         q   = qdd_gate(q, GATEID_H, 2);
         qPM = qdd_measure_qubit(q, 2, 3, &m, &prob);
-        test_assert(flt_abs(prob - 0.5) < cmap_get_tolerance());
+        test_assert(fabs(prob - 0.5) < mpreal_tree_map_get_tolerance());
         x3[2]=m; x3[1]=0; x3[0]=0; // either |000> or |100> depending on m
         q = qdd_create_basis_state(3, x3);
         test_assert(qdd_equivalent(q, qPM, 3, false, true));
@@ -1164,7 +1164,7 @@ int test_measurements()
         q   = qdd_create_basis_state(3, x3);
         q   = qdd_gate(q, GATEID_H, 0);
         qPM = qdd_measure_qubit(q, 0, 3, &m, &prob);
-        test_assert(flt_abs(prob - 0.5) < cmap_get_tolerance());
+        test_assert(fabs(prob - 0.5) < mpreal_tree_map_get_tolerance());
         x3[2]=0; x3[1]=0; x3[0]=m; // either |000> or |001> depending on m
         q = qdd_create_basis_state(3, x3); 
         test_assert(qdd_equivalent(q, qPM, 3, false, true));
@@ -1178,7 +1178,7 @@ int test_measurements()
         q   = qdd_gate(q, GATEID_H, 1);
         q   = qdd_gate(q, GATEID_H, 2);
         qPM = qdd_measure_qubit(q, 0, 3, &m, &prob); 
-        test_assert(flt_abs(prob - 0.5) < cmap_get_tolerance());
+        test_assert(fabs(prob - 0.5) < mpreal_tree_map_get_tolerance());
         x3[2]=0; x3[1]=0; x3[0]=m; // either |++0> or |++1> depending on m
         q = qdd_create_basis_state(3, x3); 
         q = qdd_gate(q, GATEID_H, 1);
@@ -1194,7 +1194,7 @@ int test_measurements()
         q   = qdd_gate(q, GATEID_H, 1);
         q   = qdd_gate(q, GATEID_H, 2);
         qPM = qdd_measure_qubit(q, 1, 3, &m, &prob);
-        test_assert(flt_abs(prob - 0.5) < cmap_get_tolerance());
+        test_assert(fabs(prob - 0.5) < mpreal_tree_map_get_tolerance());
         x3[2]=0; x3[1]=m; x3[0]=0; // either |+0+> or |+1+> depending on m
         q = qdd_create_basis_state(3, x3); 
         q = qdd_gate(q, GATEID_H, 0);
@@ -1209,23 +1209,23 @@ int test_measurements()
         q   = qdd_gate(q, GATEID_H, 0);
         q   = qdd_gate(q, GATEID_H, 1);
         q   = qdd_cgate(q,GATEID_Z, 0, 1);
-        x2[1]=0; x2[0]=0; a = qdd_get_amplitude(q, x2); test_assert(a == comp_lookup(comp_make(0.5,0)));
-        x2[1]=0; x2[0]=1; a = qdd_get_amplitude(q, x2); test_assert(a == comp_lookup(comp_make(0.5,0)));
-        x2[1]=1; x2[0]=0; a = qdd_get_amplitude(q, x2); test_assert(a == comp_lookup(comp_make(0.5,0)));
-        x2[1]=1; x2[0]=1; a = qdd_get_amplitude(q, x2); test_assert(a == comp_lookup(comp_make(-0.5,0)));
+        x2[1]=0; x2[0]=0; a = qdd_get_amplitude(q, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(0.5,0)));
+        x2[1]=0; x2[0]=1; a = qdd_get_amplitude(q, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(0.5,0)));
+        x2[1]=1; x2[0]=0; a = qdd_get_amplitude(q, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(0.5,0)));
+        x2[1]=1; x2[0]=1; a = qdd_get_amplitude(q, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(-0.5,0)));
         qPM = qdd_measure_qubit(q, 0, 2, &m, &prob);
-        test_assert(flt_abs(prob - 0.5) < cmap_get_tolerance());
+        test_assert(fabs(prob - 0.5) < mpreal_tree_map_get_tolerance());
         if (m == 0) { // expect 1/sqrt(2)(|00> + |10>)
-            x2[1]=0; x2[0]=0; a = qdd_get_amplitude(qPM, x2); test_assert(a == comp_lookup(comp_make(1.0/flt_sqrt(2.0),0)));
+            x2[1]=0; x2[0]=0; a = qdd_get_amplitude(qPM, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(mpreal_sqrt2(0.5),0)));
             x2[1]=0; x2[0]=1; a = qdd_get_amplitude(qPM, x2); test_assert(a == C_ZERO);
-            x2[1]=1; x2[0]=0; a = qdd_get_amplitude(qPM, x2); test_assert(a == comp_lookup(comp_make(1.0/flt_sqrt(2.0),0)));
+            x2[1]=1; x2[0]=0; a = qdd_get_amplitude(qPM, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(mpreal_sqrt2(0.5),0)));
             x2[1]=1; x2[0]=1; a = qdd_get_amplitude(qPM, x2); test_assert(a == C_ZERO);
         }
         if (m == 1) { // expect 1/sqrt(2)(|01> - |11>)
             x2[1]=0; x2[0]=0; a = qdd_get_amplitude(qPM, x2); test_assert(a == C_ZERO);
-            x2[1]=0; x2[0]=1; a = qdd_get_amplitude(qPM, x2); test_assert(a == comp_lookup(comp_make(1.0/flt_sqrt(2.0),0)));
+            x2[1]=0; x2[0]=1; a = qdd_get_amplitude(qPM, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(mpreal_sqrt2(0.5),0)));
             x2[1]=1; x2[0]=0; a = qdd_get_amplitude(qPM, x2); test_assert(a == C_ZERO);
-            x2[1]=1; x2[0]=1; a = qdd_get_amplitude(qPM, x2); test_assert(a == comp_lookup(comp_make(-1.0/flt_sqrt(2.0),0)));
+            x2[1]=1; x2[0]=1; a = qdd_get_amplitude(qPM, x2); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(mpreal_sqrt2(-0.5),0)));
         }
     }
 
@@ -1275,7 +1275,7 @@ int test_measurements()
         q   = qdd_create_basis_state(3, x3);
         q   = qdd_gate(q, GATEID_H, 0);
         qPM = qdd_measure_all(q, 3, ms, &prob);
-        test_assert(flt_abs(prob - 0.5) < cmap_get_tolerance());
+        test_assert(fabs(prob - 0.5) < mpreal_tree_map_get_tolerance());
         x3[2]=0; x3[1]=0; x3[0]=ms[0]; // either |000> or |001> depending on m
         q = qdd_create_basis_state(3, x3); 
         test_assert(qdd_equivalent(q, qPM, 3, false, true));
@@ -1288,7 +1288,7 @@ int test_measurements()
         q   = qdd_create_basis_state(3, x3);
         q   = qdd_gate(q, GATEID_H, 1);
         qPM = qdd_measure_all(q, 3, ms, &prob);
-        test_assert(flt_abs(prob - 0.5) < cmap_get_tolerance());
+        test_assert(fabs(prob - 0.5) < mpreal_tree_map_get_tolerance());
         x3[2]=0; x3[1]=ms[1]; x3[0]=0; // either |000> or |010> depending on m
         q = qdd_create_basis_state(3, x3);
         test_assert(qdd_equivalent(q, qPM, 3, false, true));
@@ -1301,7 +1301,7 @@ int test_measurements()
         q   = qdd_create_basis_state(3, x3);
         q   = qdd_gate(q, GATEID_H, 2);
         qPM = qdd_measure_all(q, 3, ms, &prob);
-        test_assert(flt_abs(prob - 0.5) < cmap_get_tolerance());
+        test_assert(fabs(prob - 0.5) < mpreal_tree_map_get_tolerance());
         x3[2]=ms[2]; x3[1]=0; x3[0]=0; // either |000> or |100> depending on m
         q = qdd_create_basis_state(3, x3);
         test_assert(qdd_equivalent(q, qPM, 3, false, true));
@@ -1323,6 +1323,7 @@ int test_measurements()
     return 0;
 }
 
+/*
 int test_QFT()
 {
     QDD q3, q5, qref3, qref5;
@@ -1637,6 +1638,7 @@ int runtests()
     if (test_mpreal_ccz_gate()) return 1;
     if (test_mpreal_swap_circuit()) return 1;
     if (test_mpreal_cswap_circuit()) return 1;
+    if (test_mpreal_measurements()) return 1;
 
     sylvan_quit();
     lace_exit();

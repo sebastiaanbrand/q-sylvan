@@ -14,6 +14,10 @@
     #define amp_mul(a,b) mpreal_amp_mul(a,b)
     #define amp_div(a,b) mpreal_amp_div(a,b)
     #define amp_to_prob(a) mpreal_amp_to_prob(a)
+    #define prob_to_amp(a) mpreal_prob_to_amp(a)
+    #define amp_exact_equal(a,b) mpreal_amp_exact_equal(a,b)
+    #define amp_approx_equal(a,b) mpreal_amp_approx_equal(a,b)
+    #define amp_epsilon_close(a,b,eps) mpreal_amp_epsilon_close(a,b,eps)
     #define amp_normalize_low(a,b) mpreal_amp_normalize_low(a,b)
     #define amp_normalize_largest(a,b) mpreal_amp_normalize_largest(a,b)
     #define amp_default_normalize(a,b) mpreal_amp_normalize_low(a,b) // default normalize is low
@@ -28,6 +32,10 @@
     #define amp_mul(a,b) amp_mul(a,b)
     #define amp_div(a,b) amp_div(a,b)
     #define amp_to_prob(a) amp_to_prob(a)
+    #define prob_to_amp(a) prob_to_amp(a)
+    #define amp_exact_equal(a,b) amp_exact_equal(a,b)
+    #define amp_approx_equal(a,b) amp_approx_equal(a,b)
+    #define amp_epsilon_close(a,b,eps) amp_epsilon_close(a,b,eps)
     #define amp_normalize_low(a,b) amp_normalize_low(a,b)
     #define amp_normalize_largest(a,b) amp_normalize_largest(a,b)
     #define amp_default_normalize(a,b) amp_normalize_largest(a,b) // default normalize is largest

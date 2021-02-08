@@ -1894,12 +1894,14 @@ qdd_measure_q0(QDD qdd, BDDVAR nvars, int *m, double *p)
 
     if (testing_mode) assert(qdd_is_unitvector(qdd, nvars));
 
+    // TODO: don't use doubles here but allow for mpreal ?
+    // (e.g. by using AMPs)
     prob_low  = qdd_unnormed_prob(low,  1, nvars);
     prob_high = qdd_unnormed_prob(high, 1, nvars);
     prob_root = amp_to_prob(QDD_AMP(qdd));
     prob_low  *= prob_root;
     prob_high *= prob_root;
-    if (fabs(prob_low + prob_high - 1.0) > cmap_get_tolerance()*1000) {
+    if (fabs(prob_low + prob_high - 1.0) > 1e-6) {
         printf("WARNING: prob sum = %.10lf (%.5lf + %.5lf)\n", prob_low + prob_high, prob_low, prob_high);
         //assert("probabilities don't sum to 1" && false);
     }
@@ -1910,21 +1912,20 @@ qdd_measure_q0(QDD qdd, BDDVAR nvars, int *m, double *p)
     *p = prob_low;
 
     // produce post-measurement state
-    complex_t norm;
+    AMP norm;
     if (*m == 0) {
         high = qdd_bundle_ptr_amp(QDD_TERMINAL, C_ZERO);
-        norm = comp_make(flt_sqrt(prob_low), 0.0);
+        norm = prob_to_amp(prob_low);
     }
     else {
         low  = qdd_bundle_ptr_amp(QDD_TERMINAL, C_ZERO);
-        norm = comp_make(flt_sqrt(prob_high), 0.0);
+        norm = prob_to_amp(prob_high);
     }
 
     QDD res = qdd_makenode(0, low, high);
 
-    complex_t c = comp_mul(comp_value(QDD_AMP(qdd)), comp_value(QDD_AMP(res)));
-    c = comp_div(c, norm);
-    AMP new_root_amp = qdd_comp_lookup(c);
+    AMP new_root_amp = amp_mul(QDD_AMP(qdd), QDD_AMP(res));
+    new_root_amp     = amp_div(new_root_amp, norm);
 
     res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     res = qdd_remove_global_phase(res);
@@ -2326,8 +2327,10 @@ qdd_equivalent(QDD a, QDD b, int n, bool exact, bool verbose)
         amp_a = qdd_get_amplitude(a, x);
         amp_b = qdd_get_amplitude(b, x);
         if(exact){
-            if(!comp_exact_equal(comp_value(amp_a), comp_value(amp_b))){
+            if(!amp_exact_equal(amp_a, amp_b)){
                 if(verbose){
+                    // this printing won't work for the mpreal backend
+                    // TODO: fix above
                     _print_bitstring(x, n, true);
                     printf(", amp a ="); comp_print(comp_value(amp_a));
                     printf(" != amp b ="); comp_print(comp_value(amp_b));
@@ -2337,7 +2340,7 @@ qdd_equivalent(QDD a, QDD b, int n, bool exact, bool verbose)
             }
         }
         else{
-            if(!comp_approx_equal(comp_value(amp_a), comp_value(amp_b))){
+            if(!amp_approx_equal(amp_a, amp_b)){
                 if(verbose){
                     _print_bitstring(x, n, true);
                     printf(", amp a ="); comp_print(comp_value(amp_a));
