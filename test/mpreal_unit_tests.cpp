@@ -803,12 +803,11 @@ int test_mpreal_cz_gate()
     return 0;
 }
 
-/*
 int test_mpreal_ccz_gate()
 {
     QDD q3;
     bool x3[] = {0,0,0};
-    AMP a, aRef;
+    AMP a, aRef, a_minRef;
 
     LACE_ME;
 
@@ -817,6 +816,7 @@ int test_mpreal_ccz_gate()
     q3 = qdd_gate(q3, GATEID_H, 1);
     q3 = qdd_gate(q3, GATEID_H, 2);
     aRef = qdd_get_amplitude(q3, x3);
+    a_minRef = mpreal_amp_mul(aRef, C_MIN_ONE);
 
     x3[2]=1; x3[1]=0; x3[0]=1; q3 = qdd_all_control_phase(q3, 3, x3);
     x3[2] = 0; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q3, x3); test_assert(a == aRef);
@@ -824,7 +824,7 @@ int test_mpreal_ccz_gate()
     x3[2] = 0; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q3, x3); test_assert(a == aRef);
     x3[2] = 0; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(q3, x3); test_assert(a == aRef);
     x3[2] = 1; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q3, x3); test_assert(a == aRef);    
-    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q3, x3); test_assert(a == amp_mul(aRef, C_MIN_ONE));
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q3, x3); test_assert(a == a_minRef);
     x3[2] = 1; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q3, x3); test_assert(a == aRef);
     x3[2] = 1; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(q3, x3); test_assert(a == aRef);
     test_assert(qdd_is_ordered(q3, 3));
@@ -835,6 +835,7 @@ int test_mpreal_ccz_gate()
     return 0;
 }
 
+/*
 int test_controlled_range_gate()
 {
     QDD q10, qres;
@@ -895,8 +896,9 @@ int test_controlled_range_gate()
     if(VERBOSE) printf("qdd controlled range:     ok\n");
     return 0;
 }
+*/
 
-int test_swap_circuit()
+int test_mpreal_swap_circuit()
 {
     QDD q;
     bool x3[] = {0,0,0};
@@ -944,7 +946,7 @@ int test_swap_circuit()
     return 0;
 }
 
-int test_cswap_circuit()
+int test_mpreal_cswap_circuit()
 {
     QDD q;
     bool x3[] = {0,0,0};
@@ -986,16 +988,16 @@ int test_cswap_circuit()
     x3[2] = 0; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 0; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 0; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
-    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == comp_lookup(comp_make(1.0/flt_sqrt(2.0),0)));
-    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == comp_lookup(comp_make(1.0/flt_sqrt(2.0),0)));
+    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(mpreal_sqrt2(0.5),0)));
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(mpreal_sqrt2(0.5),0)));
     x3[2] = 1; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 1; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     q = qdd_ccircuit(q, CIRCID_swap, cs, 1, 2); // control is |+>, expected output: 1/sqrt(2)(|100> + |011>)
     x3[2] = 0; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 0; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 0; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
-    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == comp_lookup(comp_make(1.0/flt_sqrt(2.0),0)));
-    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == comp_lookup(comp_make(1.0/flt_sqrt(2.0),0)));
+    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(mpreal_sqrt2(0.5),0)));
+    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(mpreal_sqrt2(0.5),0)));
     x3[2] = 1; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 1; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 1; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
@@ -1008,16 +1010,16 @@ int test_cswap_circuit()
     x3[2] = 0; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 0; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 0; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
-    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == comp_lookup(comp_make(1.0/flt_sqrt(2.0),0)));
-    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == comp_lookup(comp_make(-1.0/flt_sqrt(2.0),0)));
+    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(mpreal_sqrt2(0.5),0)));
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(mpreal_sqrt2(-0.5),0)));
     x3[2] = 1; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 1; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     q = qdd_ccircuit(q, CIRCID_swap, cs, 1, 2); // control is |->, expected output: 1/sqrt(2)(|100> - |011>)
     x3[2] = 0; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 0; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 0; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
-    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == comp_lookup(comp_make(-1.0/flt_sqrt(2.0),0)));
-    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == comp_lookup(comp_make(1.0/flt_sqrt(2.0),0)));
+    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(mpreal_sqrt2(-0.5),0)));
+    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(mpreal_sqrt2(0.5),0)));
     x3[2] = 1; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 1; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 1; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
@@ -1030,16 +1032,16 @@ int test_cswap_circuit()
     x3[2] = 0; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 0; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 0; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
-    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == comp_lookup(comp_make(1.0/flt_sqrt(2.0),0)));
-    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == comp_lookup(comp_make(0,1.0/flt_sqrt(2.0))));
+    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(mpreal_sqrt2(0.5),0)));
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(0,mpreal_sqrt2(0.5))));
     x3[2] = 1; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 1; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     q = qdd_ccircuit(q, CIRCID_swap, cs, 1, 2); // control is |+i>, expected output: 1/sqrt(2)(|100> + i|011>)
     x3[2] = 0; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 0; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 0; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
-    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == comp_lookup(comp_make(0,1.0/flt_sqrt(2.0))));
-    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == comp_lookup(comp_make(1.0/flt_sqrt(2.0),0)));
+    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(0,mpreal_sqrt2(0.5))));
+    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == mpreal_comp_lookup(mpreal_comp_make(mpreal_sqrt2(0.5),0)));
     x3[2] = 1; x3[1] = 0; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 1; x3[1] = 1; x3[0] = 0; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
     x3[2] = 1; x3[1] = 1; x3[0] = 1; a = qdd_get_amplitude(q, x3); test_assert(a == C_ZERO);
@@ -1050,6 +1052,7 @@ int test_cswap_circuit()
     return 0;
 }
 
+/*
 // measurement of q0 + sanity checks
 int test_measure_random_state(QDD qdd, BDDVAR nvars)
 {
@@ -1631,7 +1634,9 @@ int runtests()
     if (test_mpreal_phase_gates()) return 1;
     if (test_mpreal_cx_gate()) return 1;
     if (test_mpreal_cz_gate()) return 1;
-    //if (test_mpreal_ccz_gate()) return 1;
+    if (test_mpreal_ccz_gate()) return 1;
+    if (test_mpreal_swap_circuit()) return 1;
+    if (test_mpreal_cswap_circuit()) return 1;
 
     sylvan_quit();
     lace_exit();
