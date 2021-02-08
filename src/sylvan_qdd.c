@@ -1838,13 +1838,11 @@ qdd_all_control_phase_rec(QDD qdd, BDDVAR k, BDDVAR n, bool *x)
     // terminal case, apply phase depending on x[k] (control k on 0 or 1)
     if (k == (n-1)) {
         if (x[k] == 1) {
-            complex_t c = comp_mul(comp_value(QDD_AMP(high)), comp_minus_one());
-            AMP new_amp = qdd_comp_lookup(c);
+            AMP new_amp = amp_mul(QDD_AMP(high), C_MIN_ONE);
             high = qdd_bundle_ptr_amp(QDD_PTR(high), new_amp);
         }
         else {
-            complex_t c = comp_mul(comp_value(QDD_AMP(low)), comp_minus_one());
-            AMP new_amp = qdd_comp_lookup(c);
+            AMP new_amp = amp_mul(QDD_AMP(low), C_MIN_ONE);
             low = qdd_bundle_ptr_amp(QDD_PTR(low), new_amp);
         }
     }
@@ -1865,8 +1863,7 @@ qdd_all_control_phase_rec(QDD qdd, BDDVAR k, BDDVAR n, bool *x)
     QDD res = qdd_makenode(k, low, high);
 
     // multiply by existing edge weight on qdd
-    complex_t c = comp_mul(comp_value(QDD_AMP(qdd)), comp_value(QDD_AMP(res)));
-    AMP new_root_amp = qdd_comp_lookup(c);
+    AMP new_root_amp = amp_mul(QDD_AMP(qdd), QDD_AMP(res));
     res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     return res;
 }
