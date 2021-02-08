@@ -254,6 +254,11 @@ amp_div(AMP a, AMP b)
     return res;
 }
 
+double
+amp_to_prob(AMP a)
+{
+    return comp_to_prob(comp_value(a));
+}
 
 
 /* Arithmetic operations on complex structs */

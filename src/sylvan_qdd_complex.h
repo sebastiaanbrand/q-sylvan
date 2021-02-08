@@ -102,6 +102,7 @@ AMP amp_add(AMP a, AMP b);
 AMP amp_sub(AMP a, AMP b);
 AMP amp_mul(AMP a, AMP b);
 AMP amp_div(AMP a, AMP b);
+double amp_to_prob(AMP a);
 
 /* Arithmetic operations on complex structs */
 complex_t comp_abs(complex_t a);

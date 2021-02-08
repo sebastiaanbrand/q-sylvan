@@ -38,6 +38,7 @@ mpreal_complex mpreal_comp_add(mpreal_complex a, mpreal_complex b);
 mpreal_complex mpreal_comp_sub(mpreal_complex a, mpreal_complex b);
 mpreal_complex mpreal_comp_mul(mpreal_complex a, mpreal_complex b);
 mpreal_complex mpreal_comp_div(mpreal_complex a, mpreal_complex b);
+double mpreal_comp_to_prob(mpreal_complex a);
 
 
 #endif
@@ -56,6 +57,7 @@ AMP mpreal_amp_add(AMP a, AMP b);
 AMP mpreal_amp_sub(AMP a, AMP b);
 AMP mpreal_amp_mul(AMP a, AMP b);
 AMP mpreal_amp_div(AMP a, AMP b);
+double mpreal_amp_to_prob(AMP a);
 
 /* normalization of two amps */
 AMP mpreal_amp_normalize_low(AMP *low, AMP *high);

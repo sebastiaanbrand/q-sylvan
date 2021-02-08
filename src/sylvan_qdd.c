@@ -1900,7 +1900,7 @@ qdd_measure_q0(QDD qdd, BDDVAR nvars, int *m, double *p)
 
     prob_low  = qdd_unnormed_prob(low,  1, nvars);
     prob_high = qdd_unnormed_prob(high, 1, nvars);
-    prob_root = comp_to_prob(comp_value(QDD_AMP(qdd)));
+    prob_root = amp_to_prob(QDD_AMP(qdd));
     prob_low  *= prob_root;
     prob_high *= prob_root;
     if (fabs(prob_low + prob_high - 1.0) > cmap_get_tolerance()*1000) {
@@ -1979,7 +1979,7 @@ qdd_measure_all(QDD qdd, BDDVAR n, bool* ms, double *p)
 
         prob_low  = qdd_unnormed_prob(low,  k+1, n);
         prob_high = qdd_unnormed_prob(high, k+1, n);
-        prob_roots *= comp_to_prob(comp_value(QDD_AMP(qdd)));
+        prob_roots *= amp_to_prob(QDD_AMP(qdd));
         prob_high = prob_high * prob_roots / prob_path;
         prob_low  = prob_low  * prob_roots / prob_path;
 
@@ -2007,7 +2007,7 @@ TASK_IMPL_3(double, qdd_unnormed_prob, QDD, qdd, BDDVAR, topvar, BDDVAR, nvars)
 
     if (topvar == nvars) {
         assert(QDD_PTR(qdd) == QDD_TERMINAL);
-        return comp_to_prob(comp_value(QDD_AMP(qdd)));
+        return amp_to_prob(QDD_AMP(qdd));
     }
 
     // Look in cache
@@ -2032,7 +2032,7 @@ TASK_IMPL_3(double, qdd_unnormed_prob, QDD, qdd, BDDVAR, topvar, BDDVAR, nvars)
     SPAWN(qdd_unnormed_prob, high, nextvar, nvars);
     prob_low  = CALL(qdd_unnormed_prob, low, nextvar, nvars);
     prob_high = SYNC(qdd_unnormed_prob);
-    prob_root = comp_to_prob(comp_value(QDD_AMP(qdd)));
+    prob_root = amp_to_prob(QDD_AMP(qdd));
     prob_res  = prob_root * (prob_low + prob_high);
 
     // Put in cache and return
@@ -2047,11 +2047,11 @@ TASK_IMPL_3(double, qdd_unnormed_prob, QDD, qdd, BDDVAR, topvar, BDDVAR, nvars)
 AMP
 qdd_get_amplitude(QDD q, bool* basis_state)
 {
-
-    complex_t c = comp_one();
+    // NOTE: removed reliance on complex_t by using amp_mul instead of comp_mul
+    AMP res = C_ONE;
     QDD low, high;
     for (;;) {
-        c = comp_mul(c, comp_value(QDD_AMP(q)));
+        res = amp_mul(res, QDD_AMP(q));
         
         // if the current edge is pointing to the terminal, we're done.
         if (QDD_PTR(q) == QDD_TERMINAL) break;
@@ -2065,7 +2065,7 @@ qdd_get_amplitude(QDD q, bool* basis_state)
         q = (basis_state[var] == 0) ? low : high;
     }
 
-    return qdd_comp_lookup(c);
+    return res;
 }
 
 
@@ -2371,7 +2371,7 @@ qdd_is_close_to_unitvector(QDD qdd, BDDVAR n, double tol)
     double sum_abs_squares = 0.0;
     while(has_next){
         a = qdd_get_amplitude(qdd, x);
-        sum_abs_squares += comp_to_prob(comp_value(a));
+        sum_abs_squares += amp_to_prob(a);
         has_next = _next_bitstring(x, n);
     }
 

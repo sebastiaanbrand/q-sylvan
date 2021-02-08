@@ -176,6 +176,13 @@ mpreal_comp_div(mpreal_complex a, mpreal_complex b)
     return res;
 }
 
+double
+mpreal_comp_to_prob(mpreal_complex a)
+{
+    mpfr::mpreal res = mpfr::sqrt ( (a.r*a.r) + (a.i*a.i) );
+    res = res * res;
+    return res.toDouble();
+}
 
 /* Arithmetic operations on AMPs */
 AMP
@@ -332,6 +339,12 @@ mpreal_amp_div(AMP a, AMP b)
     return res;
 }
 
+double
+mpreal_amp_to_prob(AMP a)
+{
+    return mpreal_comp_to_prob(mpreal_comp_value(a));
+}
+
 
 /* normalization of two amps */
 
@@ -391,6 +404,7 @@ mpreal_amp_normalize_largest(AMP *low, AMP *high)
 void
 init_mpreal_amplitude_table(size_t size, long double tol)
 {
+    printf("init mpreal amptable\n");
     tolerance = (tol < 0) ? default_tolerance : tol;
     table_size = size;
 
