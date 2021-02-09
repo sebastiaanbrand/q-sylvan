@@ -1,9 +1,11 @@
 set(SOURCES
-    QASM_to_Sylvan.c
 )
 
-add_executable(QASM_to_Sylvan QASM_to_Sylvan.c ${SOURCES})
-target_link_libraries(QASM_to_Sylvan sylvan)
+add_executable(QASM_to_circuit QASM_to_circuit.c ${SOURCES})
+target_link_libraries(QASM_to_circuit sylvan)
+
+# add_executable(QASM_to_Sylvan QASM_to_Sylvan.c ${SOURCES})
+# target_link_libraries(QASM_to_Sylvan sylvan)
 
 # Include profiler if installed
 include(CheckIncludeFiles)

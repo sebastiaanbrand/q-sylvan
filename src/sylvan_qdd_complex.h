@@ -34,10 +34,11 @@ static const uint32_t GATEID_Y = 2;
 static const uint32_t GATEID_Z = 3;
 static const uint32_t GATEID_H = 4;
 static const uint32_t GATEID_S = 5;
-static const uint32_t GATEID_T = 6;
-static const uint32_t GATEID_Tdag = 7;
-static const uint32_t GATEID_sqrtX = 8;
-static const uint32_t GATEID_sqrtY = 9;
+static const uint32_t GATEID_Sdag = 6;
+static const uint32_t GATEID_T = 7;
+static const uint32_t GATEID_Tdag = 8;
+static const uint32_t GATEID_sqrtX = 9;
+static const uint32_t GATEID_sqrtY = 10;
 void init_gates();
 // The next 255 gates are reserved for parameterized phase gates, which are
 // initialized below. (these are GATEIDs 10 265)
@@ -46,10 +47,10 @@ void init_gates();
 // throughout the entire run of the circuit.
 // TODO: maybe find a better way?
 void init_phase_gates(int n);
-static inline uint32_t GATEID_Rk(int k) { return k + 10; };
+static inline uint32_t GATEID_Rk(int k) { return k + 11; };
 // Another 255 parameterized phase gates, but this time with negative angles.
 // (GATEIDs 266 through 521)
-static inline uint32_t GATEID_Rk_dag(int k){ return k + 266; };
+static inline uint32_t GATEID_Rk_dag(int k){ return k + 267; };
 
 // Reserve 1000 gate IDs (comibned) for of the following: Rx, Ry, Rz. These 
 // gate IDs are re-used when a user requires more than 1000 custom gates.
@@ -75,7 +76,7 @@ uint32_t GATEID_Ry(fl_t a);
  */
 uint32_t GATEID_Rz(fl_t a);
 
-static const uint64_t num_static_gates  = 522;
+static const uint64_t num_static_gates  = 523;
 static const uint64_t num_dynamic_gates = 1000; // IDs in this rage are re-used 
 
 // 2x2 gates, k := GATEID_U 

@@ -3,12 +3,6 @@
 #include "sylvan.h"
 #include "sylvan_qdd_complex.h"
 
-#include <stdio.h>
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-#include <ctype.h>
-#include <time.h>
 
 // void remove_multiline_comments(char *str)
 // {
@@ -81,15 +75,12 @@ TASK_IMPL_5(QDD, handle_line, QDD, qdd, char*, line, int16_t*, measurements, BDD
     uint32_t *gateid = malloc(sizeof(uint32_t));
     *gateid = 0;
     bool isgate = false;
-    BDDVAR i = 0;
-    BDDVAR j = 0;
+    BDDVAR n_qubits = 0;
     char *temp;
     char *tokens[2];
     // Create all-zero state with "temp" qubits
     if (strstr(line, "qreg") != NULL) {
-        temp = strtok(line, "[");
-        temp = strtok(NULL, "]");
-        *nvars = (BDDVAR)atoi(temp);
+        get_qubits(line, 0, nvars);
         creg = malloc(sizeof(bool)*(*nvars));
         for(BDDVAR i = 0; i < *nvars; i++)
             creg[i] = 0;
@@ -97,22 +88,28 @@ TASK_IMPL_5(QDD, handle_line, QDD, qdd, char*, line, int16_t*, measurements, BDD
     }
     // Set measure marker on qubit "temp"
     else if (strstr(line, "measure") != NULL) {
-        temp = strtok(line, "[");
-        temp = strtok(NULL, "]");
-        char* temp2 = strtok(NULL, "[");
-        temp2 = strtok(NULL, "]");
-        measurements[atoi(temp)] = (int16_t)atoi(temp2);
+        BDDVAR *measure = malloc(2*sizeof(BDDVAR));
+        get_qubits(line, 1, measure);
+        measurements[measure[0]] = (int16_t)measure[1];
     }
     // Handle if statement
     else if (strstr(line, "if") != NULL) {
         qdd = handle_intermediate_measure(qdd, measurements, *nvars, creg);
+        BDDVAR *sum = malloc(sizeof(BDDVAR));
+        *sum = 0;
         temp = strtok(line, "=");
-        temp = strtok(NULL, "=");
+        line = strtok(NULL, "");
+        if(strstr(temp, "[") != NULL) {
+            get_qubits(temp, 0, sum);
+            *sum = creg[*sum];
+        }
+        else {
+            for (BDDVAR i = 0; i < *nvars; i++)
+                *sum += creg[i]*pow(2,i);
+        }
+        temp = strtok(line, "=");
         temp = strtok(temp, ")");
-        int sum = 0;
-        for (BDDVAR i = 0; i < *nvars; i++)
-            sum += creg[i]*pow(2,i);
-        if (atoi(temp) == sum) {
+        if (atoi(temp) == (int)*sum) {
             line = strtok(NULL, "");
             goto handleGate;
         }
@@ -128,32 +125,23 @@ TASK_IMPL_5(QDD, handle_line, QDD, qdd, char*, line, int16_t*, measurements, BDD
         // tokenize string
         tokens[0] = strtok(line, " ");
         tokens[1] = strtok(NULL, "");
-        while(tokens[0][i] == 'c' && strcmp(tokens[0], "creg") != 0) {
-            i++;
-        }
         isgate = get_gateid(tokens[0], gateid);
         if (!isgate)
             return qdd;
-        int *qubits = malloc((i+1) * sizeof(uint16_t));
-        temp = strtok(tokens[1], "[");
-        for(; j < i; j++) {
-            qubits[j] = (uint16_t)atoi(strtok(NULL, "]"));
-            temp = strtok(NULL, "[");
-        }
-        qubits[j] = (uint16_t)atoi(strtok(NULL, "]"));
-        for (BDDVAR i = 0; i < *nvars; i++) {
-            if (measurements[i] != -1) {
-                qdd = handle_intermediate_measure(qdd, measurements, *nvars, creg);
-                break;
-            }
-        }
-        if(i == 0)
+        while(tokens[0][n_qubits] == 'c' && strcmp(tokens[0], "creg") != 0)
+            n_qubits++;
+        BDDVAR *qubits = malloc((n_qubits+1) * sizeof(BDDVAR));
+        get_qubits(tokens[1], n_qubits, qubits);
+
+        qdd = handle_intermediate_measure(qdd, measurements, *nvars, creg);
+
+        if (n_qubits == 0)
             qdd = qdd_gate(qdd, *gateid, qubits[0]);
-        else if(i == 1)
+        else if (n_qubits == 1)
             qdd = qdd_cgate(qdd, *gateid, qubits[0], qubits[1]);
-        else if(i == 2)
+        else if (n_qubits == 2)
             qdd = qdd_cgate2(qdd, *gateid, qubits[0], qubits[1], qubits[2]);
-        else if(i == 3) {
+        else if (n_qubits == 3) {
             qdd = qdd_cgate3(qdd, *gateid, qubits[0], qubits[1], qubits[2], qubits[3]);
         }
         else exit(-1);
@@ -161,7 +149,19 @@ TASK_IMPL_5(QDD, handle_line, QDD, qdd, char*, line, int16_t*, measurements, BDD
     return qdd;
 }
 
-TASK_IMPL_2(uint32_t, get_gateid, char*, gate, uint32_t*, gate_id)
+TASK_IMPL_3(bool, get_qubits, char*, token, BDDVAR, n_qubits, BDDVAR*, qubits)
+{
+    BDDVAR j = 0;
+    strtok(token, "[");
+    for(; j < n_qubits; j++) {
+        qubits[j] = (BDDVAR)atoi(strtok(NULL, "]"));
+        strtok(NULL, "[");
+    }
+    qubits[j] = (BDDVAR)atoi(strtok(NULL, "]"));
+    return true;
+}
+
+TASK_IMPL_2(bool, get_gateid, char*, gate, uint32_t*, gate_id)
 {
     while(gate[0] == 'c' && strcmp(gate, "creg") != 0) {
         gate++;
@@ -194,10 +194,10 @@ TASK_IMPL_2(uint32_t, get_gateid, char*, gate, uint32_t*, gate_id)
         else if (strcmp(gate, "rz") == 0)
             *gate_id = GATEID_Rz(atof(strtok(NULL, ")")));
         else {
-            return 0;
+            return false;
         }
     }
-    return 1;
+    return true;
 }
 
 void read_QASM(char *filename, BDDVAR shots)
@@ -270,7 +270,7 @@ int main(int argc, char *argv[])
     if(strcmp(filename, "") == 0)
     {
         printf("Give filename of qasm file.\n");
-        exit(-1);
+        return 1;
     }
     // Standard Lace initialization
     int workers = 1;
