@@ -3,13 +3,14 @@
 
 #include "test_assert.h"
 #include "sylvan.h"
-#include "sylvan_qdd_complex.h"
+#include "sylvan_qdd_complex_include.h"
 
 #include "grover.h"
 #include "grover_cnf.h"
 #include "shor.h"
 
 bool VERBOSE = true;
+double TOLERANCE = 1e-14;
 
 int test_grover()
 {
@@ -30,11 +31,11 @@ int test_grover()
         bool *x = int_to_bitarray(k, nbits+1, true);
         a = qdd_get_amplitude(grov, x);
         if (x[0] == flag2[0] && x[1] == flag2[1])
-            prob += comp_to_prob(comp_value(a));
+            prob += amp_to_prob(a);
         else
             test_assert(a == C_ZERO);
     }
-    test_assert(fabs(prob - 1) < cmap_get_tolerance());
+    test_assert(fabs(prob - 1) < TOLERANCE);
 
     if(VERBOSE) printf("qdd %2d-qubit Grover:        ok (Pr(flag) = %lf)\n", nbits+1, prob);
 
@@ -51,9 +52,9 @@ int test_grover()
         bool *x = int_to_bitarray(k, nbits+1, true);
         a = qdd_get_amplitude(grov, x);
         if (x[0] == flag3[0] && x[1] == flag3[1] && x[2] == flag3[2])
-            prob += comp_to_prob(comp_value(a));
+            prob += amp_to_prob(a);
         else
-            test_assert(comp_to_prob(comp_value(a)) < 0.004);
+            test_assert(amp_to_prob(a) < 0.004);
     }
     test_assert(prob > 0.94);
 
@@ -66,7 +67,7 @@ int test_grover()
     srand(time(NULL));
     for (BDDVAR i = 0; i < nbits; i++) flag10[i] = (bool)(rand() % 2);
     grov = qdd_grover(nbits, flag10);
-    test_assert(qdd_is_close_to_unitvector(grov, nbits+1, cmap_get_tolerance()*100));
+    test_assert(qdd_is_close_to_unitvector(grov, nbits+1, TOLERANCE*100));
 
     // test probabilities
     prob = 0;
@@ -78,9 +79,9 @@ int test_grover()
             x[4] == flag10[4] && x[5] == flag10[5] &&
             x[6] == flag10[6] && x[7] == flag10[7] &&
             x[8] == flag10[8] && x[9] == flag10[9])
-            prob += comp_to_prob(comp_value(a));
+            prob += amp_to_prob(a);
         else
-            test_assert(comp_to_prob(comp_value(a)) < 0.001);
+            test_assert(amp_to_prob(a) < 0.001);
     }
     test_assert(prob > 0.99);
 
@@ -109,11 +110,11 @@ int test_grover_matrix()
         bool *x = int_to_bitarray(k, nbits+1, true);
         a = qdd_get_amplitude(grov, x);
         if (x[0] == flag2[0] && x[1] == flag2[1])
-            prob += comp_to_prob(comp_value(a));
+            prob += amp_to_prob(a);
         else
             test_assert(a == C_ZERO);
     }
-    test_assert(fabs(prob - 1) < cmap_get_tolerance());
+    test_assert(fabs(prob - 1) < TOLERANCE);
 
     if(VERBOSE) printf("matrix qdd %2d-qubit Grover: ok (Pr(flag) = %lf)\n", nbits+1, prob);
 
@@ -130,9 +131,9 @@ int test_grover_matrix()
         bool *x = int_to_bitarray(k, nbits+1, true);
         a = qdd_get_amplitude(grov, x);
         if (x[0] == flag3[0] && x[1] == flag3[1] && x[2] == flag3[2])
-            prob += comp_to_prob(comp_value(a));
+            prob += amp_to_prob(a);
         else
-            test_assert(comp_to_prob(comp_value(a)) < 0.004);
+            test_assert(amp_to_prob(a) < 0.004);
     }
     test_assert(prob > 0.94);
 
@@ -145,7 +146,7 @@ int test_grover_matrix()
     srand(time(NULL));
     for (BDDVAR i = 0; i < nbits; i++) flag10[i] = (bool)(rand() % 2);
     grov = qdd_grover_matrix(nbits, flag10);
-    test_assert(qdd_is_close_to_unitvector(grov, nbits+1, cmap_get_tolerance()*100));
+    test_assert(qdd_is_close_to_unitvector(grov, nbits+1, TOLERANCE*100));
 
     // test probabilities
     prob = 0;
@@ -157,9 +158,9 @@ int test_grover_matrix()
             x[4] == flag10[4] && x[5] == flag10[5] &&
             x[6] == flag10[6] && x[7] == flag10[7] &&
             x[8] == flag10[8] && x[9] == flag10[9])
-            prob += comp_to_prob(comp_value(a));
+            prob += amp_to_prob(a);
         else
-            test_assert(comp_to_prob(comp_value(a)) < 0.001);
+            test_assert(amp_to_prob(a) < 0.001);
     }
     test_assert(prob > 0.99);
 
@@ -199,7 +200,7 @@ int test_grover_cnf()
         //     printf("\n");
         // }
         if (x[0] == ans2[0] && x[1] == ans2[1])
-            prob += comp_to_prob(comp_value(a));
+            prob += amp_to_prob(a);
     }
     test_assert(qdd_is_unitvector(grov, nqubits+1+clauses));
     test_assert(prob > 0.999);
@@ -227,7 +228,7 @@ int test_grover_cnf()
         //     printf("\n");
         // }
         if (x[0] == ans3[0] && x[1] == ans3[1] && x[2] == ans3[2])
-            prob += comp_to_prob(comp_value(a));
+            prob += amp_to_prob(a);
     }
     test_assert(qdd_is_unitvector(grov, nqubits+1+clauses));
 
@@ -443,7 +444,7 @@ int main()
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<16, -1, true);
+    sylvan_init_qdd(1LL<<16, TOLERANCE, COMP_HASHMAP);
     qdd_set_testing_mode(true); // turn on internal sanity tests
 
     int res = runtests();
