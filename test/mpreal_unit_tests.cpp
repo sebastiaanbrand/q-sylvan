@@ -848,7 +848,7 @@ int test_mpreal_controlled_range_gate()
     q10 = qdd_create_basis_state(10, x10);
     for (BDDVAR k = 0; k < nqubits; k++) q10 = qdd_gate(q10, GATEID_H, k);
     aRef = qdd_get_amplitude(q10, x10);
-    aRefMin = amp_mul(aRef, C_MIN_ONE);
+    aRefMin = mpreal_amp_mul(aRef, C_MIN_ONE);
 
     // assert |++..+> state
     test_assert(qdd_is_ordered(q10, nqubits));
