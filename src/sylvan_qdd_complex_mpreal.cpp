@@ -113,12 +113,27 @@ mpreal_comp_value(AMP a)
     return res;
 }
 
+mpreal_complex
+mpreal_comp_value_old(AMP a)
+{
+    // special cases
+    if (a == C_ZERO)    return mpreal_comp_zero();
+    if (a == C_ONE)     return mpreal_comp_one();
+    if (a == C_MIN_ONE) return mpreal_comp_minus_one();
+
+    // lookup
+    mpreal_complex res;
+    res = mpreal_tree_map_get(mpreal_cmap_old, a);
+    return res;
+}
+
+
 AMP
 mpreal_comp_lookup(mpreal_complex c)
 {
     unsigned int res = 0;
 
-    // TODO: gc buffer counters
+    // TODO: local counters for gc instead of the counter in the mpreal_tree_map
 
     mpreal_tree_map_find_or_put(mpreal_cmap, c, &res);
 
@@ -536,3 +551,41 @@ free_mpreal_amplitude_table()
 {
     mpreal_tree_map_free(mpreal_cmap);
 }
+
+void
+init_new_empty_mpreal_table()
+{
+    // point old to current (full) ctable
+    mpreal_cmap_old = mpreal_cmap;
+
+    // re-init new (empty) ctable
+    double tolerance = mpreal_tree_map_get_tolerance();
+    init_mpreal_amplitude_table(table_size, tolerance);
+}
+
+void
+delete_old_mpreal_table()
+{
+    // delete  old (full) table
+    mpreal_tree_map_free(mpreal_cmap_old);
+}
+
+AMP
+move_from_old_to_new_mpreal(AMP a)
+{
+    mpreal_complex c = mpreal_comp_value_old(a);
+    return mpreal_comp_lookup(c);
+}
+
+uint64_t
+get_mpreal_table_size()
+{
+    return table_size;
+}
+
+uint64_t
+get_mpreal_table_num_entries()
+{
+    return mpreal_tree_map_get_num_entries(mpreal_cmap);
+}
+

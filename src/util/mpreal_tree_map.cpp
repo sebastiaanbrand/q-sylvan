@@ -117,7 +117,7 @@ mpreal_tree_map_get(mpreal_tree_map_t *map, unsigned int ref)
 
 // size()
 unsigned int
-mpreal_tree_map_size(mpreal_tree_map_t *map)
+mpreal_tree_map_get_num_entries(mpreal_tree_map_t *map)
 {
     return map->entries;
 }

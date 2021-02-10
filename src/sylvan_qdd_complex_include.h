@@ -23,6 +23,14 @@
     #define amp_default_normalize(a,b) mpreal_amp_normalize_low(a,b) // default normalize is low
     #define init_amplitude_table(size,tol,backend) init_mpreal_amplitude_table(size,tol)
     #define free_amplitude_table() free_mpreal_amplitude_table()
+
+    // for gc
+    #define init_new_empty_table() init_new_empty_mpreal_table()
+    #define delete_old_table() delete_old_mpreal_table()
+    #define move_from_old_to_new(a) move_from_old_to_new_mpreal(a)
+    #define get_table_entries_estimate() get_mpreal_table_num_entries() // TODO: replace w/ est
+    #define count_amplitude_table_enries() get_mpreal_table_num_entries()
+    #define get_table_size() get_mpreal_table_size()
 #else
     
     #define amp_abs(a)   amp_abs(a)
@@ -41,4 +49,12 @@
     #define amp_default_normalize(a,b) amp_normalize_largest(a,b) // default normalize is largest
     #define init_amplitude_table(size,tol,backend) init_amplitude_table(size,tol,backend)
     #define free_amplitude_table() free_amplitude_table()
+
+    // for gc
+    #define init_new_empty_table() init_new_empty_table()
+    #define delete_old_table() delete_old_table()
+    #define move_from_old_to_new(a) move_from_old_to_new(a)
+    #define get_table_entries_estimate() get_table_entries_estimate()
+    #define count_amplitude_table_enries() count_amplitude_table_enries()
+    #define get_table_size() get_table_size()
 #endif

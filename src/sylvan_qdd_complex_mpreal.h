@@ -75,6 +75,14 @@ void free_mpreal_amplitude_table();
 void init_mpreal_gates();
 void init_mpreal_phase_gates(int n);
 
+void init_new_empty_mpreal_table();
+void delete_old_mpreal_table();
+AMP move_from_old_to_new_mpreal(AMP a);
+uint64_t get_mpreal_table_entries_estimate();
+uint64_t get_mpreal_table_size();
+uint64_t get_mpreal_table_num_entries();
+
+
 #ifdef __cplusplus
 }
 #endif
