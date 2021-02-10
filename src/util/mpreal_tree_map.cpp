@@ -83,7 +83,7 @@ mpreal_tree_map_find_or_put(mpreal_tree_map_t *map, mpreal_complex val, unsigned
         // check if space
         if (map->entries > map->max_size-2) {
             printf("MPREAL AMP map full\n");
-            return -1;
+            exit(1); //return -1;
         }
 
         // if key not found, insert new pair
