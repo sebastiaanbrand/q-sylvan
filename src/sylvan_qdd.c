@@ -740,13 +740,20 @@ qdd_get_gc_amp_table_thres()
 void
 qdd_gc_amp_table(QDD *keep)
 {
+    qdd_gc_amp_table2(keep, 1);
+}
+
+void
+qdd_gc_amp_table2(QDD keep[], int num)
+{
     LACE_ME;
     // 1. Create new amp table
     init_new_empty_table();
 
     // 2. Fill new table with amps present in given QDDs
     //for (int i = 0; i < n_qdds; i++) qdds[i] = _fill_new_amp_table(qdds[i]);
-    *keep = _fill_new_amp_table(*keep);
+    for (int k = 0; k < num; k++)
+        keep[k] = _fill_new_amp_table(keep[k]);
 
     //uint64_t in_use = count_amplitude_table_enries();
     //printf("amps in use after gc: %ld\n", in_use);
