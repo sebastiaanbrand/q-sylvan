@@ -3,45 +3,54 @@
 #include "sylvan.h"
 #include "sylvan_qdd_complex.h"
 
-struct gate {
+typedef struct gate Gate;
+struct gate
+{
     BDDVAR id;
     char gateSymbol[2];
     float rotation;
-    BDDVAR gateId;
-} gate;
+    BDDVAR *control;
+    BDDVAR controlSize;
+};
 
-static const struct gate gate_I = {0, "--", 0, GATEID_I};
-static const struct gate gate_X = {1, "X-", 0.5, GATEID_X};
-static const struct gate gate_Y = {2, "Y-", 0.5, GATEID_Y};
-static const struct gate gate_Z = {3, "Z-", 0.5, GATEID_Z};
-static const struct gate gate_H = {4, "H-", 0, GATEID_H};
-static const struct gate gate_S = {5, "S-", 0.25, GATEID_S};
-static const struct gate gate_Sd = {6, "Sd", -0.25, GATEID_Sdag};
-static const struct gate gate_T = {7, "T-", 0.125, GATEID_T};
-static const struct gate gate_Td = {8, "Td", -0.125, GATEID_Tdag};
-static const struct gate gate_sX = {9, "sX", 0.25, GATEID_sqrtX};
-static const struct gate gate_sY = {10, "sY", 0.25, GATEID_sqrtY};
-static const struct gate gate_Rx = {11, "Rx", 0, 0};
-static const struct gate gate_Ry = {12, "Ry", 0, 0};
-static const struct gate gate_Rz = {13, "Rz", 0, 0};
-static const struct gate barrier = {14, "|-", 0, 0};
+static const Gate gate_I = {0, "--", 0, NULL, 0};
+static const Gate gate_X = {1, "X-", 0.5, NULL, 0};
+static const Gate gate_Y = {2, "Y-", 0.5, NULL, 0};
+static const Gate gate_Z = {3, "Z-", 0.5, NULL, 0};
+static const Gate gate_H = {4, "H-", 0.5, NULL, 0};
+static const Gate gate_sX = {9, "sX", 0.25, NULL, 0};
+static const Gate gate_sY = {10, "sY", 0.25, NULL, 0};
+static const Gate gate_S = {5, "S-", 0.25, NULL, 0};
+static const Gate gate_Sd = {6, "Sd", -0.25, NULL, 0};
+static const Gate gate_T = {7, "T-", 0.125, NULL, 0};
+static const Gate gate_Td = {8, "Td", -0.125, NULL, 0};
+static const Gate gate_Rx = {11, "Rx", 0, NULL, 0};
+static const Gate gate_Ry = {12, "Ry", 0, NULL, 0};
+static const Gate gate_Rz = {13, "Rz", 0, NULL, 0};
+static const Gate gate_ctrl = {14, "@-", 0, NULL, 0};
+static const Gate gate_measure = {15, "M-", 0, NULL, 0};
+static const Gate gate_barrier = {16, "|-", 0, NULL, 0};
 
-void make_circuit(char *filename, bool optimize);
-void print_circuit(int32_t** circuit, BDDVAR* nvars, BDDVAR* curr_depth);
-BDDVAR optimize_circuit(int32_t** circuit, BDDVAR nvars, BDDVAR curr_depth);
-void optimize_controlled_gate(int32_t** circuit, BDDVAR depth1, BDDVAR depth2, BDDVAR target, BDDVAR nvars);
-void find_palindromes(int32_t** circuit, BDDVAR curr_depth, BDDVAR var, BDDVAR nvars, BDDVAR depth);
-BDDVAR reduce_circuit(int32_t** circuit, BDDVAR nvars, BDDVAR depth);
-void reduce_controlled_gate(int32_t** circuit, BDDVAR depth, BDDVAR target, BDDVAR nvars);
+static const BDDVAR max_qubits = 128;
+static const BDDVAR max_wire = 1024;
+static BDDVAR wire_i;
+static BDDVAR* nvars;
+static BDDVAR* curr_depth;
 
-#define get_qubits_circuit(token,n_qubits,qubits) (CALL(get_qubits_circuit,token,n_qubits,qubits));
-TASK_DECL_3(bool, get_qubits_circuit, char*, BDDVAR, BDDVAR*);
+void circuit_exit(Gate** circuit);
+Gate** make_circuit(char *filename, bool optimize);
+void print_circuit(Gate** circuit, BDDVAR* nvars, BDDVAR* curr_depth);
+BDDVAR optimize_circuit(Gate** circuit, BDDVAR nvars, BDDVAR curr_depth);
+void optimize_circuit_p(Gate** circuit, BDDVAR q, BDDVAR depth1, BDDVAR depth2, BDDVAR nvars, BDDVAR depth);
+void optimize_controlled_gate(Gate** circuit, BDDVAR depth1, BDDVAR depth2, BDDVAR target, BDDVAR nvars);
+bool find_palindromes(Gate** circuit, BDDVAR q, BDDVAR depth1, BDDVAR depth2);
+void remove_gates(Gate** circuit, BDDVAR q, BDDVAR depth1, BDDVAR depth2);
+BDDVAR reduce_circuit(Gate** circuit, BDDVAR nvars, BDDVAR depth);
+void reduce_gate(Gate** circuit, BDDVAR target, BDDVAR depth);
+BDDVAR get_reduce_depth(Gate** circuit, BDDVAR target, BDDVAR depth);
 
-#define get_gateid_circuit(tokens,gate_id) (CALL(get_gateid_circuit,tokens,gate_id));
-TASK_DECL_2(bool, get_gateid_circuit, char*, uint32_t*);
-
-#define get_parallel_depth(targets,circuit,n_qubits,curr_depth,gateid) (CALL(get_parallel_depth,targets,circuit,n_qubits,curr_depth,gateid));
-TASK_DECL_5(bool, get_parallel_depth, char*, int32_t**, BDDVAR, BDDVAR*, uint32_t*);
-
-#define handle_line_circuit(line,circuit,nvars,curr_depth) (CALL(handle_line_circuit,line,circuit,nvars,curr_depth));
-TASK_DECL_4(bool, handle_line_circuit, char*, int32_t**, BDDVAR*, BDDVAR*);
+bool get_qubits_circuit(char* token, BDDVAR n_qubits, BDDVAR* qubits);
+void copy_Gate(Gate src, Gate* dst);
+BDDVAR get_gateid_circuit(char* gate_str, Gate* gate);
+bool handle_gate(char* targets, Gate** circuit, BDDVAR n_qubits, BDDVAR* curr_depth, Gate Gate);
+bool handle_line_circuit(char* line, Gate** circuit, BDDVAR* nvars, BDDVAR* curr_depth);
