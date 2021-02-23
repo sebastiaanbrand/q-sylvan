@@ -1610,14 +1610,14 @@ TASK_IMPL_4(QDD, qdd_matmat_mult_rec, QDD, a, QDD, b, BDDVAR, nvars, BDDVAR, nex
 
     // 2. pass weights of current edges down TODO: use loop
     AMP amp_a00, amp_a10, amp_a01, amp_a11, amp_b00, amp_b10, amp_b01, amp_b11;
-    amp_a00 = amp_mul(amp_mul(QDD_AMP(a), QDD_AMP(a_low)), QDD_AMP(a00));
-    amp_a10 = amp_mul(amp_mul(QDD_AMP(a), QDD_AMP(a_low)), QDD_AMP(a10));
-    amp_a01 = amp_mul(amp_mul(QDD_AMP(a), QDD_AMP(a_high)),QDD_AMP(a01));
-    amp_a11 = amp_mul(amp_mul(QDD_AMP(a), QDD_AMP(a_high)),QDD_AMP(a11));
-    amp_b00 = amp_mul(amp_mul(QDD_AMP(b), QDD_AMP(b_low)), QDD_AMP(b00));
-    amp_b10 = amp_mul(amp_mul(QDD_AMP(b), QDD_AMP(b_low)), QDD_AMP(b10));
-    amp_b01 = amp_mul(amp_mul(QDD_AMP(b), QDD_AMP(b_high)),QDD_AMP(b01));
-    amp_b11 = amp_mul(amp_mul(QDD_AMP(b), QDD_AMP(b_high)),QDD_AMP(b11));
+    amp_a00 = amp_mul(QDD_AMP(a_low), QDD_AMP(a00));
+    amp_a10 = amp_mul(QDD_AMP(a_low), QDD_AMP(a10));
+    amp_a01 = amp_mul(QDD_AMP(a_high),QDD_AMP(a01));
+    amp_a11 = amp_mul(QDD_AMP(a_high),QDD_AMP(a11));
+    amp_b00 = amp_mul(QDD_AMP(b_low), QDD_AMP(b00));
+    amp_b10 = amp_mul(QDD_AMP(b_low), QDD_AMP(b10));
+    amp_b01 = amp_mul(QDD_AMP(b_high),QDD_AMP(b01));
+    amp_b11 = amp_mul(QDD_AMP(b_high),QDD_AMP(b11));
     a00 = qdd_bundle_ptr_amp(QDD_PTR(a00), amp_a00);
     a10 = qdd_bundle_ptr_amp(QDD_PTR(a10), amp_a10);
     a01 = qdd_bundle_ptr_amp(QDD_PTR(a01), amp_a01);
@@ -1668,6 +1668,11 @@ TASK_IMPL_4(QDD, qdd_matmat_mult_rec, QDD, a, QDD, b, BDDVAR, nvars, BDDVAR, nex
 
     // 6. put left and right halves of matix together
     res = qdd_makenode(2*nextvar, lh, rh);
+
+    // 7. multiply w/ product of root amps
+    AMP prod = amp_mul(QDD_AMP(a), QDD_AMP(b));
+    AMP new_root_amp = amp_mul(prod, QDD_AMP(res));
+    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
 
     // Insert in cache
     if (cachenow) {
