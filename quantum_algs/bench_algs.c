@@ -691,8 +691,7 @@ int bench_grover_matrix()
     fprintf(overview_file, "qubits, peak_nodes, avg_nodes, workers, "
                            "gates, runtime, avg_gate_time, "
                            "plus_cacheput, plus_cached, "
-                           "gate_cacheput, gate_cached, "
-                           "cgate_cacheput, cgate_cached, "
+                           "mult_cacheput, mult_cached, "
                            "flag\n");
     // output file for sylvan parameters
     char param_fname[256];
@@ -733,8 +732,8 @@ int bench_grover_matrix()
     // runtimes are written to single file
     double runtime = 0, avg_gate_time = 0, avg_nodes = 0;
     uint64_t nodes_peak = 0, n_gates = 0;
-    uint64_t plus_cacheput = 0, gate_cacheput = 0, cgate_cacheput = 0;
-    uint64_t plus_cached = 0, gate_cached = 0, cgate_cached = 0;
+    uint64_t plus_cacheput = 0, mult_cacheput = 0;
+    uint64_t plus_cached = 0, mult_cached = 0;
 
     // run benchmarks
     srand(42);
@@ -765,21 +764,15 @@ int bench_grover_matrix()
                 avg_gate_time = runtime / (double) n_gates;
                 #if SYLVAN_STATS
                 plus_cacheput  = sylvan_stats.counters[QDD_PLUS_CACHEDPUT];
-                gate_cacheput  = sylvan_stats.counters[QDD_GATE_CACHEDPUT];
-                cgate_cacheput = sylvan_stats.counters[QDD_CGATE_CACHEDPUT];
+                mult_cacheput  = sylvan_stats.counters[QDD_MULT_CACHEDPUT];
                 plus_cached    = sylvan_stats.counters[QDD_PLUS_CACHED];
-                gate_cached    = sylvan_stats.counters[QDD_GATE_CACHED];
-                cgate_cached   = sylvan_stats.counters[QDD_CGATE_CACHED];
-                #else
-                plus_cached = gate_cached = cgate_cached = 0;
-                plus_cacheput = gate_cacheput = cgate_cacheput = 0;
+                mult_cached    = sylvan_stats.counters[QDD_MULT_CACHED];
                 #endif
-                fprintf(overview_file, "%d, %ld, %lf, %d, %ld, %lf, %.3e, %ld, %ld, %ld, %ld, %ld, %ld, %d\n",
+                fprintf(overview_file, "%d, %ld, %lf, %d, %ld, %lf, %.3e, %ld, %ld, %ld, %ld, %d\n",
                                         n_bits[q]+1, nodes_peak, avg_nodes, n_workers[w],
                                         n_gates, runtime, avg_gate_time, 
                                         plus_cacheput, plus_cached,
-                                        gate_cacheput, gate_cached,
-                                        cgate_cacheput, cgate_cached,
+                                        mult_cacheput, mult_cached,
                                         f_int);
                 fflush(overview_file);
             }
