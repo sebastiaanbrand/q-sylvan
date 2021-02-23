@@ -1516,6 +1516,10 @@ TASK_IMPL_4(QDD, qdd_matvec_mult_rec, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR,
     if (cachenow) {
         if (cache_get3(CACHE_QDD_MATVEC_MULT, nextvar, mat, vec, &res)) {
             sylvan_stats_count(QDD_MULT_CACHED);
+            // 6. multiply w/ product of root amps
+            AMP prod = amp_mul(QDD_AMP(mat), QDD_AMP(vec));
+            AMP new_root_amp = amp_mul(prod, QDD_AMP(res));
+            res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
             return res;
         }
     }
@@ -1559,16 +1563,17 @@ TASK_IMPL_4(QDD, qdd_matvec_mult_rec, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR,
     // 5. add resulting qdds
     res = CALL(qdd_plus_amp, res_low, res_high);
 
-    // 6. multiply w/ product of root amps
-    AMP prod = amp_mul(QDD_AMP(mat), QDD_AMP(vec));
-    AMP new_root_amp = amp_mul(prod, QDD_AMP(res));
-    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
 
-    // Insert in cache
+    // Insert in cache (before multiplication w/ root amps)
     if (cachenow) {
         if (cache_put3(CACHE_QDD_MATVEC_MULT, nextvar, mat, vec, res)) 
             sylvan_stats_count(QDD_MULT_CACHEDPUT);
     }
+
+    // 6. multiply w/ product of root amps
+    AMP prod = amp_mul(QDD_AMP(mat), QDD_AMP(vec));
+    AMP new_root_amp = amp_mul(prod, QDD_AMP(res));
+    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
 
     return res;
 }
@@ -1593,6 +1598,10 @@ TASK_IMPL_4(QDD, qdd_matmat_mult_rec, QDD, a, QDD, b, BDDVAR, nvars, BDDVAR, nex
     if (cachenow) {
         if (cache_get3(CACHE_QDD_MATMAT_MULT, nextvar, a, b, &res)) {
             sylvan_stats_count(QDD_MULT_CACHED);
+            // 7. multiply w/ product of root amps
+            AMP prod = amp_mul(QDD_AMP(a), QDD_AMP(b));
+            AMP new_root_amp = amp_mul(prod, QDD_AMP(res));
+            res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
             return res;
         }
     }
@@ -1669,16 +1678,16 @@ TASK_IMPL_4(QDD, qdd_matmat_mult_rec, QDD, a, QDD, b, BDDVAR, nvars, BDDVAR, nex
     // 6. put left and right halves of matix together
     res = qdd_makenode(2*nextvar, lh, rh);
 
-    // 7. multiply w/ product of root amps
-    AMP prod = amp_mul(QDD_AMP(a), QDD_AMP(b));
-    AMP new_root_amp = amp_mul(prod, QDD_AMP(res));
-    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
-
     // Insert in cache
     if (cachenow) {
         if (cache_put3(CACHE_QDD_MATMAT_MULT, nextvar, a, b, res)) 
             sylvan_stats_count(QDD_MULT_CACHEDPUT);
     }
+
+    // 7. multiply w/ product of root amps
+    AMP prod = amp_mul(QDD_AMP(a), QDD_AMP(b));
+    AMP new_root_amp = amp_mul(prod, QDD_AMP(res));
+    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
 
     return res;
 }
