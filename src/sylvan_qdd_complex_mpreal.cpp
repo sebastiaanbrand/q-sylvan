@@ -538,7 +538,7 @@ init_mpreal_phase_gates(int n)
         gates[gate_id][2] = C_ZERO; gates[gate_id][3] = mpreal_comp_lookup(cartesian);
 
         // backward rotation
-        angle = -2*Pi / (fl_t)(1<<k);
+        angle = -2*Pi / (double)(1<<k);
         cartesian = mpreal_comp_make_angle(angle);
         gate_id = GATEID_Rk_dag(k);
         gates[gate_id][0] = C_ONE;  gates[gate_id][1] = C_ZERO;
