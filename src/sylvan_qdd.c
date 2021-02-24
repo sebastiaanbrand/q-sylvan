@@ -1514,7 +1514,7 @@ TASK_IMPL_4(QDD, qdd_matvec_mult_rec, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR,
     QDD res;
     bool cachenow = ((nextvar % granularity) == 0);
     if (cachenow) {
-        if (cache_get3(CACHE_QDD_MATVEC_MULT, nextvar, mat, vec, &res)) {
+        if (cache_get3(CACHE_QDD_MATVEC_MULT, nextvar, QDD_PTR(mat), QDD_PTR(vec), &res)) {
             sylvan_stats_count(QDD_MULT_CACHED);
             // 6. multiply w/ product of root amps
             AMP prod = amp_mul(QDD_AMP(mat), QDD_AMP(vec));
@@ -1566,7 +1566,7 @@ TASK_IMPL_4(QDD, qdd_matvec_mult_rec, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR,
 
     // Insert in cache (before multiplication w/ root amps)
     if (cachenow) {
-        if (cache_put3(CACHE_QDD_MATVEC_MULT, nextvar, mat, vec, res)) 
+        if (cache_put3(CACHE_QDD_MATVEC_MULT, nextvar, QDD_PTR(mat), QDD_PTR(vec), res)) 
             sylvan_stats_count(QDD_MULT_CACHEDPUT);
     }
 
@@ -1596,7 +1596,7 @@ TASK_IMPL_4(QDD, qdd_matmat_mult_rec, QDD, a, QDD, b, BDDVAR, nvars, BDDVAR, nex
     QDD res;
     bool cachenow = ((nextvar % granularity) == 0);
     if (cachenow) {
-        if (cache_get3(CACHE_QDD_MATMAT_MULT, nextvar, a, b, &res)) {
+        if (cache_get3(CACHE_QDD_MATMAT_MULT, nextvar, QDD_PTR(a), QDD_PTR(b), &res)) {
             sylvan_stats_count(QDD_MULT_CACHED);
             // 7. multiply w/ product of root amps
             AMP prod = amp_mul(QDD_AMP(a), QDD_AMP(b));
@@ -1680,7 +1680,7 @@ TASK_IMPL_4(QDD, qdd_matmat_mult_rec, QDD, a, QDD, b, BDDVAR, nvars, BDDVAR, nex
 
     // Insert in cache
     if (cachenow) {
-        if (cache_put3(CACHE_QDD_MATMAT_MULT, nextvar, a, b, res)) 
+        if (cache_put3(CACHE_QDD_MATMAT_MULT, nextvar, QDD_PTR(a), QDD_PTR(b), res)) 
             sylvan_stats_count(QDD_MULT_CACHEDPUT);
     }
 
