@@ -1472,8 +1472,12 @@ TASK_IMPL_4(QDD, qdd_matvec_mult_rec, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR,
     QDD res;
     bool cachenow = ((nextvar % granularity) == 0);
     if (cachenow) {
-        if (cache_get3(CACHE_QDD_MATVEC_MULT, nextvar, mat, vec, &res)) {
+        if (cache_get3(CACHE_QDD_MATVEC_MULT, nextvar, QDD_PTR(mat), QDD_PTR(vec), &res)) {
             sylvan_stats_count(QDD_MULT_CACHED);
+            // 6. multiply w/ product of root amps
+            AMP prod = amp_mul(QDD_AMP(mat), QDD_AMP(vec));
+            AMP new_root_amp = amp_mul(prod, QDD_AMP(res));
+            res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
             return res;
         }
     }
@@ -1487,22 +1491,7 @@ TASK_IMPL_4(QDD, qdd_matvec_mult_rec, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR,
     qdd_get_topvar(mat_low, 2*nextvar+1, &var, &u00, &u10);
     qdd_get_topvar(mat_high,2*nextvar+1, &var, &u01, &u11);
 
-    // 2. pass weights of current edges down
-    AMP amp_vec_low, amp_vec_high, amp_u00, amp_u10, amp_u01, amp_u11;
-    amp_vec_low  = amp_mul(QDD_AMP(vec), QDD_AMP(vec_low));
-    amp_vec_high = amp_mul(QDD_AMP(vec), QDD_AMP(vec_high));
-    amp_u00      = amp_mul(amp_mul(QDD_AMP(mat), QDD_AMP(mat_low)), QDD_AMP(u00));
-    amp_u10      = amp_mul(amp_mul(QDD_AMP(mat), QDD_AMP(mat_low)), QDD_AMP(u10));
-    amp_u01      = amp_mul(amp_mul(QDD_AMP(mat), QDD_AMP(mat_high)),QDD_AMP(u01));
-    amp_u11      = amp_mul(amp_mul(QDD_AMP(mat), QDD_AMP(mat_high)),QDD_AMP(u11));
-    vec_low  = qdd_bundle_ptr_amp(QDD_PTR(vec_low), amp_vec_low);
-    vec_high = qdd_bundle_ptr_amp(QDD_PTR(vec_high),amp_vec_high);
-    u00      = qdd_bundle_ptr_amp(QDD_PTR(u00), amp_u00);
-    u10      = qdd_bundle_ptr_amp(QDD_PTR(u10), amp_u10);
-    u01      = qdd_bundle_ptr_amp(QDD_PTR(u01), amp_u01);
-    u11      = qdd_bundle_ptr_amp(QDD_PTR(u11), amp_u11);
-
-    // 3. recursive calls (4 tasks: SPAWN 3, CALL 1)
+    // 2. recursive calls (4 tasks: SPAWN 3, CALL 1)
     // |u00 u01| |vec_low | = vec_low|u00| + vec_high|u01|
     // |u10 u11| |vec_high|          |u10|           |u11|
     QDD res_low00, res_low10, res_high01, res_high11;
@@ -1518,19 +1507,31 @@ TASK_IMPL_4(QDD, qdd_matvec_mult_rec, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR,
     qdd_refs_pop(1);
     nextvar--;
 
-    // 4. gather results of multiplication
+    // 3. gather results of multiplication
     QDD res_low, res_high;
     res_low  = qdd_makenode(nextvar, res_low00,  res_low10);
     res_high = qdd_makenode(nextvar, res_high01, res_high11);
 
+    // 4. multiply w/ relevant amps
+    AMP new_amp_low  = amp_mul(QDD_AMP(res_low),  QDD_AMP(mat_low));
+    AMP new_amp_high = amp_mul(QDD_AMP(res_high), QDD_AMP(mat_high)); 
+    res_low  = qdd_bundle_ptr_amp(QDD_PTR(res_low),  new_amp_low);
+    res_high = qdd_bundle_ptr_amp(QDD_PTR(res_high), new_amp_high);
+
     // 5. add resulting qdds
     res = CALL(qdd_plus_amp, res_low, res_high);
 
-    // Insert in cache
+
+    // Insert in cache (before multiplication w/ root amps)
     if (cachenow) {
-        if (cache_put3(CACHE_QDD_MATVEC_MULT, nextvar, mat, vec, res)) 
+        if (cache_put3(CACHE_QDD_MATVEC_MULT, nextvar, QDD_PTR(mat), QDD_PTR(vec), res)) 
             sylvan_stats_count(QDD_MULT_CACHEDPUT);
     }
+
+    // 6. multiply w/ product of root amps
+    AMP prod = amp_mul(QDD_AMP(mat), QDD_AMP(vec));
+    AMP new_root_amp = amp_mul(prod, QDD_AMP(res));
+    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
 
     return res;
 }
@@ -1553,8 +1554,12 @@ TASK_IMPL_4(QDD, qdd_matmat_mult_rec, QDD, a, QDD, b, BDDVAR, nvars, BDDVAR, nex
     QDD res;
     bool cachenow = ((nextvar % granularity) == 0);
     if (cachenow) {
-        if (cache_get3(CACHE_QDD_MATMAT_MULT, nextvar, a, b, &res)) {
+        if (cache_get3(CACHE_QDD_MATMAT_MULT, nextvar, QDD_PTR(a), QDD_PTR(b), &res)) {
             sylvan_stats_count(QDD_MULT_CACHED);
+            // 7. multiply w/ product of root amps
+            AMP prod = amp_mul(QDD_AMP(a), QDD_AMP(b));
+            AMP new_root_amp = amp_mul(prod, QDD_AMP(res));
+            res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
             return res;
         }
     }
@@ -1572,14 +1577,14 @@ TASK_IMPL_4(QDD, qdd_matmat_mult_rec, QDD, a, QDD, b, BDDVAR, nvars, BDDVAR, nex
 
     // 2. pass weights of current edges down TODO: use loop
     AMP amp_a00, amp_a10, amp_a01, amp_a11, amp_b00, amp_b10, amp_b01, amp_b11;
-    amp_a00 = amp_mul(amp_mul(QDD_AMP(a), QDD_AMP(a_low)), QDD_AMP(a00));
-    amp_a10 = amp_mul(amp_mul(QDD_AMP(a), QDD_AMP(a_low)), QDD_AMP(a10));
-    amp_a01 = amp_mul(amp_mul(QDD_AMP(a), QDD_AMP(a_high)),QDD_AMP(a01));
-    amp_a11 = amp_mul(amp_mul(QDD_AMP(a), QDD_AMP(a_high)),QDD_AMP(a11));
-    amp_b00 = amp_mul(amp_mul(QDD_AMP(b), QDD_AMP(b_low)), QDD_AMP(b00));
-    amp_b10 = amp_mul(amp_mul(QDD_AMP(b), QDD_AMP(b_low)), QDD_AMP(b10));
-    amp_b01 = amp_mul(amp_mul(QDD_AMP(b), QDD_AMP(b_high)),QDD_AMP(b01));
-    amp_b11 = amp_mul(amp_mul(QDD_AMP(b), QDD_AMP(b_high)),QDD_AMP(b11));
+    amp_a00 = amp_mul(QDD_AMP(a_low), QDD_AMP(a00));
+    amp_a10 = amp_mul(QDD_AMP(a_low), QDD_AMP(a10));
+    amp_a01 = amp_mul(QDD_AMP(a_high),QDD_AMP(a01));
+    amp_a11 = amp_mul(QDD_AMP(a_high),QDD_AMP(a11));
+    amp_b00 = amp_mul(QDD_AMP(b_low), QDD_AMP(b00));
+    amp_b10 = amp_mul(QDD_AMP(b_low), QDD_AMP(b10));
+    amp_b01 = amp_mul(QDD_AMP(b_high),QDD_AMP(b01));
+    amp_b11 = amp_mul(QDD_AMP(b_high),QDD_AMP(b11));
     a00 = qdd_bundle_ptr_amp(QDD_PTR(a00), amp_a00);
     a10 = qdd_bundle_ptr_amp(QDD_PTR(a10), amp_a10);
     a01 = qdd_bundle_ptr_amp(QDD_PTR(a01), amp_a01);
@@ -1633,9 +1638,14 @@ TASK_IMPL_4(QDD, qdd_matmat_mult_rec, QDD, a, QDD, b, BDDVAR, nvars, BDDVAR, nex
 
     // Insert in cache
     if (cachenow) {
-        if (cache_put3(CACHE_QDD_MATMAT_MULT, nextvar, a, b, res)) 
+        if (cache_put3(CACHE_QDD_MATMAT_MULT, nextvar, QDD_PTR(a), QDD_PTR(b), res)) 
             sylvan_stats_count(QDD_MULT_CACHEDPUT);
     }
+
+    // 7. multiply w/ product of root amps
+    AMP prod = amp_mul(QDD_AMP(a), QDD_AMP(b));
+    AMP new_root_amp = amp_mul(prod, QDD_AMP(res));
+    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
 
     return res;
 }
