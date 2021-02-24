@@ -138,6 +138,25 @@ qdd_grover_matrix(BDDVAR n, bool *flag)
 
     // 3. Grover iterations
     for (uint32_t i = 1; i <= R; i++) {
+        if (i % 100 == 0) {
+            printf("grov it %d\n", i);
+            
+            // gc amp table
+            QDD keep[2];
+            keep[0] = state;
+            keep[1] = grov_it;
+            qdd_gc_amp_table2(keep, 2);
+            state = keep[0];
+            grov_it = keep[1];
+
+            // gc node table
+            qdd_refs_push(state);
+            qdd_refs_push(grov_it);
+            sylvan_gc();
+            qdd_refs_pop(2);
+
+            // gc node table
+        }
         state = qdd_matvec_mult(grov_it, state, nqubits);
     }
 

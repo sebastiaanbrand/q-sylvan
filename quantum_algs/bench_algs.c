@@ -707,7 +707,7 @@ int bench_grover_matrix()
     
     
     // for {14, 19, 24}
-    ctable_size = 1LL<<16;
+    ctable_size = 1LL<<20;
     ctable_tolerance = 1e-14;
     amp_backend = COMP_HASHMAP;
     // for {29, 34, 38}
