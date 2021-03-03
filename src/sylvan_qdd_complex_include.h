@@ -1,5 +1,5 @@
 
-#define USING_MPREAL 1
+#define USING_MPREAL 0
 
 #include "sylvan_qdd_complex.h"
 #include "sylvan_qdd_complex_mpreal.h"
