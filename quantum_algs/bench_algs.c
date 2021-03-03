@@ -4,7 +4,7 @@
 #include <sys/time.h>
 
 #include "sylvan.h"
-#include "sylvan_qdd_complex.h"
+#include "sylvan_qdd_complex_include.h"
 #include "grover.h"
 #include "random_circuit.h"
 #include "shor.h"
@@ -55,6 +55,7 @@ write_parameters(FILE *file)
     fprintf(file, "  \"amp_table_size\": %ld,\n", ctable_size);
     fprintf(file, "  \"amp_table_tolerance\": %.5e,\n", ctable_tolerance);
     fprintf(file, "  \"amp_storage_backend\": %d,\n", amp_backend);
+    fprintf(file, "  \"USING_MPREAL\": %d,\n", USING_MPREAL);
     fprintf(file, "  \"flt_quad\": %d,\n", flt_quad);
     fprintf(file, "  \"ctable_gc_thres\": %lf,\n", ctable_gc_thres);
     fprintf(file, "  \"propagate_complex\": %d,\n", propagate_complex);
@@ -220,7 +221,7 @@ double bench_grover_once(int num_bits, bool flag[], int workers, char *fpath,
 
     if (VERBOSE) {
         node_count_end = qdd_countnodes(grov);
-        double prob = comp_to_prob(comp_value(qdd_get_amplitude(grov, flag)))*2;
+        double prob = amp_to_prob(qdd_get_amplitude(grov, flag))*2;
         uint64_t np = (nodes_peak == NULL) ? 0 : *nodes_peak;
         printf("%ld nodes end (%ld peak), Pr(flag)=%.3lf, %lf sec\n", node_count_end, np, prob, runtime);
     }
@@ -599,7 +600,7 @@ int bench_grover()
     write_parameters(param_file);
 
     // different number of bits for the flag to test
-    int n_bits[] = {14, 19, 24, 29, 34, 38};
+    int n_bits[] = {9, 14, 19, 24, 29};//{25, 27, 29, 31, 33, 35};
     
     // different number of workers to test
     int n_workers[] = {1};//, 2, 4, 8};
@@ -706,7 +707,7 @@ int bench_grover_matrix()
     
     
     // for {14, 19, 24}
-    ctable_size = 1LL<<16;
+    ctable_size = 1LL<<20;
     ctable_tolerance = 1e-14;
     amp_backend = COMP_HASHMAP;
     // for {29, 34, 38}

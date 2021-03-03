@@ -254,6 +254,20 @@ amp_div(AMP a, AMP b)
     return res;
 }
 
+double
+amp_to_prob(AMP a)
+{
+    return comp_to_prob(comp_value(a));
+}
+
+AMP
+prob_to_amp(double a)
+{
+    complex_t c;
+    c.r = flt_sqrt(a);
+    c.i = 0;
+    return comp_lookup(c);
+}
 
 
 /* Arithmetic operations on complex structs */
@@ -348,10 +362,80 @@ bool comp_approx_equal(complex_t a, complex_t b)
     return comp_epsilon_close(a, b, cmap_get_tolerance());
 }
 
-bool comp_epsilon_close(complex_t a, complex_t b, long double epsilon)
+bool comp_epsilon_close(complex_t a, complex_t b, double epsilon)
 {
     return ( (flt_abs(a.r - b.r) < epsilon) && (flt_abs(a.i - b.i) < epsilon) );
 }
+
+/* Comparing AMPs */
+
+bool amp_exact_equal(AMP a, AMP b)
+{
+    return comp_exact_equal(comp_value(a), comp_value(b));
+}
+
+bool amp_approx_equal(AMP a, AMP b)
+{
+    return comp_approx_equal(comp_value(a), comp_value(b));
+}
+
+bool amp_epsilon_close(AMP a, AMP b, double epsilon)
+{
+    return comp_epsilon_close(comp_value(a), comp_value(b), epsilon);
+}
+
+
+/* normalization of two amps */
+
+AMP
+amp_normalize_low(AMP *low, AMP *high)
+{
+    // Normalize using low if low != 0
+    AMP norm;
+    if(*low != C_ZERO){
+        complex_t cl = comp_value(*low);
+        complex_t ch = comp_value(*high);
+        ch    = comp_div(ch, cl);
+        *high = comp_lookup(ch);
+        norm  = *low;
+        *low  = C_ONE;
+    }
+    else {
+        norm  = *high;
+        *high = C_ONE;
+    }
+    return norm;
+}
+
+AMP
+amp_normalize_largest(AMP *low, AMP *high)
+{
+    AMP norm;
+    if (*low == *high) {
+        norm  = *low;
+        *low  = C_ONE;
+        *high = C_ONE;
+        return norm;
+    }
+
+    // Normalize using the absolute greatest value
+    complex_t cl = comp_value(*low);
+    complex_t ch = comp_value(*high);
+    if ( (cl.r*cl.r + cl.i*cl.i)  >=  (ch.r*ch.r + ch.i*ch.i) ) {
+        ch = comp_div(ch, cl);
+        *high = comp_lookup(ch);
+        norm = *low;
+        *low  = C_ONE;
+    }
+    else {
+        cl = comp_div(cl, ch);
+        *low = comp_lookup(cl);
+        norm  = *high;
+        *high = C_ONE;
+    }
+    return norm;
+}
+
 
 
 

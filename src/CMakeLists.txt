@@ -11,6 +11,7 @@ set(SOURCES
     sylvan_qdd.c
     sylvan_qdd_algebraic.c
     sylvan_qdd_complex.c
+    sylvan_qdd_complex_mpreal.cpp
     sylvan_obj.cpp
     sylvan_refs.c
     sylvan_sl.c
@@ -35,6 +36,7 @@ set(HEADERS
     sylvan_qdd.h
     sylvan_qdd_algebraic.h
     sylvan_qdd_complex.h
+    sylvan_qdd_complex_mpreal.h
     sylvan_obj.hpp
     sylvan_stats.h
     sylvan_table.h
