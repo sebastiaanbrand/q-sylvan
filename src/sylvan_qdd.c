@@ -2253,12 +2253,19 @@ qdd_create_multi_cgate_rec(BDDVAR n, int *c_options, uint32_t gateid, BDDVAR k)
     // c_options[k] =  1 -> control on q_k = |1>
     // c_options[k] =  2 -> target qubit (for now assume 1 target)
 
-    // TODO: might require caching, or other method of preventing blow-up of
-    // construction complexity when there are a lot of controls
-
     // Terminal case
     if (k == n) {
         return qdd_bundle_ptr_amp(QDD_TERMINAL, C_ONE);
+    }
+
+    // TODO: catching GATEID_I avoids exp number of recrusive calls, but this 
+    // entire function might be handled in a better way(?)
+    if (gateid == GATEID_I) {
+        QDD identities = qdd_bundle_ptr_amp(QDD_TERMINAL, C_ONE);
+        for (int j = n-1; j >= (int) k; j--) {
+            identities = qdd_stack_matrix(identities, j, GATEID_I);
+        }
+        return identities;
     }
 
     // Recursively build matrix
