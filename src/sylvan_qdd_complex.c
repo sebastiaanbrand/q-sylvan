@@ -587,7 +587,7 @@ comp_value(AMP a)
     }
     else if (amp_backend == REAL_TREE) {
         AMP idx_r, idx_i;
-        double *r, *i;
+        fl_t *r, *i;
         unpack_indices_rtable(a, &idx_r, &idx_i);
         r = tree_map_get(rtree, idx_r);
         i = tree_map_get(rtree, idx_i);
@@ -625,7 +625,7 @@ comp_value_old(AMP a)
     }
     else if (amp_backend == REAL_TREE) {
         AMP idx_r, idx_i;
-        double *r, *i;
+        fl_t *r, *i;
         unpack_indices_rtable(a, &idx_r, &idx_i);
         r = tree_map_get(rtree_old, idx_r);
         i = tree_map_get(rtree_old, idx_i);
