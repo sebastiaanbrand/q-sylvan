@@ -3,8 +3,120 @@
 #include "sylvan.h"
 #include "sylvan_qdd_complex.h"
 
-// TASK_IMPL_3(bool, get_qubits_circuit, char*, token, BDDVAR, n_qubits, BDDVAR*, qubits)
-bool get_qubits_circuit(char* token, BDDVAR n_qubits, BDDVAR* qubits)
+C_struct make_c_struct(char *filename, bool optimize)
+{
+    // Open the QASM file (or give error)
+    FILE *f;
+    f = fopen(filename, "r");
+    if (f == NULL) {
+        perror("File error");
+        exit(0);
+    }
+
+    C_struct c_s = c_struct_default;
+    // Allocate space for the circuit
+    c_s.circuit = malloc(c_s.max_qubits*sizeof(c_s.circuit));
+    for (BDDVAR i = 0; i < c_s.max_qubits; ++i) {
+        c_s.circuit[i] = malloc(c_s.max_wire * sizeof(Gate));
+        for (BDDVAR j = 0; j < c_s.max_wire; j++)
+            c_s.circuit[i][j] = gate_I;
+    }
+
+    char* line = NULL;
+    char* c;
+    size_t len = 0;
+    ssize_t read;
+    while ((read = getline(&line, &len, f)) != -1) {
+        if (c_s.nvars >= c_s.max_qubits) {
+            perror("Too much qubits, current maximum is 128.");
+            exit(0);
+        }
+        if(c_s.depth >= c_s.max_wire+1024)
+            reallocate_wire(&c_s);
+        // skip if comment
+        if(line[0] == '/' && line[1] == '/')
+            continue;
+        // remove leading spaces
+        while ((*line == ' ') || (*line == '\t'))
+            line++;
+        // remove empty lines, trailing information after ';'
+        c = strchr(line, ';');
+        if (c != NULL) {
+            line[c - line] = '\0';
+            handle_line_c_struct(line, &c_s);
+        }
+    }
+    free(line);
+    fclose(f);
+
+    if (optimize)
+        optimize_c_struct(&c_s);
+    reduce_c_struct(&c_s);
+    return c_s;
+}
+
+void reallocate_wire(C_struct* c_s)
+{
+    Gate* realloc_wire;
+    BDDVAR incr = 1024;
+    c_s->max_wire += incr;
+    for (BDDVAR i = 0; i < c_s->max_qubits; ++i) {
+        realloc_wire = realloc(c_s->circuit[i], c_s->max_wire * sizeof(c_s->circuit[i]));
+        if (realloc_wire == NULL) {
+            perror("Memory allocation failed.");
+            exit(0);
+        }
+        else
+            c_s->circuit[i] = realloc_wire;
+        for (BDDVAR j = c_s->max_wire-incr; j < c_s->max_wire; j++)
+            c_s->circuit[i][j] = gate_I;
+        free(realloc_wire);
+    }
+}
+
+void delete_c_struct(C_struct* c_s)
+{
+    for (BDDVAR j = 0; j < c_s->max_wire; j++) {
+        for (BDDVAR i = 0; i < c_s->max_qubits; i++) {
+            if (c_s->circuit[i][j].id != gate_I.id) {
+                if (c_s->circuit[i][j].control != NULL)
+                    free(c_s->circuit[i][j].control);
+            }
+        }
+    }
+    for (BDDVAR i = 0; i < c_s->max_qubits; i++)
+        free(c_s->circuit[i]);
+    free(c_s->circuit);
+}
+
+bool handle_line_c_struct(char* line, C_struct* c_s)
+{
+    Gate gate_s;
+    BDDVAR n_qubits = 0;
+    // tokenize string
+    char* gate_str = strtok(line, " ");
+    char* targets_str = strtok(NULL, "");
+
+    // Create all-zero state with "temp" qubits
+    if (strstr(gate_str, "qreg") != NULL)
+        get_qubits_c_struct(targets_str, 0, &c_s->nvars);
+    else {
+        n_qubits = get_gateid_c_struct(gate_str, &gate_s);
+        if (n_qubits != 0) {
+            if (gate_s.id == gate_barrier.id)
+               handle_barrier(c_s, gate_s);
+            else {
+                BDDVAR *qubits = malloc((n_qubits) * sizeof(BDDVAR));
+                get_qubits_c_struct(targets_str, n_qubits-1, qubits);
+                handle_gate(c_s, n_qubits-1, qubits, gate_s);
+                free(qubits);
+            }
+        }
+    }
+    return true;
+}
+
+bool get_qubits_c_struct(char* token, BDDVAR n_qubits, BDDVAR* qubits)
 {
     BDDVAR j = 0;
     strtok(token, "[");
@@ -16,8 +128,7 @@ bool get_qubits_circuit(char* token, BDDVAR n_qubits, BDDVAR* qubits)
     return true;
 }
 
-// TASK_IMPL_2(bool, get_gateid_circuit, char*, gate_str, Gate*, gate_s)
-BDDVAR get_gateid_circuit(char* gate_str, Gate* gate_s)
+BDDVAR get_gateid_c_struct(char* gate_str, Gate* gate_s)
 {
     BDDVAR n_qubits = 1;
     while(gate_str[0] == 'c' && strcmp(gate_str, "creg") != 0) {
@@ -26,40 +137,44 @@ BDDVAR get_gateid_circuit(char* gate_str, Gate* gate_s)
     }
     // Handle gates
     if (strcmp(gate_str, "i") == 0)
-        memcpy(gate_s, &gate_I, sizeof(Gate));
-    else if (strcmp(gate_str, "h") == 0)
-        memcpy(gate_s, &gate_H, sizeof(Gate));
+        *gate_s = gate_I;
     else if (strcmp(gate_str, "x") == 0)
-        memcpy(gate_s, &gate_X, sizeof(Gate));
+        *gate_s = gate_X;
     else if (strcmp(gate_str, "y") == 0)
-        memcpy(gate_s, &gate_Y, sizeof(Gate));
+        *gate_s = gate_Y;
     else if (strcmp(gate_str, "z") == 0)
-        memcpy(gate_s, &gate_Z, sizeof(Gate));
+        *gate_s = gate_Z;
+    else if (strcmp(gate_str, "h") == 0)
+        *gate_s = gate_H;
+    else if (strcmp(gate_str, "sx") == 0)
+        *gate_s = gate_sX;
+    else if (strcmp(gate_str, "sy") == 0)
+        *gate_s = gate_sY;
     else if (strcmp(gate_str, "s") == 0)
-        memcpy(gate_s, &gate_S, sizeof(Gate));
+        *gate_s = gate_S;
     else if (strcmp(gate_str, "sdg") == 0)
-        memcpy(gate_s, &gate_Sd, sizeof(Gate));
+        *gate_s = gate_Sd;
     else if (strcmp(gate_str, "t") == 0)
-        memcpy(gate_s, &gate_T, sizeof(Gate));
+        *gate_s = gate_T;
     else if (strcmp(gate_str, "tdg") == 0)
-        memcpy(gate_s, &gate_Td, sizeof(Gate));
+        *gate_s = gate_Td;
     else if (strcmp(gate_str, "barrier") == 0)
-        memcpy(gate_s, &gate_barrier, sizeof(Gate));
+        *gate_s = gate_barrier;
     else if (strcmp(gate_str, "measure") == 0)
-        memcpy(gate_s, &gate_measure, sizeof(Gate));
+        *gate_s = gate_measure;
     else {
         gate_str = strtok(gate_str, "(");
         if (strcmp(gate_str, "rx") == 0) {
             gate_str = strtok(NULL, ")");
-            memcpy(gate_s, &gate_Rx, sizeof(Gate));
+            *gate_s = gate_Rx;
             gate_s->rotation = atof(gate_str);
         } else if (strcmp(gate_str, "ry") == 0) {
             gate_str = strtok(NULL, ")");
-            memcpy(gate_s, &gate_Ry, sizeof(Gate));
+            *gate_s = gate_Ry;
             gate_s->rotation = atof(gate_str);
         } else if (strcmp(gate_str, "rz") == 0) {
             gate_str = strtok(NULL, ")");
-            memcpy(gate_s, &gate_Rz, sizeof(Gate));
+            *gate_s = gate_Rz;
             gate_s->rotation = atof(gate_str);
         } else {
             return 0;
@@ -68,300 +183,217 @@ BDDVAR get_gateid_circuit(char* gate_str, Gate* gate_s)
     return n_qubits;
 }
 
-// TASK_IMPL_5(bool, get_parallel_depth, char*, targets, Gate**, circuit, BDDVAR, n_qubits, BDDVAR*, curr_depth, Gate, gate_s)
-bool handle_gate(char* targets, Gate** circuit, BDDVAR n_qubits, BDDVAR* curr_depth, Gate gate_s)
+void copy_Gate(Gate src, Gate* dst)
 {
-    BDDVAR *qubits = malloc((n_qubits+1) * sizeof(BDDVAR));
-    if (gate_s.id == gate_barrier.id) {
-        *curr_depth += 1;
-        for (BDDVAR i = 1; i <= n_qubits; i++)
-            circuit[i][*curr_depth] = gate_s;
+    memcpy(dst, &src, sizeof(Gate));
+    *dst->gateSymbol = *src.gateSymbol;
+}
+
+void handle_barrier(C_struct* c_s, Gate gate_s)
+{
+    c_s->depth++;
+    for (BDDVAR i = 1; i < c_s->nvars; i++)
+        c_s->circuit[i][c_s->depth] = gate_s;
+    BDDVAR *control = malloc((c_s->nvars-1) * sizeof(BDDVAR));
+    for (BDDVAR i = 0; i < c_s->nvars-1; i++) control[i] = i+1;
+    gate_s.control = control;
+    gate_s.controlSize = c_s->nvars-1;
+    c_s->circuit[0][c_s->depth] = gate_s;
+}
+
+void handle_gate(C_struct* c_s, BDDVAR n_qubits, BDDVAR* qubits, Gate gate_s)
+{
+    gate_s.controlSize = n_qubits;
+    c_s->depth += 1;
+    if (n_qubits != 0) {
         BDDVAR *control = malloc((n_qubits) * sizeof(BDDVAR));
-        for (BDDVAR i = 0; i < n_qubits; i++) control[i] = i+1;
+        for (BDDVAR i = 0; i < n_qubits; i++) control[i] = qubits[i];
         gate_s.control = control;
-        gate_s.controlSize = n_qubits;
-        circuit[0][*curr_depth] = gate_s;
-    }
-    else {
-        get_qubits_circuit(targets, n_qubits, qubits);
-        gate_s.controlSize = n_qubits;
-        *curr_depth += 1;
-        if (n_qubits != 0) {
-            BDDVAR *control = malloc((n_qubits) * sizeof(BDDVAR));
-            for (BDDVAR i = 0; i < n_qubits; i++) control[i] = qubits[i];
-            gate_s.control = control;
-            Gate gate_ctrl_s;
-            for (BDDVAR i = 0; i < n_qubits; i++) {
-                memcpy(&gate_ctrl_s, &gate_ctrl, sizeof(Gate));
-                gate_ctrl_s.control = malloc(sizeof(BDDVAR));
-                gate_ctrl_s.control[0] = qubits[n_qubits];
-                gate_ctrl_s.controlSize = 1;
-                circuit[qubits[i]][*curr_depth] = gate_ctrl_s;
-            }
+        Gate gate_ctrl_s;
+        for (BDDVAR i = 0; i < n_qubits; i++) {
+            gate_ctrl_s = gate_ctrl;
+            gate_ctrl_s.control = malloc(sizeof(BDDVAR));
+            gate_ctrl_s.control[0] = qubits[n_qubits];
+            gate_ctrl_s.controlSize = 1;
+            c_s->circuit[qubits[i]][c_s->depth] = gate_ctrl_s;
         }
-        circuit[qubits[n_qubits]][*curr_depth] = gate_s;
     }
-    free(qubits);
-    return true;
+    c_s->circuit[qubits[n_qubits]][c_s->depth] = gate_s;
 }
 
-// TASK_IMPL_4(bool, handle_line_circuit, char*, line, Gate**, circuit, BDDVAR*, nvars, BDDVAR*, curr_depth)
-bool handle_line_circuit(char* line, Gate** circuit, BDDVAR* nvars, BDDVAR* curr_depth)
-{
-    Gate* gate_s = malloc(sizeof(Gate));
-    BDDVAR n_qubits = 0;
-    char* gate_str;
-    char* targets_str;
-    // tokenize string
-    gate_str = strtok(line, " ");
-    targets_str = strtok(NULL, "");
-    // Create all-zero state with "temp" qubits
-    if (strstr(gate_str, "qreg") != NULL) {
-        get_qubits_circuit(targets_str, 0, nvars);
-    }
-    else {
-        n_qubits = get_gateid_circuit(gate_str, gate_s);
-        if (n_qubits != 0) {
-            if (gate_s->id == gate_barrier.id) n_qubits = *nvars;
-            handle_gate(targets_str, circuit, n_qubits-1, curr_depth, *gate_s);
-        }
-    }
-    free(gate_s);
-    return true;
-}
-
-Gate** make_circuit(char *filename, bool optimize)
-{
-    FILE *f;
-    f = fopen(filename, "r");
-    if (f == NULL) {
-        perror("Error while opening the file.\n");
-        return circuit;
-    }
-
-    char *line = NULL, *c;
-    Gate* realloc_wire;
-    circuit = malloc(max_qubits*sizeof(*circuit));
-    for (BDDVAR i = 0; i < max_qubits; ++i) {
-        circuit[i] = malloc(max_wire * sizeof(Gate));
-        for (BDDVAR j = 0; j < max_wire; j++)
-            circuit[i][j] = gate_I;
-    }
-    nvars = malloc(sizeof(BDDVAR));
-    curr_depth = malloc(sizeof(BDDVAR));
-    *nvars = 0;
-    *curr_depth = 0;
-    size_t len = 0;
-    ssize_t read;
-    while ((read = getline(&line, &len, f)) != -1) {
-        if (*nvars >= max_qubits)
-            perror("Too much qubits, current maximum is 128.");
-        while(*curr_depth >= wire_i*max_wire) {
-            wire_i++;
-            for (BDDVAR i = 0; i < max_qubits; ++i) {
-                realloc_wire = realloc(circuit[i], wire_i*max_wire * sizeof *circuit[i]);
-                if (realloc_wire == NULL)
-                    perror("Memory allocation failed.");
-                else
-                    circuit[i] = realloc_wire;
-                for (BDDVAR j = (wire_i-1)*max_wire; j < wire_i*max_wire; j++)
-                    circuit[i][j] = gate_I;
-            }
-            free(realloc_wire);
-        }
-        // skip if comment
-        if(line[0] == '/' && line[1] == '/')
-            continue;
-        // remove leading spaces
-        while ((*line == ' ') || (*line == '\t') || (*line == '\n'))
-            line++;
-        // remove empty lines, trailing information after ';'
-        c = strchr(line, ';');
-        if (c != NULL) {
-            line[c - line] = '\0';
-            handle_line_circuit(line, circuit, nvars, curr_depth);
-        }
-    }
-    fclose(f);
-    if (optimize)
-        *curr_depth = optimize_circuit(circuit, *nvars, *curr_depth);
-    free(line);
-    return circuit;
-}
-
-void circuit_exit() {
-    for (BDDVAR j = 0; j < *curr_depth; j++) {
-        for (BDDVAR i = 0; i < *nvars; i++) {
-            if (circuit[i][j].id != gate_I.id) {
-                if (circuit[i][j].control != NULL)
-                    free(circuit[i][j].control);
-            }
-        }
-    }
-    for (BDDVAR i = 0; i < max_qubits; i++)
-        free(circuit[i]);
-    free(circuit);
-    free(nvars);
-    free(curr_depth);
-}
-
-BDDVAR optimize_circuit(Gate** circuit, BDDVAR nvars, BDDVAR depth)
+void optimize_c_struct(C_struct* c_s)
 {
     BDDVAR depth2;
-    for (BDDVAR q = 0; q < nvars; q++) {
-        for (BDDVAR depth1 = 0; depth1 < depth; depth1++) {
-            if (circuit[q][depth1].id != gate_I.id && circuit[q][depth1].id != gate_ctrl.id) {
+    for (BDDVAR q = 0; q < c_s->nvars; q++) {
+        for (BDDVAR depth1 = 0; depth1 < c_s->depth; depth1++) {
+            if (c_s->circuit[q][depth1].id != gate_I.id && c_s->circuit[q][depth1].id != gate_ctrl.id) {
                 depth2 = depth1+1;
-                while (circuit[q][depth2].id == gate_I.id || circuit[q][depth2].id == gate_barrier.id) {
+                while (c_s->circuit[q][depth2].id == gate_I.id || c_s->circuit[q][depth2].id == gate_barrier.id) {
+                    if (depth2 >= c_s->depth) break;
                     depth2++;
                 }
-                if (find_palindromes(circuit, q, depth1, depth2))
-                    optimize_circuit_p(circuit, q, depth1, depth2, nvars, depth);
+                if (find_palindromes(c_s, q, depth1, depth2))
+                    optimize_c_struct_p(c_s, q, depth1, depth2);
             }
         }
     }
-    return reduce_circuit(circuit, nvars, depth);
 }
 
-void optimize_circuit_p(Gate** circuit, BDDVAR q, BDDVAR depth1, BDDVAR depth2, BDDVAR nvars, BDDVAR depth)
+void optimize_c_struct_p(C_struct* c_s, BDDVAR q, BDDVAR depth1, BDDVAR depth2)
 {
     bool found = true;
     while (found) {
         found = false;
-        remove_gates(circuit, q, depth1, depth2);
+        remove_gates(c_s, q, depth1, depth2);
         do {
             if (depth1 == 0) return;
             depth1--;
         }
-        while (circuit[q][depth1].id == gate_barrier.id);
+        while (c_s->circuit[q][depth1].id == gate_barrier.id || c_s->circuit[q][depth1].id == gate_I.id);
+
         do {
-            if (depth2 == depth) return;
+            if (depth2 >= c_s->depth) return;
             depth2++;
         }
-        while (circuit[q][depth2].id == gate_barrier.id);
-        
-        for (BDDVAR q = 0; q < nvars; q++) {
-            if (circuit[q][depth1].id != gate_I.id && circuit[q][depth1].id != gate_ctrl.id) {
-                if(find_palindromes(circuit, q, depth1, depth2))
-                    optimize_circuit_p(circuit, q, depth1, depth2, nvars, depth);
+        while (c_s->circuit[q][depth2].id == gate_barrier.id || c_s->circuit[q][depth2].id == gate_I.id);
+
+        for (BDDVAR q = 0; q < c_s->nvars; q++) {
+            if (c_s->circuit[q][depth1].id != gate_I.id && c_s->circuit[q][depth1].id != gate_ctrl.id) {
+                if(find_palindromes(c_s, q, depth1, depth2))
+                    optimize_c_struct_p(c_s, q, depth1, depth2);
             }
         }
     }
 }
 
-bool find_palindromes(Gate** circuit, BDDVAR q, BDDVAR depth1, BDDVAR depth2)
+bool find_palindromes(C_struct* c_s, BDDVAR q, BDDVAR depth1, BDDVAR depth2)
 {
-    if (circuit[q][depth1].id != circuit[q][depth2].id || fmod(circuit[q][depth1].rotation + circuit[q][depth2].rotation, 1.f) != 0.f)
+    if (c_s->circuit[q][depth1].id != c_s->circuit[q][depth2].id || fmod(c_s->circuit[q][depth1].rotation + c_s->circuit[q][depth2].rotation, 1.f) != 0.f)
         return false;
-    if (circuit[q][depth1].controlSize == 0)
+    if (c_s->circuit[q][depth1].controlSize == 0)
         return true;
-    else if(circuit[q][depth1].controlSize != circuit[q][depth2].controlSize)
+    else if(c_s->circuit[q][depth1].controlSize != c_s->circuit[q][depth2].controlSize)
         return false;
 
-    for (BDDVAR i = 0; i < circuit[q][depth1].controlSize; i++) {
-        if (circuit[q][depth1].control[i] != circuit[q][depth2].control[i])
+    for (BDDVAR i = 0; i < c_s->circuit[q][depth1].controlSize; i++) {
+        if (c_s->circuit[q][depth1].control[i] != c_s->circuit[q][depth2].control[i])
             return false;
     }
-    for (BDDVAR i = 0; i < circuit[q][depth1].controlSize; i++) {
+    for (BDDVAR i = 0; i < c_s->circuit[q][depth1].controlSize; i++) {
         for(BDDVAR j = depth1+1; j < depth2; j++) {
-            if(circuit[circuit[q][depth1].control[i]][j].id != gate_I.id)
+            if(c_s->circuit[c_s->circuit[q][depth1].control[i]][j].id != gate_I.id)
                 return false;
         }
     }
     return true;
 }
 
-void remove_gates(Gate** circuit, BDDVAR q, BDDVAR depth1, BDDVAR depth2)
+void remove_gates(C_struct* c_s, BDDVAR q, BDDVAR depth1, BDDVAR depth2)
 {
-    for (BDDVAR i = 0; i < circuit[q][depth1].controlSize; i++) {
-        circuit[circuit[q][depth1].control[i]][depth1] = gate_I;
-        circuit[circuit[q][depth1].control[i]][depth2] = gate_I;
+    for (BDDVAR i = 0; i < c_s->circuit[q][depth1].controlSize; i++) {
+        c_s->circuit[c_s->circuit[q][depth1].control[i]][depth1] = gate_I;
+        c_s->circuit[c_s->circuit[q][depth1].control[i]][depth2] = gate_I;
     }
-    circuit[q][depth1] = gate_I;
-    circuit[q][depth2] = gate_I;
+    c_s->circuit[q][depth1] = gate_I;
+    c_s->circuit[q][depth2] = gate_I;
 }
 
-BDDVAR reduce_circuit(Gate** circuit, BDDVAR nvars, BDDVAR depth)
+void reduce_c_struct(C_struct* c_s)
 {
     BDDVAR k;
     // Reduce depth by moving gates to the left if possible
-    for (BDDVAR j = 1; j <= depth; j++) {
-        for (BDDVAR i = 0; i < nvars; i++) {
-            if (circuit[i][j].id != gate_I.id && circuit[i][j].id != gate_ctrl.id)
-                reduce_gate(circuit, i, j);
+    for (BDDVAR j = 1; j <= c_s->depth; j++) {
+        for (BDDVAR i = 0; i < c_s->nvars; i++) {
+            if (c_s->circuit[i][j].id != gate_I.id && c_s->circuit[i][j].id != gate_ctrl.id)
+                reduce_gate(c_s, i, j);
         }
     }
     k = 0;
     // Get new depth
-    for (BDDVAR i = 0; i < nvars; i++) {
-        for (BDDVAR j = depth; j-- > 0;) {
-            if (circuit[i][j].id != gate_I.id) {
+    for (BDDVAR i = 0; i < c_s->nvars; i++) {
+        for (BDDVAR j = c_s->depth; j-- > 0;) {
+            if (c_s->circuit[i][j].id != gate_I.id) {
                 k = j < k ? k : j;
                 break;
             }
         }
     }
-    return k;
+    c_s->depth = k+1;
 }
 
-void reduce_gate(Gate** circuit, BDDVAR target, BDDVAR depth)
+void reduce_gate(C_struct* c_s, BDDVAR target, BDDVAR depth)
 {
     BDDVAR curr;
-    BDDVAR reduce = get_reduce_depth(circuit, target, depth);
-    for (BDDVAR i = 0; i < circuit[target][depth].controlSize; i++) {
-        curr = get_reduce_depth(circuit, circuit[target][depth].control[i], depth);
+    BDDVAR reduce = get_reduce_depth(c_s, target, depth);
+    for (BDDVAR i = 0; i < c_s->circuit[target][depth].controlSize; i++) {
+        curr = get_reduce_depth(c_s, c_s->circuit[target][depth].control[i], depth);
         if (curr > reduce) reduce = curr;
     }
     if (reduce - depth <= 0) return;
-    for (BDDVAR i = 0; i < circuit[target][depth].controlSize; i++) {
-        circuit[circuit[target][depth].control[i]][reduce] = circuit[circuit[target][depth].control[i]][depth];
-        circuit[circuit[target][depth].control[i]][depth] = gate_I;
+    for (BDDVAR i = 0; i < c_s->circuit[target][depth].controlSize; i++) {
+        c_s->circuit[c_s->circuit[target][depth].control[i]][reduce] = c_s->circuit[c_s->circuit[target][depth].control[i]][depth];
+        c_s->circuit[c_s->circuit[target][depth].control[i]][depth] = gate_I;
     }
-    circuit[target][reduce] = circuit[target][depth];
-    circuit[target][depth] = gate_I;
+    c_s->circuit[target][reduce] = c_s->circuit[target][depth];
+    c_s->circuit[target][depth] = gate_I;
 }
 
-BDDVAR get_reduce_depth(Gate** circuit, BDDVAR target, BDDVAR depth)
+BDDVAR get_reduce_depth(C_struct* c_s, BDDVAR target, BDDVAR depth)
 {
-    while (depth > 0 && (circuit[target][depth-1].id == gate_I.id))
+    while (depth > 0 && (c_s->circuit[target][depth-1].id == gate_I.id))
         depth--;
     return depth;
 }
 
-void print_circuit(Gate** circuit, BDDVAR* nvars, BDDVAR* curr_depth)
+void print_c_struct(C_struct c_s, bool vertical, bool show_rotation)
 {
-    for (BDDVAR i = 0; i < *nvars; i++) {
-        for (BDDVAR j = 0; j < *curr_depth+1; j++) {
-            printf("-%s",circuit[i][j].gateSymbol);
+    bool has_rotation = false;
+    bool negative_rotation = false;
+    if (vertical) {
+        for (BDDVAR j = 0; j < c_s.depth; j++) {
+            for (BDDVAR i = 0; i < c_s.nvars; i++)
+                printf(" |  ");
+            printf("\n");
+            for (BDDVAR i = 0; i < c_s.nvars; i++) {
+                if (c_s.circuit[i][j].id == gate_barrier.id)
+                    printf("----");
+                else {
+                    if (c_s.circuit[i][j].gateSymbol[0] == '-')
+                        printf(" |");
+                    else
+                        printf(" %c",c_s.circuit[i][j].gateSymbol[0]);
+                    if (c_s.circuit[i][j].gateSymbol[1] != '-')
+                        printf("%c ",c_s.circuit[i][j].gateSymbol[1]);
+                    else
+                        printf("  ");
+                }
+            }
+            printf("\n");
         }
-        printf("-\n");
     }
-}
-
-int main(int argc, char *argv[])
-{
-    // check for file
-    char *filename = "";
-    bool optimize = false;
-    int opt;
-    while((opt = getopt(argc, argv, "f:o")) != -1) {
-        switch(opt) {
-            case 'f':
-                filename = optarg;
-                break;
-            case 'o':
-                optimize = true;
-                break;
+    else {
+        for (BDDVAR i = 0; i < c_s.nvars; i++) {
+            for (BDDVAR j = 0; j < c_s.depth; j++) {
+                has_rotation = false;
+                negative_rotation = false;
+                for (BDDVAR k = 0; k < c_s.nvars; k++) {
+                    if(c_s.circuit[k][j].id == 11 || c_s.circuit[k][j].id == 12 || c_s.circuit[k][j].id == 13) has_rotation = true;
+                    if(c_s.circuit[k][j].rotation < 0) negative_rotation = true;
+                }
+                if (has_rotation && show_rotation) {
+                    if(c_s.circuit[i][j].id == 11 || c_s.circuit[i][j].id == 12 || c_s.circuit[i][j].id == 13)
+                        printf("-%s(%.4lf)",c_s.circuit[i][j].gateSymbol,roundf(c_s.circuit[i][j].rotation*10000)/10000);
+                    else {
+                        if (negative_rotation)
+                            printf("-%s---------",c_s.circuit[i][j].gateSymbol);
+                        else
+                            printf("-%s--------",c_s.circuit[i][j].gateSymbol);
+                    }
+                }
+                else
+                    printf("-%s",c_s.circuit[i][j].gateSymbol);
+            }
+            printf("-\n");
         }
     }
-    if(strcmp(filename, "") == 0)
-    {
-        printf("Give filename of qasm file.\n");
-        return 1;
-    }
-
-    make_circuit(filename, optimize);
-    print_circuit(circuit, nvars, curr_depth);
-    circuit_exit();
-    return 0;
 }

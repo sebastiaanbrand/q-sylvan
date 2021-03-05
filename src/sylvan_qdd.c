@@ -1483,7 +1483,7 @@ TASK_IMPL_6(QDD, qdd_cgate_range_rec_complex, QDD, q, uint32_t, gate, BDDVAR, c_
 /* Wrapper for matrix vector multiplication. */
 TASK_IMPL_3(QDD, qdd_matvec_mult, QDD, mat, QDD, vec, BDDVAR, nvars)
 {
-    assert(!auto_gc_amp_table && "auto gc of ctable not implemented for mult operations");
+    // assert(!auto_gc_amp_table && "auto gc of ctable not implemented for mult operations");
     qdd_do_before_gate(&vec);
     return CALL(qdd_matvec_mult_rec, mat, vec, nvars, 0);
 }
@@ -1491,7 +1491,7 @@ TASK_IMPL_3(QDD, qdd_matvec_mult, QDD, mat, QDD, vec, BDDVAR, nvars)
 /* Wrapper for matrix vector multiplication. */
 TASK_IMPL_3(QDD, qdd_matmat_mult, QDD, a, QDD, b, BDDVAR, nvars)
 {
-    assert(!auto_gc_amp_table && "auto gc of ctable not implemented for mult operations");
+    // assert(!auto_gc_amp_table && "auto gc of ctable not implemented for mult operations");
     //qdd_do_before_gate(&vec);
     return CALL(qdd_matmat_mult_rec, a, b, nvars, 0);
 }

@@ -98,7 +98,7 @@ class Circuit():
                 f.write(line+'\n')
         f.close()
         # Run circuit
-        output = subprocess.run(["../build/parser/QASM_to_Sylvan", "-f", self.circuit_file, "-s", str(shots),"-r",str(int(random.randint(0,sys.maxsize)))], stdout=subprocess.PIPE)
+        output = subprocess.run(["../build/parser/circuit_to_Sylvan", "-f", self.circuit_file, "-s", str(shots),"-r",str(int(random.randint(0,sys.maxsize)))], stdout=subprocess.PIPE)
         output = output.stdout.decode('utf-8')
         return output.split("\n")[:-1]
 

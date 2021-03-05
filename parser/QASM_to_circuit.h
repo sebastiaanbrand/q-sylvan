@@ -3,16 +3,17 @@
 #include "sylvan.h"
 #include "sylvan_qdd_complex.h"
 
-typedef struct gate Gate;
-struct gate
+// Gates struct
+typedef struct Gate
 {
     BDDVAR id;
     char gateSymbol[2];
     float rotation;
     BDDVAR *control;
     BDDVAR controlSize;
-};
+} Gate;
 
+// Default gates
 static const Gate gate_I = {0, "--", 0, NULL, 0};
 static const Gate gate_X = {1, "X-", 0.5, NULL, 0};
 static const Gate gate_Y = {2, "Y-", 0.5, NULL, 0};
@@ -31,26 +32,34 @@ static const Gate gate_ctrl = {14, "@-", 0, NULL, 0};
 static const Gate gate_measure = {15, "M-", 0, NULL, 0};
 static const Gate gate_barrier = {16, "|-", 0, NULL, 0};
 
-static const BDDVAR max_qubits = 128;
-static const BDDVAR max_wire = 1024;
-static BDDVAR wire_i;
-static BDDVAR* nvars;
-static BDDVAR* curr_depth;
+// Circuit struct
+typedef struct C_struct
+{
+    Gate** circuit;
+    BDDVAR nvars;
+    BDDVAR depth;
+    BDDVAR max_qubits;
+    BDDVAR max_wire;
+} C_struct;
 
-void circuit_exit(Gate** circuit);
-Gate** make_circuit(char *filename, bool optimize);
-void print_circuit(Gate** circuit, BDDVAR* nvars, BDDVAR* curr_depth);
-BDDVAR optimize_circuit(Gate** circuit, BDDVAR nvars, BDDVAR curr_depth);
-void optimize_circuit_p(Gate** circuit, BDDVAR q, BDDVAR depth1, BDDVAR depth2, BDDVAR nvars, BDDVAR depth);
-void optimize_controlled_gate(Gate** circuit, BDDVAR depth1, BDDVAR depth2, BDDVAR target, BDDVAR nvars);
-bool find_palindromes(Gate** circuit, BDDVAR q, BDDVAR depth1, BDDVAR depth2);
-void remove_gates(Gate** circuit, BDDVAR q, BDDVAR depth1, BDDVAR depth2);
-BDDVAR reduce_circuit(Gate** circuit, BDDVAR nvars, BDDVAR depth);
-void reduce_gate(Gate** circuit, BDDVAR target, BDDVAR depth);
-BDDVAR get_reduce_depth(Gate** circuit, BDDVAR target, BDDVAR depth);
+// Default circuit
+static const C_struct c_struct_default = {NULL, 0, 0, 128, 1024};
 
-bool get_qubits_circuit(char* token, BDDVAR n_qubits, BDDVAR* qubits);
+// Function definitions
+C_struct make_c_struct(char *filename, bool optimize);
+void reallocate_wire(C_struct* c_s);
+void delete_c_struct(C_struct* c_s);
+bool handle_line_c_struct(char* line, C_struct* c_s);
+bool get_qubits_c_struct(char* token, BDDVAR n_qubits, BDDVAR* qubits);
+BDDVAR get_gateid_c_struct(char* gate_str, Gate* gate);
 void copy_Gate(Gate src, Gate* dst);
-BDDVAR get_gateid_circuit(char* gate_str, Gate* gate);
-bool handle_gate(char* targets, Gate** circuit, BDDVAR n_qubits, BDDVAR* curr_depth, Gate Gate);
-bool handle_line_circuit(char* line, Gate** circuit, BDDVAR* nvars, BDDVAR* curr_depth);
+void handle_barrier(C_struct* c_s, Gate gate_s);
+void handle_gate(C_struct* c_s, BDDVAR n_qubits, BDDVAR* qubits, Gate Gate);
+void optimize_c_struct(C_struct* c_s);
+void optimize_c_struct_p(C_struct* c_s, BDDVAR q, BDDVAR depth1, BDDVAR depth2);
+bool find_palindromes(C_struct* c_s, BDDVAR q, BDDVAR depth1, BDDVAR depth2);
+void remove_gates(C_struct* c_s, BDDVAR q, BDDVAR depth1, BDDVAR depth2);
+void reduce_c_struct(C_struct* c_s);
+void reduce_gate(C_struct* c_s, BDDVAR target, BDDVAR depth);
+BDDVAR get_reduce_depth(C_struct* c_s, BDDVAR target, BDDVAR depth);
+void print_c_struct(C_struct c_s, bool vertical, bool show_rotation);
