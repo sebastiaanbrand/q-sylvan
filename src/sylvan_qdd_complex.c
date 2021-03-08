@@ -51,7 +51,7 @@ tree_map_t *rtree;
 tree_map_t *rtree_old;
 
 static bool CACHE_AMP_OPS = true;
-
+static bool CACHE_INV_OPS = true; // e.g. put mul(b,c)=a when div(a,b)=c
 
 /* Shorthand functions for making complex numbers */
 
@@ -152,9 +152,17 @@ static void
 cache_put_mul(AMP a, AMP b, AMP res)
 {
     order_inputs(&a, &b);
-    // TODO: put div
     if (cache_put3(CACHE_AMP_MUL, a, b, sylvan_false, res)) {
         sylvan_stats_count(AMP_MUL_CACHEDPUT);
+    }
+    if (CACHE_INV_OPS) {
+        // put inverse as well (empirically seems not so beneficial)
+        if (cache_put3(CACHE_AMP_DIV, res, b, sylvan_false, a)) {
+            sylvan_stats_count(AMP_DIV_CACHEDPUT);
+        }
+        if (cache_put3(CACHE_AMP_DIV, res, a, sylvan_false, b)) {
+            sylvan_stats_count(AMP_DIV_CACHEDPUT);
+        }
     }
 }
 
@@ -172,9 +180,15 @@ cache_get_mul(AMP a, AMP b, AMP *res)
 static void
 cache_put_div(AMP a, AMP b, AMP res)
 {
-    // TODO: put mul
     if (cache_put3(CACHE_AMP_DIV, a, b, sylvan_false, res)) {
         sylvan_stats_count(AMP_DIV_CACHEDPUT);
+    }
+    if (CACHE_INV_OPS) {
+        // put inverse as well (empirically seems beneficial)
+        order_inputs(&b, &res);
+        if (cache_put3(CACHE_AMP_MUL, b, res, sylvan_false, a)) {
+            sylvan_stats_count(AMP_MUL_CACHEDPUT);
+        }
     }
 }
 
