@@ -98,6 +98,78 @@ comp_qmake(int a, int b, int c)
 }
 
 
+/* Cache puts / gets */
+
+// TODO: counters for these cache lookups / puts
+
+static void
+cache_put_add(AMP a, AMP b, AMP res)
+{
+    // TODO: order a, b
+    cache_put3(CACHE_AMP_ADD, a, b, sylvan_false, res);
+}
+
+static bool
+cache_get_add(AMP a, AMP b, AMP *res)
+{
+    // TODO: order a, b
+    if (cache_get3(CACHE_AMP_ADD, a, b, sylvan_false, res)) {
+        return true;
+    }
+    return false;
+}
+
+static void
+cache_put_sub(AMP a, AMP b, AMP res)
+{
+    cache_put3(CACHE_AMP_SUB, a, b, sylvan_false, res);
+}
+
+static bool
+cache_get_sub(AMP a, AMP b, AMP *res)
+{
+    if (cache_get3(CACHE_AMP_SUB, a, b, sylvan_false, res)) {
+        return true;
+    }
+    return false;
+}
+
+static void
+cache_put_mul(AMP a, AMP b, AMP res)
+{
+    // TODO: order a, b
+    // TODO: put div
+    cache_put3(CACHE_AMP_MUL, a, b, sylvan_false, res);
+}
+
+static bool
+cache_get_mul(AMP a, AMP b, AMP *res)
+{
+    // TODO: order a, b
+    if (cache_get3(CACHE_AMP_MUL, a, b, sylvan_false, res)) {
+        return true;
+    }
+    return false;
+}
+
+static void
+cache_put_div(AMP a, AMP b, AMP res)
+{
+    // TODO: put mul
+    cache_put3(CACHE_AMP_DIV, a, b, sylvan_false, res);
+}
+
+static bool
+cache_get_div(AMP a, AMP b, AMP *res)
+{
+    if (cache_get3(CACHE_AMP_DIV, a, b, sylvan_false, res)) {
+        return true;
+    }
+    return false;
+}
+
+
+
 
 /* Arithmetic operations on AMPs */
 
@@ -146,9 +218,7 @@ amp_add(AMP a, AMP b)
     // check cache
     AMP res;
     if (CACHE_AMP_OPS) {
-        if (cache_get3(CACHE_AMP_ADD, a, b, sylvan_false, &res)) {
-            return res; // TODO: counters for these cache lookups/puts
-        }
+        if (cache_get_add(a, b, &res)) return res;
     }
 
     // compute and hash result to ctable
@@ -160,7 +230,7 @@ amp_add(AMP a, AMP b)
 
     // insert in cache
     if (CACHE_AMP_OPS) {
-        cache_put3(CACHE_AMP_ADD, a, b, sylvan_false, res);
+        cache_put_add(a, b, res);
     }
     return res;
 }
@@ -175,9 +245,7 @@ amp_sub(AMP a, AMP b)
     // check cache
     AMP res;
     if (CACHE_AMP_OPS) {
-        if (cache_get3(CACHE_AMP_SUB, a, b, sylvan_false, &res)) {
-            return res; // TODO: counters for these cache lookups/puts
-        }
+        if (cache_get_sub(a, b, &res)) return res;
     }
 
     // compute and hash result to ctable
@@ -189,7 +257,7 @@ amp_sub(AMP a, AMP b)
 
     // insert in cache
     if (CACHE_AMP_OPS) {
-        cache_put3(CACHE_AMP_SUB, a, b, sylvan_false, res);
+        cache_put_sub(a, b, res);
     }
     return res;
 }
@@ -205,9 +273,7 @@ amp_mul(AMP a, AMP b)
     // check cache
     AMP res;
     if (CACHE_AMP_OPS) {
-        if (cache_get3(CACHE_AMP_MUL, a, b, sylvan_false, &res)) {
-            return res; // TODO: counters for these cache lookups/puts
-        }
+        if (cache_get_mul(a, b, &res)) return res;
     }
 
     // compute and hash result to ctable
@@ -219,7 +285,7 @@ amp_mul(AMP a, AMP b)
 
     // insert in cache
     if (CACHE_AMP_OPS) {
-        cache_put3(CACHE_AMP_MUL, a, b, sylvan_false, res);
+        cache_put_mul(a, b, res);
     }
     return res;
 }
@@ -235,9 +301,7 @@ amp_div(AMP a, AMP b)
     // check cache
     AMP res;
     if (CACHE_AMP_OPS) {
-        if (cache_get3(CACHE_AMP_DIV, a, b, sylvan_false, &res)) {
-            return res; // TODO: counters for these cache lookups/puts
-        }
+        if (cache_get_div(a, b, &res)) return res;
     }
 
     // compute and hash result to ctable
@@ -249,7 +313,7 @@ amp_div(AMP a, AMP b)
 
     // insert in cache
     if (CACHE_AMP_OPS) {
-        cache_put3(CACHE_AMP_DIV, a, b, sylvan_false, res);
+        cache_put_div(a, b, res);
     }
     return res;
 }
