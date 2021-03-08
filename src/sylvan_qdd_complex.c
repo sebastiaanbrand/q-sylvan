@@ -467,10 +467,7 @@ amp_normalize_low(AMP *low, AMP *high)
     // Normalize using low if low != 0
     AMP norm;
     if(*low != C_ZERO){
-        complex_t cl = comp_value(*low);
-        complex_t ch = comp_value(*high);
-        ch    = comp_div(ch, cl);
-        *high = comp_lookup(ch);
+        *high = amp_div(*high, *low);
         norm  = *low;
         *low  = C_ONE;
     }
@@ -496,14 +493,12 @@ amp_normalize_largest(AMP *low, AMP *high)
     complex_t cl = comp_value(*low);
     complex_t ch = comp_value(*high);
     if ( (cl.r*cl.r + cl.i*cl.i)  >=  (ch.r*ch.r + ch.i*ch.i) ) {
-        ch = comp_div(ch, cl);
-        *high = comp_lookup(ch);
+        *high = amp_div(*high, *low);
         norm = *low;
         *low  = C_ONE;
     }
     else {
-        cl = comp_div(cl, ch);
-        *low = comp_lookup(cl);
+        *low = amp_div(*low, *high);
         norm  = *high;
         *high = C_ONE;
     }
