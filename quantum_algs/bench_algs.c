@@ -284,7 +284,7 @@ double bench_grover_matrix_once(int num_bits, bool flag[], int workers, char *fp
 
     if (VERBOSE) {
         node_count_end = qdd_countnodes(grov);
-        double prob = comp_to_prob(comp_value(qdd_get_amplitude(grov, flag)))*2;
+        double prob = amp_to_prob(qdd_get_amplitude(grov, flag))*2;
         uint64_t np = (nodes_peak == NULL) ? 0 : *nodes_peak;
         printf("%ld nodes end (%ld peak), Pr(flag)=%.3lf, %lf sec\n", node_count_end, np, prob, runtime);
     }
