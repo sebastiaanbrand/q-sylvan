@@ -100,10 +100,20 @@ comp_qmake(int a, int b, int c)
 
 /* Cache puts / gets */
 
+// deterministically order {a,b} for caching commuting op(a,b)
+static void
+order_inputs(AMP *a, AMP *b) 
+{
+    AMP x = (*a > *b) ? *a : *b;
+    AMP y = (*a > *b) ? *b : *a;
+    *a = x;
+    *b = y;
+}
+
 static void
 cache_put_add(AMP a, AMP b, AMP res)
 {
-    // TODO: order a, b
+    order_inputs(&a, &b);
     if (cache_put3(CACHE_AMP_ADD, a, b, sylvan_false, res)) {
         sylvan_stats_count(AMP_ADD_CACHEDPUT);
     }
@@ -112,7 +122,7 @@ cache_put_add(AMP a, AMP b, AMP res)
 static bool
 cache_get_add(AMP a, AMP b, AMP *res)
 {
-    // TODO: order a, b
+    order_inputs(&a, &b);
     if (cache_get3(CACHE_AMP_ADD, a, b, sylvan_false, res)) {
         sylvan_stats_count(AMP_ADD_CACHED);
         return true;
@@ -141,7 +151,7 @@ cache_get_sub(AMP a, AMP b, AMP *res)
 static void
 cache_put_mul(AMP a, AMP b, AMP res)
 {
-    // TODO: order a, b
+    order_inputs(&a, &b);
     // TODO: put div
     if (cache_put3(CACHE_AMP_MUL, a, b, sylvan_false, res)) {
         sylvan_stats_count(AMP_MUL_CACHEDPUT);
@@ -151,7 +161,7 @@ cache_put_mul(AMP a, AMP b, AMP res)
 static bool
 cache_get_mul(AMP a, AMP b, AMP *res)
 {
-    // TODO: order a, b
+    order_inputs(&a, &b);
     if (cache_get3(CACHE_AMP_MUL, a, b, sylvan_false, res)) {
         sylvan_stats_count(AMP_MUL_CACHED);
         return true;
