@@ -96,6 +96,12 @@ typedef enum {
     OPCOUNTER(QDD_CGATE),
     OPCOUNTER(QDD_PROB),
 
+    /* AMP arithmetic operations */
+    OPCOUNTER(AMP_ADD),
+    OPCOUNTER(AMP_SUB),
+    OPCOUNTER(AMP_MUL),
+    OPCOUNTER(AMP_DIV),
+
     /* Other counters */
     SYLVAN_GC_COUNT,
     LLMSSET_LOOKUP,

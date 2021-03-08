@@ -693,6 +693,10 @@ int bench_grover_matrix()
                            "gates, runtime, avg_gate_time, "
                            "plus_cacheput, plus_cached, "
                            "mult_cacheput, mult_cached, "
+                           "amp_add_cacheput, amp_add_cached, "
+                           "amp_sub_cacheput, amp_sub_cached, "
+                           "amp_mul_cacheput, amp_mul_cached, "
+                           "amp_div_cacheput, amp_div_cached, "
                            "flag\n");
     // output file for sylvan parameters
     char param_fname[256];
@@ -707,20 +711,19 @@ int bench_grover_matrix()
     
     
     // for {14, 19, 24}
-    ctable_size = 1LL<<20;
-    ctable_tolerance = 1e-14;
-    amp_backend = COMP_HASHMAP;
+    //ctable_tolerance = 1e-14;
+    //amp_backend = COMP_HASHMAP;
     // for {29, 34, 38}
-    //ctable_size = 1LL<<23;
-    //ctable_tolerance = 1e-18; // note: use flt_quad 1 in flt.h
-    //using_rtable = false;
+    ctable_size = 1LL<<20;
+    ctable_tolerance = 1e-18; // note: use flt_quad 1 in flt.h
+    amp_backend = COMP_HASHMAP;
 
     ctable_gc_thres = 0.5;
     caching_granularity = 1;
     write_parameters(param_file);
 
     // different number of bits for the flag to test
-    int n_bits[] = {4, 9, 14, 19, 24, 29};
+    int n_bits[] = {4, 9, 14, 19, 24, 29, 34, 39};
     
     // different number of workers to test
     int n_workers[] = {1};//, 2, 4, 8};
@@ -733,8 +736,12 @@ int bench_grover_matrix()
     // runtimes are written to single file
     double runtime = 0, avg_gate_time = 0, avg_nodes = 0;
     uint64_t nodes_peak = 0, n_gates = 0;
-    uint64_t plus_cacheput = 0, mult_cacheput = 0;
-    uint64_t plus_cached = 0, mult_cached = 0;
+    uint64_t mult_cached = 0, mult_cacheput = 0;
+    uint64_t plus_cached = 0, plus_cacheput = 0;
+    uint64_t amp_add_cached = 0, amp_add_cacheput = 0;
+    uint64_t amp_sub_cached = 0, amp_sub_cacheput = 0;
+    uint64_t amp_mul_cached = 0, amp_mul_cacheput = 0;
+    uint64_t amp_div_cached = 0, amp_div_cacheput = 0;
 
     // run benchmarks
     srand(42);
@@ -768,12 +775,24 @@ int bench_grover_matrix()
                 mult_cacheput  = sylvan_stats.counters[QDD_MULT_CACHEDPUT];
                 plus_cached    = sylvan_stats.counters[QDD_PLUS_CACHED];
                 mult_cached    = sylvan_stats.counters[QDD_MULT_CACHED];
+                amp_add_cached = sylvan_stats.counters[AMP_ADD_CACHED];
+                amp_sub_cached = sylvan_stats.counters[AMP_SUB_CACHED];
+                amp_mul_cached = sylvan_stats.counters[AMP_MUL_CACHED];
+                amp_div_cached = sylvan_stats.counters[AMP_DIV_CACHED];
+                amp_add_cacheput = sylvan_stats.counters[AMP_ADD_CACHEDPUT];
+                amp_sub_cacheput = sylvan_stats.counters[AMP_SUB_CACHEDPUT];
+                amp_mul_cacheput = sylvan_stats.counters[AMP_MUL_CACHEDPUT];
+                amp_div_cacheput = sylvan_stats.counters[AMP_DIV_CACHEDPUT];
                 #endif
-                fprintf(overview_file, "%d, %ld, %lf, %d, %ld, %lf, %.3e, %ld, %ld, %ld, %ld, %d\n",
+                fprintf(overview_file, "%d, %ld, %lf, %d, %ld, %lf, %.3e, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %d\n",
                                         n_bits[q]+1, nodes_peak, avg_nodes, n_workers[w],
                                         n_gates, runtime, avg_gate_time, 
                                         plus_cacheput, plus_cached,
                                         mult_cacheput, mult_cached,
+                                        amp_add_cacheput, amp_add_cached,
+                                        amp_sub_cacheput, amp_sub_cached,
+                                        amp_mul_cacheput, amp_mul_cached,
+                                        amp_div_cacheput, amp_div_cached,
                                         f_int);
                 fflush(overview_file);
             }

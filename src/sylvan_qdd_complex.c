@@ -100,13 +100,13 @@ comp_qmake(int a, int b, int c)
 
 /* Cache puts / gets */
 
-// TODO: counters for these cache lookups / puts
-
 static void
 cache_put_add(AMP a, AMP b, AMP res)
 {
     // TODO: order a, b
-    cache_put3(CACHE_AMP_ADD, a, b, sylvan_false, res);
+    if (cache_put3(CACHE_AMP_ADD, a, b, sylvan_false, res)) {
+        sylvan_stats_count(AMP_ADD_CACHEDPUT);
+    }
 }
 
 static bool
@@ -114,6 +114,7 @@ cache_get_add(AMP a, AMP b, AMP *res)
 {
     // TODO: order a, b
     if (cache_get3(CACHE_AMP_ADD, a, b, sylvan_false, res)) {
+        sylvan_stats_count(AMP_ADD_CACHED);
         return true;
     }
     return false;
@@ -122,13 +123,16 @@ cache_get_add(AMP a, AMP b, AMP *res)
 static void
 cache_put_sub(AMP a, AMP b, AMP res)
 {
-    cache_put3(CACHE_AMP_SUB, a, b, sylvan_false, res);
+    if (cache_put3(CACHE_AMP_SUB, a, b, sylvan_false, res)) {
+        sylvan_stats_count(AMP_SUB_CACHEDPUT);
+    }
 }
 
 static bool
 cache_get_sub(AMP a, AMP b, AMP *res)
 {
     if (cache_get3(CACHE_AMP_SUB, a, b, sylvan_false, res)) {
+        sylvan_stats_count(AMP_SUB_CACHED);
         return true;
     }
     return false;
@@ -139,7 +143,9 @@ cache_put_mul(AMP a, AMP b, AMP res)
 {
     // TODO: order a, b
     // TODO: put div
-    cache_put3(CACHE_AMP_MUL, a, b, sylvan_false, res);
+    if (cache_put3(CACHE_AMP_MUL, a, b, sylvan_false, res)) {
+        sylvan_stats_count(AMP_MUL_CACHEDPUT);
+    }
 }
 
 static bool
@@ -147,6 +153,7 @@ cache_get_mul(AMP a, AMP b, AMP *res)
 {
     // TODO: order a, b
     if (cache_get3(CACHE_AMP_MUL, a, b, sylvan_false, res)) {
+        sylvan_stats_count(AMP_MUL_CACHED);
         return true;
     }
     return false;
@@ -156,13 +163,16 @@ static void
 cache_put_div(AMP a, AMP b, AMP res)
 {
     // TODO: put mul
-    cache_put3(CACHE_AMP_DIV, a, b, sylvan_false, res);
+    if (cache_put3(CACHE_AMP_DIV, a, b, sylvan_false, res)) {
+        sylvan_stats_count(AMP_DIV_CACHEDPUT);
+    }
 }
 
 static bool
 cache_get_div(AMP a, AMP b, AMP *res)
 {
     if (cache_get3(CACHE_AMP_DIV, a, b, sylvan_false, res)) {
+        sylvan_stats_count(AMP_DIV_CACHED);
         return true;
     }
     return false;
