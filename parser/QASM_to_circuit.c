@@ -61,9 +61,10 @@ void reallocate_wire(C_struct* c_s)
     BDDVAR incr = 1024;
     c_s->max_wire += incr;
     for (BDDVAR i = 0; i < c_s->max_qubits; ++i) {
-        realloc_wire = realloc(c_s->circuit[i], c_s->max_wire * sizeof(c_s->circuit[i]));
+        realloc_wire = realloc(c_s->circuit[i], c_s->max_wire * sizeof(Gate));
         if (realloc_wire == NULL) {
             perror("Memory allocation failed.");
+            delete_c_struct(c_s);
             exit(0);
         }
         else

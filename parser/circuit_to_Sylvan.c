@@ -147,9 +147,13 @@ bool run_circuit_matrix(C_struct c_s, BDDVAR shots)
             new_qdd = qdd_matmat_mult(col_qdd, new_qdd, c_s.nvars);
             qdd = qdd_matmat_mult(new_qdd, qdd, c_s.nvars);
         }
+        if (qdd_countnodes(qdd) > 1024) {
+            printf("reduce\n");
+            vec = qdd_matvec_mult(qdd, vec, c_s.nvars);
+            qdd = qdd_create_single_qubit_gates_same(c_s.nvars, GATEID_I);
+        }
     }
     vec = qdd_matvec_mult(qdd, vec, c_s.nvars);
-
     measure(vec, measurements, c_s.nvars, shots);
     return true;
 }
