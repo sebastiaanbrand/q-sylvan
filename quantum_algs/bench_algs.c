@@ -59,6 +59,7 @@ write_parameters(FILE *file)
     fprintf(file, "  \"flt_quad\": %d,\n", flt_quad);
     fprintf(file, "  \"ctable_gc_thres\": %lf,\n", ctable_gc_thres);
     fprintf(file, "  \"propagate_complex\": %d,\n", propagate_complex);
+    fprintf(file, "  \"CACHE_INV_OPS\": %d,\n", CACHE_INV_OPS);
     fprintf(file, "  \"caching_granularity\": %d\n", caching_granularity);
     fprintf(file, "}\n");
     fclose(file);
@@ -235,8 +236,9 @@ double bench_grover_once(int num_bits, bool flag[], int workers, char *fpath,
     return runtime;
 }
 
-double bench_grover_matrix_once(int num_bits, bool flag[], int workers, char *fpath, 
-                         uint64_t *nodes_peak, double *avg_nodes, uint64_t *n_gates)
+double bench_grover_matrix_once(int num_bits, bool flag[], int workers, char *log_path, 
+                                char* dot_path ,uint64_t *nodes_peak, double *avg_nodes, 
+                                uint64_t *n_gates, double *prob_flag)
 {
     if (VERBOSE) {
         printf("bench grover, %d qubits, %2d worker(s), ", num_bits+1, workers); 
@@ -250,8 +252,8 @@ double bench_grover_matrix_once(int num_bits, bool flag[], int workers, char *fp
     qdd_set_auto_gc_amp_table(false);
 
     FILE *logfile = NULL;
-    if (fpath != NULL)
-        logfile = fopen(fpath, "w");
+    if (log_path != NULL)
+        logfile = fopen(log_path, "w");
 
     double t_start, t_end, runtime;
     t_start = wctime();
@@ -282,12 +284,19 @@ double bench_grover_matrix_once(int num_bits, bool flag[], int workers, char *fp
     t_end = wctime();
     runtime = (t_end - t_start);
 
+    node_count_end = qdd_countnodes(grov);
+    *prob_flag = amp_to_prob(qdd_get_amplitude(grov, flag))*2;
+    uint64_t np = (nodes_peak == NULL) ? 0 : *nodes_peak;
     if (VERBOSE) {
-        node_count_end = qdd_countnodes(grov);
-        double prob = amp_to_prob(qdd_get_amplitude(grov, flag))*2;
-        uint64_t np = (nodes_peak == NULL) ? 0 : *nodes_peak;
-        printf("%ld nodes end (%ld peak), Pr(flag)=%.3lf, %lf sec\n", node_count_end, np, prob, runtime);
+        printf("%ld nodes end (%ld peak), Pr(flag)=%.3lf, %lf sec\n", node_count_end, np, *prob_flag , runtime);
     }
+
+    if (dot_path != NULL) {
+        FILE *fp = fopen(dot_path, "w");
+        qdd_fprintdot(fp, grov, false);
+        fclose(fp);
+    }
+
 
     if (logfile != NULL)
         fclose(logfile);
@@ -684,6 +693,10 @@ int bench_grover_matrix()
     strcpy(history_dir, output_dir);
     strcat(history_dir, "run_histories/");
     mkdir(history_dir, 0700);
+    char final_qdd_dir[256];
+    strcpy(final_qdd_dir, output_dir);
+    strcat(final_qdd_dir, "final_qdds/");
+    mkdir(final_qdd_dir, 0700);
     // output file for runtime data
     char overview_fname[256];
     strcpy(overview_fname, output_dir);
@@ -697,7 +710,7 @@ int bench_grover_matrix()
                            "amp_sub_cacheput, amp_sub_cached, "
                            "amp_mul_cacheput, amp_mul_cached, "
                            "amp_div_cacheput, amp_div_cached, "
-                           "flag\n");
+                           "flag, Pr(flag)\n");
     // output file for sylvan parameters
     char param_fname[256];
     strcpy(param_fname, output_dir);
@@ -721,20 +734,21 @@ int bench_grover_matrix()
     ctable_gc_thres = 0.5;
     caching_granularity = 1;
     write_parameters(param_file);
+    fclose(param_file);
 
     // different number of bits for the flag to test
-    int n_bits[] = {4, 9, 14, 19, 24, 29, 34, 39};
+    int n_bits[] = {4, 9, 14, 19};//{29, 31, 33, 35, 37};//{4, 9, 14, 19, 24, 29, 34, 39};
     
     // different number of workers to test
     int n_workers[] = {1};//, 2, 4, 8};
 
     // different number of random flags to test
-    int n_flags = 3;
+    int n_flags = 1;//3;
     bool *flag;
     int f_int;
 
     // runtimes are written to single file
-    double runtime = 0, avg_gate_time = 0, avg_nodes = 0;
+    double runtime = 0, avg_gate_time = 0, avg_nodes = 0, prob_flag = 0;
     uint64_t nodes_peak = 0, n_gates = 0;
     uint64_t mult_cached = 0, mult_cacheput = 0;
     uint64_t plus_cached = 0, plus_cacheput = 0;
@@ -759,14 +773,20 @@ int bench_grover_matrix()
                 sprintf(history_fname, "grov_hist_n%d_w%d_f%d.csv", n_bits[q]+1, n_workers[w], f_int);
                 strcpy(history_path, history_dir);
                 strcat(history_path, history_fname);
+                // output file for final qdd dot file
+                char dotfile_path[256];
+                char dotfile_fname[256];
+                sprintf(dotfile_fname, "grov_qdd_n%d_w%d_f%d.dot", n_bits[q]+1, n_workers[w], f_int);
+                strcpy(dotfile_path, final_qdd_dir);
+                strcat(dotfile_path, dotfile_fname);
 
                 // set log granularity based on number of gates in circuit
                 uint32_t log_granularity = qdd_grover_approx_number_of_gates(n_bits[q])/log_entries;
                 qdd_stats_set_granularity(log_granularity);
 
                 // bench twice, once with logging and once for timing
-                runtime = bench_grover_matrix_once(n_bits[q], flag, n_workers[w], NULL, NULL, NULL, NULL);
-                //bench_grover_matrix_once(n_bits[q], flag, n_workers[w], history_path, &nodes_peak, &avg_nodes, &n_gates);
+                runtime = bench_grover_matrix_once(n_bits[q], flag, n_workers[w], NULL, dotfile_path, NULL, NULL, NULL, &prob_flag);
+                //bench_grover_matrix_once(n_bits[q], flag, n_workers[w], history_path, &nodes_peak, &avg_nodes, &n_gates, &prob_flag);
 
                 // add summary of this run to overview file
                 avg_gate_time = runtime / (double) n_gates;
@@ -784,7 +804,7 @@ int bench_grover_matrix()
                 amp_mul_cacheput = sylvan_stats.counters[AMP_MUL_CACHEDPUT];
                 amp_div_cacheput = sylvan_stats.counters[AMP_DIV_CACHEDPUT];
                 #endif
-                fprintf(overview_file, "%d, %ld, %lf, %d, %ld, %lf, %.3e, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %d\n",
+                fprintf(overview_file, "%d, %ld, %lf, %d, %ld, %lf, %.3e, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %d, %lf\n",
                                         n_bits[q]+1, nodes_peak, avg_nodes, n_workers[w],
                                         n_gates, runtime, avg_gate_time, 
                                         plus_cacheput, plus_cached,
@@ -793,7 +813,7 @@ int bench_grover_matrix()
                                         amp_sub_cacheput, amp_sub_cached,
                                         amp_mul_cacheput, amp_mul_cached,
                                         amp_div_cacheput, amp_div_cached,
-                                        f_int);
+                                        f_int, prob_flag);
                 fflush(overview_file);
             }
         }

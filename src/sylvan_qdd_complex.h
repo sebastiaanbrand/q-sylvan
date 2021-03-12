@@ -23,6 +23,8 @@ typedef enum amp_storage_backend {
 
 typedef uint64_t AMP;
 
+static const bool CACHE_INV_OPS = true; // e.g. put mul(b,c)=a when div(a,b)=c
+
 AMP C_ZERO;
 AMP C_ONE;
 AMP C_MIN_ONE;

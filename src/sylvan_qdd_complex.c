@@ -51,7 +51,7 @@ tree_map_t *rtree;
 tree_map_t *rtree_old;
 
 static bool CACHE_AMP_OPS = true;
-static bool CACHE_INV_OPS = true; // e.g. put mul(b,c)=a when div(a,b)=c
+
 
 /* Shorthand functions for making complex numbers */
 
