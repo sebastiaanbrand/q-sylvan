@@ -2681,16 +2681,17 @@ qdd_printnodes(QDD q)
 }
 
 static void
-qdd_fprintdot_label(FILE *out, AMP a)
+qdd_fprintdot_edge_label(FILE *out, AMP a)
 {
     fprintf(out, ", label=\"");
     if (a == C_ONE) {}
     else if (a == C_ZERO) { fprintf(out, "0"); }
+    else if (a == C_MIN_ONE) { fprintf(out, "-1"); }
     else {
         complex_t val = comp_value(a);
-        if (val.r != 0.0) fprintf(out, "%.3lf", (double) val.r);
-        if (val.i > 0.0) fprintf(out, "+%.3lfi", (double) val.i);
-        else if (val.i < 0.0) fprintf(out, "%.3lfi", (double) val.i);
+        if (val.r != 0.0) fprintf(out, "%.2e", (double) val.r);
+        if (val.i > 0.0) fprintf(out, "+%.2ei", (double) val.i);
+        else if (val.i < 0.0) fprintf(out, "%.2ei", (double) val.i);
     }
     fprintf(out, "\"");
 }
@@ -2720,13 +2721,13 @@ qdd_fprintdot_rec(FILE *out, QDD qdd, bool draw_zeros)
     if (draw_zeros || QDD_AMP(low) != C_ZERO) {
         fprintf(out, "%" PRIu64 " -> %" PRIu64 " [style=dashed",
                     QDD_PTR(qdd), QDD_PTR(low));
-        qdd_fprintdot_label(out, QDD_AMP(low));
+        qdd_fprintdot_edge_label(out, QDD_AMP(low));
         fprintf(out, "];\n");
     }
     if (draw_zeros || QDD_AMP(high) != C_ZERO) {
         fprintf(out, "%" PRIu64 " -> %" PRIu64 " [style=solid",
                     QDD_PTR(qdd), QDD_PTR(high));
-        qdd_fprintdot_label(out, QDD_AMP(high));
+        qdd_fprintdot_edge_label(out, QDD_AMP(high));
         fprintf(out, "];\n");
     }
 }
@@ -2739,7 +2740,7 @@ qdd_fprintdot(FILE *out, QDD qdd, bool draw_zeros)
     fprintf(out, "edge [dir=forward];\n");
     fprintf(out, "root [style=invis];\n");
     fprintf(out, "root -> %" PRIu64 " [style=solid", QDD_PTR(qdd));
-    qdd_fprintdot_label(out, QDD_AMP(qdd));
+    qdd_fprintdot_edge_label(out, QDD_AMP(qdd));
     fprintf(out, "];\n");
 
     // terminal node
