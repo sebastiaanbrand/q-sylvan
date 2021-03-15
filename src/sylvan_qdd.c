@@ -23,7 +23,7 @@
 #include "sylvan_int.h"
 #include "sylvan_qdd.h"
 #include "sylvan_refs.h"
-#include "sylvan_qdd_complex.h"
+#include "sylvan_qdd_complex_include.h"
 
 static int granularity = 1; // operation cache access granularity
 static bool testing_mode = 0; // turns on/off (expensive) sanity checks
@@ -654,55 +654,6 @@ qdd_comp_lookup(complex_t c)
     return res;
 }
 
-static AMP __attribute__((unused))
-qdd_amp_normalize_low(AMP *low, AMP *high)
-{
-    // Normalize using low if low != 0
-    AMP norm;
-    if(*low != C_ZERO){
-        complex_t cl = comp_value(*low);
-        complex_t ch = comp_value(*high);
-        ch    = comp_div(ch, cl);
-        *high = qdd_comp_lookup(ch);
-        norm  = *low;
-        *low  = C_ONE;
-    }
-    else {
-        norm  = *high;
-        *high = C_ONE;
-    }
-    return norm;
-}
-
-static AMP __attribute__((unused))
-qdd_amp_normalize_largest(AMP *low, AMP *high)
-{
-    AMP norm;
-    if (*low == *high) {
-        norm  = *low;
-        *low  = C_ONE;
-        *high = C_ONE;
-        return norm;
-    }
-
-    // Normalize using the absolute greatest value
-    complex_t cl = comp_value(*low);
-    complex_t ch = comp_value(*high);
-    if ( (cl.r*cl.r + cl.i*cl.i)  >=  (ch.r*ch.r + ch.i*ch.i) ) {
-        ch = comp_div(ch, cl);
-        *high = qdd_comp_lookup(ch);
-        norm = *low;
-        *low  = C_ONE;
-    }
-    else {
-        cl = comp_div(cl, ch);
-        *low = qdd_comp_lookup(cl);
-        norm  = *high;
-        *high = C_ONE;
-    }
-    return norm;
-}
-
 static QDD // (PTR and AMP, but the amp is the norm weight from below)
 qdd_makenode(BDDVAR var, QDD low, QDD high)
 { 
@@ -719,7 +670,7 @@ qdd_makenode(BDDVAR var, QDD low, QDD high)
     if (low == high) return low;
     else {
         // If the edges are not the same
-        AMP norm = qdd_amp_normalize_largest(&low_amp, &high_amp);
+        AMP norm = amp_default_normalize(&low_amp, &high_amp);
         PTR res  = _qdd_makenode(var, low_ptr, high_ptr, low_amp, high_amp);
         return qdd_bundle_ptr_amp(res, norm);
     }
@@ -789,13 +740,20 @@ qdd_get_gc_amp_table_thres()
 void
 qdd_gc_amp_table(QDD *keep)
 {
+    qdd_gc_amp_table2(keep, 1);
+}
+
+void
+qdd_gc_amp_table2(QDD keep[], int num)
+{
     LACE_ME;
     // 1. Create new amp table
     init_new_empty_table();
 
     // 2. Fill new table with amps present in given QDDs
     //for (int i = 0; i < n_qdds; i++) qdds[i] = _fill_new_amp_table(qdds[i]);
-    *keep = _fill_new_amp_table(*keep);
+    for (int k = 0; k < num; k++)
+        keep[k] = _fill_new_amp_table(keep[k]);
 
     //uint64_t in_use = count_amplitude_table_enries();
     //printf("amps in use after gc: %ld\n", in_use);
@@ -1514,8 +1472,12 @@ TASK_IMPL_4(QDD, qdd_matvec_mult_rec, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR,
     QDD res;
     bool cachenow = ((nextvar % granularity) == 0);
     if (cachenow) {
-        if (cache_get3(CACHE_QDD_MATVEC_MULT, nextvar, mat, vec, &res)) {
+        if (cache_get3(CACHE_QDD_MATVEC_MULT, nextvar, QDD_PTR(mat), QDD_PTR(vec), &res)) {
             sylvan_stats_count(QDD_MULT_CACHED);
+            // 6. multiply w/ product of root amps
+            AMP prod = amp_mul(QDD_AMP(mat), QDD_AMP(vec));
+            AMP new_root_amp = amp_mul(prod, QDD_AMP(res));
+            res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
             return res;
         }
     }
@@ -1529,22 +1491,7 @@ TASK_IMPL_4(QDD, qdd_matvec_mult_rec, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR,
     qdd_get_topvar(mat_low, 2*nextvar+1, &var, &u00, &u10);
     qdd_get_topvar(mat_high,2*nextvar+1, &var, &u01, &u11);
 
-    // 2. pass weights of current edges down
-    AMP amp_vec_low, amp_vec_high, amp_u00, amp_u10, amp_u01, amp_u11;
-    amp_vec_low  = amp_mul(QDD_AMP(vec), QDD_AMP(vec_low));
-    amp_vec_high = amp_mul(QDD_AMP(vec), QDD_AMP(vec_high));
-    amp_u00      = amp_mul(amp_mul(QDD_AMP(mat), QDD_AMP(mat_low)), QDD_AMP(u00));
-    amp_u10      = amp_mul(amp_mul(QDD_AMP(mat), QDD_AMP(mat_low)), QDD_AMP(u10));
-    amp_u01      = amp_mul(amp_mul(QDD_AMP(mat), QDD_AMP(mat_high)),QDD_AMP(u01));
-    amp_u11      = amp_mul(amp_mul(QDD_AMP(mat), QDD_AMP(mat_high)),QDD_AMP(u11));
-    vec_low  = qdd_bundle_ptr_amp(QDD_PTR(vec_low), amp_vec_low);
-    vec_high = qdd_bundle_ptr_amp(QDD_PTR(vec_high),amp_vec_high);
-    u00      = qdd_bundle_ptr_amp(QDD_PTR(u00), amp_u00);
-    u10      = qdd_bundle_ptr_amp(QDD_PTR(u10), amp_u10);
-    u01      = qdd_bundle_ptr_amp(QDD_PTR(u01), amp_u01);
-    u11      = qdd_bundle_ptr_amp(QDD_PTR(u11), amp_u11);
-
-    // 3. recursive calls (4 tasks: SPAWN 3, CALL 1)
+    // 2. recursive calls (4 tasks: SPAWN 3, CALL 1)
     // |u00 u01| |vec_low | = vec_low|u00| + vec_high|u01|
     // |u10 u11| |vec_high|          |u10|           |u11|
     QDD res_low00, res_low10, res_high01, res_high11;
@@ -1560,19 +1507,31 @@ TASK_IMPL_4(QDD, qdd_matvec_mult_rec, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR,
     qdd_refs_pop(1);
     nextvar--;
 
-    // 4. gather results of multiplication
+    // 3. gather results of multiplication
     QDD res_low, res_high;
     res_low  = qdd_makenode(nextvar, res_low00,  res_low10);
     res_high = qdd_makenode(nextvar, res_high01, res_high11);
 
+    // 4. multiply w/ relevant amps
+    AMP new_amp_low  = amp_mul(QDD_AMP(res_low),  QDD_AMP(mat_low));
+    AMP new_amp_high = amp_mul(QDD_AMP(res_high), QDD_AMP(mat_high)); 
+    res_low  = qdd_bundle_ptr_amp(QDD_PTR(res_low),  new_amp_low);
+    res_high = qdd_bundle_ptr_amp(QDD_PTR(res_high), new_amp_high);
+
     // 5. add resulting qdds
     res = CALL(qdd_plus_amp, res_low, res_high);
 
-    // Insert in cache
+
+    // Insert in cache (before multiplication w/ root amps)
     if (cachenow) {
-        if (cache_put3(CACHE_QDD_MATVEC_MULT, nextvar, mat, vec, res)) 
+        if (cache_put3(CACHE_QDD_MATVEC_MULT, nextvar, QDD_PTR(mat), QDD_PTR(vec), res)) 
             sylvan_stats_count(QDD_MULT_CACHEDPUT);
     }
+
+    // 6. multiply w/ product of root amps
+    AMP prod = amp_mul(QDD_AMP(mat), QDD_AMP(vec));
+    AMP new_root_amp = amp_mul(prod, QDD_AMP(res));
+    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
 
     return res;
 }
@@ -1595,8 +1554,12 @@ TASK_IMPL_4(QDD, qdd_matmat_mult_rec, QDD, a, QDD, b, BDDVAR, nvars, BDDVAR, nex
     QDD res;
     bool cachenow = ((nextvar % granularity) == 0);
     if (cachenow) {
-        if (cache_get3(CACHE_QDD_MATMAT_MULT, nextvar, a, b, &res)) {
+        if (cache_get3(CACHE_QDD_MATMAT_MULT, nextvar, QDD_PTR(a), QDD_PTR(b), &res)) {
             sylvan_stats_count(QDD_MULT_CACHED);
+            // 7. multiply w/ product of root amps
+            AMP prod = amp_mul(QDD_AMP(a), QDD_AMP(b));
+            AMP new_root_amp = amp_mul(prod, QDD_AMP(res));
+            res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
             return res;
         }
     }
@@ -1614,14 +1577,14 @@ TASK_IMPL_4(QDD, qdd_matmat_mult_rec, QDD, a, QDD, b, BDDVAR, nvars, BDDVAR, nex
 
     // 2. pass weights of current edges down TODO: use loop
     AMP amp_a00, amp_a10, amp_a01, amp_a11, amp_b00, amp_b10, amp_b01, amp_b11;
-    amp_a00 = amp_mul(amp_mul(QDD_AMP(a), QDD_AMP(a_low)), QDD_AMP(a00));
-    amp_a10 = amp_mul(amp_mul(QDD_AMP(a), QDD_AMP(a_low)), QDD_AMP(a10));
-    amp_a01 = amp_mul(amp_mul(QDD_AMP(a), QDD_AMP(a_high)),QDD_AMP(a01));
-    amp_a11 = amp_mul(amp_mul(QDD_AMP(a), QDD_AMP(a_high)),QDD_AMP(a11));
-    amp_b00 = amp_mul(amp_mul(QDD_AMP(b), QDD_AMP(b_low)), QDD_AMP(b00));
-    amp_b10 = amp_mul(amp_mul(QDD_AMP(b), QDD_AMP(b_low)), QDD_AMP(b10));
-    amp_b01 = amp_mul(amp_mul(QDD_AMP(b), QDD_AMP(b_high)),QDD_AMP(b01));
-    amp_b11 = amp_mul(amp_mul(QDD_AMP(b), QDD_AMP(b_high)),QDD_AMP(b11));
+    amp_a00 = amp_mul(QDD_AMP(a_low), QDD_AMP(a00));
+    amp_a10 = amp_mul(QDD_AMP(a_low), QDD_AMP(a10));
+    amp_a01 = amp_mul(QDD_AMP(a_high),QDD_AMP(a01));
+    amp_a11 = amp_mul(QDD_AMP(a_high),QDD_AMP(a11));
+    amp_b00 = amp_mul(QDD_AMP(b_low), QDD_AMP(b00));
+    amp_b10 = amp_mul(QDD_AMP(b_low), QDD_AMP(b10));
+    amp_b01 = amp_mul(QDD_AMP(b_high),QDD_AMP(b01));
+    amp_b11 = amp_mul(QDD_AMP(b_high),QDD_AMP(b11));
     a00 = qdd_bundle_ptr_amp(QDD_PTR(a00), amp_a00);
     a10 = qdd_bundle_ptr_amp(QDD_PTR(a10), amp_a10);
     a01 = qdd_bundle_ptr_amp(QDD_PTR(a01), amp_a01);
@@ -1675,9 +1638,14 @@ TASK_IMPL_4(QDD, qdd_matmat_mult_rec, QDD, a, QDD, b, BDDVAR, nvars, BDDVAR, nex
 
     // Insert in cache
     if (cachenow) {
-        if (cache_put3(CACHE_QDD_MATMAT_MULT, nextvar, a, b, res)) 
+        if (cache_put3(CACHE_QDD_MATMAT_MULT, nextvar, QDD_PTR(a), QDD_PTR(b), res)) 
             sylvan_stats_count(QDD_MULT_CACHEDPUT);
     }
+
+    // 7. multiply w/ product of root amps
+    AMP prod = amp_mul(QDD_AMP(a), QDD_AMP(b));
+    AMP new_root_amp = amp_mul(prod, QDD_AMP(res));
+    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
 
     return res;
 }
@@ -1841,8 +1809,7 @@ TASK_IMPL_6(QDD, qdd_ccircuit, QDD, qdd, uint32_t, circ_id, BDDVAR*, cs, uint32_
         // Multiply root amp of sum with input root amp 
         // TODO: (I guess this needs to be done every time after makenode, 
         // so maybe put this functionality in makenode function?)
-        complex_t comp = comp_mul(comp_value(QDD_AMP(qdd)), comp_value(QDD_AMP(res)));
-        AMP new_root_amp = qdd_comp_lookup(comp);
+        AMP new_root_amp = amp_mul(QDD_AMP(qdd), QDD_AMP(res));
         res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     }
     
@@ -1887,13 +1854,11 @@ qdd_all_control_phase_rec(QDD qdd, BDDVAR k, BDDVAR n, bool *x)
     // terminal case, apply phase depending on x[k] (control k on 0 or 1)
     if (k == (n-1)) {
         if (x[k] == 1) {
-            complex_t c = comp_mul(comp_value(QDD_AMP(high)), comp_minus_one());
-            AMP new_amp = qdd_comp_lookup(c);
+            AMP new_amp = amp_mul(QDD_AMP(high), C_MIN_ONE);
             high = qdd_bundle_ptr_amp(QDD_PTR(high), new_amp);
         }
         else {
-            complex_t c = comp_mul(comp_value(QDD_AMP(low)), comp_minus_one());
-            AMP new_amp = qdd_comp_lookup(c);
+            AMP new_amp = amp_mul(QDD_AMP(low), C_MIN_ONE);
             low = qdd_bundle_ptr_amp(QDD_PTR(low), new_amp);
         }
     }
@@ -1914,8 +1879,7 @@ qdd_all_control_phase_rec(QDD qdd, BDDVAR k, BDDVAR n, bool *x)
     QDD res = qdd_makenode(k, low, high);
 
     // multiply by existing edge weight on qdd
-    complex_t c = comp_mul(comp_value(QDD_AMP(qdd)), comp_value(QDD_AMP(res)));
-    AMP new_root_amp = qdd_comp_lookup(c);
+    AMP new_root_amp = amp_mul(QDD_AMP(qdd), QDD_AMP(res));
     res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     return res;
 }
@@ -1947,12 +1911,14 @@ qdd_measure_q0(QDD qdd, BDDVAR nvars, int *m, double *p)
 
     if (testing_mode) assert(qdd_is_unitvector(qdd, nvars));
 
+    // TODO: don't use doubles here but allow for mpreal ?
+    // (e.g. by using AMPs)
     prob_low  = qdd_unnormed_prob(low,  1, nvars);
     prob_high = qdd_unnormed_prob(high, 1, nvars);
-    prob_root = comp_to_prob(comp_value(QDD_AMP(qdd)));
+    prob_root = amp_to_prob(QDD_AMP(qdd));
     prob_low  *= prob_root;
     prob_high *= prob_root;
-    if (fabs(prob_low + prob_high - 1.0) > cmap_get_tolerance()*1000) {
+    if (fabs(prob_low + prob_high - 1.0) > 1e-6) {
         printf("WARNING: prob sum = %.10lf (%.5lf + %.5lf)\n", prob_low + prob_high, prob_low, prob_high);
         //assert("probabilities don't sum to 1" && false);
     }
@@ -1963,21 +1929,20 @@ qdd_measure_q0(QDD qdd, BDDVAR nvars, int *m, double *p)
     *p = prob_low;
 
     // produce post-measurement state
-    complex_t norm;
+    AMP norm;
     if (*m == 0) {
         high = qdd_bundle_ptr_amp(QDD_TERMINAL, C_ZERO);
-        norm = comp_make(flt_sqrt(prob_low), 0.0);
+        norm = prob_to_amp(prob_low);
     }
     else {
         low  = qdd_bundle_ptr_amp(QDD_TERMINAL, C_ZERO);
-        norm = comp_make(flt_sqrt(prob_high), 0.0);
+        norm = prob_to_amp(prob_high);
     }
 
     QDD res = qdd_makenode(0, low, high);
 
-    complex_t c = comp_mul(comp_value(QDD_AMP(qdd)), comp_value(QDD_AMP(res)));
-    c = comp_div(c, norm);
-    AMP new_root_amp = qdd_comp_lookup(c);
+    AMP new_root_amp = amp_mul(QDD_AMP(qdd), QDD_AMP(res));
+    new_root_amp     = amp_div(new_root_amp, norm);
 
     res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     res = qdd_remove_global_phase(res);
@@ -2028,7 +1993,7 @@ qdd_measure_all(QDD qdd, BDDVAR n, bool* ms, double *p)
 
         prob_low  = qdd_unnormed_prob(low,  k+1, n);
         prob_high = qdd_unnormed_prob(high, k+1, n);
-        prob_roots *= comp_to_prob(comp_value(QDD_AMP(qdd)));
+        prob_roots *= amp_to_prob(QDD_AMP(qdd));
         prob_high = prob_high * prob_roots / prob_path;
         prob_low  = prob_low  * prob_roots / prob_path;
 
@@ -2056,7 +2021,7 @@ TASK_IMPL_3(double, qdd_unnormed_prob, QDD, qdd, BDDVAR, topvar, BDDVAR, nvars)
 
     if (topvar == nvars) {
         assert(QDD_PTR(qdd) == QDD_TERMINAL);
-        return comp_to_prob(comp_value(QDD_AMP(qdd)));
+        return amp_to_prob(QDD_AMP(qdd));
     }
 
     // Look in cache
@@ -2081,7 +2046,7 @@ TASK_IMPL_3(double, qdd_unnormed_prob, QDD, qdd, BDDVAR, topvar, BDDVAR, nvars)
     SPAWN(qdd_unnormed_prob, high, nextvar, nvars);
     prob_low  = CALL(qdd_unnormed_prob, low, nextvar, nvars);
     prob_high = SYNC(qdd_unnormed_prob);
-    prob_root = comp_to_prob(comp_value(QDD_AMP(qdd)));
+    prob_root = amp_to_prob(QDD_AMP(qdd));
     prob_res  = prob_root * (prob_low + prob_high);
 
     // Put in cache and return
@@ -2096,11 +2061,11 @@ TASK_IMPL_3(double, qdd_unnormed_prob, QDD, qdd, BDDVAR, topvar, BDDVAR, nvars)
 AMP
 qdd_get_amplitude(QDD q, bool* basis_state)
 {
-
-    complex_t c = comp_one();
+    // NOTE: removed reliance on complex_t by using amp_mul instead of comp_mul
+    AMP res = C_ONE;
     QDD low, high;
     for (;;) {
-        c = comp_mul(c, comp_value(QDD_AMP(q)));
+        res = amp_mul(res, QDD_AMP(q));
         
         // if the current edge is pointing to the terminal, we're done.
         if (QDD_PTR(q) == QDD_TERMINAL) break;
@@ -2114,7 +2079,7 @@ qdd_get_amplitude(QDD q, bool* basis_state)
         q = (basis_state[var] == 0) ? low : high;
     }
 
-    return qdd_comp_lookup(c);
+    return res;
 }
 
 
@@ -2288,12 +2253,19 @@ qdd_create_multi_cgate_rec(BDDVAR n, int *c_options, uint32_t gateid, BDDVAR k)
     // c_options[k] =  1 -> control on q_k = |1>
     // c_options[k] =  2 -> target qubit (for now assume 1 target)
 
-    // TODO: might require caching, or other method of preventing blow-up of
-    // construction complexity when there are a lot of controls
-
     // Terminal case
     if (k == n) {
         return qdd_bundle_ptr_amp(QDD_TERMINAL, C_ONE);
+    }
+
+    // TODO: catching GATEID_I avoids exp number of recrusive calls, but this 
+    // entire function might be handled in a better way(?)
+    if (gateid == GATEID_I) {
+        QDD identities = qdd_bundle_ptr_amp(QDD_TERMINAL, C_ONE);
+        for (int j = n-1; j >= (int) k; j--) {
+            identities = qdd_stack_matrix(identities, j, GATEID_I);
+        }
+        return identities;
     }
 
     // Recursively build matrix
@@ -2363,11 +2335,8 @@ QDD
 qdd_remove_global_phase(QDD qdd)
 {
     // Remove global phase by replacing amp of qdd with absolute value of amp
-    complex_t c = comp_value(QDD_AMP(qdd));
-    c.r = sqrt(c.r*c.r + c.i*c.i);
-    c.i = 0.0;
-    AMP new_root_amp = qdd_comp_lookup(c);
-    QDD res = qdd_bundle_ptr_amp(QDD_PTR(qdd), new_root_amp);
+    AMP abs = amp_abs(QDD_AMP(qdd));
+    QDD res = qdd_bundle_ptr_amp(QDD_PTR(qdd), abs);
     return res;
 }
 
@@ -2382,8 +2351,10 @@ qdd_equivalent(QDD a, QDD b, int n, bool exact, bool verbose)
         amp_a = qdd_get_amplitude(a, x);
         amp_b = qdd_get_amplitude(b, x);
         if(exact){
-            if(!comp_exact_equal(comp_value(amp_a), comp_value(amp_b))){
+            if(!amp_exact_equal(amp_a, amp_b)){
                 if(verbose){
+                    // this printing won't work for the mpreal backend
+                    // TODO: fix above
                     _print_bitstring(x, n, true);
                     printf(", amp a ="); comp_print(comp_value(amp_a));
                     printf(" != amp b ="); comp_print(comp_value(amp_b));
@@ -2393,7 +2364,7 @@ qdd_equivalent(QDD a, QDD b, int n, bool exact, bool verbose)
             }
         }
         else{
-            if(!comp_approx_equal(comp_value(amp_a), comp_value(amp_b))){
+            if(!amp_approx_equal(amp_a, amp_b)){
                 if(verbose){
                     _print_bitstring(x, n, true);
                     printf(", amp a ="); comp_print(comp_value(amp_a));
@@ -2420,7 +2391,7 @@ qdd_is_close_to_unitvector(QDD qdd, BDDVAR n, double tol)
     double sum_abs_squares = 0.0;
     while(has_next){
         a = qdd_get_amplitude(qdd, x);
-        sum_abs_squares += comp_to_prob(comp_value(a));
+        sum_abs_squares += amp_to_prob(a);
         has_next = _next_bitstring(x, n);
     }
 
@@ -2710,16 +2681,17 @@ qdd_printnodes(QDD q)
 }
 
 static void
-qdd_fprintdot_label(FILE *out, AMP a)
+qdd_fprintdot_edge_label(FILE *out, AMP a)
 {
     fprintf(out, ", label=\"");
     if (a == C_ONE) {}
     else if (a == C_ZERO) { fprintf(out, "0"); }
+    else if (a == C_MIN_ONE) { fprintf(out, "-1"); }
     else {
         complex_t val = comp_value(a);
-        if (val.r != 0.0) fprintf(out, "%.3lf", (double) val.r);
-        if (val.i > 0.0) fprintf(out, "+%.3lfi", (double) val.i);
-        else if (val.i < 0.0) fprintf(out, "%.3lfi", (double) val.i);
+        if (val.r != 0.0) fprintf(out, "%.2e", (double) val.r);
+        if (val.i > 0.0) fprintf(out, "+%.2ei", (double) val.i);
+        else if (val.i < 0.0) fprintf(out, "%.2ei", (double) val.i);
     }
     fprintf(out, "\"");
 }
@@ -2749,13 +2721,13 @@ qdd_fprintdot_rec(FILE *out, QDD qdd, bool draw_zeros)
     if (draw_zeros || QDD_AMP(low) != C_ZERO) {
         fprintf(out, "%" PRIu64 " -> %" PRIu64 " [style=dashed",
                     QDD_PTR(qdd), QDD_PTR(low));
-        qdd_fprintdot_label(out, QDD_AMP(low));
+        qdd_fprintdot_edge_label(out, QDD_AMP(low));
         fprintf(out, "];\n");
     }
     if (draw_zeros || QDD_AMP(high) != C_ZERO) {
         fprintf(out, "%" PRIu64 " -> %" PRIu64 " [style=solid",
                     QDD_PTR(qdd), QDD_PTR(high));
-        qdd_fprintdot_label(out, QDD_AMP(high));
+        qdd_fprintdot_edge_label(out, QDD_AMP(high));
         fprintf(out, "];\n");
     }
 }
@@ -2768,7 +2740,7 @@ qdd_fprintdot(FILE *out, QDD qdd, bool draw_zeros)
     fprintf(out, "edge [dir=forward];\n");
     fprintf(out, "root [style=invis];\n");
     fprintf(out, "root -> %" PRIu64 " [style=solid", QDD_PTR(qdd));
-    qdd_fprintdot_label(out, QDD_AMP(qdd));
+    qdd_fprintdot_edge_label(out, QDD_AMP(qdd));
     fprintf(out, "];\n");
 
     // terminal node

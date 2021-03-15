@@ -502,6 +502,7 @@ void qdd_set_auto_gc_amp_table(bool enabled);
 void qdd_set_gc_amp_table_thres(double fraction_filled);
 double qdd_get_gc_amp_table_thres();
 void qdd_gc_amp_table(QDD *keep);
+void qdd_gc_amp_table2(QDD keep[], int num);
 void qdd_test_gc_amptable(QDD *keep);
 /**
  * Recursive function for moving amps from old to new amp table.

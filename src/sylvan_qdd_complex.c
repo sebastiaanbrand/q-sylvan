@@ -98,6 +98,112 @@ comp_qmake(int a, int b, int c)
 }
 
 
+/* Cache puts / gets */
+
+// deterministically order {a,b} for caching commuting op(a,b)
+static void
+order_inputs(AMP *a, AMP *b) 
+{
+    AMP x = (*a > *b) ? *a : *b;
+    AMP y = (*a > *b) ? *b : *a;
+    *a = x;
+    *b = y;
+}
+
+static void
+cache_put_add(AMP a, AMP b, AMP res)
+{
+    order_inputs(&a, &b);
+    if (cache_put3(CACHE_AMP_ADD, a, b, sylvan_false, res)) {
+        sylvan_stats_count(AMP_ADD_CACHEDPUT);
+    }
+}
+
+static bool
+cache_get_add(AMP a, AMP b, AMP *res)
+{
+    order_inputs(&a, &b);
+    if (cache_get3(CACHE_AMP_ADD, a, b, sylvan_false, res)) {
+        sylvan_stats_count(AMP_ADD_CACHED);
+        return true;
+    }
+    return false;
+}
+
+static void
+cache_put_sub(AMP a, AMP b, AMP res)
+{
+    if (cache_put3(CACHE_AMP_SUB, a, b, sylvan_false, res)) {
+        sylvan_stats_count(AMP_SUB_CACHEDPUT);
+    }
+}
+
+static bool
+cache_get_sub(AMP a, AMP b, AMP *res)
+{
+    if (cache_get3(CACHE_AMP_SUB, a, b, sylvan_false, res)) {
+        sylvan_stats_count(AMP_SUB_CACHED);
+        return true;
+    }
+    return false;
+}
+
+static void
+cache_put_mul(AMP a, AMP b, AMP res)
+{
+    order_inputs(&a, &b);
+    if (cache_put3(CACHE_AMP_MUL, a, b, sylvan_false, res)) {
+        sylvan_stats_count(AMP_MUL_CACHEDPUT);
+    }
+    if (CACHE_INV_OPS) {
+        // put inverse as well (empirically seems not so beneficial)
+        if (cache_put3(CACHE_AMP_DIV, res, b, sylvan_false, a)) {
+            sylvan_stats_count(AMP_DIV_CACHEDPUT);
+        }
+        if (cache_put3(CACHE_AMP_DIV, res, a, sylvan_false, b)) {
+            sylvan_stats_count(AMP_DIV_CACHEDPUT);
+        }
+    }
+}
+
+static bool
+cache_get_mul(AMP a, AMP b, AMP *res)
+{
+    order_inputs(&a, &b);
+    if (cache_get3(CACHE_AMP_MUL, a, b, sylvan_false, res)) {
+        sylvan_stats_count(AMP_MUL_CACHED);
+        return true;
+    }
+    return false;
+}
+
+static void
+cache_put_div(AMP a, AMP b, AMP res)
+{
+    if (cache_put3(CACHE_AMP_DIV, a, b, sylvan_false, res)) {
+        sylvan_stats_count(AMP_DIV_CACHEDPUT);
+    }
+    if (CACHE_INV_OPS) {
+        // put inverse as well (empirically seems beneficial)
+        order_inputs(&b, &res);
+        if (cache_put3(CACHE_AMP_MUL, b, res, sylvan_false, a)) {
+            sylvan_stats_count(AMP_MUL_CACHEDPUT);
+        }
+    }
+}
+
+static bool
+cache_get_div(AMP a, AMP b, AMP *res)
+{
+    if (cache_get3(CACHE_AMP_DIV, a, b, sylvan_false, res)) {
+        sylvan_stats_count(AMP_DIV_CACHED);
+        return true;
+    }
+    return false;
+}
+
+
+
 
 /* Arithmetic operations on AMPs */
 
@@ -146,9 +252,7 @@ amp_add(AMP a, AMP b)
     // check cache
     AMP res;
     if (CACHE_AMP_OPS) {
-        if (cache_get3(CACHE_AMP_ADD, a, b, sylvan_false, &res)) {
-            return res; // TODO: counters for these cache lookups/puts
-        }
+        if (cache_get_add(a, b, &res)) return res;
     }
 
     // compute and hash result to ctable
@@ -160,7 +264,7 @@ amp_add(AMP a, AMP b)
 
     // insert in cache
     if (CACHE_AMP_OPS) {
-        cache_put3(CACHE_AMP_ADD, a, b, sylvan_false, res);
+        cache_put_add(a, b, res);
     }
     return res;
 }
@@ -175,9 +279,7 @@ amp_sub(AMP a, AMP b)
     // check cache
     AMP res;
     if (CACHE_AMP_OPS) {
-        if (cache_get3(CACHE_AMP_SUB, a, b, sylvan_false, &res)) {
-            return res; // TODO: counters for these cache lookups/puts
-        }
+        if (cache_get_sub(a, b, &res)) return res;
     }
 
     // compute and hash result to ctable
@@ -189,7 +291,7 @@ amp_sub(AMP a, AMP b)
 
     // insert in cache
     if (CACHE_AMP_OPS) {
-        cache_put3(CACHE_AMP_SUB, a, b, sylvan_false, res);
+        cache_put_sub(a, b, res);
     }
     return res;
 }
@@ -205,9 +307,7 @@ amp_mul(AMP a, AMP b)
     // check cache
     AMP res;
     if (CACHE_AMP_OPS) {
-        if (cache_get3(CACHE_AMP_MUL, a, b, sylvan_false, &res)) {
-            return res; // TODO: counters for these cache lookups/puts
-        }
+        if (cache_get_mul(a, b, &res)) return res;
     }
 
     // compute and hash result to ctable
@@ -219,7 +319,7 @@ amp_mul(AMP a, AMP b)
 
     // insert in cache
     if (CACHE_AMP_OPS) {
-        cache_put3(CACHE_AMP_MUL, a, b, sylvan_false, res);
+        cache_put_mul(a, b, res);
     }
     return res;
 }
@@ -235,9 +335,7 @@ amp_div(AMP a, AMP b)
     // check cache
     AMP res;
     if (CACHE_AMP_OPS) {
-        if (cache_get3(CACHE_AMP_DIV, a, b, sylvan_false, &res)) {
-            return res; // TODO: counters for these cache lookups/puts
-        }
+        if (cache_get_div(a, b, &res)) return res;
     }
 
     // compute and hash result to ctable
@@ -249,11 +347,25 @@ amp_div(AMP a, AMP b)
 
     // insert in cache
     if (CACHE_AMP_OPS) {
-        cache_put3(CACHE_AMP_DIV, a, b, sylvan_false, res);
+        cache_put_div(a, b, res);
     }
     return res;
 }
 
+double
+amp_to_prob(AMP a)
+{
+    return comp_to_prob(comp_value(a));
+}
+
+AMP
+prob_to_amp(double a)
+{
+    complex_t c;
+    c.r = flt_sqrt(a);
+    c.i = 0;
+    return comp_lookup(c);
+}
 
 
 /* Arithmetic operations on complex structs */
@@ -348,10 +460,75 @@ bool comp_approx_equal(complex_t a, complex_t b)
     return comp_epsilon_close(a, b, cmap_get_tolerance());
 }
 
-bool comp_epsilon_close(complex_t a, complex_t b, long double epsilon)
+bool comp_epsilon_close(complex_t a, complex_t b, double epsilon)
 {
     return ( (flt_abs(a.r - b.r) < epsilon) && (flt_abs(a.i - b.i) < epsilon) );
 }
+
+/* Comparing AMPs */
+
+bool amp_exact_equal(AMP a, AMP b)
+{
+    return comp_exact_equal(comp_value(a), comp_value(b));
+}
+
+bool amp_approx_equal(AMP a, AMP b)
+{
+    return comp_approx_equal(comp_value(a), comp_value(b));
+}
+
+bool amp_epsilon_close(AMP a, AMP b, double epsilon)
+{
+    return comp_epsilon_close(comp_value(a), comp_value(b), epsilon);
+}
+
+
+/* normalization of two amps */
+
+AMP
+amp_normalize_low(AMP *low, AMP *high)
+{
+    // Normalize using low if low != 0
+    AMP norm;
+    if(*low != C_ZERO){
+        *high = amp_div(*high, *low);
+        norm  = *low;
+        *low  = C_ONE;
+    }
+    else {
+        norm  = *high;
+        *high = C_ONE;
+    }
+    return norm;
+}
+
+AMP
+amp_normalize_largest(AMP *low, AMP *high)
+{
+    AMP norm;
+    if (*low == *high) {
+        norm  = *low;
+        *low  = C_ONE;
+        *high = C_ONE;
+        return norm;
+    }
+
+    // Normalize using the absolute greatest value
+    complex_t cl = comp_value(*low);
+    complex_t ch = comp_value(*high);
+    if ( (cl.r*cl.r + cl.i*cl.i)  >=  (ch.r*ch.r + ch.i*ch.i) ) {
+        *high = amp_div(*high, *low);
+        norm = *low;
+        *low  = C_ONE;
+    }
+    else {
+        *low = amp_div(*low, *high);
+        norm  = *high;
+        *high = C_ONE;
+    }
+    return norm;
+}
+
 
 
 
@@ -503,7 +680,7 @@ comp_value(AMP a)
     }
     else if (amp_backend == REAL_TREE) {
         AMP idx_r, idx_i;
-        double *r, *i;
+        fl_t *r, *i;
         unpack_indices_rtable(a, &idx_r, &idx_i);
         r = tree_map_get(rtree, idx_r);
         i = tree_map_get(rtree, idx_i);
@@ -541,7 +718,7 @@ comp_value_old(AMP a)
     }
     else if (amp_backend == REAL_TREE) {
         AMP idx_r, idx_i;
-        double *r, *i;
+        fl_t *r, *i;
         unpack_indices_rtable(a, &idx_r, &idx_i);
         r = tree_map_get(rtree_old, idx_r);
         i = tree_map_get(rtree_old, idx_i);
