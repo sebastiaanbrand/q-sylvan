@@ -26,12 +26,14 @@ C_struct make_c_struct(char *filename, bool optimize)
     char* c;
     size_t len = 0;
     ssize_t read;
+    // reallocate_wire(&c_s);
+
     while ((read = getline(&line, &len, f)) != -1) {
         if (c_s.nvars >= c_s.max_qubits) {
             perror("Too much qubits, current maximum is 128.");
             exit(0);
         }
-        if(c_s.depth >= c_s.max_wire+1024)
+        if(c_s.depth == c_s.max_wire-1)
             reallocate_wire(&c_s);
         // skip if comment
         if(line[0] == '/' && line[1] == '/')
@@ -57,21 +59,17 @@ C_struct make_c_struct(char *filename, bool optimize)
 
 void reallocate_wire(C_struct* c_s)
 {
-    Gate* realloc_wire;
     BDDVAR incr = 1024;
     c_s->max_wire += incr;
-    for (BDDVAR i = 0; i < c_s->max_qubits; ++i) {
-        realloc_wire = realloc(c_s->circuit[i], c_s->max_wire * sizeof(Gate));
-        if (realloc_wire == NULL) {
+    for (BDDVAR i = 0; i < c_s->max_qubits; i++) {
+        c_s->circuit[i] = realloc(c_s->circuit[i], c_s->max_wire * sizeof(Gate));
+        if (c_s->circuit[i] == NULL) {
             perror("Memory allocation failed.");
             delete_c_struct(c_s);
             exit(0);
         }
-        else
-            c_s->circuit[i] = realloc_wire;
         for (BDDVAR j = c_s->max_wire-incr; j < c_s->max_wire; j++)
             c_s->circuit[i][j] = gate_I;
-        free(realloc_wire);
     }
 }
 
@@ -80,7 +78,7 @@ void delete_c_struct(C_struct* c_s)
     for (BDDVAR j = 0; j < c_s->max_wire; j++) {
         for (BDDVAR i = 0; i < c_s->max_qubits; i++) {
             if (c_s->circuit[i][j].id != gate_I.id) {
-                if (c_s->circuit[i][j].control != NULL)
+                if (c_s->circuit[i][j].control != NULL || c_s->circuit[i][j].controlSize != 0)
                     free(c_s->circuit[i][j].control);
             }
         }

@@ -9,6 +9,6 @@ TASK_DECL_1(BDDVAR, get_gate_id, Gate);
 TASK_DECL_3(QDD, apply_gate, QDD, Gate, BDDVAR);
 
 
-bool measure(QDD qdd, bool* measurements, BDDVAR nvars, BDDVAR shots);
-bool run_c_struct_matrix(C_struct c_s, BDDVAR shots);
-bool run_c_struct(C_struct c_s, BDDVAR shots);
+bool measure(QDD qdd, bool* measurements, BDDVAR nvars, BDDVAR shots, bool show);
+bool run_c_struct_matrix(C_struct c_s, BDDVAR shots, bool show);
+bool run_c_struct(C_struct c_s, BDDVAR shots, bool show);

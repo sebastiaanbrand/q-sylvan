@@ -2,9 +2,22 @@
 
 #include "sylvan.h"
 #include "sylvan_qdd_complex.h"
+#include <time.h> 
+
+#include <sys/time.h>
+/**
+ * Obtain current wallclock time
+ */
+static double
+wctime()
+{
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return (tv.tv_sec + 1E-6 * tv.tv_usec);
+}
 
 // TASK_IMPL_4(bool, measure, QDD, qdd, bool*, measurements, BDDVAR, nvars, BDDVAR, shots)
-bool measure(QDD qdd, bool* measurements, BDDVAR nvars, BDDVAR shots)
+bool measure(QDD qdd, bool* measurements, BDDVAR nvars, BDDVAR shots, bool show)
 {
     // Run the circuit x times, where x == shots
     bool *ms = malloc(nvars * sizeof(bool));
@@ -32,19 +45,21 @@ bool measure(QDD qdd, bool* measurements, BDDVAR nvars, BDDVAR shots)
     }
 
     // Print reformatted circuit results
-    for(int k = 0; k < pow(2, sum); k++) {
-        bool *x = int_to_bitarray(k, nvars, false);
-        j = sum-1;
-        for (BDDVAR i = nvars; i > 0 ; i--) {
-            if (measurements[i-1]) {
-                printf("%d", x[j]);
-                j--;
+    if (show) {
+        for(int k = 0; k < pow(2, sum); k++) {
+            bool *x = int_to_bitarray(k, nvars, false);
+            j = sum-1;
+            for (BDDVAR i = nvars; i > 0 ; i--) {
+                if (measurements[i-1]) {
+                    printf("%d", x[j]);
+                    j--;
+                }
+                else
+                    printf("_");
             }
-            else
-                printf("_");
+            printf(": %d\n", probs[k]);
+            free(x);
         }
-        printf(": %d\n", probs[k]);
-        free(x);
     }
     free(ms);
     free(p);
@@ -104,7 +119,7 @@ TASK_IMPL_3(QDD, apply_gate, QDD, qdd, Gate, gate, BDDVAR, i)
     return qdd;
 }
 
-bool run_circuit_matrix(C_struct c_s, BDDVAR shots)
+bool run_circuit_matrix(C_struct c_s, BDDVAR shots, bool show)
 {
     LACE_ME;
     QDD vec = qdd_create_all_zero_state(c_s.nvars);
@@ -147,18 +162,20 @@ bool run_circuit_matrix(C_struct c_s, BDDVAR shots)
             new_qdd = qdd_matmat_mult(col_qdd, new_qdd, c_s.nvars);
             qdd = qdd_matmat_mult(new_qdd, qdd, c_s.nvars);
         }
-        if (qdd_countnodes(qdd) > 1024) {
-            printf("reduce\n");
+        // printf("%d/%d: %ld\n", (int)floor(4*pow(c_s.nvars,2)/5),(int)pow(c_s.nvars,2),qdd_countnodes(qdd));
+        if (qdd_countnodes(qdd) > floor(4*pow(c_s.nvars,2)/5)) {
+            // printf("%d-",j);
             vec = qdd_matvec_mult(qdd, vec, c_s.nvars);
             qdd = qdd_create_single_qubit_gates_same(c_s.nvars, GATEID_I);
         }
     }
+    printf("%ld %ld\n", qdd_countnodes(qdd),qdd_countnodes(vec));
     vec = qdd_matvec_mult(qdd, vec, c_s.nvars);
-    measure(vec, measurements, c_s.nvars, shots);
+    measure(vec, measurements, c_s.nvars, shots, show);
     return true;
 }
 
-bool run_c_struct(C_struct c_s, BDDVAR shots)
+bool run_c_struct(C_struct c_s, BDDVAR shots, bool show)
 {
     LACE_ME;
 
@@ -180,7 +197,7 @@ bool run_c_struct(C_struct c_s, BDDVAR shots)
                 qdd = apply_gate(qdd, gate, i);
         }
     }
-    measure(qdd, measurements, c_s.nvars, shots);
+    measure(qdd, measurements, c_s.nvars, shots, show);
     free(measurements);
     return true;
 }
@@ -228,11 +245,14 @@ int main(int argc, char *argv[])
     qdd_set_testing_mode(true); // turn on internal sanity tests
 
     C_struct c_s = make_c_struct(filename, true);
+    double begin = wctime();
     if (matrix)
-        run_circuit_matrix(c_s, shots);
+        run_circuit_matrix(c_s, shots, false);
     else
-        run_c_struct(c_s, shots);
-
+        run_c_struct(c_s, shots, false);
+    double end = wctime();
+    double time_spent = end - begin;
+    printf("time: %f\n", (time_spent));
     delete_c_struct(&c_s);
     sylvan_quit();
     lace_exit();

@@ -23,11 +23,11 @@ int main(int argc, char *argv[])
     }
 
     C_struct c_s1 = make_c_struct(filename, optimize);
-    Circuit *c_s2 = create_circuit(filename);
+    // Circuit *c_s2 = create_circuit(filename);
     print_c_struct(c_s1, false, true);
     printf("\n\n");
-    print_circuit(c_s2, false, true);
+    // print_circuit(c_s2, false, true);
     delete_c_struct(&c_s1);
-    delete_circuit(c_s2);
+    // delete_circuit(c_s2);
     return 0;
 }
