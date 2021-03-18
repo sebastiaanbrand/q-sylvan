@@ -266,8 +266,6 @@ QDD qdd_increase_all_vars(QDD a, int k);
 QDD qdd_replace_terminal(QDD a, PTR b);
 
 /**
- * Computes the tensor product of vec (tensor) vec or mat (tensor) mat
- * 
  * @param a QDD over vars 0...n-1 (n = nvars_a)
  * @param b QDD over vars 0...m-1
  * @param nvars_a number of vars of QDD a
@@ -275,6 +273,28 @@ QDD qdd_replace_terminal(QDD a, PTR b);
  * @return QDD over vars 0...n-1...(n+m)-1, representing a (tensor) b
  */
 QDD qdd_tensor_prod(QDD a, QDD b, BDDVAR nvars_a);
+
+/**
+ * Computes the tensor product of vec (tensor) vec
+ * 
+ * @param a QDD over vars 0...n-1 (n = nvars_a)
+ * @param b QDD over vars 0...m-1
+ * @param nvars_a number of vars of QDD a
+ * 
+ * @return QDD over vars 0...n-1...(n+m)-1, representing a (tensor) b
+ */
+#define qdd_vec_tensor_prod(a, b, nvars_a) qdd_tensor_prod(a,b,nvars_a)
+
+/**
+ * Computes the tensor product of mat (tensor) mat
+ * 
+ * @param a QDD over vars 0...2n-1 (n = nvars_a)
+ * @param b QDD over vars 0...2m-1
+ * @param nvars_a number of vars of QDD a (counting only unprimed)
+ * 
+ * @return QDD over vars 0...2n-1...(2n+2m)-1, representing a (tensor) b
+ */
+#define qdd_mat_tensor_prod(a, b, nvars_a) qdd_tensor_prod(a,b,2*nvars_a)
 
 /******************************</applying gates>*******************************/
 

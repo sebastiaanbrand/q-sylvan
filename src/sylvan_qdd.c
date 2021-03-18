@@ -1727,7 +1727,7 @@ qdd_replace_terminal(QDD a, PTR b)
 QDD
 qdd_tensor_prod(QDD a, QDD b, BDDVAR nvars_a)
 {
-    // Shift all vars of b w/ n
+    // Shift all vars of 'b' by 'nvars_a'
     b = qdd_increase_all_vars(b, nvars_a);
  
     // Stack 'a' on top of 'b' (and multiply root edge of 'a' with that of 'b')

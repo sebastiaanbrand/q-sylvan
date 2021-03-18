@@ -1483,7 +1483,7 @@ int test_tensor_product()
     test_assert(qdd_countnodes(q1) == 3);
 
     // q0 (tensor) q1
-    qTest = qdd_tensor_prod(q0, q1, 3);
+    qTest = qdd_vec_tensor_prod(q0, q1, 3);
     qRef  = qdd_create_basis_state(5, x3_2);
     test_assert(qdd_is_ordered(qTest, 5));
     test_assert(qdd_countnodes(qTest) == 6);
@@ -1492,7 +1492,7 @@ int test_tensor_product()
     test_assert(qTest == qRef);
 
     // q1 (tensor) q0
-    qTest = qdd_tensor_prod(q1, q0, 2);
+    qTest = qdd_vec_tensor_prod(q1, q0, 2);
     qRef  = qdd_create_basis_state(5, x2_3);
     test_assert(qdd_is_ordered(qTest, 5));
     test_assert(qdd_countnodes(qTest) == 6);
