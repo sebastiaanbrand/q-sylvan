@@ -251,6 +251,31 @@ TASK_DECL_4(QDD, qdd_matmat_mult_rec, QDD, QDD, BDDVAR, BDDVAR);
 /* Multiply some qdd by a scalar. */
 QDD qdd_scalar_mult(QDD qdd, complex_t c);
 
+/**
+ * Increases all the variable number in QDD a by k (used for tensor product)
+ * 
+ * @param a QDD over n vars {j, j+1, ..., j+n-1} (generally j=0)
+ * 
+ * @return QDD over n vars {j+k, j+k+1, ..., j+k+n-1}
+ */
+QDD qdd_increase_all_vars(QDD a, int k);
+
+/* Replace the terminal node in a with b (effectively stacks a and b) 
+* (used for tensor product)
+*/
+QDD qdd_replace_terminal(QDD a, PTR b);
+
+/**
+ * Computes the tensor product of vec (tensor) vec or mat (tensor) mat
+ * 
+ * @param a QDD over vars 0...n-1 (n = nvars_a)
+ * @param b QDD over vars 0...m-1
+ * @param nvars_a number of vars of QDD a
+ * 
+ * @return QDD over vars 0...n-1...(n+m)-1, representing a (tensor) b
+ */
+QDD qdd_tensor_prod(QDD a, QDD b, BDDVAR nvars_a);
+
 /******************************</applying gates>*******************************/
 
 

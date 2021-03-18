@@ -610,6 +610,14 @@ int test_multi_cgate()
     return 0;
 }
 
+int test_tensor_product()
+{
+    // TODO: write test
+
+    if(VERBOSE) printf("qdd tensor (on mats):       TODO\n");
+    return 0;
+}
+
 int runtests()
 {
     // we are not testing garbage collection
@@ -622,6 +630,7 @@ int runtests()
     if (test_cz_gate()) return 1;
     if (test_ccz_gate()) return 1;
     if (test_multi_cgate()) return 1;
+    if (test_tensor_product()) return 1;
 
     return 0;
 }

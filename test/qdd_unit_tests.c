@@ -1467,6 +1467,47 @@ int test_cswap_circuit()
     return 0;
 }
 
+int test_tensor_product()
+{
+    LACE_ME;
+
+    QDD q0, q1, qTest, qRef;
+    bool x3[] = {0,1,0};
+    bool x2[] = {1,0};
+    bool x3_2[] = {0,1,0,1,0};
+    bool x2_3[] = {1,0,0,1,0};
+
+    q0 = qdd_create_basis_state(3, x3);
+    q1 = qdd_create_basis_state(2, x2);
+    test_assert(qdd_countnodes(q0) == 4);
+    test_assert(qdd_countnodes(q1) == 3);
+
+    // q0 (tensor) q1
+    qTest = qdd_tensor_prod(q0, q1, 3);
+    qRef  = qdd_create_basis_state(5, x3_2);
+    test_assert(qdd_is_ordered(qTest, 5));
+    test_assert(qdd_countnodes(qTest) == 6);
+    test_assert(qdd_equivalent(qTest, qRef, 5, false, true));
+    test_assert(qdd_equivalent(qTest, qRef, 5, true, true));
+    test_assert(qTest == qRef);
+
+    // q1 (tensor) q0
+    qTest = qdd_tensor_prod(q1, q0, 2);
+    qRef  = qdd_create_basis_state(5, x2_3);
+    test_assert(qdd_is_ordered(qTest, 5));
+    test_assert(qdd_countnodes(qTest) == 6);
+    test_assert(qdd_equivalent(qTest, qRef, 5, false, true));
+    test_assert(qdd_equivalent(qTest, qRef, 5, true, true));
+    test_assert(qTest == qRef);
+
+
+    // TODO: test on other states than basis states
+
+
+    if(VERBOSE) printf("qdd tensor (on vecs):     ok\n");
+    return 0;
+}
+
 // measurement of q0 + sanity checks
 int test_measure_random_state(QDD qdd, BDDVAR nvars)
 {
@@ -2042,6 +2083,7 @@ int run_qdd_tests()
     if (test_ccz_gate()) return 1;
     if (test_swap_circuit()) return 1;
     if (test_cswap_circuit()) return 1;
+    if (test_tensor_product()) return 1;
     if (test_measurements()) return 1;
     if (test_5qubit_circuit()) return 1;
     if (test_10qubit_circuit()) return 1;
