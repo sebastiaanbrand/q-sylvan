@@ -8,8 +8,7 @@
 /**
  * Obtain current wallclock time
  */
-static double
-wctime()
+static double wctime()
 {
     struct timeval tv;
     gettimeofday(&tv, NULL);
@@ -47,18 +46,20 @@ bool measure(QDD qdd, bool* measurements, BDDVAR nvars, BDDVAR shots, bool show)
     // Print reformatted circuit results
     if (show) {
         for(int k = 0; k < pow(2, sum); k++) {
-            bool *x = int_to_bitarray(k, nvars, false);
-            j = sum-1;
-            for (BDDVAR i = nvars; i > 0 ; i--) {
-                if (measurements[i-1]) {
-                    printf("%d", x[j]);
-                    j--;
+            if (probs[k] != 0) {
+                bool *x = int_to_bitarray(k, nvars, false);
+                j = sum-1;
+                for (BDDVAR i = nvars; i > 0 ; i--) {
+                    if (measurements[i-1]) {
+                        printf("%d", x[j]);
+                        j--;
+                    }
+                    else
+                        printf("_");
                 }
-                else
-                    printf("_");
+                printf(": %d\n", probs[k]);
+                free(x);
             }
-            printf(": %d\n", probs[k]);
-            free(x);
         }
     }
     free(ms);
@@ -122,39 +123,38 @@ TASK_IMPL_3(QDD, apply_gate, QDD, qdd, Gate, gate, BDDVAR, i)
 bool run_circuit_matrix(C_struct c_s, BDDVAR shots, bool show)
 {
     LACE_ME;
-    QDD vec = qdd_create_all_zero_state(c_s.nvars);
-    QDD qdd, ctrl_qdd, col_qdd, new_qdd;
-    Gate gate = gate_barrier;
-    uint32_t gate_id;
+
+    Gate gate;
     bool* measurements = malloc(c_s.nvars * sizeof(bool));
+    uint32_t* column_of_gates = malloc(c_s.nvars*sizeof(uint32_t));
+    QDD vec = qdd_create_all_zero_state(c_s.nvars);
+
+    QDD qdd, ctrl_qdd, col_qdd, new_qdd;
+    uint32_t gate_id;
     int* options = malloc(c_s.nvars * sizeof(int));
     for (BDDVAR i = 0; i < c_s.nvars; i++) measurements[i] = false;
-    uint32_t* column_of_gates = malloc(c_s.nvars*sizeof(uint32_t));
     qdd = qdd_create_single_qubit_gates_same(c_s.nvars, GATEID_I);
     for (BDDVAR j = 0; j < c_s.depth; j++) {
         new_qdd = qdd_create_single_qubit_gates_same(c_s.nvars, GATEID_I);
         for (BDDVAR i = 0; i < c_s.nvars; i++) {
             column_of_gates[i] = GATEID_I;
             gate = c_s.circuit[i][j];
-            if (gate.id == gate_barrier.id) {
-                vec = qdd_matvec_mult(qdd, vec, c_s.nvars);
-                qdd = qdd_create_single_qubit_gates_same(c_s.nvars, GATEID_I);
-                break;
+            if (gate.id == gate_barrier.id || gate.id == gate_ctrl.id || gate.id == gate_I.id) {
+                column_of_gates[i] = GATEID_I;
+                if (gate.id == gate_measure.id)
+                    measurements[i] = true;
+                continue;
             }
-            else if (gate.id == gate_measure.id)
-                measurements[i] = true;
-            else if (gate.id != gate_ctrl.id && gate.id != gate_I.id) {
-                gate_id = get_gate_id(c_s.circuit[i][j]);
-                if (gate.controlSize == 0)
-                    column_of_gates[i] = gate_id;
-                else {
-                    column_of_gates[i] = GATEID_I;
-                    for (BDDVAR k = 0; k < c_s.nvars; k++) options[k] = -1;
-                    for (BDDVAR k = 0; k < gate.controlSize; k++) options[gate.control[k]] = 1;
-                    options[i] = 2;
-                    ctrl_qdd = qdd_create_multi_cgate_rec(c_s.nvars, options, gate_id, 0);
-                    new_qdd = qdd_matmat_mult(ctrl_qdd, new_qdd, c_s.nvars);
-                }
+            gate_id = get_gate_id(gate);
+            if (gate.controlSize == 0)
+                column_of_gates[i] = gate_id;
+            else {
+                column_of_gates[i] = GATEID_I;
+                for (BDDVAR k = 0; k < c_s.nvars; k++) options[k] = -1;
+                for (BDDVAR k = 0; k < gate.controlSize; k++) options[gate.control[k]] = 1;
+                options[i] = 2;
+                ctrl_qdd = qdd_create_multi_cgate_rec(c_s.nvars, options, gate_id, 0);
+                new_qdd = qdd_matmat_mult(ctrl_qdd, new_qdd, c_s.nvars);
             }
         }
         if (gate.id != gate_barrier.id) {
@@ -162,15 +162,15 @@ bool run_circuit_matrix(C_struct c_s, BDDVAR shots, bool show)
             new_qdd = qdd_matmat_mult(col_qdd, new_qdd, c_s.nvars);
             qdd = qdd_matmat_mult(new_qdd, qdd, c_s.nvars);
         }
-        // printf("%d/%d: %ld\n", (int)floor(4*pow(c_s.nvars,2)/5),(int)pow(c_s.nvars,2),qdd_countnodes(qdd));
-        if (qdd_countnodes(qdd) > floor(4*pow(c_s.nvars,2)/5)) {
+        printf("%d/%d: %ld\n", (int)floor(4*pow(2,c_s.nvars)/5),(int)pow(2,c_s.nvars),qdd_countnodes(qdd));
+        if (qdd_countnodes(qdd) > 100) {
             // printf("%d-",j);
             vec = qdd_matvec_mult(qdd, vec, c_s.nvars);
             qdd = qdd_create_single_qubit_gates_same(c_s.nvars, GATEID_I);
         }
     }
-    printf("%ld %ld\n", qdd_countnodes(qdd),qdd_countnodes(vec));
     vec = qdd_matvec_mult(qdd, vec, c_s.nvars);
+    printf("%ld / %d\n", qdd_countnodes(vec), (int)pow(2,c_s.nvars));
     measure(vec, measurements, c_s.nvars, shots, show);
     return true;
 }
@@ -189,14 +189,14 @@ bool run_c_struct(C_struct c_s, BDDVAR shots, bool show)
             gate = c_s.circuit[i][j];
             if (gate.id == gate_barrier.id || gate.id == gate_ctrl.id || gate.id == gate_I.id)
                 continue;
-            else if (gate.id == gate_measure.id) {
+            if (gate.id == gate_measure.id) {
                 measurements[i] = true;
                 continue;
             }
-            else
-                qdd = apply_gate(qdd, gate, i);
+            qdd = apply_gate(qdd, gate, i);
         }
     }
+    printf("%ld / %d\n", qdd_countnodes(qdd), (int)pow(2,c_s.nvars));
     measure(qdd, measurements, c_s.nvars, shots, show);
     free(measurements);
     return true;
@@ -244,15 +244,17 @@ int main(int argc, char *argv[])
     sylvan_init_qdd(1LL<<16, -1, true);
     qdd_set_testing_mode(true); // turn on internal sanity tests
 
-    C_struct c_s = make_c_struct(filename, true);
     double begin = wctime();
+    C_struct c_s = make_c_struct(filename, true);
+    double begin2 = wctime();
+    printf("time: %f\n", begin2 - begin);
     if (matrix)
         run_circuit_matrix(c_s, shots, false);
     else
         run_c_struct(c_s, shots, false);
     double end = wctime();
-    double time_spent = end - begin;
-    printf("time: %f\n", (time_spent));
+    printf("time: %f\n", end - begin2);
+    printf("time: %f\n", end - begin);
     delete_c_struct(&c_s);
     sylvan_quit();
     lace_exit();

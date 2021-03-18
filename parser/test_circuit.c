@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
 
     C_struct c_s1 = make_c_struct(filename, optimize);
     // Circuit *c_s2 = create_circuit(filename);
-    print_c_struct(c_s1, false, true);
+    print_c_struct(c_s1, false, false);
     printf("\n\n");
     // print_circuit(c_s2, false, true);
     delete_c_struct(&c_s1);
