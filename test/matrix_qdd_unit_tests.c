@@ -610,6 +610,52 @@ int test_multi_cgate()
     return 0;
 }
 
+int test_tensor_product()
+{
+    LACE_ME; 
+
+    QDD mTest, mRef, mX, mY, mZ, mH;
+
+    uint32_t gateid_XY[]  = {GATEID_X, GATEID_Y};
+    uint32_t gateid_XYZ[] = {GATEID_X, GATEID_Y, GATEID_Z};
+
+    mX = qdd_create_single_qubit_gate(1, 0, GATEID_X);
+    mY = qdd_create_single_qubit_gate(1, 0, GATEID_Y);
+    mZ = qdd_create_single_qubit_gate(1, 0, GATEID_Z);
+    mH = qdd_create_single_qubit_gate(1, 0, GATEID_H);
+
+    // H (x) H
+    mRef  = qdd_create_single_qubit_gates_same(2, GATEID_H);
+    mTest = qdd_mat_tensor_prod(mH, mH, 1);
+    test_assert(qdd_is_ordered(mTest, 4)); // 2*n because of primed and unprimed
+    test_assert(mTest == mRef);
+
+    // X (x) Y
+    mRef  = qdd_create_single_qubit_gates(2, gateid_XY);
+    mTest = qdd_mat_tensor_prod(mX, mY, 1);
+    test_assert(qdd_is_ordered(mTest, 4));
+    test_assert(mTest == mRef);
+
+    // X  (x)  (Y (x) Z)
+    mRef  = qdd_create_single_qubit_gates(3, gateid_XYZ);
+    mTest = qdd_mat_tensor_prod(mY, mZ, 1);
+    mTest = qdd_mat_tensor_prod(mX, mTest, 1);
+    test_assert(qdd_is_ordered(mTest, 6));
+    test_assert(mTest == mRef);
+
+    // (X (x) Y)  (x)  Z
+    mRef  = qdd_create_single_qubit_gates(3, gateid_XYZ);
+    mTest = qdd_mat_tensor_prod(mX, mY, 1);
+    mTest = qdd_mat_tensor_prod(mTest, mZ, 2);
+    test_assert(qdd_is_ordered(mTest, 6));
+    test_assert(mTest == mRef);
+
+    // TODO: tests with bigger matrices
+
+    if(VERBOSE) printf("matrix qdd tensor product:  ok\n");
+    return 0;
+}
+
 int runtests()
 {
     // we are not testing garbage collection
@@ -622,6 +668,7 @@ int runtests()
     if (test_cz_gate()) return 1;
     if (test_ccz_gate()) return 1;
     if (test_multi_cgate()) return 1;
+    if (test_tensor_product()) return 1;
 
     return 0;
 }

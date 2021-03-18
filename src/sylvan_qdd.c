@@ -1658,6 +1658,85 @@ qdd_scalar_mult(QDD qdd, complex_t c)
     return qdd_bundle_ptr_amp(QDD_PTR(qdd), new_root_amp);
 }
 
+QDD
+qdd_increase_all_vars(QDD qdd, int k)
+{
+    if (QDD_PTR(qdd) == QDD_TERMINAL) {
+        return qdd;
+    }
+
+    // Check cache
+    uint64_t res_ptr;
+    if (cache_get3(CACHE_QDD_INC_VARS, QDD_PTR(qdd), k, 0, &res_ptr)) {
+        return qdd_bundle_ptr_amp(res_ptr, QDD_AMP(qdd));
+    }
+
+    // Get node info
+    QDD low, high;
+    qddnode_t node = QDD_GETNODE(QDD_PTR(qdd));
+    qddnode_getchilderen(node, &low, &high);
+    BDDVAR curvar = qddnode_getvar(node);
+
+    // Recursive apply to children (TODO: lace?)
+    low  = qdd_increase_all_vars(low, k);
+    high = qdd_increase_all_vars(high, k);
+    QDD res = qdd_makenode(curvar+k, low, high);
+
+    // We assume the input QDDs are already normalized in terms of edge weights
+    // so we expect no normalization is needed
+    assert(QDD_AMP(res) == C_ONE);
+
+    // Put res (ptr) in cache and return
+    cache_put3(CACHE_QDD_INC_VARS, QDD_PTR(qdd), k, 0, QDD_PTR(res));
+    return qdd_bundle_ptr_amp(QDD_PTR(res), QDD_AMP(qdd));
+}
+
+QDD
+qdd_replace_terminal(QDD a, PTR b)
+{
+    if (QDD_PTR(a) == QDD_TERMINAL) {
+        return qdd_bundle_ptr_amp(b, QDD_AMP(a));
+    }
+
+    // Check cache
+    uint64_t res_ptr;
+    if (cache_get3(CACHE_QDD_REPLACE_TERMINAL, QDD_PTR(a), b, 0, &res_ptr)) {
+        return qdd_bundle_ptr_amp(res_ptr, QDD_AMP(a));
+    }
+
+    // Get node info
+    QDD low, high;
+    qddnode_t node = QDD_GETNODE(QDD_PTR(a));
+    qddnode_getchilderen(node, &low, &high);
+    BDDVAR var = qddnode_getvar(node);
+
+    // Recursive apply to children and makenode (TODO: lace?)
+    low  = qdd_replace_terminal(low, b);
+    high = qdd_replace_terminal(high, b);
+    QDD res = qdd_makenode(var, low, high);
+    
+    // We assume the input QDDs are already normalized in terms of edge weights
+    // so we expect no normalization is needed
+    assert(QDD_AMP(res) == C_ONE);
+
+    // Put res (ptr) in cache and return
+    cache_put3(CACHE_QDD_REPLACE_TERMINAL, QDD_PTR(a), b, 0, QDD_PTR(res));
+    return qdd_bundle_ptr_amp(QDD_PTR(res), QDD_AMP(a));
+}
+
+QDD
+qdd_tensor_prod(QDD a, QDD b, BDDVAR nvars_a)
+{
+    // Shift all vars of 'b' by 'nvars_a'
+    b = qdd_increase_all_vars(b, nvars_a);
+ 
+    // Stack 'a' on top of 'b' (and multiply root edge of 'a' with that of 'b')
+    QDD res = qdd_replace_terminal(a, QDD_PTR(b));
+    AMP new_root_amp = amp_mul(QDD_AMP(res), QDD_AMP(b));
+    res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
+
+    return res;
+}
 
 /******************************</applying gates>*******************************/
 
