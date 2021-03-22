@@ -931,10 +931,10 @@ TASK_IMPL_2(QDD, qdd_plus_amp, QDD, a, QDD, b)
 
     // If not base/terminal case, pass edge weight of current edge down
     AMP amp_la, amp_ha, amp_lb, amp_hb;
-    amp_la = amp_mul(QDD_AMP(a), QDD_AMP(low_a));
-    amp_ha = amp_mul(QDD_AMP(a), QDD_AMP(high_a));
-    amp_lb = amp_mul(QDD_AMP(b), QDD_AMP(low_b));
-    amp_hb = amp_mul(QDD_AMP(b), QDD_AMP(high_b));
+    amp_la = amp_mul_down(QDD_AMP(a), QDD_AMP(low_a));
+    amp_ha = amp_mul_down(QDD_AMP(a), QDD_AMP(high_a));
+    amp_lb = amp_mul_down(QDD_AMP(b), QDD_AMP(low_b));
+    amp_hb = amp_mul_down(QDD_AMP(b), QDD_AMP(high_b));
     low_a  = qdd_bundle_ptr_amp(QDD_PTR(low_a),  amp_la);
     high_a = qdd_bundle_ptr_amp(QDD_PTR(high_a), amp_ha);
     low_b  = qdd_bundle_ptr_amp(QDD_PTR(low_b),  amp_lb);

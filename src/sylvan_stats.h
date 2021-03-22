@@ -101,6 +101,7 @@ typedef enum {
     OPCOUNTER(AMP_SUB),
     OPCOUNTER(AMP_MUL),
     OPCOUNTER(AMP_DIV),
+    OPCOUNTER(AMP_MUL_DOWN), // seperate counter from regular mul
 
     /* Other counters */
     SYLVAN_GC_COUNT,

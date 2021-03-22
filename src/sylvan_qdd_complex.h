@@ -103,6 +103,7 @@ AMP amp_neg(AMP a);
 AMP amp_add(AMP a, AMP b);
 AMP amp_sub(AMP a, AMP b);
 AMP amp_mul(AMP a, AMP b);
+AMP amp_mul_down(AMP a, AMP b); // same as mul but uses different stats counter for propagating edge weights down
 AMP amp_div(AMP a, AMP b);
 double amp_to_prob(AMP a);
 AMP prob_to_amp(double a); // AMP of (sqrt(a), 0)

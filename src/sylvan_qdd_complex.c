@@ -177,6 +177,19 @@ cache_get_mul(AMP a, AMP b, AMP *res)
     return false;
 }
 
+// uses different stats counter for propagating edge weights down
+static bool
+cache_get_mul_down(AMP a, AMP b, AMP *res)
+{
+    sylvan_stats_count(AMP_MUL_DOWN);
+    order_inputs(&a, &b);
+    if (cache_get3(CACHE_AMP_MUL, a, b, sylvan_false, res)) {
+        sylvan_stats_count(AMP_MUL_DOWN_CACHED);
+        return true;
+    }
+    return false;
+}
+
 static void
 cache_put_div(AMP a, AMP b, AMP res)
 {
@@ -297,7 +310,7 @@ amp_sub(AMP a, AMP b)
 }
 
 AMP
-amp_mul(AMP a, AMP b)
+_amp_mul(AMP a, AMP b, bool mul_down)
 {
     // special cases
     if (a == C_ONE) return b;
@@ -307,7 +320,12 @@ amp_mul(AMP a, AMP b)
     // check cache
     AMP res;
     if (CACHE_AMP_OPS) {
-        if (cache_get_mul(a, b, &res)) return res;
+        if (mul_down) {
+            if (cache_get_mul_down(a, b, &res)) return res;
+        }
+        else {
+            if (cache_get_mul(a, b, &res)) return res;
+        }
     }
 
     // compute and hash result to ctable
@@ -323,6 +341,8 @@ amp_mul(AMP a, AMP b)
     }
     return res;
 }
+AMP amp_mul(AMP a, AMP b) { return _amp_mul(a, b, false); }
+AMP amp_mul_down(AMP a, AMP b) { return _amp_mul(a, b, true); }
 
 AMP
 amp_div(AMP a, AMP b)
