@@ -184,54 +184,31 @@ TASK_DECL_6(QDD, qdd_cgate3, QDD, uint32_t, BDDVAR, BDDVAR, BDDVAR, BDDVAR);
 #define qdd_cgate_range(qdd,gate,c_first,c_last,t) (CALL(qdd_cgate_range,qdd,gate,c_first,c_last,t))
 TASK_DECL_5(QDD, qdd_cgate_range, QDD, uint32_t, BDDVAR, BDDVAR, BDDVAR);
 
-/**
- * Propagate complex values in recursion or hash intermediate complex values.
- */
-#define propagate_complex false
-#if propagate_complex
-    #define qdd_plus(a,b) (CALL(qdd_plus_comp_wrap,a,b))
-    #define qdd_gate_rec(q,gate,target) (CALL(qdd_gate_rec_complex,q,gate,target))
-    #define qdd_cgate_rec(q,gate,cs,t) (CALL(qdd_cgate_rec_complex,q,gate,cs,0,t))
-    #define qdd_cgate_range_rec(q,gate,c_first,c_last,t) (CALL(qdd_cgate_range_rec_complex,q,gate,c_first,c_last,t,0))
-#else
-    #define qdd_plus(a,b) (CALL(qdd_plus_amp,a,b))
-    #define qdd_gate_rec(q,gate,target) (CALL(qdd_gate_rec_amp,q,gate,target))
-    #define qdd_cgate_rec(q,gate,cs,t) (CALL(qdd_cgate_rec_amp,q,gate,cs,0,t))
-    #define qdd_cgate_range_rec(q,gate,c_first,c_last,t) (CALL(qdd_cgate_range_rec_amp,q,gate,c_first,c_last,t,0))
-#endif
 
 /**
- * Recursive implementation of vector addition. "_amp" passes hashed amps down
- * while "_complex" passes complex_t structs down. The "_comp_wrap" function
- * servers as a wrapper around _complex to give it the same signature as _amp.
+ * Recursive implementation of vector addition.
  */
-TASK_DECL_2(QDD, qdd_plus_amp, QDD, QDD);
-//TASK_DECL_2(QDD, qdd_plus_comp_wrap, QDD, QDD);
-//TASK_DECL_4(QDD, qdd_plus_complex, PTR, PTR, complex_t, complex_t);
+#define qdd_plus(a,b) (CALL(qdd_plus,a,b))
+TASK_DECL_2(QDD, qdd_plus, QDD, QDD);
 
 /**
  * Recursive implementation of applying single qubit gates
- * which passes hashed amps or complex_t values down.
- * Calls "qdd_plus_amp/comp_wrap".
  */
-TASK_DECL_3(QDD, qdd_gate_rec_amp, QDD, uint32_t, BDDVAR);
-//TASK_DECL_3(QDD, qdd_gate_rec_complex, PTR, uint32_t, BDDVAR);
+#define qdd_gate_rec(q,gate,target) (CALL(qdd_gate_rec,q,gate,target))
+TASK_DECL_3(QDD, qdd_gate_rec, QDD, uint32_t, BDDVAR);
 
 /**
  * Recursive implementation of applying controlled gates
- * which passes hashed amps or complex_t values down.
- * Calls "qdd_gate_rec_amp/complex".
  */
-TASK_DECL_5(QDD, qdd_cgate_rec_amp, QDD, uint32_t, BDDVAR*, uint32_t, BDDVAR);
-//TASK_DECL_5(QDD, qdd_cgate_rec_complex, QDD, uint32_t, BDDVAR*, uint32_t, BDDVAR);
+#define qdd_cgate_rec(q,gate,cs,t) (CALL(qdd_cgate_rec,q,gate,cs,0,t))
+TASK_DECL_5(QDD, qdd_cgate_rec, QDD, uint32_t, BDDVAR*, uint32_t, BDDVAR);
 
 /**
  * Recursive implementation of applying controlled gates where the controlles 
  * are defined by a range 'c_first' through 'c_last'.
- * Calls "qdd_gate_rec_amp/complex".
  */
-TASK_DECL_6(QDD, qdd_cgate_range_rec_amp, QDD, uint32_t, BDDVAR, BDDVAR, BDDVAR, BDDVAR);
-//TASK_DECL_6(QDD, qdd_cgate_range_rec_complex, QDD, uint32_t, BDDVAR, BDDVAR, BDDVAR, BDDVAR);
+#define qdd_cgate_range_rec(q,gate,c_first,c_last,t) (CALL(qdd_cgate_range_rec,q,gate,c_first,c_last,t,0))
+TASK_DECL_6(QDD, qdd_cgate_range_rec, QDD, uint32_t, BDDVAR, BDDVAR, BDDVAR, BDDVAR);
 
 
 /* Computes Mat * |vec> (Wrapper function) */
