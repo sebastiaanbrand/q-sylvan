@@ -54,7 +54,7 @@ und.
 */
 extern int cmap_find_or_put(const void *dbs, const complex_t *v, ref_t *ret);
 
-extern complex_t *cmap_get(const void *dbs, const ref_t ref);
+extern complex_t cmap_get(const void *dbs, const ref_t ref);
 
 extern uint64_t cmap_count_entries(const void *dbs);
 

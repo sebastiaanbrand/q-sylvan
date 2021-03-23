@@ -141,11 +141,11 @@ cmap_find_or_put(const void *dbs, const complex_t *v, ref_t *ret)
     return -1;
 }
 
-complex_t *
+complex_t
 cmap_get(const void *dbs, const ref_t ref)
 {
     cmap_t *cmap = (cmap_t *) dbs;
-    return &cmap->table[ref].c;
+    return cmap->table[ref].c;
 }
 
 uint64_t
@@ -164,7 +164,8 @@ void
 print_bitvalues(const void *dbs, const ref_t ref)
 {
     cmap_t *cmap = (cmap_t *) dbs;
-    bucket_t *b = (bucket_t *) cmap_get(cmap, ref);
+    complex_t c = cmap_get(cmap, ref);
+    bucket_t *b = (bucket_t *) &c;
     printf("%016lx", b->d[0]);
     for (unsigned int k = 1; k < entry_size; k++) {
         printf(" %016lx", b->d[k]);

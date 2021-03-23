@@ -562,7 +562,8 @@ static AMP
 comp_try_lookup_ctable(complex_t c, bool *success)
 {
     uint64_t res;
-    int present = cmap_find_or_put(amp_storage, &c, &res);
+    int present = amp_store_find_or_put[amp_backend](amp_storage, &c, &res);
+    //int present = cmap_find_or_put(amp_storage, &c, &res);
     if (present == 0) {
         *success = true;
         table_entries_local += 1;
@@ -577,10 +578,12 @@ comp_try_lookup_ctable(complex_t c, bool *success)
 }
 
 static AMP
-try_lookup_rtable(double a, bool *success) // TODO: change to fl_t
+comp_try_lookup_rtable(complex_t c, bool *success) // TODO: change to fl_t
 {
     uint64_t res;
-    int present = rmap_find_or_put(amp_storage, &a, &res);
+    int present = amp_store_find_or_put[amp_backend](amp_storage, &c, &res);
+    //int present = rmap_find_or_put(amp_storage, &a, &res);
+    // TODO: fix counter: have amp_store_find_or_put return the number of puts
     if (present == 0) {
         *success = true;
         table_entries_local += 1;
@@ -590,63 +593,31 @@ try_lookup_rtable(double a, bool *success) // TODO: change to fl_t
         }
     }
     else if (present == 1) *success = true;
+    else if (present == 2) *success = true;
     else                   *success = false;
     return (AMP) res;
-}
-
-static AMP
-try_lookup_rtree(fl_t a, bool *success)
-{
-    unsigned int res;
-    int present = tree_map_find_or_put(amp_storage, a, &res);
-    if (present == 0) {
-        *success = true;
-        table_entries_local += 1;
-        if (table_entries_local >= table_entries_local_buffer) {
-            __sync_fetch_and_add(&table_entries_est, table_entries_local);
-            table_entries_local = 0;
-        }
-    }
-    else if (present == 1) *success = true;
-    else                   *success = false;
-    return (AMP) res;
-}
-
-static AMP
-pack_indices_rtable(AMP r, AMP i)
-{
-    uint64_t index_size = (int) ceil(log2(table_size));
-    AMP res = ((r << index_size) | i);
-    return res;
-}
-
-static void
-unpack_indices_rtable(AMP bundle, AMP *index_r, AMP *index_i)
-{
-    uint64_t index_size = (int) ceil(log2(table_size));
-    *index_r = (bundle >> index_size);
-    *index_i = (bundle & ((1<<index_size)-1));
-}
-
-static AMP
-comp_try_lookup_rtable(complex_t c, bool *success)
-{
-    bool suc1, suc2;
-    AMP amp1 = try_lookup_rtable(c.r, &suc1);
-    AMP amp2 = try_lookup_rtable(c.i, &suc2);
-    *success = (suc1 && suc2);
-    return pack_indices_rtable(amp1, amp2);
 }
 
 static AMP
 comp_try_lookup_rtree(complex_t c, bool *success)
 {
-    bool suc1, suc2;
-    AMP amp1 = try_lookup_rtree(c.r, &suc1);
-    AMP amp2 = try_lookup_rtree(c.i, &suc2);
-    *success = (suc1 && suc2);
-    return pack_indices_rtable(amp1, amp2);
+    unsigned int res;
+    int present = amp_store_find_or_put[amp_backend](amp_storage, &c, &res);
+    //int present = tree_map_find_or_put(amp_storage, a, &res);
+    if (present == 0) {
+        *success = true;
+        table_entries_local += 1;
+        if (table_entries_local >= table_entries_local_buffer) {
+            __sync_fetch_and_add(&table_entries_est, table_entries_local);
+            table_entries_local = 0;
+        }
+    }
+    else if (present == 1) *success = true;
+    else if (present == 2) *success = true;
+    else                   *success = false;
+    return (AMP) res;
 }
+
 
 AMP
 comp_try_lookup(complex_t c, bool *success)
@@ -675,33 +646,7 @@ comp_value(AMP a)
     if (a == C_MIN_ONE) return comp_minus_one();
 
     // lookup
-    complex_t res;
-    if (amp_backend == REAL_HASHMAP) {
-        AMP idx_r, idx_i;
-        double *r, *i;
-        unpack_indices_rtable(a, &idx_r, &idx_i);
-        r = rmap_get(amp_storage, idx_r);
-        i = rmap_get(amp_storage, idx_i);
-        res.r = *r;
-        res.i = *i;
-    }
-    else if (amp_backend == COMP_HASHMAP) {
-        res = *cmap_get(amp_storage, a);
-    }
-    else if (amp_backend == REAL_TREE) {
-        AMP idx_r, idx_i;
-        fl_t *r, *i;
-        unpack_indices_rtable(a, &idx_r, &idx_i);
-        r = tree_map_get(amp_storage, idx_r);
-        i = tree_map_get(amp_storage, idx_i);
-        res.r = *r;
-        res.i = *i;
-    }
-    else {
-        printf("get value: backend not recognized\n");
-        exit(1);
-    }
-    return res;
+    return amp_store_get[amp_backend](amp_storage, a);
 }
 
 /* used for gc of ctable */
@@ -713,33 +658,7 @@ comp_value_old(AMP a)
     if (a == C_ONE)     return comp_one();
     if (a == C_MIN_ONE) return comp_minus_one();
 
-    complex_t res;
-    if (amp_backend == REAL_HASHMAP) {
-        AMP idx_r, idx_i;
-        double *r, *i;
-        unpack_indices_rtable(a, &idx_r, &idx_i);
-        r = rmap_get(amp_storage_old, idx_r);
-        i = rmap_get(amp_storage_old, idx_i);
-        res.r = *r;
-        res.i = *i;
-    }
-    else if (amp_backend == COMP_HASHMAP) {
-        res = *cmap_get(amp_storage_old, a);
-    }
-    else if (amp_backend == REAL_TREE) {
-        AMP idx_r, idx_i;
-        fl_t *r, *i;
-        unpack_indices_rtable(a, &idx_r, &idx_i);
-        r = tree_map_get(amp_storage_old, idx_r);
-        i = tree_map_get(amp_storage_old, idx_i);
-        res.r = *r;
-        res.i = *i;
-    }
-    else {
-        printf("get value old: backend not recognized\n");
-        exit(1);
-    }
-    return res;
+    return amp_store_get[amp_backend](amp_storage_old, a);
 }
 
 
@@ -998,15 +917,7 @@ get_table_size()
 void
 free_amplitude_table()
 {
-    if (amp_backend == REAL_HASHMAP) {
-        amp_store_free[amp_backend](amp_storage);
-    }
-    else if (amp_backend == COMP_HASHMAP) {
-        amp_store_free[amp_backend](amp_storage);
-    }
-    else if (amp_backend == REAL_TREE) {
-        amp_store_free[amp_backend](amp_storage);
-    }
+    amp_store_free[amp_backend](amp_storage);
 }
 
 void

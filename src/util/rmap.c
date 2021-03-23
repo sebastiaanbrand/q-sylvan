@@ -46,6 +46,22 @@ struct rmap_s {
     // long doubles for the real and imaginary components?
 };
 
+static ref_t
+rmap_pack_indices(const rmap_t * rmap, ref_t r, ref_t i)
+{
+    uint64_t index_size = (int) ceil(log2(rmap->size));
+    ref_t res = ((r << index_size) | i);
+    return res;
+}
+
+static void
+rmap_unpack_indices(const rmap_t * rmap, ref_t bundle, ref_t *index_r, ref_t *index_i)
+{
+    uint64_t index_size = (int) ceil(log2(rmap->size));
+    *index_r = (bundle >> index_size);
+    *index_i = (bundle & ((1<<index_size)-1));
+}
+
 static void __attribute__((unused))
 print_bucket_float(bucket_t *b)
 {
@@ -126,11 +142,36 @@ rmap_find_or_put(const void *dbs, const double *v, ref_t *ret)
     return -1;
 }
 
+int
+rmap_find_or_put2(const void *dbs, const complex_t *v, ref_t *ret)
+{
+    ref_t index_r, index_i;
+    int found_r = rmap_find_or_put(dbs, &(v->r), &index_r);
+    int found_i = rmap_find_or_put(dbs, &(v->i), &index_i);
+    if (found_r == -1 || found_i == -1) return -1;
+    *ret = rmap_pack_indices(dbs, index_r, index_i);
+    return (found_r + found_i);
+}
+
 double *
 rmap_get(const void *dbs, const ref_t ref)
 {
     rmap_t * rmap = (rmap_t *) dbs;
     return &rmap->table[ref].r;
+}
+
+complex_t
+rmap_get2(const void *dbs, const ref_t ref)
+{
+    complex_t res;
+    ref_t index_r, index_i;
+    double *r, *i;
+    rmap_unpack_indices(dbs, ref, &index_r, &index_i);
+    r = rmap_get(dbs, index_r);
+    i = rmap_get(dbs, index_i);
+    res.r = *r;
+    res.i = *i;
+    return res;
 }
 
 uint64_t

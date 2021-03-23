@@ -38,6 +38,22 @@ struct tree_map_s {
     unsigned int entries;
 };
 
+static unsigned int
+tree_map_pack_indices(const tree_map_t * map, unsigned int r, unsigned int i)
+{
+    uint64_t index_size = (int) ceil(log2(map->max_size));
+    unsigned int res = ((r << index_size) | i);
+    return res;
+}
+
+static void
+tree_map_unpack_indices(const tree_map_t * rmap, unsigned int bundle, unsigned int *index_r, unsigned int *index_i)
+{
+    uint64_t index_size = (int) ceil(log2(rmap->max_size));
+    *index_r = (bundle >> index_size);
+    *index_i = (bundle & ((1<<index_size)-1));
+}
+
 
 // tree_map_create()
 void *
@@ -98,12 +114,39 @@ tree_map_find_or_put(void *dbs, fl_t val, unsigned int *ret)
     }
 }
 
+int
+tree_map_find_or_put2(void *dbs, complex_t *v, unsigned int *ret)
+{
+    unsigned int index_r, index_i;
+    int found_r = tree_map_find_or_put(dbs, v->r, &index_r);
+    int found_i = tree_map_find_or_put(dbs, v->i, &index_i);
+    if (found_r == -1 || found_i == -1) return -1;
+    tree_map_t * map = (tree_map_t *) dbs;
+    *ret = tree_map_pack_indices(map, index_r, index_i);
+    return (found_r + found_i);
+}
+
 // tree_map_get()
 fl_t *
 tree_map_get(void *dbs, unsigned int ref)
 {
     tree_map_t * map = (tree_map_t *) dbs;
     return &(map->int_to_flt->find(ref)->second); //return &(*(map->int_to_flt))[ref];
+}
+
+complex_t
+tree_map_get2(void *dbs, unsigned int ref)
+{
+    complex_t res;
+    unsigned int index_r, index_i;
+    fl_t *r, *i;
+    tree_map_t * map = (tree_map_t *) dbs;
+    tree_map_unpack_indices(map, ref, &index_r, &index_i);
+    r = tree_map_get(dbs, index_r);
+    i = tree_map_get(dbs, index_i);
+    res.r = *r;
+    res.i = *i;
+    return res;
 }
 
 // tree_map_size()
