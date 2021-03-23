@@ -163,8 +163,9 @@ rmap_create (uint64_t size, double tolerance)
 }
 
 void
-rmap_free (rmap_t *rmap)
+rmap_free (void *r)
 {
+    rmap_t * rmap = (rmap_t *) r;
     free (rmap->table);
     free (rmap);
 }

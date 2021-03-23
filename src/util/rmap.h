@@ -45,7 +45,7 @@ extern double rmap_get_tolerance();
 /**
 \brief Free the memory used by a dbs.
 */
-extern void rmap_free (rmap_t *dbs);
+extern void rmap_free (void *dbs);
 
 /**
 \brief Find a vector with respect to a database and insert it if it cannot be fo

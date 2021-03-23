@@ -14,12 +14,8 @@
 #include "util/rmap.h"
 #include "util/tree_map.h"
 #include "util/mpfr_tree_map.h"
+#include "util/amp_storage_interface.h"
 
-typedef enum amp_storage_backend {
-    COMP_HASHMAP, 
-    REAL_HASHMAP, 
-    REAL_TREE
-} amp_storage_backend_t;
 
 typedef uint64_t AMP;
 

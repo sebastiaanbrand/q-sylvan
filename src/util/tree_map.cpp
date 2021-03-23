@@ -53,8 +53,9 @@ tree_map_create(unsigned int ms, double tol)
 
 // tree_map_free()
 void
-tree_map_free(tree_map_t *map)
+tree_map_free(void *m)
 {
+    tree_map_t * map = (tree_map_t *) m;
     delete map->flt_to_int;
     delete map->int_to_flt;
     free(map);

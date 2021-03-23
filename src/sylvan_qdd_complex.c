@@ -477,7 +477,7 @@ bool comp_exact_equal(complex_t a, complex_t b)
 
 bool comp_approx_equal(complex_t a, complex_t b)
 {
-    return comp_epsilon_close(a, b, cmap_get_tolerance());
+    return comp_epsilon_close(a, b, amp_store_get_tol[amp_backend]());
 }
 
 bool comp_epsilon_close(complex_t a, complex_t b, double epsilon)
@@ -888,6 +888,8 @@ init_amplitude_table(size_t size, long double tol, amp_storage_backend_t backend
     table_entries_est = 0;
     table_entries_local = 0;
 
+    init_amp_storage_functions();
+
     // TODO: something cleaner than this if structure
     if (amp_backend == REAL_HASHMAP) {
         rtable = rmap_create(table_size, tolerance);
@@ -1021,13 +1023,13 @@ void
 free_amplitude_table()
 {
     if (amp_backend == REAL_HASHMAP) {
-        rmap_free(rtable);
+        amp_store_free[amp_backend](rtable);
     }
     else if (amp_backend == COMP_HASHMAP) {
-        cmap_free(ctable);
+        amp_store_free[amp_backend](ctable);
     }
     else if (amp_backend == REAL_TREE) {
-        tree_map_free(rtree);
+        amp_store_free[amp_backend](rtree);
     }
 }
 
@@ -1045,17 +1047,8 @@ init_new_empty_table()
         rtree_old = rtree;
     }
 
-    // re-init new (empty) ctable
-    double tolerance = 0;
-    if (amp_backend == REAL_HASHMAP) {
-        tolerance = rmap_get_tolerance();
-    }
-    else if (amp_backend == COMP_HASHMAP) {
-        tolerance = cmap_get_tolerance();
-    }
-    else if (amp_backend == REAL_TREE) {
-        tolerance = tree_map_get_tolerance();
-    }
+    // re-init new (empty) amp map
+    double tolerance = amp_store_get_tol[amp_backend]();
     init_amplitude_table(table_size, tolerance, amp_backend);
 }
 
@@ -1064,13 +1057,13 @@ delete_old_table()
 {
     // delete  old (full) table
     if (amp_backend == REAL_HASHMAP) {
-        rmap_free(rtable_old);
+        amp_store_free[amp_backend](rtable_old);
     }
     else if (amp_backend == COMP_HASHMAP) {
-        cmap_free(ctable_old);
+        amp_store_free[amp_backend](ctable_old);
     }
     else if (amp_backend == REAL_TREE) {
-        tree_map_free(rtree_old);
+        amp_store_free[amp_backend](rtree_old);
     }
 }
 

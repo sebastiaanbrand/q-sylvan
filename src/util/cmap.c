@@ -59,7 +59,7 @@ print_bucket_bits(bucket_t* b)
     printf("\n");
 }
 
-long double
+double
 cmap_get_tolerance()
 {
     return TOLERANCE;
@@ -181,8 +181,9 @@ cmap_create (uint64_t size, double tolerance)
 }
 
 void
-cmap_free (cmap_t *cmap)
+cmap_free (void *c)
 {
+    cmap_t * cmap = (cmap_t *) c;
     free (cmap->table);
     free (cmap);
 }

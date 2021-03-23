@@ -41,12 +41,12 @@ typedef size_t ref_t;
 */
 extern cmap_t *cmap_create (uint64_t size, double tolerance);
 
-extern long double cmap_get_tolerance();
+extern double cmap_get_tolerance();
 
 /**
 \brief Free the memory used by a dbs.
 */
-extern void cmap_free (cmap_t *dbs);
+extern void cmap_free (void *dbs);
 
 /**
 \brief Find a vector with respect to a database and insert it if it cannot be fo
