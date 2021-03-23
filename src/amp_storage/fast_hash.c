@@ -1,4 +1,4 @@
-#include "util/fast_hash.h"
+#include "amp_storage/fast_hash.h"
 
 #include <stdlib.h>
 #include <stdio.h>

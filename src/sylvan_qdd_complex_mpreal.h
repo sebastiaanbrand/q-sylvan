@@ -11,7 +11,7 @@ typedef uint64_t AMP;
 
 // C++ exclusive functions
 #ifdef __cplusplus 
-#include "util/mpreal_tree_map.h"
+#include "amp_storage/mpreal_tree_map.h"
 
 /* Comparing complex values */
 bool mpreal_comp_exact_equal(mpreal_complex a, mpreal_complex b);

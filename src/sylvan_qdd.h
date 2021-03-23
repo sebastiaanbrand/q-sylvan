@@ -81,7 +81,7 @@ And analogously for the high edges.
 #include <stdbool.h>
 #include <stdint.h>
 
-#include "util/cmap.h"
+#include "amp_storage/flt.h"
 #include "sylvan_mtbdd.h"
 
 #ifdef __cplusplus

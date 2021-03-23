@@ -1,9 +1,6 @@
 #include <stdio.h>
 
 #include "amp_storage_interface.h"
-#include "cmap.h"
-#include "rmap.h"
-#include "tree_map.h" 
 
 void init_amp_storage_functions()
 {
@@ -26,6 +23,11 @@ void init_amp_storage_functions()
     amp_store_get[COMP_HASHMAP] = &cmap_get;
     amp_store_get[REAL_HASHMAP] = &rmap_get2;
     amp_store_get[REAL_TREE] = &tree_map_get2;
+
+    // num_entries
+    amp_store_num_entries[COMP_HASHMAP] = &cmap_count_entries;
+    amp_store_num_entries[REAL_HASHMAP] = &rmap_count_entries;
+    amp_store_num_entries[REAL_TREE] = &tree_map_num_entries;
 
     // get tolerance
     amp_store_get_tol[COMP_HASHMAP] = &cmap_get_tolerance;

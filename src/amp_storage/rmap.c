@@ -8,10 +8,10 @@
 #include <time.h>
 #include <math.h>
 
-#include "util/atomics.h"
-#include "util/rmap.h"
-#include "util/fast_hash.h"
-#include "util/util.h"
+#include "amp_storage/atomics.h"
+#include "amp_storage/rmap.h"
+#include "amp_storage/fast_hash.h"
+#include "amp_storage/util.h"
 
 #undef CACHE_LINE
 #undef CACHE_LINE_SIZE
@@ -150,7 +150,7 @@ rmap_find_or_put2(const void *dbs, const complex_t *v, ref_t *ret)
     int found_i = rmap_find_or_put(dbs, &(v->i), &index_i);
     if (found_r == -1 || found_i == -1) return -1;
     *ret = rmap_pack_indices(dbs, index_r, index_i);
-    return (found_r + found_i);
+    return (found_r && found_i); // if at leat one not found, return 0
 }
 
 double *

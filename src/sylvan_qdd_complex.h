@@ -10,11 +10,7 @@
 #include <math.h>
 #include <stdint.h>
 
-#include "util/cmap.h"
-#include "util/rmap.h"
-#include "util/tree_map.h"
-#include "util/mpfr_tree_map.h"
-#include "util/amp_storage_interface.h"
+#include "amp_storage/amp_storage_interface.h"
 
 
 typedef uint64_t AMP;
@@ -142,6 +138,7 @@ void comp_print_bits(AMP a);
 
 /* Managing the complex value table */
 void init_amplitude_table(size_t size, long double tolerance, amp_storage_backend_t backend);
+double amp_store_get_tolerance();
 uint64_t count_amplitude_table_enries();
 uint64_t get_table_entries_estimate();
 uint64_t get_table_size();

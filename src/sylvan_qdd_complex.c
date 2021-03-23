@@ -558,83 +558,27 @@ comp_lookup(complex_t c)
     return (AMP) res;
 }
 
-static AMP
-comp_try_lookup_ctable(complex_t c, bool *success)
-{
-    uint64_t res;
-    int present = amp_store_find_or_put[amp_backend](amp_storage, &c, &res);
-    //int present = cmap_find_or_put(amp_storage, &c, &res);
-    if (present == 0) {
-        *success = true;
-        table_entries_local += 1;
-        if (table_entries_local >= table_entries_local_buffer) {
-            __sync_fetch_and_add(&table_entries_est, table_entries_local);
-            table_entries_local = 0;
-        }
-    }
-    else if (present == 1) *success = true;
-    else                   *success = false;
-    return (AMP) res;
-}
-
-static AMP
-comp_try_lookup_rtable(complex_t c, bool *success) // TODO: change to fl_t
-{
-    uint64_t res;
-    int present = amp_store_find_or_put[amp_backend](amp_storage, &c, &res);
-    //int present = rmap_find_or_put(amp_storage, &a, &res);
-    // TODO: fix counter: have amp_store_find_or_put return the number of puts
-    if (present == 0) {
-        *success = true;
-        table_entries_local += 1;
-        if (table_entries_local >= table_entries_local_buffer) {
-            __sync_fetch_and_add(&table_entries_est, table_entries_local);
-            table_entries_local = 0;
-        }
-    }
-    else if (present == 1) *success = true;
-    else if (present == 2) *success = true;
-    else                   *success = false;
-    return (AMP) res;
-}
-
-static AMP
-comp_try_lookup_rtree(complex_t c, bool *success)
-{
-    unsigned int res;
-    int present = amp_store_find_or_put[amp_backend](amp_storage, &c, &res);
-    //int present = tree_map_find_or_put(amp_storage, a, &res);
-    if (present == 0) {
-        *success = true;
-        table_entries_local += 1;
-        if (table_entries_local >= table_entries_local_buffer) {
-            __sync_fetch_and_add(&table_entries_est, table_entries_local);
-            table_entries_local = 0;
-        }
-    }
-    else if (present == 1) *success = true;
-    else if (present == 2) *success = true;
-    else                   *success = false;
-    return (AMP) res;
-}
-
-
 AMP
 comp_try_lookup(complex_t c, bool *success)
 {
-    if (amp_backend == REAL_HASHMAP) {
-        return comp_try_lookup_rtable(c, success);
+    uint64_t res;
+    // TODO: have this function return the number of added elements instead  
+    int present = amp_store_find_or_put[amp_backend](amp_storage, &c, &res);
+    if (present == -1) {
+        *success = false;
     }
-    else if (amp_backend == COMP_HASHMAP) {
-        return comp_try_lookup_ctable(c, success);
-    }
-    else if (amp_backend == REAL_TREE) {
-        return comp_try_lookup_rtree(c, success);
+    else if (present == 0) {
+        *success = true;
+        table_entries_local += 1;
+        if (table_entries_local >= table_entries_local_buffer) {
+            __sync_fetch_and_add(&table_entries_est, table_entries_local);
+            table_entries_local = 0;
+        }
     }
     else {
-        printf("lookup: backend not recognized\n");
-        exit(1);
+        *success = true;
     }
+    return res;
 }
 
 complex_t
@@ -896,10 +840,16 @@ init_phase_gates(int n)
     }
 }
 
+double
+amp_store_get_tolerance()
+{
+    return amp_store_get_tol[amp_backend]();
+}
+
 uint64_t
 count_amplitude_table_enries()
 {
-    return cmap_count_entries(amp_storage);
+    return amp_store_num_entries[amp_backend](amp_storage);
 }
 
 uint64_t

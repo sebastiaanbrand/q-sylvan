@@ -6,6 +6,7 @@
 #include "sylvan_qdd_complex.h"
 #include "sylvan_qdd_complex_mpreal.h"
 #include "sylvan_qdd_algebraic.h"
+#include "amp_storage/mpfr_tree_map.h"
 
 
 bool VERBOSE = true;
@@ -118,7 +119,7 @@ int test_tree_map()
 {
     void *tree_map = tree_map_create(1<<10, 1e-14);
 
-    unsigned int index1, index2;
+    unsigned long index1, index2;
     fl_t val1, val2, val3;
     int found;
 

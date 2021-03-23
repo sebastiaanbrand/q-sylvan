@@ -2,6 +2,9 @@
 #define AMP_STORAGE_INTERFACE
 
 #include "flt.h"
+#include "cmap.h"
+#include "rmap.h"
+#include "tree_map.h"
 
 typedef enum amp_storage_backend {
     COMP_HASHMAP, 
@@ -21,6 +24,9 @@ int (*amp_store_find_or_put[n_backends])();
 
 // get(void *dbs, int ref)
 complex_t (*amp_store_get[n_backends])();
+
+// num entries(void *dbs)
+unsigned long (*amp_store_num_entries[n_backends])();
 
 // get tolerance
 double (*amp_store_get_tol[n_backends])();

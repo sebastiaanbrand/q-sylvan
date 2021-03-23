@@ -5,7 +5,7 @@ cmake_minimum_required(VERSION 2.7)
 include_directories(..)
 
 
-add_library(util #STATIC
+add_library(amp_storage #STATIC
         amp_storage_interface.c amp_storage_interface.h
         tree_map.cpp tree_map.h
         mpfr_tree_map.cpp mpfr_tree_map.h
@@ -17,5 +17,5 @@ add_library(util #STATIC
         MurmurHash3.h MurmurHash3.c
         util.h)
 
-target_link_libraries(util "-lquadmath" mpfr)
+target_link_libraries(amp_storage "-lquadmath" mpfr)
 

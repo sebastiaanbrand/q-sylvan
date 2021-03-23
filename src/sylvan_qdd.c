@@ -1782,7 +1782,7 @@ qdd_measure_all(QDD qdd, BDDVAR n, bool* ms, double *p)
         prob_high = prob_high * prob_roots / prob_path;
         prob_low  = prob_low  * prob_roots / prob_path;
 
-        if (fabs(prob_low + prob_high - 1.0) > cmap_get_tolerance()) {
+        if (fabs(prob_low + prob_high - 1.0) > amp_store_get_tolerance()) {
             printf("prob sum = %.10lf\n", prob_low + prob_high);
             assert("probabilities don't sum to 1" && false);
         }
@@ -2204,7 +2204,7 @@ qdd_is_close_to_unitvector(QDD qdd, BDDVAR n, double tol)
 bool
 qdd_is_unitvector(QDD qdd, BDDVAR n)
 {
-    return qdd_is_close_to_unitvector(qdd, n, cmap_get_tolerance()*10);
+    return qdd_is_close_to_unitvector(qdd, n, amp_store_get_tolerance()*10);
 }
 
 bool
