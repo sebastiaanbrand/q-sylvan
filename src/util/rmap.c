@@ -32,6 +32,10 @@ static const uint64_t EMPTY = 14738995463583502973ull;
 static const uint64_t LOCK  = 14738995463583502974ull;
 static const uint64_t CL_MASK = -(1ULL << CACHE_LINE);
 
+/**
+\typedef Lockless hastable database.
+*/
+typedef struct rmap_s rmap_t;
 struct rmap_s {
     size_t              size;
     size_t              mask;
@@ -67,8 +71,9 @@ real_close(double *in_table, const double* to_insert)
 }
 
 int
-rmap_find_or_put (const rmap_t *rmap, const double *v, ref_t *ret)
+rmap_find_or_put(const void *dbs, const double *v, ref_t *ret)
 {
+    rmap_t * rmap = (rmap_t *) dbs;
     bucket_t *val  = (bucket_t *) v;
 
     // Round the value to compute the hash with, but store the actual value v
@@ -122,14 +127,16 @@ rmap_find_or_put (const rmap_t *rmap, const double *v, ref_t *ret)
 }
 
 double *
-rmap_get (const rmap_t *rmap, const ref_t ref)
+rmap_get(const void *dbs, const ref_t ref)
 {
+    rmap_t * rmap = (rmap_t *) dbs;
     return &rmap->table[ref].r;
 }
 
 uint64_t
-rmap_count_entries (const rmap_t *rmap)
+rmap_count_entries(const void *dbs)
 {
+    rmap_t * rmap = (rmap_t *) dbs;
     uint64_t entries = 0;
     for (unsigned int c = 0; c < rmap->size; c++) {
         if (rmap->table[c].d != EMPTY)
@@ -139,14 +146,15 @@ rmap_count_entries (const rmap_t *rmap)
 }
 
 void
-rmap_print_bitvalues(const rmap_t *rmap, const ref_t ref)
+rmap_print_bitvalues(const void *dbs, const ref_t ref)
 {
+    rmap_t * rmap = (rmap_t *) dbs;
     bucket_t *b = (bucket_t *) rmap_get(rmap, ref);
     printf("%016lx", b->d);
 }
 
-rmap_t *
-rmap_create (uint64_t size, double tolerance)
+void *
+rmap_create(uint64_t size, double tolerance)
 {
     TOLERANCE = tolerance;
     rmap_t  *rmap = calloc (1, sizeof(rmap_t));
@@ -159,11 +167,11 @@ rmap_create (uint64_t size, double tolerance)
     rmap->threshold = rmap->size / 100;
     rmap->threshold = min(rmap->threshold, 1ULL << 16);
     rmap->seen_0 = 0;
-    return rmap;
+    return (void *) rmap;
 }
 
 void
-rmap_free (void *r)
+rmap_free(void *r)
 {
     rmap_t * rmap = (rmap_t *) r;
     free (rmap->table);

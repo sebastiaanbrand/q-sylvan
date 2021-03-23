@@ -12,7 +12,7 @@ bool VERBOSE = true;
 
 int test_cmap()
 {
-    cmap_t *ctable = cmap_create(1<<10, 1e-14);
+    void *ctable = cmap_create(1<<10, 1e-14);
 
     ref_t index1, index2;
     complex_t val1, val2, val3;
@@ -64,7 +64,7 @@ int test_cmap()
 
 int test_rmap()
 {
-    rmap_t *rtable = rmap_create(1<<10, 1e-14);
+    void *rtable = rmap_create(1<<10, 1e-14);
 
     ref_t index1, index2;
     double val1, val2, val3;
@@ -116,7 +116,7 @@ int test_rmap()
 
 int test_tree_map()
 {
-    tree_map_t *tree_map = tree_map_create(1<<10, 1e-14);
+    void *tree_map = tree_map_create(1<<10, 1e-14);
 
     unsigned int index1, index2;
     fl_t val1, val2, val3;

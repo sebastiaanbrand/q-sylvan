@@ -30,6 +30,7 @@ typedef std::map<unsigned int, fl_t> map_int_to_flt_t;
 
 
 // (two way) map to assign unique integers to doubles, using std::map (RB trees)
+typedef struct tree_map_s tree_map_t;
 struct tree_map_s {
     map_flt_to_int_t* flt_to_int;
     map_int_to_flt_t* int_to_flt;
@@ -39,7 +40,7 @@ struct tree_map_s {
 
 
 // tree_map_create()
-tree_map_t *
+void *
 tree_map_create(unsigned int ms, double tol)
 {
     tree_map_t *map = (tree_map_t *) calloc(1, sizeof(tree_map_t));
@@ -48,7 +49,7 @@ tree_map_create(unsigned int ms, double tol)
     map->entries = 0;
     map->flt_to_int = new map_flt_to_int_t;
     map->int_to_flt = new map_int_to_flt_t;
-    return map;
+    return (void *) map;
 }
 
 // tree_map_free()
@@ -63,8 +64,9 @@ tree_map_free(void *m)
 
 // TODO: tree_map_find_or_put()
 int
-tree_map_find_or_put(tree_map_t *map, fl_t val, unsigned int *ret)
+tree_map_find_or_put(void *dbs, fl_t val, unsigned int *ret)
 {
+    tree_map_t * map = (tree_map_t *) dbs;
     map_flt_to_int_t *f2i = map->flt_to_int;
     map_int_to_flt_t *i2f = map->int_to_flt;
 
@@ -98,17 +100,17 @@ tree_map_find_or_put(tree_map_t *map, fl_t val, unsigned int *ret)
 
 // tree_map_get()
 fl_t *
-tree_map_get(tree_map_t *map, unsigned int ref)
+tree_map_get(void *dbs, unsigned int ref)
 {
-    // both these syntactically beautiful statements should be equivalent
-    //return &(*(map->int_to_flt))[ref];
-    return &(map->int_to_flt->find(ref)->second);
+    tree_map_t * map = (tree_map_t *) dbs;
+    return &(map->int_to_flt->find(ref)->second); //return &(*(map->int_to_flt))[ref];
 }
 
 // tree_map_size()
 unsigned int
-tree_map_size(tree_map_t *map)
+tree_map_size(void *dbs)
 {
+    tree_map_t * map = (tree_map_t *) dbs;
     return map->entries;
 }
 

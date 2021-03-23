@@ -9,8 +9,14 @@ typedef enum amp_storage_backend {
 
 #define n_backends 3
 
-double (*amp_store_get_tol[n_backends])();
+// create(uint64_t size, double tolerance)
+void * (*amp_store_create[n_backends])();
+
+// free
 void (*amp_store_free[n_backends])();
+
+// get tolerance
+double (*amp_store_get_tol[n_backends])();
 
 void init_amp_storage_functions();
 
