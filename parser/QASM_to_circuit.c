@@ -191,13 +191,13 @@ void copy_Gate(Gate src, Gate* dst)
 void handle_barrier(C_struct* c_s, Gate gate_s)
 {
     c_s->depth++;
-    for (BDDVAR i = 1; i < c_s->nvars; i++)
+    for (BDDVAR i = 0; i < c_s->nvars-1; i++)
         c_s->circuit[i][c_s->depth] = gate_s;
     BDDVAR *control = malloc((c_s->nvars-1) * sizeof(BDDVAR));
-    for (BDDVAR i = 0; i < c_s->nvars-1; i++) control[i] = i+1;
+    for (BDDVAR i = 0; i < c_s->nvars-1; i++) control[i] = i;
     gate_s.control = control;
     gate_s.controlSize = c_s->nvars-1;
-    c_s->circuit[0][c_s->depth] = gate_s;
+    c_s->circuit[c_s->nvars-1][c_s->depth] = gate_s;
 }
 
 void handle_gate(C_struct* c_s, BDDVAR n_qubits, BDDVAR* qubits, Gate gate_s)
@@ -209,12 +209,21 @@ void handle_gate(C_struct* c_s, BDDVAR n_qubits, BDDVAR* qubits, Gate gate_s)
         for (BDDVAR i = 0; i < n_qubits; i++) control[i] = qubits[i];
         gate_s.control = control;
         Gate gate_ctrl_s;
-        for (BDDVAR i = 0; i < n_qubits; i++) {
-            gate_ctrl_s = gate_ctrl;
-            gate_ctrl_s.control = malloc(sizeof(BDDVAR));
-            gate_ctrl_s.control[0] = qubits[n_qubits];
-            gate_ctrl_s.controlSize = 1;
-            c_s->circuit[qubits[i]][c_s->depth] = gate_ctrl_s;
+        bool controlled = false;
+        BDDVAR j = 0;
+        for (BDDVAR i = 0; i < c_s->nvars; i++) {
+            if (i == qubits[n_qubits]) break;
+            if (qubits[j] == i) {
+                controlled = true;
+                j++;
+                gate_ctrl_s = gate_ctrl;
+                gate_ctrl_s.control = malloc(sizeof(BDDVAR));
+                gate_ctrl_s.control[0] = qubits[n_qubits];
+                gate_ctrl_s.controlSize = 1;
+                c_s->circuit[i][c_s->depth] = gate_ctrl_s;
+            }
+            else if (controlled)
+                c_s->circuit[i][c_s->depth] = gate_ctrl_c;
         }
     }
     c_s->circuit[qubits[n_qubits]][c_s->depth] = gate_s;
@@ -267,7 +276,9 @@ void optimize_c_struct_p(C_struct* c_s, BDDVAR q, BDDVAR depth1, BDDVAR depth2)
 
 bool find_palindromes(C_struct* c_s, BDDVAR q, BDDVAR depth1, BDDVAR depth2)
 {
-    if (c_s->circuit[q][depth1].id != c_s->circuit[q][depth2].id || fmod(c_s->circuit[q][depth1].rotation + c_s->circuit[q][depth2].rotation, 1.f) != 0.f)
+    if (c_s->circuit[q][depth1].id != c_s->circuit[q][depth2].id || 
+            c_s->circuit[q][depth1].rotation != c_s->circuit[q][depth2].rotation || 
+            c_s->circuit[q][depth1].rotation != -c_s->circuit[q][depth2].rotation)
         return false;
     if (c_s->circuit[q][depth1].controlSize == 0)
         return true;
@@ -303,7 +314,11 @@ void reduce_c_struct(C_struct* c_s)
     // Reduce depth by moving gates to the left if possible
     for (BDDVAR j = 1; j <= c_s->depth; j++) {
         for (BDDVAR i = 0; i < c_s->nvars; i++) {
-            if (c_s->circuit[i][j].id != gate_I.id && c_s->circuit[i][j].id != gate_ctrl.id)
+            if ((c_s->circuit[i][j].id != gate_I.id && 
+                c_s->circuit[i][j].id != gate_ctrl.id && 
+                c_s->circuit[i][j].id != gate_ctrl_c.id &&
+                c_s->circuit[i][j].id != gate_barrier.id) || 
+                (c_s->circuit[i][j].id == gate_barrier.id && i == c_s->nvars-1))
                 reduce_gate(c_s, i, j);
         }
     }
@@ -324,15 +339,19 @@ void reduce_gate(C_struct* c_s, BDDVAR target, BDDVAR depth)
 {
     BDDVAR curr;
     BDDVAR reduce = get_reduce_depth(c_s, target, depth);
-    for (BDDVAR i = 0; i < c_s->circuit[target][depth].controlSize; i++) {
-        curr = get_reduce_depth(c_s, c_s->circuit[target][depth].control[i], depth);
-        if (curr > reduce) reduce = curr;
+    BDDVAR *control = c_s->circuit[target][depth].control;
+    if (control != NULL) {
+        for (BDDVAR i = control[0]; i < target; i++) {
+            curr = get_reduce_depth(c_s, i, depth);
+            if (curr > reduce) reduce = curr;
+        }
+        if (reduce - depth <= 0) return;
+        for (BDDVAR i = control[0]; i < target; i++) {
+            c_s->circuit[i][reduce] = c_s->circuit[i][depth];
+            c_s->circuit[i][depth] = gate_I;
+        }
     }
     if (reduce - depth <= 0) return;
-    for (BDDVAR i = 0; i < c_s->circuit[target][depth].controlSize; i++) {
-        c_s->circuit[c_s->circuit[target][depth].control[i]][reduce] = c_s->circuit[c_s->circuit[target][depth].control[i]][depth];
-        c_s->circuit[c_s->circuit[target][depth].control[i]][depth] = gate_I;
-    }
     c_s->circuit[target][reduce] = c_s->circuit[target][depth];
     c_s->circuit[target][depth] = gate_I;
 }

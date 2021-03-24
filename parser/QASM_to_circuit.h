@@ -29,8 +29,9 @@ static const Gate gate_Rx = {11, "Rx", 0, NULL, 0};
 static const Gate gate_Ry = {12, "Ry", 0, NULL, 0};
 static const Gate gate_Rz = {13, "Rz", 0, NULL, 0};
 static const Gate gate_ctrl = {14, "@-", 0, NULL, 0};
-static const Gate gate_measure = {15, "M-", 0, NULL, 0};
-static const Gate gate_barrier = {16, "|-", 0, NULL, 0};
+static const Gate gate_ctrl_c = {15, "|-", 0, NULL, 0};
+static const Gate gate_measure = {16, "M-", 0, NULL, 0};
+static const Gate gate_barrier = {17, "#-", 0, NULL, 0};
 
 // Circuit struct
 typedef struct C_struct
