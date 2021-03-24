@@ -121,19 +121,14 @@ TASK_IMPL_3(QDD, apply_gate, QDD, qdd, Gate, gate, BDDVAR, i)
     return qdd;
 }
 
-TASK_IMPL_4(QDD, handle_control, C_struct, c_s, BDDVAR, k, BDDVAR, depth, BDDVAR, gate_id)
+TASK_IMPL_3(QDD, handle_control, Gate, gate, BDDVAR, k, BDDVAR, n)
 {
-    BDDVAR id;
-    int *c_options = malloc(c_s.nvars * sizeof(int));
-    for (BDDVAR i = 0; i < c_s.nvars; i++) {
-        id = c_s.circuit[i][depth].id;
-        if (id != gate_ctrl.id)
-            c_options[i] = -1;
-        else if (id == gate_ctrl.id)
-            c_options[i] = 1;
-    }
+    BDDVAR gate_id = get_gate_id(gate);
+    int *c_options = malloc(n * sizeof(int));
+    for (BDDVAR i = 0; i < n; i++) c_options[i] = -1;
+    for (BDDVAR i = 0; i < gate.controlSize; i++) c_options[gate.control[i]] = 1;
     c_options[k] = 2;
-    QDD qdd = qdd_create_multi_cgate_rec(c_s.nvars, c_options, gate_id, 0);
+    QDD qdd = qdd_create_multi_cgate_rec(n, c_options, gate_id, 0);
     return qdd;
 }
 
@@ -147,31 +142,29 @@ bool run_circuit_matrix(C_struct c_s, BDDVAR shots, bool show)
     QDD qdd, qdd_column;
 
     BDDVAR gate_id;
-    uint32_t *gateids = malloc(c_s.nvars * sizeof(uint32_t));
+    BDDVAR *gateids = malloc(c_s.nvars * sizeof(BDDVAR));
     qdd = qdd_create_single_qubit_gates_same(c_s.nvars, GATEID_I);
     qdd_column = qdd;
     for (BDDVAR j = 0; j < c_s.depth; j++) {
         for (BDDVAR i = 0; i < c_s.nvars; i++) {
             gate = c_s.circuit[i][j];
             if (gate.id == gate_barrier.id)
-                break;
-            if (gate.id == gate_measure.id) {
+                gateids[i] = GATEID_I;
+            else if (gate.id == gate_measure.id) {
                 gateids[i] = GATEID_I;
                 measurements[i] = true;
-                continue;
             }
-            if (gate.id == gate_ctrl.id || gate.id == gate_ctrl_c.id) {
+            else if (gate.id == gate_ctrl.id || gate.id == gate_ctrl_c.id)
                 gateids[i] = GATEID_I;
-                continue;
-            }
-            gate_id = get_gate_id(gate);
-            if (gate.controlSize != 0) {
+            else if (gate.controlSize != 0) {
                 gateids[i] = GATEID_I;
-                qdd_column = handle_control(c_s, i, j, gate_id);
+                qdd_column = handle_control(gate, i, c_s.nvars);
                 qdd = qdd_matmat_mult(qdd_column, qdd, c_s.nvars);
             }
-            else
+            else {
+                gate_id = get_gate_id(gate);
                 gateids[i] = gate_id;
+            }
         }
         qdd_column = qdd_create_single_qubit_gates(c_s.nvars, gateids);
         if (gate.id != gate_barrier.id)
@@ -262,10 +255,9 @@ int main(int argc, char *argv[])
     qdd_set_testing_mode(true); // turn on internal sanity tests
 
     double begin = wctime();
-    C_struct c_s = make_c_struct(filename, true);
+    C_struct c_s = make_c_struct(filename, false);
     double begin2 = wctime();
     printf("time: %f\n", begin2 - begin);
-    // print_c_struct(c_s, false, false);
     if (matrix)
         run_circuit_matrix(c_s, shots, false);
     else

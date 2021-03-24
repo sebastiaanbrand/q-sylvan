@@ -234,7 +234,7 @@ void optimize_c_struct(C_struct* c_s)
     BDDVAR depth2;
     for (BDDVAR q = 0; q < c_s->nvars; q++) {
         for (BDDVAR depth1 = 0; depth1 < c_s->depth; depth1++) {
-            if (c_s->circuit[q][depth1].id != gate_I.id && c_s->circuit[q][depth1].id != gate_ctrl.id) {
+            if (c_s->circuit[q][depth1].id != gate_I.id && c_s->circuit[q][depth1].id != gate_ctrl.id && c_s->circuit[q][depth1].id != gate_ctrl_c.id) {
                 depth2 = depth1+1;
                 while (c_s->circuit[q][depth2].id == gate_I.id || c_s->circuit[q][depth2].id == gate_barrier.id) {
                     if (depth2 >= c_s->depth) break;
