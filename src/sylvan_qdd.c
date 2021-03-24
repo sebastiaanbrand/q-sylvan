@@ -27,7 +27,7 @@
 
 static int granularity = 1; // operation cache access granularity
 static bool testing_mode = 0; // turns on/off (expensive) sanity checks
-static bool using_real_table = true; // using real table or complex table
+static bool larger_amp_indices = false; // using [amps,ptr] [33,30] bits (default [23,40])
 
 /****************< (bit level) manipulation of QDD / qddnode_t >***************/
 /**
@@ -67,7 +67,7 @@ static const QDD qdd_ptr_mask_40  = 0x000000ffffffffffLL;
 static inline AMP
 QDD_AMP(QDD q)
 {
-    if (using_real_table) {
+    if (larger_amp_indices) {
         return (q & qdd_amp_mask_33) >> 30; // 33 bits
     }
     else {
@@ -81,7 +81,7 @@ QDD_AMP(QDD q)
 static inline PTR
 QDD_PTR(QDD q)
 {
-    if (using_real_table) {
+    if (larger_amp_indices) {
         return q & qdd_ptr_mask_30; // 30 bits
     }
     else {
@@ -185,7 +185,7 @@ QDD_GETNODE(PTR p)
 static inline QDD
 qdd_bundle_ptr_amp(PTR p, AMP a)
 {
-    if (using_real_table) {
+    if (larger_amp_indices) {
         assert (p <= 0x000000003ffffffe);   // avoid clash with sylvan_invalid
         assert (a <= (1LL<<33));
         return (a << 30 | p);
@@ -242,7 +242,7 @@ qddnode_pack(qddnode_t n, BDDVAR var, PTR low, PTR high, AMP a, AMP b)
     }
 
     n->low  = ((uint64_t)var)<<55 | ((uint64_t)norm_pos)<<54 | ((uint64_t)norm_val)<<53 | low;
-    if (using_real_table) {
+    if (larger_amp_indices) {
         n->high = amp_high<<30 | high;
     }
     else {
@@ -451,11 +451,17 @@ qdd_quit()
 void
 sylvan_init_qdd(size_t ctable_size, double ctable_tolerance, int amps_backend)
 {
-    // TODO: add param using real table or comp table to store edge weights
     if (qdd_initialized) return;
     qdd_initialized = 1;
 
-    using_real_table = (amps_backend == REAL_HASHMAP || amps_backend == REAL_TREE);
+    int index_size = (int) ceil(log2(ctable_size));
+    if (index_size > 33) {
+        printf("max amp storage size is 2^33 (half when storing real components separately)\n");
+        exit(1);
+    }
+    if (index_size > 23) {
+        larger_amp_indices = true;
+    }
 
     sylvan_register_quit(qdd_quit);
     sylvan_gc_add_mark(TASK(qdd_gc_mark_external_refs));

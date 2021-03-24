@@ -41,7 +41,7 @@ struct tree_map_s {
 static unsigned long
 tree_map_pack_indices(const tree_map_t * map, unsigned long r, unsigned long i)
 {
-    unsigned long index_size = (long) ceil(log2(map->max_size));
+    int index_size = (int) ceil(log2(map->max_size));
     unsigned long res = ((r << index_size) | i);
     return res;
 }

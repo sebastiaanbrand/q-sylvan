@@ -57,7 +57,7 @@ rmap_pack_indices(const rmap_t * rmap, ref_t r, ref_t i)
 static void
 rmap_unpack_indices(const rmap_t * rmap, ref_t bundle, ref_t *index_r, ref_t *index_i)
 {
-    uint64_t index_size = (int) ceil(log2(rmap->size));
+    int index_size = (int) ceil(log2(rmap->size));
     *index_r = (bundle >> index_size);
     *index_i = (bundle & ((1<<index_size)-1));
 }
