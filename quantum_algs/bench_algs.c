@@ -58,7 +58,6 @@ write_parameters(FILE *file)
     fprintf(file, "  \"USING_MPREAL\": %d,\n", USING_MPREAL);
     fprintf(file, "  \"flt_quad\": %d,\n", flt_quad);
     fprintf(file, "  \"ctable_gc_thres\": %lf,\n", ctable_gc_thres);
-    fprintf(file, "  \"propagate_complex\": %d,\n", propagate_complex);
     fprintf(file, "  \"CACHE_INV_OPS\": %d,\n", CACHE_INV_OPS);
     fprintf(file, "  \"caching_granularity\": %d\n", caching_granularity);
     fprintf(file, "}\n");
