@@ -13,7 +13,6 @@ size_t table_size;
 mpreal_tree_map_t *mpreal_cmap;
 mpreal_tree_map_t *mpreal_cmap_old;
 
-static bool CACHE_AMP_OPS = true;
 
 static mpfr::mpreal Pi;
 

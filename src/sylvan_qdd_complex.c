@@ -40,7 +40,19 @@ static const uint64_t table_entries_local_buffer = 1000; // every 1000 entries
 void *amp_storage;
 void *amp_storage_old;
 
-static bool CACHE_AMP_OPS = true;
+const bool CACHE_AMP_OPS = true;
+const bool CACHE_INV_OPS = true;
+
+const uint32_t GATEID_I = 0;
+const uint32_t GATEID_X = 1;
+const uint32_t GATEID_Y = 2;
+const uint32_t GATEID_Z = 3;
+const uint32_t GATEID_H = 4;
+const uint32_t GATEID_S = 5;
+const uint32_t GATEID_T = 6;
+const uint32_t GATEID_Tdag = 7;
+const uint32_t GATEID_sqrtX = 8;
+const uint32_t GATEID_sqrtY = 9;
 
 
 /* Shorthand functions for making complex numbers */

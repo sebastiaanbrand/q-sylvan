@@ -15,7 +15,8 @@
 
 typedef uint64_t AMP;
 
-static const bool CACHE_INV_OPS = true; // e.g. put mul(b,c)=a when div(a,b)=c
+extern const bool CACHE_AMP_OPS;
+extern const bool CACHE_INV_OPS;
 
 AMP C_ZERO;
 AMP C_ONE;
@@ -23,16 +24,16 @@ AMP C_MIN_ONE;
 
 // GATE_ID's (gates are initialized in qdd_complex_init)
 // currently 24 bits available for this number (see GATE_OPID)
-static const uint32_t GATEID_I = 0;
-static const uint32_t GATEID_X = 1;
-static const uint32_t GATEID_Y = 2;
-static const uint32_t GATEID_Z = 3;
-static const uint32_t GATEID_H = 4;
-static const uint32_t GATEID_S = 5;
-static const uint32_t GATEID_T = 6;
-static const uint32_t GATEID_Tdag = 7;
-static const uint32_t GATEID_sqrtX = 8;
-static const uint32_t GATEID_sqrtY = 9;
+extern const uint32_t GATEID_I;
+extern const uint32_t GATEID_X;
+extern const uint32_t GATEID_Y;
+extern const uint32_t GATEID_Z;
+extern const uint32_t GATEID_H;
+extern const uint32_t GATEID_S;
+extern const uint32_t GATEID_T;
+extern const uint32_t GATEID_Tdag;
+extern const uint32_t GATEID_sqrtX;
+extern const uint32_t GATEID_sqrtY;
 void init_gates();
 // The next 255 gates are reserved for parameterized phase gates, which are
 // initialized below. (these are GATEIDs 10 265)
