@@ -709,6 +709,7 @@ int bench_grover_matrix()
                            "amp_sub_cacheput, amp_sub_cached, "
                            "amp_mul_cacheput, amp_mul_cached, "
                            "amp_div_cacheput, amp_div_cached, "
+                           "mul_down_total, mul_down_found, "
                            "flag, Pr(flag)\n");
     // output file for sylvan parameters
     char param_fname[256];
@@ -755,6 +756,7 @@ int bench_grover_matrix()
     uint64_t amp_sub_cached = 0, amp_sub_cacheput = 0;
     uint64_t amp_mul_cached = 0, amp_mul_cacheput = 0;
     uint64_t amp_div_cached = 0, amp_div_cacheput = 0;
+    uint64_t mul_down_total = 0, mul_down_found = 0;
 
     // run benchmarks
     srand(42);
@@ -802,8 +804,10 @@ int bench_grover_matrix()
                 amp_sub_cacheput = sylvan_stats.counters[AMP_SUB_CACHEDPUT];
                 amp_mul_cacheput = sylvan_stats.counters[AMP_MUL_CACHEDPUT];
                 amp_div_cacheput = sylvan_stats.counters[AMP_DIV_CACHEDPUT];
+                mul_down_total = sylvan_stats.counters[AMP_MUL_DOWN];
+                mul_down_found = sylvan_stats.counters[AMP_MUL_DOWN_CACHED];
                 #endif
-                fprintf(overview_file, "%d, %ld, %lf, %d, %ld, %lf, %.3e, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %d, %lf\n",
+                fprintf(overview_file, "%d, %ld, %lf, %d, %ld, %lf, %.3e, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %d, %lf\n",
                                         n_bits[q]+1, nodes_peak, avg_nodes, n_workers[w],
                                         n_gates, runtime, avg_gate_time, 
                                         plus_cacheput, plus_cached,
@@ -812,6 +816,7 @@ int bench_grover_matrix()
                                         amp_sub_cacheput, amp_sub_cached,
                                         amp_mul_cacheput, amp_mul_cached,
                                         amp_div_cacheput, amp_div_cached,
+                                        mul_down_total, mul_down_found,
                                         f_int, prob_flag);
                 fflush(overview_file);
             }
