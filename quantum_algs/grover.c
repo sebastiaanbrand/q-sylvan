@@ -1,6 +1,8 @@
 #include "grover.h"
 #include "sylvan_qdd_complex.h"
 
+static bool VERBOSE = true;
+
 uint64_t
 qdd_grover_approx_number_of_gates(BDDVAR nbits)
 {
@@ -137,9 +139,16 @@ qdd_grover_matrix(BDDVAR n, bool *flag)
     state = qdd_matvec_mult(all_H, state, nqubits);
 
     // 3. Grover iterations
+    if (VERBOSE) {
+        printf("\nGrover progress: %lf%%", 0.);
+        fflush(stdout);
+    }
     for (uint32_t i = 1; i <= R; i++) {
-        if (i % 100 == 0) {
-            printf("grov it %d\n", i);
+        if (i % 1000 == 0) {
+            if (VERBOSE) {
+                printf("\rGrover progress %lf%%", (double) i / (double) R * 100);
+                fflush(stdout);
+            }
             
             // gc amp table
             QDD keep[2];
@@ -158,6 +167,9 @@ qdd_grover_matrix(BDDVAR n, bool *flag)
             // gc node table
         }
         state = qdd_matvec_mult(grov_it, state, nqubits);
+    }
+    if (VERBOSE) {
+        printf("\rGrover progress %lf%%\n", 100.);
     }
 
     return state;
