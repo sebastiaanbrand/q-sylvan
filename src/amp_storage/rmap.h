@@ -51,10 +51,10 @@ und.
 \retval idx The index that the vector was found or inserted at
 \return 1 if the vector was present, 0 if it was added, -1 if table was full
 */
-extern int rmap_find_or_put(const void *dbs, const double *v, ref_t *ret);
+extern int rmap_find_or_put(const void *dbs, const fl_t *v, ref_t *ret);
 extern int rmap_find_or_put2(const void *dbs, const complex_t *v, ref_t *ret);
 
-extern double *rmap_get(const void *dbs, const ref_t ref);
+extern fl_t *rmap_get(const void *dbs, const ref_t ref);
 extern complex_t rmap_get2(const void *dbs, const ref_t ref);
 
 extern uint64_t rmap_count_entries(const void *rmap);

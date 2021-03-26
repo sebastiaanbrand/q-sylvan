@@ -68,7 +68,7 @@ int test_rmap()
     void *rtable = rmap_create(1<<10, 1e-14);
 
     ref_t index1, index2;
-    double val1, val2, val3;
+    fl_t val1, val2, val3;
     int found;
 
     val1 = 3.5;
@@ -2173,10 +2173,7 @@ int runtests()
     if (test_mpfr_tree_map_scope()) return 1;
     if (test_algebraic()) return 1;
     if (test_with_cmap()) return 1;
-    #if !flt_quad
-    // rmap currently only works with doubles (flt_quad = 0)
     if (test_with_rmap()) return 1;
-    #endif
     if (test_with_tree_map()) return 1;
     return 0;
 }
