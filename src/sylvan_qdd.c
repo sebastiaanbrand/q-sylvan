@@ -1598,8 +1598,6 @@ TASK_IMPL_6(QDD, qdd_ccircuit, QDD, qdd, uint32_t, circ_id, BDDVAR*, cs, uint32_
         }
         res = qdd_makenode(var, low, high);
         // Multiply root amp of sum with input root amp 
-        // TODO: (I guess this needs to be done every time after makenode, 
-        // so maybe put this functionality in makenode function?)
         AMP new_root_amp = amp_mul(QDD_AMP(qdd), QDD_AMP(res));
         res = qdd_bundle_ptr_amp(QDD_PTR(res), new_root_amp);
     }
