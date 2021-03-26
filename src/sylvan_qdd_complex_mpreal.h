@@ -74,6 +74,7 @@ void init_mpreal_amplitude_table(uint64_t size, long double tol);
 void free_mpreal_amplitude_table();
 void init_mpreal_gates();
 void init_mpreal_phase_gates(int n);
+double mpreal_amp_store_get_tolerance();
 
 void init_new_empty_mpreal_table();
 void delete_old_mpreal_table();

@@ -545,6 +545,12 @@ init_mpreal_phase_gates(int n)
     }
 }
 
+double
+mpreal_amp_store_get_tolerance()
+{
+    return mpreal_tree_map_get_tolerance();
+}
+
 void
 free_mpreal_amplitude_table()
 {
