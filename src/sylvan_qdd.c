@@ -1203,7 +1203,13 @@ TASK_IMPL_4(QDD, qdd_matvec_mult_rec, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR,
     qdd_get_topvar(mat_low, 2*nextvar+1, &var, &u00, &u10);
     qdd_get_topvar(mat_high,2*nextvar+1, &var, &u01, &u11);
 
-    // 2. recursive calls (4 tasks: SPAWN 3, CALL 1)
+    // 2. Propagate "in-between" amps of matrix qdd
+    u00 = qdd_bundle_ptr_amp(QDD_PTR(u00), amp_mul(QDD_AMP(u00), QDD_AMP(mat_low)));
+    u10 = qdd_bundle_ptr_amp(QDD_PTR(u10), amp_mul(QDD_AMP(u10), QDD_AMP(mat_low)));
+    u01 = qdd_bundle_ptr_amp(QDD_PTR(u01), amp_mul(QDD_AMP(u01), QDD_AMP(mat_high)));
+    u11 = qdd_bundle_ptr_amp(QDD_PTR(u11), amp_mul(QDD_AMP(u11), QDD_AMP(mat_high)));
+
+    // 3. recursive calls (4 tasks: SPAWN 3, CALL 1)
     // |u00 u01| |vec_low | = vec_low|u00| + vec_high|u01|
     // |u10 u11| |vec_high|          |u10|           |u11|
     QDD res_low00, res_low10, res_high01, res_high11;
@@ -1219,20 +1225,13 @@ TASK_IMPL_4(QDD, qdd_matvec_mult_rec, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR,
     qdd_refs_pop(1);
     nextvar--;
 
-    // 3. gather results of multiplication
+    // 4. gather results of multiplication
     QDD res_low, res_high;
     res_low  = qdd_makenode(nextvar, res_low00,  res_low10);
     res_high = qdd_makenode(nextvar, res_high01, res_high11);
 
-    // 4. multiply w/ relevant amps
-    AMP new_amp_low  = amp_mul(QDD_AMP(res_low),  QDD_AMP(mat_low));
-    AMP new_amp_high = amp_mul(QDD_AMP(res_high), QDD_AMP(mat_high)); 
-    res_low  = qdd_bundle_ptr_amp(QDD_PTR(res_low),  new_amp_low);
-    res_high = qdd_bundle_ptr_amp(QDD_PTR(res_high), new_amp_high);
-
     // 5. add resulting qdds
     res = CALL(qdd_plus, res_low, res_high);
-
 
     // Insert in cache (before multiplication w/ root amps)
     if (cachenow) {
