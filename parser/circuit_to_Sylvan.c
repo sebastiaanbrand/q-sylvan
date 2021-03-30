@@ -2,28 +2,27 @@
 
 #include "sylvan.h"
 #include "sylvan_qdd_complex.h"
-#include <time.h> 
+#include <ctype.h>
 
-#include <sys/time.h>
 /**
- * Obtain current wallclock time
+ * Prints the final results of the measured qubits.
+ * 
+ * @param qdd a QDD representing the statevector to be measured on
+ * @param measurements an array containing booleans, where the to be measured qubits are flagged
+ * @param nvars the number of qubits
+ * @param runs the number of times the flagged qubits in the statevector should be measured
+ * @param show toggle to print the measurement results
  */
-static double wctime()
+void final_measure(QDD qdd, bool* measurements, BDDVAR nvars, BDDVAR runs, bool show)
 {
-    struct timeval tv;
-    gettimeofday(&tv, NULL);
-    return (tv.tv_sec + 1E-6 * tv.tv_usec);
-}
-
-// TASK_IMPL_4(bool, measure, QDD, qdd, bool*, measurements, BDDVAR, nvars, BDDVAR, shots)
-bool measure(QDD qdd, bool* measurements, BDDVAR nvars, BDDVAR shots, bool show)
-{
-    // Run the circuit x times, where x == shots
+    // Initialise variables
     bool *ms = malloc(nvars * sizeof(bool));
     double *p = malloc(nvars * sizeof(double));
     int *hits = malloc(pow(2,nvars) * sizeof(int));
     for(int i = 0; i < pow(2,nvars); i++) { hits[i] = 0; }
-    for(BDDVAR i = 0; i < shots; i++) { 
+
+    // Run the circuit <runs> times
+    for(BDDVAR i = 0; i < runs; i++) { 
         qdd_measure_all(qdd, nvars, ms, p);
         hits[bitarray_to_int(ms, nvars, false)]++;
     }
@@ -43,7 +42,7 @@ bool measure(QDD qdd, bool* measurements, BDDVAR nvars, BDDVAR shots, bool show)
         free(x);
     }
 
-    // Print reformatted circuit results
+    // Print reformatted circuit results if <show> is toggled
     if (show) {
         for(int k = 0; k < pow(2, sum); k++) {
             if (probs[k] != 0) {
@@ -62,16 +61,27 @@ bool measure(QDD qdd, bool* measurements, BDDVAR nvars, BDDVAR shots, bool show)
             }
         }
     }
+
+    // Free variables
     free(ms);
     free(p);
     free(hits);
     free(probs);
-    return true;
 }
 
+/**
+ * Returns the Sylvan GATEID that corresponds to <gate>
+ * 
+ * @param gate Gate_struct of which to get the Sylvan GATEID
+ * 
+ * @return Sylvan GATEID which corresponds to <gate>
+ */
 TASK_IMPL_1(BDDVAR, get_gate_id, Gate, gate)
 {
+    // Initialise variables
     BDDVAR gate_id;
+
+    // Switch case on the id of the gate_struct
     if (gate.id == gate_I.id)
         gate_id = GATEID_I;
     else if (gate.id == gate_X.id)
@@ -94,6 +104,7 @@ TASK_IMPL_1(BDDVAR, get_gate_id, Gate, gate)
         gate_id = GATEID_T;
     else if (gate.id == gate_Td.id)
         gate_id = GATEID_Tdag;
+    // Rx Ry and Rz gates have arbitrary rotations, Sylvan GATEIDs are allocated dynamically
     else if (gate.id == gate_Rx.id)
         gate_id = GATEID_Rx(gate.rotation);
     else if (gate.id == gate_Ry.id)
@@ -101,15 +112,27 @@ TASK_IMPL_1(BDDVAR, get_gate_id, Gate, gate)
     else if (gate.id == gate_Rz.id)
         gate_id = GATEID_Rz(gate.rotation);
     else {
-        printf("Unknown gate: %d\n", gate.id);
-        exit(1);
+        fprintf(stderr, "Unknown gate: %d\n", gate.id);
+        exit(EXIT_FAILURE);
     }
     return gate_id;
 }
 
+/**
+ * Applies <gate> to <qdd> on the qubit with index <i>.
+ * 
+ * @param qdd the statevector on which to apply <gate>
+ * @param gate the gate to be applied
+ * @param i the index of the qubit in <qdd> on which to apply <gate>
+ * 
+ * @return the statevector qdd where <gate> has been applied on the qubit with index <i>
+ */
 TASK_IMPL_3(QDD, apply_gate, QDD, qdd, Gate, gate, BDDVAR, i)
 {
+    // Get the corresponding Sylvan GATEID of <gate>
     BDDVAR gate_id = get_gate_id(gate);
+
+    // Apply <gate> using the corresponding controls (if any)
     if (gate.controlSize == 0)
         qdd = qdd_gate(qdd, gate_id, i);
     else if (gate.controlSize == 1)
@@ -118,9 +141,17 @@ TASK_IMPL_3(QDD, apply_gate, QDD, qdd, Gate, gate, BDDVAR, i)
         qdd = qdd_cgate2(qdd, gate_id, gate.control[0], gate.control[1], i);
     else if (gate.controlSize == 3)
         qdd = qdd_cgate3(qdd, gate_id, gate.control[0], gate.control[1], gate.control[2], i);
+    else {
+        // More than 3 controls are not fully implemented yet, easier to throw on all cases
+        fprintf(stderr, "Control-gates with more than 3 controls not implemented.\n");
+        exit(EXIT_FAILURE);
+    }
     return qdd;
 }
 
+/**
+ * 
+ */
 TASK_IMPL_3(QDD, handle_control, Gate, gate, BDDVAR, k, BDDVAR, n)
 {
     BDDVAR gate_id = get_gate_id(gate);
@@ -132,7 +163,7 @@ TASK_IMPL_3(QDD, handle_control, Gate, gate, BDDVAR, k, BDDVAR, n)
     return qdd;
 }
 
-bool run_circuit_matrix(C_struct c_s, BDDVAR shots, bool show)
+QDD run_circuit_matrix(C_struct c_s, BDDVAR runs, bool show)
 {
     LACE_ME;
     Gate gate;
@@ -169,22 +200,18 @@ bool run_circuit_matrix(C_struct c_s, BDDVAR shots, bool show)
         qdd_column = qdd_create_single_qubit_gates(c_s.nvars, gateids);
         if (gate.id != gate_barrier.id)
             qdd = qdd_matmat_mult(qdd_column, qdd, c_s.nvars);
-        // printf("%ld\n", qdd_countnodes(qdd));
         if (qdd_countnodes(qdd) > 100) {
-            // printf("%d-",j);
             vec = qdd_matvec_mult(qdd, vec, c_s.nvars);
             qdd = qdd_create_single_qubit_gates_same(c_s.nvars, GATEID_I);
-            qdd_gc_amp_table(&vec);
         }
     }
     vec = qdd_matvec_mult(qdd, vec, c_s.nvars);
     printf("%ld / %d\n", qdd_countnodes(vec), (int)pow(2,c_s.nvars));
-    measure(vec, measurements, c_s.nvars, shots, show);
-    // qdd_printnodes(vec);
-    return true;
+    final_measure(vec, measurements, c_s.nvars, runs, show);
+    return vec;
 }
 
-bool run_c_struct(C_struct c_s, BDDVAR shots, bool show)
+QDD run_c_struct(C_struct c_s, BDDVAR runs, bool show)
 {
     LACE_ME;
 
@@ -206,43 +233,69 @@ bool run_c_struct(C_struct c_s, BDDVAR shots, bool show)
         }
     }
     printf("%ld / %d\n", qdd_countnodes(qdd), (int)pow(2,c_s.nvars));
-    measure(qdd, measurements, c_s.nvars, shots, show);
+    final_measure(qdd, measurements, c_s.nvars, runs, show);
     free(measurements);
     // qdd_printnodes(qdd);
-    return true;
+    return qdd;
 }
 
+/**
+ * Runs QASM circuit given and prints the results
+ * Input:
+ *   the path to the file containing the QASM circuit code
+ * Possible flags to be passed to the function:
+ *   -r: the number of runs to perform
+ *   -s: the randomness seed to be used
+ *   -m: the boundaray value of nodes in a tree before multiplying with the state vector
+ * Using the -m flag activates gate-gate multiplication runs, gate-statevector runs are used otherwise
+ * 
+ * Since multiplying a gate-QDD with a gate-QDD is more expensive than multiplying a gate-QDD with
+ * a statevector-QDD, gate-gate multiplication is usually slower. However, circuits which use a lot of 
+ * uncomputation can lead to smaller resulting gate QDDs and possibly lead to faster runs.
+*/
 int main(int argc, char *argv[])
 {
-    // LACE_ME;
-    // check for file
-    char *filename = "../plotting/test_gates.txt";
-    BDDVAR shots = 100;
+    // Initialise flag parameters
+    char *filename = argv[1];
+    BDDVAR runs = 100;
     BDDVAR seed = 100;
-    bool matrix = false;
+    BDDVAR matrix = 0;
     int opt;
-    while((opt = getopt(argc, argv, "f:s:r:m")) != -1) {
+
+    // Read flags from cmd and set parameters
+    while((opt = getopt(argc, argv, "s:r:m:")) != -1) {
         switch(opt) {
-            case 'f':
-                filename = optarg;
+            case 'r':
+                if (isdigit(optarg))
+                    runs = atoi(optarg);
+                else
+                    fprintf(stderr, "invalid argument for flag %d\n", opt);
                 break;
             case 's':
-                shots = atoi(optarg);
-                break;
-            case 'r':
                 seed = atoi(optarg);
                 break;
             case 'm':
-                matrix = true;
+                matrix = abs(atoi(optarg));
                 break;
+            default:
+                fprintf(stderr, "usage: %s file [-r runs][-s seed][-m matrix_node_limit]\n", argv[0]);
+                exit(EXIT_FAILURE);
         }
     }
+    printf("filename: %s\n", filename);
+    printf("-r: %d\n", runs);
+    printf("-s: %d\n", seed);
+    printf("-m: %d\n", matrix);
+
+    // Set randomness seed
     srand(seed);
-    if(strcmp(filename, "") == 0)
+    // Check if a file is given, if not, return an error
+    if(access(filename, F_OK) != 0)
     {
-        printf("Give filename of qasm file.\n");
-        return 1;
+        printf("Invalid QASM file.\n");
+        exit(EXIT_FAILURE);
     }
+
     // Standard Lace initialization
     int workers = 1;
     lace_init(workers, 0);
@@ -251,20 +304,16 @@ int main(int argc, char *argv[])
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<16, -1, true);
+    sylvan_init_qdd(1LL<<16, -1, COMP_HASHMAP);
     qdd_set_testing_mode(true); // turn on internal sanity tests
 
-    double begin = wctime();
+    // Create a C_Struct representing the QASM circuit in the given file
     C_struct c_s = make_c_struct(filename, false);
-    double begin2 = wctime();
-    printf("time: %f\n", begin2 - begin);
-    if (matrix)
-        run_circuit_matrix(c_s, shots, false);
+    if (matrix != 0)
+        run_circuit_matrix(c_s, runs, false);
     else
-        run_c_struct(c_s, shots, false);
-    double end = wctime();
-    printf("time: %f\n", end - begin2);
-    printf("time: %f\n", end - begin);
+        run_c_struct(c_s, runs, false);
+
     delete_c_struct(&c_s);
     sylvan_quit();
     lace_exit();
