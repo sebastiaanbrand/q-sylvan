@@ -37,20 +37,22 @@ DECLARE_THREAD_LOCAL(table_entries_local, size_t); // these are added to _est
 static const uint64_t table_entries_local_buffer = 1000; // every 1000 entries
 
 // Actual table (old is used for gc purposes)
-cmap_t *ctable;
-cmap_t *ctable_old;
+void *amp_storage;
+void *amp_storage_old;
 
-// TODO: "merge" ctable and rtable code in a cleaner way
-//size_t rtable_entries_est;
-//DECLARE_THREAD_LOCAL(rtable_entries_local, size_t); // these are added to _est
-//static const uint64_t rtable_entries_local_buffer = 1000; // every 1000 entries
-rmap_t *rtable;
-rmap_t *rtable_old;
+const bool CACHE_AMP_OPS = true;
+const bool CACHE_INV_OPS = true;
 
-tree_map_t *rtree;
-tree_map_t *rtree_old;
-
-static bool CACHE_AMP_OPS = true;
+const uint32_t GATEID_I = 0;
+const uint32_t GATEID_X = 1;
+const uint32_t GATEID_Y = 2;
+const uint32_t GATEID_Z = 3;
+const uint32_t GATEID_H = 4;
+const uint32_t GATEID_S = 5;
+const uint32_t GATEID_T = 6;
+const uint32_t GATEID_Tdag = 7;
+const uint32_t GATEID_sqrtX = 8;
+const uint32_t GATEID_sqrtY = 9;
 
 
 /* Shorthand functions for making complex numbers */
@@ -177,6 +179,19 @@ cache_get_mul(AMP a, AMP b, AMP *res)
     return false;
 }
 
+// uses different stats counter for propagating edge weights down
+static bool
+cache_get_mul_down(AMP a, AMP b, AMP *res)
+{
+    sylvan_stats_count(AMP_MUL_DOWN);
+    order_inputs(&a, &b);
+    if (cache_get3(CACHE_AMP_MUL, a, b, sylvan_false, res)) {
+        sylvan_stats_count(AMP_MUL_DOWN_CACHED);
+        return true;
+    }
+    return false;
+}
+
 static void
 cache_put_div(AMP a, AMP b, AMP res)
 {
@@ -297,7 +312,7 @@ amp_sub(AMP a, AMP b)
 }
 
 AMP
-amp_mul(AMP a, AMP b)
+_amp_mul(AMP a, AMP b, bool mul_down)
 {
     // special cases
     if (a == C_ONE) return b;
@@ -307,7 +322,12 @@ amp_mul(AMP a, AMP b)
     // check cache
     AMP res;
     if (CACHE_AMP_OPS) {
-        if (cache_get_mul(a, b, &res)) return res;
+        if (mul_down) {
+            if (cache_get_mul_down(a, b, &res)) return res;
+        }
+        else {
+            if (cache_get_mul(a, b, &res)) return res;
+        }
     }
 
     // compute and hash result to ctable
@@ -323,6 +343,8 @@ amp_mul(AMP a, AMP b)
     }
     return res;
 }
+AMP amp_mul(AMP a, AMP b) { return _amp_mul(a, b, false); }
+AMP amp_mul_down(AMP a, AMP b) { return _amp_mul(a, b, true); }
 
 AMP
 amp_div(AMP a, AMP b)
@@ -457,7 +479,7 @@ bool comp_exact_equal(complex_t a, complex_t b)
 
 bool comp_approx_equal(complex_t a, complex_t b)
 {
-    return comp_epsilon_close(a, b, cmap_get_tolerance());
+    return comp_epsilon_close(a, b, amp_store_get_tol[amp_backend]());
 }
 
 bool comp_epsilon_close(complex_t a, complex_t b, double epsilon)
@@ -548,112 +570,27 @@ comp_lookup(complex_t c)
     return (AMP) res;
 }
 
-static AMP
-comp_try_lookup_ctable(complex_t c, bool *success)
-{
-    uint64_t res;
-    int present = cmap_find_or_put(ctable, &c, &res);
-    if (present == 0) {
-        *success = true;
-        table_entries_local += 1;
-        if (table_entries_local >= table_entries_local_buffer) {
-            __sync_fetch_and_add(&table_entries_est, table_entries_local);
-            table_entries_local = 0;
-        }
-    }
-    else if (present == 1) *success = true;
-    else                   *success = false;
-    return (AMP) res;
-}
-
-static AMP
-try_lookup_rtable(double a, bool *success) // TODO: change to fl_t
-{
-    uint64_t res;
-    int present = rmap_find_or_put(rtable, &a, &res);
-    if (present == 0) {
-        *success = true;
-        table_entries_local += 1;
-        if (table_entries_local >= table_entries_local_buffer) {
-            __sync_fetch_and_add(&table_entries_est, table_entries_local);
-            table_entries_local = 0;
-        }
-    }
-    else if (present == 1) *success = true;
-    else                   *success = false;
-    return (AMP) res;
-}
-
-static AMP
-try_lookup_rtree(fl_t a, bool *success)
-{
-    unsigned int res;
-    int present = tree_map_find_or_put(rtree, a, &res);
-    if (present == 0) {
-        *success = true;
-        table_entries_local += 1;
-        if (table_entries_local >= table_entries_local_buffer) {
-            __sync_fetch_and_add(&table_entries_est, table_entries_local);
-            table_entries_local = 0;
-        }
-    }
-    else if (present == 1) *success = true;
-    else                   *success = false;
-    return (AMP) res;
-}
-
-static AMP
-pack_indices_rtable(AMP r, AMP i)
-{
-    uint64_t index_size = (int) ceil(log2(table_size));
-    AMP res = ((r << index_size) | i);
-    return res;
-}
-
-static void
-unpack_indices_rtable(AMP bundle, AMP *index_r, AMP *index_i)
-{
-    uint64_t index_size = (int) ceil(log2(table_size));
-    *index_r = (bundle >> index_size);
-    *index_i = (bundle & ((1<<index_size)-1));
-}
-
-static AMP
-comp_try_lookup_rtable(complex_t c, bool *success)
-{
-    bool suc1, suc2;
-    AMP amp1 = try_lookup_rtable(c.r, &suc1);
-    AMP amp2 = try_lookup_rtable(c.i, &suc2);
-    *success = (suc1 && suc2);
-    return pack_indices_rtable(amp1, amp2);
-}
-
-static AMP
-comp_try_lookup_rtree(complex_t c, bool *success)
-{
-    bool suc1, suc2;
-    AMP amp1 = try_lookup_rtree(c.r, &suc1);
-    AMP amp2 = try_lookup_rtree(c.i, &suc2);
-    *success = (suc1 && suc2);
-    return pack_indices_rtable(amp1, amp2);
-}
-
 AMP
 comp_try_lookup(complex_t c, bool *success)
 {
-    if (amp_backend == REAL_HASHMAP) {
-        return comp_try_lookup_rtable(c, success);
+    uint64_t res;
+    // TODO: have this function return the number of added elements instead  
+    int present = amp_store_find_or_put[amp_backend](amp_storage, &c, &res);
+    if (present == -1) {
+        *success = false;
     }
-    else if (amp_backend == COMP_HASHMAP) {
-        return comp_try_lookup_ctable(c, success);
-    }
-    else if (amp_backend == REAL_TREE) {
-        return comp_try_lookup_rtree(c, success);
+    else if (present == 0) {
+        *success = true;
+        table_entries_local += 1;
+        if (table_entries_local >= table_entries_local_buffer) {
+            __sync_fetch_and_add(&table_entries_est, table_entries_local);
+            table_entries_local = 0;
+        }
     }
     else {
-        printf("lookup: backend not recognized\n");
-        exit(1);
+        *success = true;
     }
+    return res;
 }
 
 complex_t
@@ -665,33 +602,7 @@ comp_value(AMP a)
     if (a == C_MIN_ONE) return comp_minus_one();
 
     // lookup
-    complex_t res;
-    if (amp_backend == REAL_HASHMAP) {
-        AMP idx_r, idx_i;
-        double *r, *i;
-        unpack_indices_rtable(a, &idx_r, &idx_i);
-        r = rmap_get(rtable, idx_r);
-        i = rmap_get(rtable, idx_i);
-        res.r = *r;
-        res.i = *i;
-    }
-    else if (amp_backend == COMP_HASHMAP) {
-        res = *cmap_get(ctable, a);
-    }
-    else if (amp_backend == REAL_TREE) {
-        AMP idx_r, idx_i;
-        fl_t *r, *i;
-        unpack_indices_rtable(a, &idx_r, &idx_i);
-        r = tree_map_get(rtree, idx_r);
-        i = tree_map_get(rtree, idx_i);
-        res.r = *r;
-        res.i = *i;
-    }
-    else {
-        printf("get value: backend not recognized\n");
-        exit(1);
-    }
-    return res;
+    return amp_store_get[amp_backend](amp_storage, a);
 }
 
 /* used for gc of ctable */
@@ -703,33 +614,7 @@ comp_value_old(AMP a)
     if (a == C_ONE)     return comp_one();
     if (a == C_MIN_ONE) return comp_minus_one();
 
-    complex_t res;
-    if (amp_backend == REAL_HASHMAP) {
-        AMP idx_r, idx_i;
-        double *r, *i;
-        unpack_indices_rtable(a, &idx_r, &idx_i);
-        r = rmap_get(rtable_old, idx_r);
-        i = rmap_get(rtable_old, idx_i);
-        res.r = *r;
-        res.i = *i;
-    }
-    else if (amp_backend == COMP_HASHMAP) {
-        res = *cmap_get(ctable_old, a);
-    }
-    else if (amp_backend == REAL_TREE) {
-        AMP idx_r, idx_i;
-        fl_t *r, *i;
-        unpack_indices_rtable(a, &idx_r, &idx_i);
-        r = tree_map_get(rtree_old, idx_r);
-        i = tree_map_get(rtree_old, idx_i);
-        res.r = *r;
-        res.i = *i;
-    }
-    else {
-        printf("get value old: backend not recognized\n");
-        exit(1);
-    }
-    return res;
+    return amp_store_get[amp_backend](amp_storage_old, a);
 }
 
 
@@ -774,7 +659,7 @@ comp_print_digits_sci(complex_t c, uint32_t digits)
 void
 comp_print_bits(AMP a)
 {
-    print_bitvalues(ctable, a);
+    print_bitvalues(amp_storage, a);
 }
 
 
@@ -868,22 +753,10 @@ init_amplitude_table(size_t size, long double tol, amp_storage_backend_t backend
     table_entries_est = 0;
     table_entries_local = 0;
 
-    // TODO: something cleaner than this if structure
-    if (amp_backend == REAL_HASHMAP) {
-        rtable = rmap_create(table_size, tolerance);
-    }
-    else if (amp_backend == COMP_HASHMAP) {
-        ctable = cmap_create(table_size, tolerance);
-    }
-    else if (amp_backend == REAL_TREE) {
-        rtree = tree_map_create(table_size, tolerance);
-        //printf("real tree not integrated into complex value handling yet\n");
-        //exit(1);
-    }
-    else {
-        printf("init amp table: backend not recognized\n");
-        exit(1);
-    }
+    init_amp_storage_functions();
+
+    // create actual table
+    amp_storage = amp_store_create[amp_backend](table_size, tolerance);
     
     // NOTE: the sum of the local counters sometimes exceeds the actual total
     // number of entries (when just counting the global value with atomic adds
@@ -983,10 +856,16 @@ init_phase_gates(int n)
     }
 }
 
+double
+amp_store_get_tolerance()
+{
+    return amp_store_get_tol[amp_backend]();
+}
+
 uint64_t
 count_amplitude_table_enries()
 {
-    return cmap_count_entries(ctable);
+    return amp_store_num_entries[amp_backend](amp_storage);
 }
 
 uint64_t
@@ -1004,42 +883,17 @@ get_table_size()
 void
 free_amplitude_table()
 {
-    if (amp_backend == REAL_HASHMAP) {
-        rmap_free(rtable);
-    }
-    else if (amp_backend == COMP_HASHMAP) {
-        cmap_free(ctable);
-    }
-    else if (amp_backend == REAL_TREE) {
-        tree_map_free(rtree);
-    }
+    amp_store_free[amp_backend](amp_storage);
 }
 
 void
 init_new_empty_table()
 {
     // point old to current (full) ctable
-    if (amp_backend == REAL_HASHMAP) {
-        rtable_old = rtable;
-    }
-    else if (amp_backend == COMP_HASHMAP) {
-        ctable_old = ctable;
-    }
-    else if (amp_backend == REAL_TREE) {
-        rtree_old = rtree;
-    }
+    amp_storage_old = amp_storage;
 
-    // re-init new (empty) ctable
-    double tolerance = 0;
-    if (amp_backend == REAL_HASHMAP) {
-        tolerance = rmap_get_tolerance();
-    }
-    else if (amp_backend == COMP_HASHMAP) {
-        tolerance = cmap_get_tolerance();
-    }
-    else if (amp_backend == REAL_TREE) {
-        tolerance = tree_map_get_tolerance();
-    }
+    // re-init new (empty) amp map
+    double tolerance = amp_store_get_tol[amp_backend]();
     init_amplitude_table(table_size, tolerance, amp_backend);
 }
 
@@ -1047,15 +901,7 @@ void
 delete_old_table()
 {
     // delete  old (full) table
-    if (amp_backend == REAL_HASHMAP) {
-        rmap_free(rtable_old);
-    }
-    else if (amp_backend == COMP_HASHMAP) {
-        cmap_free(ctable_old);
-    }
-    else if (amp_backend == REAL_TREE) {
-        tree_map_free(rtree_old);
-    }
+    amp_store_free[amp_backend](amp_storage_old);
 }
 
 AMP

@@ -6,13 +6,14 @@
 #include "sylvan_qdd_complex.h"
 #include "sylvan_qdd_complex_mpreal.h"
 #include "sylvan_qdd_algebraic.h"
+#include "amp_storage/mpfr_tree_map.h"
 
 
 bool VERBOSE = true;
 
 int test_cmap()
 {
-    cmap_t *ctable = cmap_create(1<<10, 1e-14);
+    void *ctable = cmap_create(1<<10, 1e-14);
 
     ref_t index1, index2;
     complex_t val1, val2, val3;
@@ -37,7 +38,7 @@ int test_cmap()
     found = cmap_find_or_put(ctable, &val1, &index1); test_assert(found == 0);
     found = cmap_find_or_put(ctable, &val2, &index2); test_assert(found == 1);
     test_assert(index1 == index2);
-    val3 = *cmap_get(ctable, index1);
+    val3 = cmap_get(ctable, index1);
     test_assert(flt_abs(val3.r - val1.r) < cmap_get_tolerance());
     test_assert(flt_abs(val3.i - val1.i) < cmap_get_tolerance());
 
@@ -46,7 +47,7 @@ int test_cmap()
     found = cmap_find_or_put(ctable, &val1, &index1); test_assert(found == 0);
     found = cmap_find_or_put(ctable, &val2, &index2); test_assert(found == 1);
     test_assert(index1 == index2);
-    val3 = *cmap_get(ctable, index1);
+    val3 = cmap_get(ctable, index1);
     test_assert(val3.r == val1.r && val3.i == val1.i);
 
     val1 = comp_make(0.0005000000000012, 0.0);
@@ -54,7 +55,7 @@ int test_cmap()
     found = cmap_find_or_put(ctable, &val1, &index1); test_assert(found == 0);
     found = cmap_find_or_put(ctable, &val2, &index2); test_assert(found == 1);
     test_assert(index1 == index2);
-    val3 = *cmap_get(ctable, index1);
+    val3 = cmap_get(ctable, index1);
     test_assert(val3.r == val1.r && val3.i == val1.i);
     
     cmap_free(ctable);
@@ -64,10 +65,10 @@ int test_cmap()
 
 int test_rmap()
 {
-    rmap_t *rtable = rmap_create(1<<10, 1e-14);
+    void *rtable = rmap_create(1<<10, 1e-14);
 
     ref_t index1, index2;
-    double val1, val2, val3;
+    fl_t val1, val2, val3;
     int found;
 
     val1 = 3.5;
@@ -116,9 +117,9 @@ int test_rmap()
 
 int test_tree_map()
 {
-    tree_map_t *tree_map = tree_map_create(1<<10, 1e-14);
+    void *tree_map = tree_map_create(1<<10, 1e-14);
 
-    unsigned int index1, index2;
+    unsigned long index1, index2;
     fl_t val1, val2, val3;
     int found;
 
@@ -2172,10 +2173,7 @@ int runtests()
     if (test_mpfr_tree_map_scope()) return 1;
     if (test_algebraic()) return 1;
     if (test_with_cmap()) return 1;
-    #if !flt_quad
-    // rmap currently only works with doubles (flt_quad = 0)
     if (test_with_rmap()) return 1;
-    #endif
     if (test_with_tree_map()) return 1;
     return 0;
 }

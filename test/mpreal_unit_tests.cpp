@@ -2,7 +2,7 @@
 #include <time.h>
 #include <stdbool.h>
 
-#include "util/mpreal_tree_map.h"
+#include "amp_storage/mpreal_tree_map.h"
 #include "sylvan_qdd_complex_include.h"
 #include "test_assert.h"
 

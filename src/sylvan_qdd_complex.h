@@ -10,20 +10,13 @@
 #include <math.h>
 #include <stdint.h>
 
-#include "util/cmap.h"
-#include "util/rmap.h"
-#include "util/tree_map.h"
-#include "util/mpfr_tree_map.h"
+#include "amp_storage/amp_storage_interface.h"
 
-typedef enum amp_storage_backend {
-    COMP_HASHMAP, 
-    REAL_HASHMAP, 
-    REAL_TREE
-} amp_storage_backend_t;
 
 typedef uint64_t AMP;
 
-static const bool CACHE_INV_OPS = true; // e.g. put mul(b,c)=a when div(a,b)=c
+extern const bool CACHE_AMP_OPS;
+extern const bool CACHE_INV_OPS;
 
 AMP C_ZERO;
 AMP C_ONE;
@@ -31,17 +24,16 @@ AMP C_MIN_ONE;
 
 // GATE_ID's (gates are initialized in qdd_complex_init)
 // currently 24 bits available for this number (see GATE_OPID)
-static const uint32_t GATEID_I = 0;
-static const uint32_t GATEID_X = 1;
-static const uint32_t GATEID_Y = 2;
-static const uint32_t GATEID_Z = 3;
-static const uint32_t GATEID_H = 4;
-static const uint32_t GATEID_S = 5;
-static const uint32_t GATEID_Sdag = 6;
-static const uint32_t GATEID_T = 7;
-static const uint32_t GATEID_Tdag = 8;
-static const uint32_t GATEID_sqrtX = 9;
-static const uint32_t GATEID_sqrtY = 10;
+extern const uint32_t GATEID_I;
+extern const uint32_t GATEID_X;
+extern const uint32_t GATEID_Y;
+extern const uint32_t GATEID_Z;
+extern const uint32_t GATEID_H;
+extern const uint32_t GATEID_S;
+extern const uint32_t GATEID_T;
+extern const uint32_t GATEID_Tdag;
+extern const uint32_t GATEID_sqrtX;
+extern const uint32_t GATEID_sqrtY;
 void init_gates();
 // The next 255 gates are reserved for parameterized phase gates, which are
 // initialized below. (these are GATEIDs 10 265)
@@ -104,6 +96,7 @@ AMP amp_neg(AMP a);
 AMP amp_add(AMP a, AMP b);
 AMP amp_sub(AMP a, AMP b);
 AMP amp_mul(AMP a, AMP b);
+AMP amp_mul_down(AMP a, AMP b); // same as mul but uses different stats counter for propagating edge weights down
 AMP amp_div(AMP a, AMP b);
 double amp_to_prob(AMP a);
 AMP prob_to_amp(double a); // AMP of (sqrt(a), 0)
@@ -146,6 +139,7 @@ void comp_print_bits(AMP a);
 
 /* Managing the complex value table */
 void init_amplitude_table(size_t size, long double tolerance, amp_storage_backend_t backend);
+double amp_store_get_tolerance();
 uint64_t count_amplitude_table_enries();
 uint64_t get_table_entries_estimate();
 uint64_t get_table_size();

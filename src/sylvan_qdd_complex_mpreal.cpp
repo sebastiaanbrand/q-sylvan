@@ -1,5 +1,5 @@
 #include "sylvan_qdd_complex_mpreal.h"
-#include "util/mpreal_tree_map.h"
+#include "amp_storage/mpreal_tree_map.h"
 
 #include "sylvan_int.h"
 using namespace sylvan; // sylvan's internals are inside namespace in C++
@@ -13,7 +13,6 @@ size_t table_size;
 mpreal_tree_map_t *mpreal_cmap;
 mpreal_tree_map_t *mpreal_cmap_old;
 
-static bool CACHE_AMP_OPS = true;
 
 static mpfr::mpreal Pi;
 
@@ -544,6 +543,12 @@ init_mpreal_phase_gates(int n)
         gates[gate_id][0] = C_ONE;  gates[gate_id][1] = C_ZERO;
         gates[gate_id][2] = C_ZERO; gates[gate_id][3] = mpreal_comp_lookup(cartesian);
     }
+}
+
+double
+mpreal_amp_store_get_tolerance()
+{
+    return mpreal_tree_map_get_tolerance();
 }
 
 void

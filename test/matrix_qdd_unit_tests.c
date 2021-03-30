@@ -748,10 +748,7 @@ int test_with_tree_map()
 int main()
 {
     if (test_with_cmap()) return 1;
-    #if !flt_quad
-    // rmap currently only works with doubles (flt_quad = 0)
     if (test_with_rmap()) return 1;
-    #endif
     if (test_with_tree_map()) return 1;
     return 0;
 }

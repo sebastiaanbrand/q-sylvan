@@ -8,10 +8,10 @@
 #include <time.h>
 #include <math.h>
 
-#include "util/atomics.h"
-#include "util/cmap.h"
-#include "util/fast_hash.h"
-#include "util/util.h"
+#include "amp_storage/atomics.h"
+#include "amp_storage/cmap.h"
+#include "amp_storage/fast_hash.h"
+#include "amp_storage/util.h"
 
 #undef CACHE_LINE
 #undef CACHE_LINE_SIZE
@@ -33,6 +33,10 @@ static const uint64_t EMPTY = 14738995463583502973ull;
 static const uint64_t LOCK  = 14738995463583502974ull;
 static const uint64_t CL_MASK = -(1ULL << CACHE_LINE);
 
+/**
+\typedef Lockless hastable database.
+*/
+typedef struct cmap_s cmap_t;
 struct cmap_s {
     size_t              size;
     size_t              mask;
@@ -59,7 +63,7 @@ print_bucket_bits(bucket_t* b)
     printf("\n");
 }
 
-long double
+double
 cmap_get_tolerance()
 {
     return TOLERANCE;
@@ -73,8 +77,9 @@ complex_close(complex_t *in_table, const complex_t* to_insert)
 }
 
 int
-cmap_find_or_put (const cmap_t *cmap, const complex_t *v, ref_t *ret)
+cmap_find_or_put(const void *dbs, const complex_t *v, ref_t *ret)
 {
+    cmap_t *cmap = (cmap_t *) dbs;
     bucket_t *val  = (bucket_t *) v;
 
     // Round the value to compute the hash with, but store the actual value v
@@ -136,15 +141,17 @@ cmap_find_or_put (const cmap_t *cmap, const complex_t *v, ref_t *ret)
     return -1;
 }
 
-complex_t *
-cmap_get (const cmap_t *cmap, const ref_t ref)
+complex_t
+cmap_get(const void *dbs, const ref_t ref)
 {
-    return &cmap->table[ref].c;
+    cmap_t *cmap = (cmap_t *) dbs;
+    return cmap->table[ref].c;
 }
 
 uint64_t
-cmap_count_entries (const cmap_t *cmap)
+cmap_count_entries(const void *dbs)
 {
+    cmap_t *cmap = (cmap_t *) dbs;
     uint64_t entries = 0;
     for (unsigned int c = 0; c < cmap->size; c++) {
         if (cmap->table[c].d[0] != EMPTY)
@@ -154,17 +161,19 @@ cmap_count_entries (const cmap_t *cmap)
 }
 
 void
-print_bitvalues(const cmap_t *cmap, const ref_t ref)
+print_bitvalues(const void *dbs, const ref_t ref)
 {
-    bucket_t *b = (bucket_t *) cmap_get(cmap, ref);
+    cmap_t *cmap = (cmap_t *) dbs;
+    complex_t c = cmap_get(cmap, ref);
+    bucket_t *b = (bucket_t *) &c;
     printf("%016lx", b->d[0]);
     for (unsigned int k = 1; k < entry_size; k++) {
         printf(" %016lx", b->d[k]);
     }
 }
 
-cmap_t *
-cmap_create (uint64_t size, double tolerance)
+void *
+cmap_create(uint64_t size, double tolerance)
 {
     TOLERANCE = tolerance;
     cmap_t  *cmap = calloc (1, sizeof(cmap_t));
@@ -177,12 +186,13 @@ cmap_create (uint64_t size, double tolerance)
     cmap->threshold = cmap->size / 100;
     cmap->threshold = min(cmap->threshold, 1ULL << 16);
     cmap->seen_0 = 0;
-    return cmap;
+    return (void *) cmap;
 }
 
 void
-cmap_free (cmap_t *cmap)
+cmap_free(void *dbs)
 {
+    cmap_t * cmap = (cmap_t *) dbs;
     free (cmap->table);
     free (cmap);
 }
