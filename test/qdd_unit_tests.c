@@ -2105,7 +2105,7 @@ int test_with_cmap()
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<11, -1, COMP_HASHMAP);
+    sylvan_init_qdd(1LL<<11, -1, COMP_HASHMAP, NORM_LOW);
     qdd_set_testing_mode(true); // turn on internal sanity tests
 
     printf("using cmap:\n");
@@ -2128,7 +2128,7 @@ int test_with_rmap()
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<11, -1, REAL_HASHMAP);
+    sylvan_init_qdd(1LL<<11, -1, REAL_HASHMAP, NORM_LOW);
     qdd_set_testing_mode(true); // turn on internal sanity tests
 
     printf("using rmap:\n");
@@ -2151,7 +2151,7 @@ int test_with_tree_map()
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<11, -1, REAL_TREE);
+    sylvan_init_qdd(1LL<<11, -1, REAL_TREE, NORM_LOW);
     qdd_set_testing_mode(true); // turn on internal sanity tests
 
     printf("using real tree:\n");
@@ -2165,6 +2165,7 @@ int test_with_tree_map()
 
 int runtests()
 {
+    // TODO: run tests with different normalization strategies
     if (test_cmap()) return 1;
     if (test_rmap()) return 1;
     if (test_tree_map()) return 1;

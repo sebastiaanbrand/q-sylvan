@@ -1620,7 +1620,7 @@ int runtests()
     lace_startup(0, NULL, NULL);
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<11, -1, COMP_HASHMAP);
+    sylvan_init_qdd_defaults(1LL<<11);
     qdd_set_testing_mode(true);
 
     if (test_mpreal_tree_map()) return 1;

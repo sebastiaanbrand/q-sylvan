@@ -684,7 +684,7 @@ int test_with_cmap()
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<11, -1, COMP_HASHMAP);
+    sylvan_init_qdd(1LL<<11, -1, COMP_HASHMAP, NORM_LOW);
     qdd_set_testing_mode(true); // turn on internal sanity tests
     qdd_set_auto_gc_amp_table(false); // no auto gc of ctable yet for mult operations
 
@@ -708,7 +708,7 @@ int test_with_rmap()
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<11, -1, REAL_HASHMAP);
+    sylvan_init_qdd(1LL<<11, -1, REAL_HASHMAP, NORM_LOW);
     qdd_set_testing_mode(true); // turn on internal sanity tests
     qdd_set_auto_gc_amp_table(false); // no auto gc of ctable yet for mult operations
 
@@ -732,7 +732,7 @@ int test_with_tree_map()
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<11, -1, REAL_TREE);
+    sylvan_init_qdd(1LL<<11, -1, REAL_TREE, NORM_LOW);
     qdd_set_testing_mode(true); // turn on internal sanity tests
     qdd_set_auto_gc_amp_table(false); // no auto gc of ctable yet for mult operations
 
@@ -747,6 +747,7 @@ int test_with_tree_map()
 
 int main()
 {
+    // TODO: run tests with different normalization strategies
     if (test_with_cmap()) return 1;
     if (test_with_rmap()) return 1;
     if (test_with_tree_map()) return 1;

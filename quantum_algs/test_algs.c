@@ -444,7 +444,7 @@ int main()
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<16, TOLERANCE, COMP_HASHMAP);
+    sylvan_init_qdd(1LL<<16, TOLERANCE, COMP_HASHMAP, NORM_LARGEST);
     qdd_set_testing_mode(true); // turn on internal sanity tests
 
     int res = runtests();

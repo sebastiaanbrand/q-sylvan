@@ -29,6 +29,8 @@ static int granularity = 1; // operation cache access granularity
 static bool testing_mode = 0; // turns on/off (expensive) sanity checks
 static bool larger_amp_indices = false; // using [amps,ptr] [33,30] bits (default [23,40])
 
+static AMP (*normalize_weights)(AMP *, AMP *);
+
 /****************< (bit level) manipulation of QDD / qddnode_t >***************/
 /**
  * QDD edge structure (64 bits)
@@ -449,7 +451,7 @@ qdd_quit()
 }
 
 void
-sylvan_init_qdd(size_t ctable_size, double ctable_tolerance, int amps_backend)
+sylvan_init_qdd(size_t ctable_size, double ctable_tolerance, int amps_backend, int norm_strat)
 {
     if (qdd_initialized) return;
     qdd_initialized = 1;
@@ -475,8 +477,28 @@ sylvan_init_qdd(size_t ctable_size, double ctable_tolerance, int amps_backend)
 
     init_amplitude_table(ctable_size, ctable_tolerance, amps_backend);
 
+    switch (norm_strat)
+    {
+    case NORM_LARGEST:
+        normalize_weights = amp_normalize_largest_ptr;
+        break;
+    case NORM_LOW:
+        normalize_weights = amp_normalize_low_ptr;
+        break;
+    default:
+        printf("Edge weight normalization strategy not recognized\n");
+        exit(1);
+        break;
+    }
+
     LACE_ME;
     CALL(qdd_refs_init);
+}
+
+void
+sylvan_init_qdd_defaults(size_t ctable_size)
+{
+    sylvan_init_qdd(ctable_size, -1, COMP_HASHMAP, NORM_LOW);
 }
 
 void
@@ -676,7 +698,7 @@ qdd_makenode(BDDVAR var, QDD low, QDD high)
     if (low == high) return low;
     else {
         // If the edges are not the same
-        AMP norm = amp_default_normalize(&low_amp, &high_amp);
+        AMP norm = (*normalize_weights)(&low_amp, &high_amp);
         PTR res  = _qdd_makenode(var, low_ptr, high_ptr, low_amp, high_amp);
         return qdd_bundle_ptr_amp(res, norm);
     }

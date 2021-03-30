@@ -111,6 +111,11 @@ typedef struct __attribute__((packed)) qddnode {
 static const PTR        QDD_TERMINAL = 1;
 static const BDDVAR     QDD_INVALID_VAR = UINT8_MAX;
 
+typedef enum weight_norm_strategy {
+    NORM_LOW,
+    NORM_LARGEST
+} weight_norm_strategy_t;
+
 /**
  * Similar initialization as for MTBDDs + amplitude table init.
  * Setting tolerance to -1 uses default tolerance.
@@ -119,7 +124,8 @@ static const BDDVAR     QDD_INVALID_VAR = UINT8_MAX;
  * sizes (edge weight table + node table) works in combination with using 
  * a real-table or complex-table.
  */
-void sylvan_init_qdd(size_t ctable_size, double ctable_tolerance, int amps_backend);
+void sylvan_init_qdd(size_t ctable_size, double ctable_tolerance, int amps_backend, int norm_strat);
+void sylvan_init_qdd_defaults(size_t ctable_size);
 void qdd_set_testing_mode(bool on);
 void qdd_set_caching_granularity(int granularity);
 
