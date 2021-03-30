@@ -21,7 +21,8 @@
     #define amp_epsilon_close(a,b,eps) mpreal_amp_epsilon_close(a,b,eps)
     #define amp_normalize_low(a,b) mpreal_amp_normalize_low(a,b)
     #define amp_normalize_largest(a,b) mpreal_amp_normalize_largest(a,b)
-    #define amp_default_normalize(a,b) mpreal_amp_normalize_low(a,b) // default normalize is low
+    #define amp_normalize_low_ptr &mpreal_amp_normalize_low
+    #define amp_normalize_largest_ptr &mpreal_amp_normalize_largest
     #define init_amplitude_table(size,tol,backend) init_mpreal_amplitude_table(size,tol)
     #define free_amplitude_table() free_mpreal_amplitude_table()
     #define amp_store_get_tolerance() mpreal_amp_store_get_tolerance()
@@ -49,7 +50,8 @@
     #define amp_epsilon_close(a,b,eps) amp_epsilon_close(a,b,eps)
     #define amp_normalize_low(a,b) amp_normalize_low(a,b)
     #define amp_normalize_largest(a,b) amp_normalize_largest(a,b)
-    #define amp_default_normalize(a,b) amp_normalize_largest(a,b) // default normalize is largest
+    #define amp_normalize_low_ptr &amp_normalize_low
+    #define amp_normalize_largest_ptr &amp_normalize_largest
     #define init_amplitude_table(size,tol,backend) init_amplitude_table(size,tol,backend)
     #define free_amplitude_table() free_amplitude_table()
     #define amp_store_get_tolerance() amp_store_get_tolerance()

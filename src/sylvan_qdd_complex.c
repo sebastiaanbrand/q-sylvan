@@ -43,6 +43,7 @@ void *amp_storage_old;
 const bool CACHE_AMP_OPS = true;
 const bool CACHE_INV_OPS = true;
 
+// TODO: enum?
 const uint32_t GATEID_I = 0;
 const uint32_t GATEID_X = 1;
 const uint32_t GATEID_Y = 2;
@@ -53,7 +54,9 @@ const uint32_t GATEID_Sdag = 6;
 const uint32_t GATEID_T = 7;
 const uint32_t GATEID_Tdag = 8;
 const uint32_t GATEID_sqrtX = 9;
-const uint32_t GATEID_sqrtY = 10;
+const uint32_t GATEID_sqrtXdag = 10;
+const uint32_t GATEID_sqrtY = 11;
+const uint32_t GATEID_sqrtYdag = 12;
 
 
 /* Shorthand functions for making complex numbers */
@@ -823,9 +826,17 @@ init_gates()
     gates[k][0] = comp_lookup(comp_make(0.5, 0.5)); gates[k][1] = comp_lookup(comp_make(0.5,-0.5));
     gates[k][2] = comp_lookup(comp_make(0.5,-0.5)); gates[k][3] = comp_lookup(comp_make(0.5, 0.5));
 
+    k = GATEID_sqrtXdag;
+    gates[k][0] = comp_lookup(comp_make(0.5,-0.5)); gates[k][1] = comp_lookup(comp_make(0.5, 0.5));
+    gates[k][2] = comp_lookup(comp_make(0.5, 0.5)); gates[k][3] = comp_lookup(comp_make(0.5,-0.5));
+
     k = GATEID_sqrtY;
     gates[k][0] = comp_lookup(comp_make(0.5, 0.5)); gates[k][1] = comp_lookup(comp_make(-0.5,-0.5));
     gates[k][2] = comp_lookup(comp_make(0.5, 0.5)); gates[k][3] = comp_lookup(comp_make(0.5, 0.5));
+
+    k = GATEID_sqrtYdag;
+    gates[k][0] = comp_lookup(comp_make(0.5,-0.5)); gates[k][1] = comp_lookup(comp_make(0.5,-0.5));
+    gates[k][2] = comp_lookup(comp_make(-0.5,0.5)); gates[k][3] = comp_lookup(comp_make(0.5,-0.5));
 
     init_phase_gates(255);
 

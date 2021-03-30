@@ -13,7 +13,7 @@ bool VERBOSE = true;
 int test_x_gate()
 {
     BDDVAR nqubits;
-    QDD v0, v1, v2, v3, v4, v5, mI, mX, mX1, mX0, mXXI, mTemp;
+    QDD v0, v1, v2, v3, v4, v5, mI, mX, mSqrtX, mSqrtXdag, mX1, mX0, mXXI, mTemp;
     bool x[] = {0};
     bool x3[] = {0, 0, 0};
 
@@ -26,6 +26,8 @@ int test_x_gate()
     x[0] = 0; v2 = qdd_create_basis_state(nqubits, x);
     mI = qdd_create_all_identity_matrix(nqubits);
     mX = qdd_create_single_qubit_gate(nqubits, 0, GATEID_X);
+    mSqrtX = qdd_create_single_qubit_gate(nqubits, 0, GATEID_sqrtX);
+    mSqrtXdag = qdd_create_single_qubit_gate(nqubits, 0, GATEID_sqrtXdag);
 
     // matrix-vector mult
     v0 = qdd_matvec_mult(mX, v0, nqubits); test_assert(v0 == v1);
@@ -35,6 +37,10 @@ int test_x_gate()
     mTemp = qdd_matmat_mult(mI, mX, nqubits); test_assert(mTemp == mX);
     mTemp = qdd_matmat_mult(mX, mI, nqubits); test_assert(mTemp == mX);
     mTemp = qdd_matmat_mult(mX, mX, nqubits); test_assert(mTemp == mI);
+    mTemp = qdd_matmat_mult(mSqrtX,    mSqrtX,    nqubits); test_assert(mTemp == mX);
+    mTemp = qdd_matmat_mult(mSqrtXdag, mSqrtXdag, nqubits); test_assert(mTemp == mX);
+    mTemp = qdd_matmat_mult(mSqrtX,    mSqrtXdag, nqubits); test_assert(mTemp == mI);
+    mTemp = qdd_matmat_mult(mSqrtXdag, mSqrtX,    nqubits); test_assert(mTemp == mI);
 
 
     // 3 qubit test
@@ -103,10 +109,10 @@ int test_h_gate()
     v0 = qdd_matvec_mult(mH, v0, nqubits);
     v1 = qdd_matvec_mult(mH, v1, nqubits);
 
-    x[0] = 1; a = qdd_get_amplitude(v0, x); test_assert(a == comp_lookup(comp_make(1.0/sqrt(2.0),0)));
-    x[0] = 0; a = qdd_get_amplitude(v0, x); test_assert(a == comp_lookup(comp_make(1.0/sqrt(2.0),0)));
-    x[0] = 0; a = qdd_get_amplitude(v1, x); test_assert(a == comp_lookup(comp_make(1.0/sqrt(2.0),0)));
-    x[0] = 1; a = qdd_get_amplitude(v1, x); test_assert(a == comp_lookup(comp_make(-1.0/sqrt(2.0),0)));
+    x[0] = 1; a = qdd_get_amplitude(v0, x); test_assert(a == comp_lookup(comp_make(1.0/flt_sqrt(2.0),0)));
+    x[0] = 0; a = qdd_get_amplitude(v0, x); test_assert(a == comp_lookup(comp_make(1.0/flt_sqrt(2.0),0)));
+    x[0] = 0; a = qdd_get_amplitude(v1, x); test_assert(a == comp_lookup(comp_make(1.0/flt_sqrt(2.0),0)));
+    x[0] = 1; a = qdd_get_amplitude(v1, x); test_assert(a == comp_lookup(comp_make(-1.0/flt_sqrt(2.0),0)));
 
     // matrix-matrix mult
     mTemp = qdd_matmat_mult(mI, mH, nqubits); test_assert(mTemp == mH);
@@ -146,23 +152,23 @@ int test_h_gate()
     v6 = qdd_matvec_mult(mHH, v6, nqubits); // v6 = |-+>
 
     // v2 = |0+>
-    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(v2, x2); test_assert(a == comp_lookup(comp_make(1.0/sqrt(2.0),0)));
-    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(v2, x2); test_assert(a == comp_lookup(comp_make(1.0/sqrt(2.0),0)));
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(v2, x2); test_assert(a == comp_lookup(comp_make(1.0/flt_sqrt(2.0),0)));
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(v2, x2); test_assert(a == comp_lookup(comp_make(1.0/flt_sqrt(2.0),0)));
     x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(v2, x2); test_assert(a == C_ZERO);
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(v2, x2); test_assert(a == C_ZERO);
     test_assert(qdd_countnodes(v2) == 2);
 
     // v3 = |0->
-    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(v3, x2); test_assert(a == comp_lookup(comp_make(1.0/sqrt(2.0),0)));
-    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(v3, x2); test_assert(a == comp_lookup(comp_make(-1.0/sqrt(2.0),0)));
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(v3, x2); test_assert(a == comp_lookup(comp_make(1.0/flt_sqrt(2.0),0)));
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(v3, x2); test_assert(a == comp_lookup(comp_make(-1.0/flt_sqrt(2.0),0)));
     x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(v3, x2); test_assert(a == C_ZERO);
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(v3, x2); test_assert(a == C_ZERO);
     test_assert(qdd_countnodes(v3) == 3);
 
     // v4 = |+0>
-    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(v4, x2); test_assert(a == comp_lookup(comp_make(1.0/sqrt(2.0),0)));
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(v4, x2); test_assert(a == comp_lookup(comp_make(1.0/flt_sqrt(2.0),0)));
     x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(v4, x2); test_assert(a == C_ZERO);
-    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(v4, x2); test_assert(a == comp_lookup(comp_make(1.0/sqrt(2.0),0)));
+    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(v4, x2); test_assert(a == comp_lookup(comp_make(1.0/flt_sqrt(2.0),0)));
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(v4, x2); test_assert(a == C_ZERO);
     test_assert(qdd_countnodes(v4) == 2);
 
@@ -206,7 +212,7 @@ int test_phase_gates()
 {
     BDDVAR nqubits;
     QDD v0, vZ, vS, vSS, vT, vTT, vTTTT, vTTdag, vTdagT;
-    QDD mI, mH0, mH1, mZ0, mZ1, mS0, mT0, mT1, mTdag0, mTdag1, mTemp;
+    QDD mI, mH0, mH1, mZ0, mZ1, mS0, mSdag0, mT0, mT1, mTdag0, mTdag1, mTemp;
     bool x2[] = {0, 0};
     AMP a;
 
@@ -221,6 +227,7 @@ int test_phase_gates()
     mZ0    = qdd_create_single_qubit_gate(nqubits, 0, GATEID_Z);
     mZ1    = qdd_create_single_qubit_gate(nqubits, 1, GATEID_Z);
     mS0    = qdd_create_single_qubit_gate(nqubits, 0, GATEID_S);
+    mSdag0 = qdd_create_single_qubit_gate(nqubits, 0, GATEID_Sdag);
     mT0    = qdd_create_single_qubit_gate(nqubits, 0, GATEID_T);
     mT1    = qdd_create_single_qubit_gate(nqubits, 1, GATEID_T);
     mTdag0 = qdd_create_single_qubit_gate(nqubits, 0, GATEID_Tdag);
@@ -256,9 +263,13 @@ int test_phase_gates()
     mTemp = qdd_matmat_mult(mI,     mT0,    nqubits); test_assert(mTemp == mT0);
     mTemp = qdd_matmat_mult(mT0,    mI,     nqubits); test_assert(mTemp == mT0);
     mTemp = qdd_matmat_mult(mS0,    mS0,    nqubits); test_assert(mTemp == mZ0);
+    mTemp = qdd_matmat_mult(mS0,    mSdag0, nqubits); test_assert(mTemp == mI);
+    mTemp = qdd_matmat_mult(mSdag0, mS0,    nqubits); test_assert(mTemp == mI);
+    mTemp = qdd_matmat_mult(mSdag0, mSdag0, nqubits); test_assert(mTemp == mZ0);
     mTemp = qdd_matmat_mult(mT0,    mT0,    nqubits); test_assert(mTemp == mS0);
     mTemp = qdd_matmat_mult(mT1,    mTdag1, nqubits); test_assert(mTemp == mI);
     mTemp = qdd_matmat_mult(mTdag1, mT1,    nqubits); test_assert(mTemp == mI);
+    mTemp = qdd_matmat_mult(mTdag0, mTdag0, nqubits); test_assert(mTemp == mSdag0);
 
     // T^7 == Tdag
     mTemp = qdd_create_all_identity_matrix(nqubits);
@@ -369,17 +380,17 @@ int test_cx_gate()
 
     // matrix-vector mult
     v0 = qdd_matvec_mult(mH0, v0, nqubits);
-    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(v0, x2); test_assert(a == comp_lookup(comp_make(1.0/sqrt(2.0),0)));
-    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(v0, x2); test_assert(a == comp_lookup(comp_make(1.0/sqrt(2.0),0)));
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(v0, x2); test_assert(a == comp_lookup(comp_make(1.0/flt_sqrt(2.0),0)));
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(v0, x2); test_assert(a == comp_lookup(comp_make(1.0/flt_sqrt(2.0),0)));
     x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(v0, x2); test_assert(a == C_ZERO);
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(v0, x2); test_assert(a == C_ZERO);
     test_assert(qdd_countnodes(v0) == 2);
 
     v0 = qdd_matvec_mult(mCNOT, v0, nqubits);
-    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(v0, x2); test_assert(a == comp_lookup(comp_make(1.0/sqrt(2.0),0)));
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(v0, x2); test_assert(a == comp_lookup(comp_make(1.0/flt_sqrt(2.0),0)));
     x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(v0, x2); test_assert(a == C_ZERO);
     x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(v0, x2); test_assert(a == C_ZERO);
-    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(v0, x2); test_assert(a == comp_lookup(comp_make(1.0/sqrt(2.0),0)));
+    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(v0, x2); test_assert(a == comp_lookup(comp_make(1.0/flt_sqrt(2.0),0)));
     test_assert(qdd_countnodes(v0) == 4);
 
     // same as above but multiplies H CNOT first before applying to the state
@@ -387,10 +398,10 @@ int test_cx_gate()
     mTemp = qdd_matmat_mult(mCNOT, mH0, nqubits);
     v0 = qdd_create_all_zero_state(nqubits);
     v0 = qdd_matvec_mult(mTemp, v0, nqubits);
-    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(v0, x2); test_assert(a == comp_lookup(comp_make(1.0/sqrt(2.0),0)));
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(v0, x2); test_assert(a == comp_lookup(comp_make(1.0/flt_sqrt(2.0),0)));
     x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(v0, x2); test_assert(a == C_ZERO);
     x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(v0, x2); test_assert(a == C_ZERO);
-    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(v0, x2); test_assert(a == comp_lookup(comp_make(1.0/sqrt(2.0),0)));
+    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(v0, x2); test_assert(a == comp_lookup(comp_make(1.0/flt_sqrt(2.0),0)));
     test_assert(qdd_countnodes(v0) == 4);
 
     // If we did H0 CNOT |00> instead then the CNOT would not have an effect, 
@@ -400,8 +411,8 @@ int test_cx_gate()
     mTemp = qdd_matmat_mult(mH0, mCNOT, nqubits);
     v0 = qdd_create_all_zero_state(nqubits);
     v0 = qdd_matvec_mult(mTemp, v0, nqubits);
-    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(v0, x2); test_assert(a == comp_lookup(comp_make(1.0/sqrt(2.0),0)));
-    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(v0, x2); test_assert(a == comp_lookup(comp_make(1.0/sqrt(2.0),0)));
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(v0, x2); test_assert(a == comp_lookup(comp_make(1.0/flt_sqrt(2.0),0)));
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(v0, x2); test_assert(a == comp_lookup(comp_make(1.0/flt_sqrt(2.0),0)));
     x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(v0, x2); test_assert(a == C_ZERO);
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(v0, x2); test_assert(a == C_ZERO);
     test_assert(qdd_countnodes(v0) == 2);
@@ -673,7 +684,7 @@ int runtests()
     return 0;
 }
 
-int test_with_cmap()
+int test_with(int amps_backend, int norm_strat) 
 {
     // Standard Lace initialization
     int workers = 1;
@@ -684,59 +695,11 @@ int test_with_cmap()
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<11, -1, COMP_HASHMAP);
+    sylvan_init_qdd(1LL<<11, -1, amps_backend, norm_strat);
     qdd_set_testing_mode(true); // turn on internal sanity tests
     qdd_set_auto_gc_amp_table(false); // no auto gc of ctable yet for mult operations
 
-    printf("using cmap:\n");
-    int res = runtests();
-
-    sylvan_quit();
-    lace_exit();
-
-    return res;
-}
-
-int test_with_rmap()
-{
-    // Standard Lace initialization
-    int workers = 1;
-    lace_init(workers, 0);
-    printf("%d worker(s), ", workers);
-    lace_startup(0, NULL, NULL);
-
-    // Simple Sylvan initialization
-    sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
-    sylvan_init_package();
-    sylvan_init_qdd(1LL<<11, -1, REAL_HASHMAP);
-    qdd_set_testing_mode(true); // turn on internal sanity tests
-    qdd_set_auto_gc_amp_table(false); // no auto gc of ctable yet for mult operations
-
-    printf("using rmap:\n");
-    int res = runtests();
-
-    sylvan_quit();
-    lace_exit();
-
-    return res;
-}
-
-int test_with_tree_map()
-{
-    // Standard Lace initialization
-    int workers = 1;
-    lace_init(workers, 0);
-    printf("%d worker(s), ", workers);
-    lace_startup(0, NULL, NULL);
-
-    // Simple Sylvan initialization
-    sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
-    sylvan_init_package();
-    sylvan_init_qdd(1LL<<11, -1, REAL_TREE);
-    qdd_set_testing_mode(true); // turn on internal sanity tests
-    qdd_set_auto_gc_amp_table(false); // no auto gc of ctable yet for mult operations
-
-    printf("using tree map:\n");
+    printf("amps backend = %d, norm strategy = %d:\n", amps_backend, norm_strat);
     int res = runtests();
 
     sylvan_quit();
@@ -747,8 +710,11 @@ int test_with_tree_map()
 
 int main()
 {
-    if (test_with_cmap()) return 1;
-    if (test_with_rmap()) return 1;
-    if (test_with_tree_map()) return 1;
+    // TODO: run tests with different normalization strategies
+    for (int backend = 0; backend < n_backends; backend++) {
+        for (int norm_strat = 0; norm_strat < n_norm_stragegies; norm_strat++) {
+            if (test_with(backend, norm_strat)) return 1;
+        }
+    }
     return 0;
 }

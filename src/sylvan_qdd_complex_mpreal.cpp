@@ -499,6 +499,10 @@ init_mpreal_gates()
     gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
     gates[k][2] = C_ZERO; gates[k][3] = mpreal_comp_lookup(mpreal_comp_make(0.0, 1.0));
 
+    k = GATEID_Sdag;
+    gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
+    gates[k][2] = C_ZERO; gates[k][3] = mpreal_comp_lookup(mpreal_comp_make(0.0, -1.0));
+
     k = GATEID_T;
     gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
     gates[k][2] = C_ZERO; gates[k][3] = mpreal_comp_lookup(mpreal_comp_make(1.0/mpfr::sqrt(2), 1.0/mpfr::sqrt(2.0)));
@@ -511,9 +515,17 @@ init_mpreal_gates()
     gates[k][0] = mpreal_comp_lookup(mpreal_comp_make(0.5, 0.5)); gates[k][1] = mpreal_comp_lookup(mpreal_comp_make(0.5,-0.5));
     gates[k][2] = mpreal_comp_lookup(mpreal_comp_make(0.5,-0.5)); gates[k][3] = mpreal_comp_lookup(mpreal_comp_make(0.5, 0.5));
 
+    k = GATEID_sqrtXdag;
+    gates[k][0] = mpreal_comp_lookup(mpreal_comp_make(0.5,-0.5)); gates[k][1] = mpreal_comp_lookup(mpreal_comp_make(0.5, 0.5));
+    gates[k][2] = mpreal_comp_lookup(mpreal_comp_make(0.5, 0.5)); gates[k][3] = mpreal_comp_lookup(mpreal_comp_make(0.5,-0.5));
+
     k = GATEID_sqrtY;
     gates[k][0] = mpreal_comp_lookup(mpreal_comp_make(0.5, 0.5)); gates[k][1] = mpreal_comp_lookup(mpreal_comp_make(-0.5,-0.5));
     gates[k][2] = mpreal_comp_lookup(mpreal_comp_make(0.5, 0.5)); gates[k][3] = mpreal_comp_lookup(mpreal_comp_make(0.5, 0.5));
+
+    k = GATEID_sqrtYdag;
+    gates[k][0] = mpreal_comp_lookup(mpreal_comp_make(0.5,-0.5)); gates[k][1] = mpreal_comp_lookup(mpreal_comp_make(0.5,-0.5));
+    gates[k][2] = mpreal_comp_lookup(mpreal_comp_make(-0.5,0.5)); gates[k][3] = mpreal_comp_lookup(mpreal_comp_make(0.5,-0.5));
 
     init_mpreal_phase_gates(255);
 

@@ -29,6 +29,8 @@ static int granularity = 1; // operation cache access granularity
 static bool testing_mode = 0; // turns on/off (expensive) sanity checks
 static bool larger_amp_indices = false; // using [amps,ptr] [33,30] bits (default [23,40])
 
+static AMP (*normalize_weights)(AMP *, AMP *);
+
 /****************< (bit level) manipulation of QDD / qddnode_t >***************/
 /**
  * QDD edge structure (64 bits)
@@ -449,7 +451,7 @@ qdd_quit()
 }
 
 void
-sylvan_init_qdd(size_t ctable_size, double ctable_tolerance, int amps_backend)
+sylvan_init_qdd(size_t ctable_size, double ctable_tolerance, int amps_backend, int norm_strat)
 {
     if (qdd_initialized) return;
     qdd_initialized = 1;
@@ -475,8 +477,28 @@ sylvan_init_qdd(size_t ctable_size, double ctable_tolerance, int amps_backend)
 
     init_amplitude_table(ctable_size, ctable_tolerance, amps_backend);
 
+    switch (norm_strat)
+    {
+    case NORM_LARGEST:
+        normalize_weights = amp_normalize_largest_ptr;
+        break;
+    case NORM_LOW:
+        normalize_weights = amp_normalize_low_ptr;
+        break;
+    default:
+        printf("Edge weight normalization strategy not recognized\n");
+        exit(1);
+        break;
+    }
+
     LACE_ME;
     CALL(qdd_refs_init);
+}
+
+void
+sylvan_init_qdd_defaults(size_t ctable_size)
+{
+    sylvan_init_qdd(ctable_size, -1, COMP_HASHMAP, NORM_LOW);
 }
 
 void
@@ -676,7 +698,7 @@ qdd_makenode(BDDVAR var, QDD low, QDD high)
     if (low == high) return low;
     else {
         // If the edges are not the same
-        AMP norm = amp_default_normalize(&low_amp, &high_amp);
+        AMP norm = (*normalize_weights)(&low_amp, &high_amp);
         PTR res  = _qdd_makenode(var, low_ptr, high_ptr, low_amp, high_amp);
         return qdd_bundle_ptr_amp(res, norm);
     }
@@ -1203,7 +1225,7 @@ TASK_IMPL_4(QDD, qdd_matvec_mult_rec, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR,
     qdd_get_topvar(mat_low, 2*nextvar+1, &var, &u00, &u10);
     qdd_get_topvar(mat_high,2*nextvar+1, &var, &u01, &u11);
 
-    // 2. Propagate "in-between" amps of matrix qdd
+    // 2. propagate "in-between" amps of matrix qdd
     u00 = qdd_bundle_ptr_amp(QDD_PTR(u00), amp_mul(QDD_AMP(u00), QDD_AMP(mat_low)));
     u10 = qdd_bundle_ptr_amp(QDD_PTR(u10), amp_mul(QDD_AMP(u10), QDD_AMP(mat_low)));
     u01 = qdd_bundle_ptr_amp(QDD_PTR(u01), amp_mul(QDD_AMP(u01), QDD_AMP(mat_high)));
@@ -1286,24 +1308,15 @@ TASK_IMPL_4(QDD, qdd_matmat_mult_rec, QDD, a, QDD, b, BDDVAR, nvars, BDDVAR, nex
     qdd_get_topvar(b_low, 2*nextvar+1, &var, &b00, &b10);
     qdd_get_topvar(b_high,2*nextvar+1, &var, &b01, &b11);
 
-    // 2. pass weights of current edges down TODO: use loop
-    AMP amp_a00, amp_a10, amp_a01, amp_a11, amp_b00, amp_b10, amp_b01, amp_b11;
-    amp_a00 = amp_mul(QDD_AMP(a_low), QDD_AMP(a00));
-    amp_a10 = amp_mul(QDD_AMP(a_low), QDD_AMP(a10));
-    amp_a01 = amp_mul(QDD_AMP(a_high),QDD_AMP(a01));
-    amp_a11 = amp_mul(QDD_AMP(a_high),QDD_AMP(a11));
-    amp_b00 = amp_mul(QDD_AMP(b_low), QDD_AMP(b00));
-    amp_b10 = amp_mul(QDD_AMP(b_low), QDD_AMP(b10));
-    amp_b01 = amp_mul(QDD_AMP(b_high),QDD_AMP(b01));
-    amp_b11 = amp_mul(QDD_AMP(b_high),QDD_AMP(b11));
-    a00 = qdd_bundle_ptr_amp(QDD_PTR(a00), amp_a00);
-    a10 = qdd_bundle_ptr_amp(QDD_PTR(a10), amp_a10);
-    a01 = qdd_bundle_ptr_amp(QDD_PTR(a01), amp_a01);
-    a11 = qdd_bundle_ptr_amp(QDD_PTR(a11), amp_a11);
-    b00 = qdd_bundle_ptr_amp(QDD_PTR(b00), amp_b00);
-    b10 = qdd_bundle_ptr_amp(QDD_PTR(b10), amp_b10);
-    b01 = qdd_bundle_ptr_amp(QDD_PTR(b01), amp_b01);
-    b11 = qdd_bundle_ptr_amp(QDD_PTR(b11), amp_b11);
+    // 2. propagate "in-between" amps down
+    a00 = qdd_bundle_ptr_amp(QDD_PTR(a00), amp_mul(QDD_AMP(a_low), QDD_AMP(a00)));
+    a10 = qdd_bundle_ptr_amp(QDD_PTR(a10), amp_mul(QDD_AMP(a_low), QDD_AMP(a10)));
+    a01 = qdd_bundle_ptr_amp(QDD_PTR(a01), amp_mul(QDD_AMP(a_high),QDD_AMP(a01)));
+    a11 = qdd_bundle_ptr_amp(QDD_PTR(a11), amp_mul(QDD_AMP(a_high),QDD_AMP(a11)));
+    b00 = qdd_bundle_ptr_amp(QDD_PTR(b00), amp_mul(QDD_AMP(b_low), QDD_AMP(b00)));
+    b10 = qdd_bundle_ptr_amp(QDD_PTR(b10), amp_mul(QDD_AMP(b_low), QDD_AMP(b10)));
+    b01 = qdd_bundle_ptr_amp(QDD_PTR(b01), amp_mul(QDD_AMP(b_high),QDD_AMP(b01)));
+    b11 = qdd_bundle_ptr_amp(QDD_PTR(b11), amp_mul(QDD_AMP(b_high),QDD_AMP(b11)));
 
     // 3. recursive calls (8 tasks: SPAWN 7, CALL 1)
     // |a00 a01| |b00 b01| = b00|a00| + b10|a01| , b01|a00| + b11|a01|
@@ -1849,7 +1862,6 @@ TASK_IMPL_3(double, qdd_unnormed_prob, QDD, qdd, BDDVAR, topvar, BDDVAR, nvars)
 AMP
 qdd_get_amplitude(QDD q, bool* basis_state)
 {
-    // NOTE: removed reliance on complex_t by using amp_mul instead of comp_mul
     AMP res = C_ONE;
     QDD low, high;
     for (;;) {

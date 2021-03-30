@@ -621,6 +621,7 @@ int test_mpreal_phase_gates()
     test_assert(gates[GATEID_Rk(3)][3] == gates[GATEID_T][3]);
     test_assert(gates[GATEID_Rk_dag(0)][3] == gates[GATEID_I][3]);
     test_assert(gates[GATEID_Rk_dag(1)][3] == gates[GATEID_Z][3]);
+    test_assert(gates[GATEID_Rk_dag(2)][3] == gates[GATEID_Sdag][3]);
     test_assert(gates[GATEID_Rk_dag(3)][3] == gates[GATEID_Tdag][3]);
 
     if(VERBOSE) printf("qdd phase gates:          ok\n");
@@ -1620,7 +1621,7 @@ int runtests()
     lace_startup(0, NULL, NULL);
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<11, -1, COMP_HASHMAP);
+    sylvan_init_qdd_defaults(1LL<<11);
     qdd_set_testing_mode(true);
 
     if (test_mpreal_tree_map()) return 1;
