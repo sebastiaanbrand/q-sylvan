@@ -621,6 +621,7 @@ int test_mpreal_phase_gates()
     test_assert(gates[GATEID_Rk(3)][3] == gates[GATEID_T][3]);
     test_assert(gates[GATEID_Rk_dag(0)][3] == gates[GATEID_I][3]);
     test_assert(gates[GATEID_Rk_dag(1)][3] == gates[GATEID_Z][3]);
+    test_assert(gates[GATEID_Rk_dag(2)][3] == gates[GATEID_Sdag][3]);
     test_assert(gates[GATEID_Rk_dag(3)][3] == gates[GATEID_Tdag][3]);
 
     if(VERBOSE) printf("qdd phase gates:          ok\n");

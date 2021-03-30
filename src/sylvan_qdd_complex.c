@@ -43,16 +43,20 @@ void *amp_storage_old;
 const bool CACHE_AMP_OPS = true;
 const bool CACHE_INV_OPS = true;
 
+// TODO: enum?
 const uint32_t GATEID_I = 0;
 const uint32_t GATEID_X = 1;
 const uint32_t GATEID_Y = 2;
 const uint32_t GATEID_Z = 3;
 const uint32_t GATEID_H = 4;
 const uint32_t GATEID_S = 5;
-const uint32_t GATEID_T = 6;
-const uint32_t GATEID_Tdag = 7;
-const uint32_t GATEID_sqrtX = 8;
-const uint32_t GATEID_sqrtY = 9;
+const uint32_t GATEID_Sdag = 6;
+const uint32_t GATEID_T = 7;
+const uint32_t GATEID_Tdag = 8;
+const uint32_t GATEID_sqrtX = 9;
+const uint32_t GATEID_sqrtXdag = 10;
+const uint32_t GATEID_sqrtY = 11;
+const uint32_t GATEID_sqrtYdag = 12;
 
 
 /* Shorthand functions for making complex numbers */
@@ -806,6 +810,10 @@ init_gates()
     gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
     gates[k][2] = C_ZERO; gates[k][3] = comp_lookup(comp_make(0.0, 1.0));
 
+    k = GATEID_Sdag;
+    gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
+    gates[k][2] = C_ZERO; gates[k][3] = comp_lookup(comp_make(0.0, -1.0));
+
     k = GATEID_T;
     gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
     gates[k][2] = C_ZERO; gates[k][3] = comp_lookup(comp_make(1.0/flt_sqrt(2.0), 1.0/flt_sqrt(2.0)));
@@ -818,9 +826,17 @@ init_gates()
     gates[k][0] = comp_lookup(comp_make(0.5, 0.5)); gates[k][1] = comp_lookup(comp_make(0.5,-0.5));
     gates[k][2] = comp_lookup(comp_make(0.5,-0.5)); gates[k][3] = comp_lookup(comp_make(0.5, 0.5));
 
+    k = GATEID_sqrtXdag;
+    gates[k][0] = comp_lookup(comp_make(0.5,-0.5)); gates[k][1] = comp_lookup(comp_make(0.5, 0.5));
+    gates[k][2] = comp_lookup(comp_make(0.5, 0.5)); gates[k][3] = comp_lookup(comp_make(0.5,-0.5));
+
     k = GATEID_sqrtY;
     gates[k][0] = comp_lookup(comp_make(0.5, 0.5)); gates[k][1] = comp_lookup(comp_make(-0.5,-0.5));
     gates[k][2] = comp_lookup(comp_make(0.5, 0.5)); gates[k][3] = comp_lookup(comp_make(0.5, 0.5));
+
+    k = GATEID_sqrtYdag;
+    gates[k][0] = comp_lookup(comp_make(0.5,-0.5)); gates[k][1] = comp_lookup(comp_make(0.5,-0.5));
+    gates[k][2] = comp_lookup(comp_make(-0.5,0.5)); gates[k][3] = comp_lookup(comp_make(0.5,-0.5));
 
     init_phase_gates(255);
 

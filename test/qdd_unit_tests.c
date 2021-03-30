@@ -870,6 +870,38 @@ int test_x_gate()
     test_assert(qdd_is_ordered(q4, nqubits));
     test_assert(qdd_is_ordered(q5, nqubits));
 
+    // Same 3 qubit test with sqrt(X)^dag
+    x3[2] = 0; x3[1] = 0; x3[0] = 0; q3 = qdd_create_basis_state(nqubits, x3);
+    x3[2] = 0; x3[1] = 1; x3[0] = 0; q4 = qdd_create_basis_state(nqubits, x3);
+    x3[2] = 0; x3[1] = 1; x3[0] = 1; q5 = qdd_create_basis_state(nqubits, x3);
+
+    q3 = qdd_gate(q3, GATEID_sqrtXdag, 1); test_assert(qdd_is_unitvector(q3, nqubits));
+    q3 = qdd_gate(q3, GATEID_sqrtXdag, 1); test_assert(qdd_is_unitvector(q3, nqubits));
+    test_assert(q3 == q4);
+
+    q3 = qdd_gate(q3, GATEID_sqrtXdag, 0); test_assert(qdd_is_unitvector(q3, nqubits));
+    q3 = qdd_gate(q3, GATEID_sqrtXdag, 0); test_assert(qdd_is_unitvector(q3, nqubits));
+    test_assert(q3 == q5);
+    
+    test_assert(qdd_countnodes(q3) == 4);
+    test_assert(qdd_countnodes(q4) == 4);
+    test_assert(qdd_countnodes(q5) == 4);
+    test_assert(qdd_is_ordered(q3, nqubits));
+    test_assert(qdd_is_ordered(q4, nqubits));
+    test_assert(qdd_is_ordered(q5, nqubits));
+
+    // Test sqrt(X) sqrt(X)^dag gives I
+    x3[2] = 0; x3[1] = 0; x3[0] = 0; q3 = qdd_create_basis_state(nqubits, x3);
+    x3[2] = 0; x3[1] = 0; x3[0] = 0; q4 = qdd_create_basis_state(nqubits, x3);
+
+    q3 = qdd_gate(q3, GATEID_sqrtX, 1);
+    q3 = qdd_gate(q3, GATEID_sqrtXdag, 1);
+    test_assert(q3 == q4);
+
+    q3 = qdd_gate(q3, GATEID_sqrtXdag, 1);
+    q3 = qdd_gate(q3, GATEID_sqrtX, 1);
+    test_assert(q3 == q4);
+
 
     if(VERBOSE) printf("qdd x gates:              ok\n");
     return 0;
@@ -948,7 +980,7 @@ int test_h_gate()
 
 int test_phase_gates()
 {
-    QDD q0, qZ, qS, qSS, qT, qTT, qTTTT, qTTdag, qTdagT;
+    QDD q0, qZ, qS, qSS, qSdag, qSdagS, qT, qTT, qTTTT, qTTdag, qTdagT;
     bool x2[] = {0, 0};
     AMP a;
 
@@ -959,19 +991,22 @@ int test_phase_gates()
     q0 = qdd_gate(q0, GATEID_H, 0);
     q0 = qdd_gate(q0, GATEID_H, 1);
 
-    qZ    = qdd_gate(q0, GATEID_Z, 0);
-    qS    = qdd_gate(q0, GATEID_S, 0);
-    qSS   = qdd_gate(qS, GATEID_S, 0);
-    qT    = qdd_gate(q0, GATEID_T, 0);
-    qTT   = qdd_gate(qT, GATEID_T, 0);
-    qTTTT = qdd_gate(qTT, GATEID_T, 0);
-    qTTTT = qdd_gate(qTTTT, GATEID_T, 0);
+    qZ     = qdd_gate(q0, GATEID_Z, 0);
+    qS     = qdd_gate(q0, GATEID_S, 0);
+    qSdag  = qdd_gate(q0, GATEID_Sdag, 0);
+    qSdagS = qdd_gate(qSdag, GATEID_S, 0);
+    qSS    = qdd_gate(qS, GATEID_S, 0);
+    qT     = qdd_gate(q0, GATEID_T, 0);
+    qTT    = qdd_gate(qT, GATEID_T, 0);
+    qTTTT  = qdd_gate(qTT, GATEID_T, 0);
+    qTTTT  = qdd_gate(qTTTT, GATEID_T, 0);
     qTTdag = qdd_gate(q0, GATEID_T, 0);
     qTTdag = qdd_gate(qTTdag, GATEID_Tdag, 0);
     qTdagT = qdd_gate(q0, GATEID_Tdag, 0);
     qTdagT = qdd_gate(qTdagT, GATEID_T, 0);
 
     test_assert(qZ == qSS);
+    test_assert(q0 == qSdagS);
     test_assert(qS == qTT);
     test_assert(qZ == qTTTT);
     test_assert(q0 == qTTdag);
@@ -1034,6 +1069,15 @@ int test_phase_gates()
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == comp_lookup(comp_make(-0.5,0)));
     test_assert(qdd_countnodes(q0) == 2);
 
+    q0 = qdd_gate(q0, GATEID_Z, 1);
+    q0 = qdd_gate(q0, GATEID_Sdag, 1);
+    q0 = qdd_gate(q0, GATEID_Sdag, 1);
+
+    x2[1] = 0; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == comp_lookup(comp_make(0.5, 0)));
+    x2[1] = 0; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == comp_lookup(comp_make(0.5, 0)));
+    x2[1] = 1; x2[0] = 0; a = qdd_get_amplitude(q0, x2); test_assert(a == comp_lookup(comp_make(-0.5,0)));
+    x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(q0, x2); test_assert(a == comp_lookup(comp_make(-0.5,0)));
+    test_assert(qdd_countnodes(q0) == 2);
 
     // check R_k gates
     test_assert(gates[GATEID_Rk(0)][3] == gates[GATEID_I][3]);
@@ -1042,6 +1086,7 @@ int test_phase_gates()
     test_assert(gates[GATEID_Rk(3)][3] == gates[GATEID_T][3]);
     test_assert(gates[GATEID_Rk_dag(0)][3] == gates[GATEID_I][3]);
     test_assert(gates[GATEID_Rk_dag(1)][3] == gates[GATEID_Z][3]);
+    test_assert(gates[GATEID_Rk_dag(2)][3] == gates[GATEID_Sdag][3]);
     test_assert(gates[GATEID_Rk_dag(3)][3] == gates[GATEID_Tdag][3]);
 
     if(VERBOSE) printf("qdd phase gates:          ok\n");
@@ -1150,9 +1195,18 @@ int test_pauli_rotation_gates()
     qTest = qdd_gate(qInit, GATEID_Ry(0.25), t);
     qRef  = qdd_remove_global_phase(qRef);
     qTest = qdd_remove_global_phase(qTest);
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, false, false));
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, true, false));
+    test_assert(qTest == qRef);
 
-
-    // TODO: more tests
+    // sqrt(Y)^dag gate
+    qRef  = qdd_gate(qInit, GATEID_sqrtYdag, t);
+    qTest = qdd_gate(qInit, GATEID_Ry(-0.25), t);
+    qRef  = qdd_remove_global_phase(qRef);
+    qTest = qdd_remove_global_phase(qTest);
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, false, false));
+    test_assert(qdd_equivalent(qRef, qTest, nqubits, true, false));
+    test_assert(qTest == qRef);
 
 
     if(VERBOSE) printf("qdd Rx, Ry, Rz gates:     ok\n");
