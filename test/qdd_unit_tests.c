@@ -2094,7 +2094,7 @@ int run_qdd_tests()
     return 0;
 }
 
-int test_with_cmap()
+int test_with(int amps_backend, int norm_strat) 
 {
     // Standard Lace initialization
     int workers = 1;
@@ -2105,56 +2105,10 @@ int test_with_cmap()
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<11, -1, COMP_HASHMAP, NORM_LOW);
+    sylvan_init_qdd(1LL<<11, -1, amps_backend, NORM_LOW);
     qdd_set_testing_mode(true); // turn on internal sanity tests
 
-    printf("using cmap:\n");
-    int res = run_qdd_tests();
-
-    sylvan_quit();
-    lace_exit();
-
-    return res;
-}
-
-int test_with_rmap()
-{
-    // Standard Lace initialization
-    int workers = 1;
-    lace_init(workers, 0);
-    printf("%d worker(s), ", workers);
-    lace_startup(0, NULL, NULL);
-
-    // Simple Sylvan initialization
-    sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
-    sylvan_init_package();
-    sylvan_init_qdd(1LL<<11, -1, REAL_HASHMAP, NORM_LOW);
-    qdd_set_testing_mode(true); // turn on internal sanity tests
-
-    printf("using rmap:\n");
-    int res = run_qdd_tests();
-
-    sylvan_quit();
-    lace_exit();
-
-    return res;
-}
-
-int test_with_tree_map()
-{
-    // Standard Lace initialization
-    int workers = 1;
-    lace_init(workers, 0);
-    printf("%d worker(s), ", workers);
-    lace_startup(0, NULL, NULL);
-
-    // Simple Sylvan initialization
-    sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
-    sylvan_init_package();
-    sylvan_init_qdd(1LL<<11, -1, REAL_TREE, NORM_LOW);
-    qdd_set_testing_mode(true); // turn on internal sanity tests
-
-    printf("using real tree:\n");
+    printf("amps backend = %d, norm strategy = %d:\n", amps_backend, norm_strat);
     int res = run_qdd_tests();
 
     sylvan_quit();
@@ -2165,7 +2119,6 @@ int test_with_tree_map()
 
 int runtests()
 {
-    // TODO: run tests with different normalization strategies
     if (test_cmap()) return 1;
     if (test_rmap()) return 1;
     if (test_tree_map()) return 1;
@@ -2173,9 +2126,11 @@ int runtests()
     if (test_mpreal_complex_operations()) return 1;
     if (test_mpfr_tree_map_scope()) return 1;
     if (test_algebraic()) return 1;
-    if (test_with_cmap()) return 1;
-    if (test_with_rmap()) return 1;
-    if (test_with_tree_map()) return 1;
+    for (int backend = 0; backend < n_backends; backend++) {
+        for (int norm_strat = 0; norm_strat < n_norm_stragegies; norm_strat++) {
+            if (test_with(backend, norm_strat)) return 1;
+        }
+    }
     return 0;
 }
 

@@ -673,7 +673,7 @@ int runtests()
     return 0;
 }
 
-int test_with_cmap()
+int test_with(int amps_backend, int norm_strat) 
 {
     // Standard Lace initialization
     int workers = 1;
@@ -684,59 +684,11 @@ int test_with_cmap()
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<11, -1, COMP_HASHMAP, NORM_LOW);
+    sylvan_init_qdd(1LL<<11, -1, amps_backend, norm_strat);
     qdd_set_testing_mode(true); // turn on internal sanity tests
     qdd_set_auto_gc_amp_table(false); // no auto gc of ctable yet for mult operations
 
-    printf("using cmap:\n");
-    int res = runtests();
-
-    sylvan_quit();
-    lace_exit();
-
-    return res;
-}
-
-int test_with_rmap()
-{
-    // Standard Lace initialization
-    int workers = 1;
-    lace_init(workers, 0);
-    printf("%d worker(s), ", workers);
-    lace_startup(0, NULL, NULL);
-
-    // Simple Sylvan initialization
-    sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
-    sylvan_init_package();
-    sylvan_init_qdd(1LL<<11, -1, REAL_HASHMAP, NORM_LOW);
-    qdd_set_testing_mode(true); // turn on internal sanity tests
-    qdd_set_auto_gc_amp_table(false); // no auto gc of ctable yet for mult operations
-
-    printf("using rmap:\n");
-    int res = runtests();
-
-    sylvan_quit();
-    lace_exit();
-
-    return res;
-}
-
-int test_with_tree_map()
-{
-    // Standard Lace initialization
-    int workers = 1;
-    lace_init(workers, 0);
-    printf("%d worker(s), ", workers);
-    lace_startup(0, NULL, NULL);
-
-    // Simple Sylvan initialization
-    sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
-    sylvan_init_package();
-    sylvan_init_qdd(1LL<<11, -1, REAL_TREE, NORM_LOW);
-    qdd_set_testing_mode(true); // turn on internal sanity tests
-    qdd_set_auto_gc_amp_table(false); // no auto gc of ctable yet for mult operations
-
-    printf("using tree map:\n");
+    printf("amps backend = %d, norm strategy = %d:\n", amps_backend, norm_strat);
     int res = runtests();
 
     sylvan_quit();
@@ -748,8 +700,10 @@ int test_with_tree_map()
 int main()
 {
     // TODO: run tests with different normalization strategies
-    if (test_with_cmap()) return 1;
-    if (test_with_rmap()) return 1;
-    if (test_with_tree_map()) return 1;
+    for (int backend = 0; backend < n_backends; backend++) {
+        for (int norm_strat = 0; norm_strat < n_norm_stragegies; norm_strat++) {
+            if (test_with(backend, norm_strat)) return 1;
+        }
+    }
     return 0;
 }
