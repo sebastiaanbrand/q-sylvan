@@ -2,17 +2,7 @@
 
 #include "sylvan.h"
 #include "sylvan_qdd_complex.h"
-#include <ctype.h>
 
-/**
- * Prints the final results of the measured qubits.
- * 
- * @param qdd a QDD representing the statevector to be measured on
- * @param measurements an array containing booleans, where the to be measured qubits are flagged
- * @param nvars the number of qubits
- * @param runs the number of times the flagged qubits in the statevector should be measured
- * @param show toggle to print the measurement results
- */
 void final_measure(QDD qdd, bool* measurements, BDDVAR nvars, BDDVAR runs, bool show)
 {
     // Initialise variables
@@ -69,13 +59,6 @@ void final_measure(QDD qdd, bool* measurements, BDDVAR nvars, BDDVAR runs, bool 
     free(probs);
 }
 
-/**
- * Returns the Sylvan GATEID that corresponds to <gate>
- * 
- * @param gate Gate_struct of which to get the Sylvan GATEID
- * 
- * @return Sylvan GATEID which corresponds to <gate>
- */
 TASK_IMPL_1(BDDVAR, get_gate_id, Gate, gate)
 {
     // Initialise variables
@@ -118,15 +101,6 @@ TASK_IMPL_1(BDDVAR, get_gate_id, Gate, gate)
     return gate_id;
 }
 
-/**
- * Applies <gate> to <qdd> on the qubit with index <i>.
- * 
- * @param qdd the statevector on which to apply <gate>
- * @param gate the gate to be applied
- * @param i the index of the qubit in <qdd> on which to apply <gate>
- * 
- * @return the statevector qdd where <gate> has been applied on the qubit with index <i>
- */
 TASK_IMPL_3(QDD, apply_gate, QDD, qdd, Gate, gate, BDDVAR, i)
 {
     // Get the corresponding Sylvan GATEID of <gate>
@@ -149,110 +123,131 @@ TASK_IMPL_3(QDD, apply_gate, QDD, qdd, Gate, gate, BDDVAR, i)
     return qdd;
 }
 
-/**
- * 
- */
-TASK_IMPL_3(QDD, handle_control, Gate, gate, BDDVAR, k, BDDVAR, n)
+TASK_IMPL_3(QDD, handle_control_matrix, Gate, gate, BDDVAR, k, BDDVAR, n)
 {
-    BDDVAR gate_id = get_gate_id(gate);
+    // Initialise variables
     int *c_options = malloc(n * sizeof(int));
     for (BDDVAR i = 0; i < n; i++) c_options[i] = -1;
+    // Get the corresponding Sylvan GATEID from <gate>
+    BDDVAR gate_id = get_gate_id(gate);
+    // Set the indexes of all controls of <gate> to 1
     for (BDDVAR i = 0; i < gate.controlSize; i++) c_options[gate.control[i]] = 1;
+    // Set the index the target of <gate> to 2
     c_options[k] = 2;
+    // Create the gate QDD
     QDD qdd = qdd_create_multi_cgate_rec(n, c_options, gate_id, 0);
     return qdd;
 }
 
-QDD run_circuit_matrix(C_struct c_s, BDDVAR runs, bool show)
+QDD run_circuit_matrix(C_struct c_s, BDDVAR runs, BDDVAR limit, bool show)
 {
+    // Inisialise variables
     LACE_ME;
     Gate gate;
     bool* measurements = malloc(c_s.nvars * sizeof(bool));
     for (BDDVAR i = 0; i < c_s.nvars; i++) measurements[i] = false;
-    QDD vec = qdd_create_all_zero_state(c_s.nvars);
-    QDD qdd, qdd_column;
-
     BDDVAR gate_id;
     BDDVAR *gateids = malloc(c_s.nvars * sizeof(BDDVAR));
+    QDD qdd, qdd_column;
+    QDD vec = qdd_create_all_zero_state(c_s.nvars);
     qdd = qdd_create_single_qubit_gates_same(c_s.nvars, GATEID_I);
     qdd_column = qdd;
+
+    // Loop over all places in the circuit
     for (BDDVAR j = 0; j < c_s.depth; j++) {
         for (BDDVAR i = 0; i < c_s.nvars; i++) {
             gate = c_s.circuit[i][j];
-            if (gate.id == gate_barrier.id)
-                gateids[i] = GATEID_I;
-            else if (gate.id == gate_measure.id) {
-                gateids[i] = GATEID_I;
+            // Preset gateid (overwritten if needed)
+            gateids[i] = GATEID_I;
+            // Skip barrier (does not affect runs)
+            // Skip control gates (controls are used by target gate)
+            if (gate.id == gate_barrier.id || gate.id == gate_ctrl.id || gate.id == gate_ctrl_c.id || gate.id == gate_I.id)
+                continue;
+            // Set measurement flag
+            else if (gate.id == gate_measure.id)
                 measurements[i] = true;
-            }
-            else if (gate.id == gate_ctrl.id || gate.id == gate_ctrl_c.id)
-                gateids[i] = GATEID_I;
+            // Handle controlled gates
             else if (gate.controlSize != 0) {
-                gateids[i] = GATEID_I;
-                qdd_column = handle_control(gate, i, c_s.nvars);
+                qdd_column = handle_control_matrix(gate, i, c_s.nvars);
+                // Separately multiply with gate QDD (not together with column)
                 qdd = qdd_matmat_mult(qdd_column, qdd, c_s.nvars);
             }
+            // Set single gate in gateids
             else {
                 gate_id = get_gate_id(gate);
                 gateids[i] = gate_id;
             }
         }
-        qdd_column = qdd_create_single_qubit_gates(c_s.nvars, gateids);
-        if (gate.id != gate_barrier.id)
+        // Skip barrier (whole column has no effect)
+        if (gate.id != gate_barrier.id) {
+            // Create gate QDD out of current column (gateids)
+            qdd_column = qdd_create_single_qubit_gates(c_s.nvars, gateids);
+            // Multiply with previous columns
             qdd = qdd_matmat_mult(qdd_column, qdd, c_s.nvars);
-        if (qdd_countnodes(qdd) > 100) {
+        }
+        // If nodecount of column QDD is over limit...
+        if (qdd_countnodes(qdd) > limit) {
+            // Multiply with statevector QDD and reset column QDD
             vec = qdd_matvec_mult(qdd, vec, c_s.nvars);
             qdd = qdd_create_single_qubit_gates_same(c_s.nvars, GATEID_I);
         }
     }
+    // Final multiply with statevector QDD
     vec = qdd_matvec_mult(qdd, vec, c_s.nvars);
-    printf("%ld / %d\n", qdd_countnodes(vec), (int)pow(2,c_s.nvars));
+    // Measure all qubits
     final_measure(vec, measurements, c_s.nvars, runs, show);
+    // Free variables
+    free(measurements);
+    free(gateids);
     return vec;
 }
 
 QDD run_c_struct(C_struct c_s, BDDVAR runs, bool show)
 {
+    // Inisialise variables
     LACE_ME;
-
     Gate gate;
     bool* measurements = malloc(c_s.nvars * sizeof(bool));
     for (BDDVAR i = 0; i < c_s.nvars; i++) measurements[i] = false;
     QDD qdd = qdd_create_all_zero_state(c_s.nvars);
 
+    // Loop over all places in the circuit
     for (BDDVAR j = 0; j < c_s.depth; j++) {
         for (BDDVAR i = 0; i < c_s.nvars; i++) {
             gate = c_s.circuit[i][j];
+            
+            // Skip barrier (does not affect runs)
+            // Skip control gates (controls are used by target gate)
             if (gate.id == gate_barrier.id || gate.id == gate_ctrl.id || gate.id == gate_ctrl_c.id || gate.id == gate_I.id)
                 continue;
-            if (gate.id == gate_measure.id) {
+            // Set measurement flag
+            else if (gate.id == gate_measure.id)
                 measurements[i] = true;
-                continue;
-            }
-            qdd = apply_gate(qdd, gate, i);
+            // Apply gate
+            else
+                qdd = apply_gate(qdd, gate, i);
         }
     }
-    printf("%ld / %d\n", qdd_countnodes(qdd), (int)pow(2,c_s.nvars));
+    // Measure all qubits
     final_measure(qdd, measurements, c_s.nvars, runs, show);
+    // Free variables
     free(measurements);
-    // qdd_printnodes(qdd);
     return qdd;
 }
 
 /**
- * Runs QASM circuit given and prints the results
- * Input:
- *   the path to the file containing the QASM circuit code
- * Possible flags to be passed to the function:
- *   -r: the number of runs to perform
- *   -s: the randomness seed to be used
- *   -m: the boundaray value of nodes in a tree before multiplying with the state vector
+ * Runs QASM circuit given by <filename> and prints the results
  * Using the -m flag activates gate-gate multiplication runs, gate-statevector runs are used otherwise
  * 
  * Since multiplying a gate-QDD with a gate-QDD is more expensive than multiplying a gate-QDD with
  * a statevector-QDD, gate-gate multiplication is usually slower. However, circuits which use a lot of 
  * uncomputation can lead to smaller resulting gate QDDs and possibly lead to faster runs.
-*/
+ * 
+ * @param filename the path to the file containing the QASM circuit code
+ * @param -r runs: (optional) the number of runs to perform
+ * @param -s seed: (optional) the randomness seed to be used
+ * @param -m matrix: (optional) the boundaray value of nodes in a tree before multiplying with the state vector
+ */
 int main(int argc, char *argv[])
 {
     // Initialise flag parameters
@@ -266,10 +261,7 @@ int main(int argc, char *argv[])
     while((opt = getopt(argc, argv, "s:r:m:")) != -1) {
         switch(opt) {
             case 'r':
-                if (isdigit(optarg))
-                    runs = atoi(optarg);
-                else
-                    fprintf(stderr, "invalid argument for flag %d\n", opt);
+                runs = atoi(optarg);
                 break;
             case 's':
                 seed = atoi(optarg);
@@ -310,10 +302,11 @@ int main(int argc, char *argv[])
     // Create a C_Struct representing the QASM circuit in the given file
     C_struct c_s = make_c_struct(filename, false);
     if (matrix != 0)
-        run_circuit_matrix(c_s, runs, false);
+        run_circuit_matrix(c_s, runs, matrix, false);
     else
         run_c_struct(c_s, runs, false);
 
+    // Free variables
     delete_c_struct(&c_s);
     sylvan_quit();
     lace_exit();

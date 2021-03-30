@@ -30,6 +30,7 @@ extern const uint32_t GATEID_Y;
 extern const uint32_t GATEID_Z;
 extern const uint32_t GATEID_H;
 extern const uint32_t GATEID_S;
+extern const uint32_t GATEID_Sdag;
 extern const uint32_t GATEID_T;
 extern const uint32_t GATEID_Tdag;
 extern const uint32_t GATEID_sqrtX;

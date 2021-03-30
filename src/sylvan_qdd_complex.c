@@ -49,10 +49,11 @@ const uint32_t GATEID_Y = 2;
 const uint32_t GATEID_Z = 3;
 const uint32_t GATEID_H = 4;
 const uint32_t GATEID_S = 5;
-const uint32_t GATEID_T = 6;
-const uint32_t GATEID_Tdag = 7;
-const uint32_t GATEID_sqrtX = 8;
-const uint32_t GATEID_sqrtY = 9;
+const uint32_t GATEID_Sdag = 6;
+const uint32_t GATEID_T = 7;
+const uint32_t GATEID_Tdag = 8;
+const uint32_t GATEID_sqrtX = 9;
+const uint32_t GATEID_sqrtY = 10;
 
 
 /* Shorthand functions for making complex numbers */
