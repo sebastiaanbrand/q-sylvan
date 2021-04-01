@@ -734,7 +734,6 @@ int bench_grover_matrix()
     ctable_gc_thres = 0.5;
     caching_granularity = 1;
     write_parameters(param_file);
-    fclose(param_file);
 
     // different number of bits for the flag to test
     int n_bits[] = {4, 9, 14, 19};//{29, 31, 33, 35, 37};//{4, 9, 14, 19, 24, 29, 34, 39};
