@@ -236,17 +236,22 @@ QDD run_c_struct(C_struct c_s, BDDVAR runs, bool show)
 }
 
 /**
- * Runs QASM circuit given by <filename> and prints the results
- * Using the -m flag activates gate-gate multiplication runs, gate-statevector runs are used otherwise
+ * Runs QASM circuit given by <filename> and prints the results.
+ * Using the -m flag activates gate-gate multiplication runs, gate-statevector runs are used otherwise.
  * 
+ * PARAMETERS:
+ * - filename: the path to the file containing the QASM circuit code
+ * 
+ * FLAGS:
+ * [-r runs] (optional) the number of runs to perform
+ * [-s seed] (optional) the randomness seed to be used
+ * [-m matrix] (optional) the boundaray value of nodes in a tree before multiplying with the state vector
+ * [-o optimize] (optional) optimize the circuit if true. This option will remove negating gates before running
+ * 
+ * NOTE:
  * Since multiplying a gate-QDD with a gate-QDD is more expensive than multiplying a gate-QDD with
  * a statevector-QDD, gate-gate multiplication is usually slower. However, circuits which use a lot of 
  * uncomputation can lead to smaller resulting gate QDDs and possibly lead to faster runs.
- * 
- * @param filename the path to the file containing the QASM circuit code
- * @param -r runs: (optional) the number of runs to perform
- * @param -s seed: (optional) the randomness seed to be used
- * @param -m matrix: (optional) the boundaray value of nodes in a tree before multiplying with the state vector
  */
 int main(int argc, char *argv[])
 {
@@ -255,10 +260,11 @@ int main(int argc, char *argv[])
     BDDVAR runs = 100;
     BDDVAR seed = 100;
     BDDVAR matrix = 0;
+    bool optimize = false;
     int opt;
 
     // Read flags from cmd and set parameters
-    while((opt = getopt(argc, argv, "s:r:m:")) != -1) {
+    while((opt = getopt(argc, argv, "s:r:m:o")) != -1) {
         switch(opt) {
             case 'r':
                 runs = atoi(optarg);
@@ -269,12 +275,15 @@ int main(int argc, char *argv[])
             case 'm':
                 matrix = abs(atoi(optarg));
                 break;
+            case 'o':
+                optimize = true;
+                break;
             default:
                 fprintf(stderr, "usage: %s file [-r runs][-s seed][-m matrix_node_limit]\n", argv[0]);
                 exit(EXIT_FAILURE);
         }
     }
-    printf("filename: %s\n", filename);
+    printf("filename2: %s\n", filename);
     printf("-r: %d\n", runs);
     printf("-s: %d\n", seed);
     printf("-m: %d\n", matrix);
@@ -284,7 +293,7 @@ int main(int argc, char *argv[])
     // Check if a file is given, if not, return an error
     if(access(filename, F_OK) != 0)
     {
-        printf("Invalid QASM file.\n");
+        fprintf(stderr, "Invalid QASM file.\n");
         exit(EXIT_FAILURE);
     }
 
@@ -296,16 +305,16 @@ int main(int argc, char *argv[])
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<16, -1, COMP_HASHMAP);
+    sylvan_init_qdd(1LL<<16, -1, COMP_HASHMAP, NORM_LARGEST);
     qdd_set_testing_mode(true); // turn on internal sanity tests
 
-    // Create a C_Struct representing the QASM circuit in the given file
-    C_struct c_s = make_c_struct(filename, false);
+    // Create a circuit struct representing the QASM circuit in the given file
+    C_struct c_s = make_c_struct(filename, optimize);
+    // Run the circuit based on method
     if (matrix != 0)
         run_circuit_matrix(c_s, runs, matrix, false);
     else
         run_c_struct(c_s, runs, false);
-
     // Free variables
     delete_c_struct(&c_s);
     sylvan_quit();
