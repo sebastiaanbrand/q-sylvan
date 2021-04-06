@@ -60,11 +60,8 @@ void print_circuit(Circuit* circuit_s, bool show_rotation)
                 // If a rotation has been found in the column, print accordingly
                 if (has_rotation) {
                     // If the current gate has a rotation, print its rotation
-                    if(circuit_s->circuit[i][j].id == gate_Rx.id || circuit_s->circuit[i][j].id == gate_Ry.id || circuit_s->circuit[i][j].id == gate_Rz.id) {
+                    if(circuit_s->circuit[i][j].id == gate_Rx.id || circuit_s->circuit[i][j].id == gate_Ry.id || circuit_s->circuit[i][j].id == gate_Rz.id)
                         printf("(%.4lf)",roundf(circuit_s->circuit[i][j].rotation*10000)/10000);
-                        if(negative_rotation && c_s.circuit[i][j].rotation >= 0)
-                            printf("-");
-                    }
                     // If the current gate does not have a rotation, print extra wire space for alignment
                     else {
                         if (negative_rotation)
