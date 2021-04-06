@@ -279,14 +279,10 @@ int main(int argc, char *argv[])
                 optimize = true;
                 break;
             default:
-                fprintf(stderr, "usage: %s file [-r runs][-s seed][-m matrix_node_limit]\n", argv[0]);
+                fprintf(stderr, "usage: %s file [-r runs][-s seed][-m matrix_node_limit][-o optimize]\n", argv[0]);
                 exit(EXIT_FAILURE);
         }
     }
-    printf("filename2: %s\n", filename);
-    printf("-r: %d\n", runs);
-    printf("-s: %d\n", seed);
-    printf("-m: %d\n", matrix);
 
     // Set randomness seed
     srand(seed);

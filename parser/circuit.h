@@ -38,7 +38,7 @@ Circuit* create_circuit(char* filename);
  * - vertical: the circuit is printed vertically if 'vertical' is true
  * - show_rotation: show rotations for special rotation gates (e.g. Rx, Ry, Rz)
  */
-void print_circuit(Circuit* c_s, bool vertical, bool show_rotation);
+void print_circuit(Circuit* circuit_s, bool show_rotation);
 
 /**
  * Deletes the circuit_struct by freeing memory
@@ -46,7 +46,7 @@ void print_circuit(Circuit* c_s, bool vertical, bool show_rotation);
  * PARAMETERS:
  * - circuit_s: struct to be deleted
  */
-void delete_circuit(Circuit* c_s);
+void delete_circuit(Circuit* circuit_s);
 
 /**
  * Skips oncoming identity and barrier gates after advancing a gate by advancing the progress counter
@@ -54,8 +54,11 @@ void delete_circuit(Circuit* c_s);
  * PARAMETERS:
  * - circuit_s: circuit on which to advance the progress counter
  * - i: the qubit on which to advance the progress counter
+ * 
+ * RETURN:
+ * - true if successful, else false
  */
-void skip_to_gate(Circuit* circuit_s, BDDVAR i);
+bool skip_to_gate(Circuit* circuit_s, BDDVAR i);
 
 /**
  Apply in the qdd by applying a gate on the current progress step of qubit q and increment the progress counter

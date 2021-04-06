@@ -177,15 +177,14 @@ void optimize_c_struct_p(C_struct* c_s, BDDVAR q, BDDVAR depth1, BDDVAR depth2);
 bool find_palindromes(C_struct* c_s, BDDVAR q, BDDVAR depth1, BDDVAR depth2);
 
 /**
- * Removes two gates from <c_s> on qubit <q> at <depth1> and <depth2>.
+ * Removes a gates from <c_s> on qubit <q> at <depth>.
  * 
  * PARAMETERS:
- * - c_s: the circuit where the gates should be removed
- * - q: the qubit on which the gates are
- * - depth1: the column of the first gate
- * - depth2: the column of the second gate
+ * - c_s: the circuit where the gate should be removed
+ * - q: the qubit on which the gate is
+ * - depth: the column of the gate
  */
-void remove_gates(C_struct* c_s, BDDVAR q, BDDVAR depth1, BDDVAR depth2);
+void remove_gate(C_struct* c_s, BDDVAR q, BDDVAR depth);
 
 /**
  * Reduces the depth variable of <c_s>. First all gates are moved to the left if possible. (parallelising)

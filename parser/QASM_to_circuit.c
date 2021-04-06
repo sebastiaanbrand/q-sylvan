@@ -58,6 +58,7 @@ C_struct make_c_struct(char *filename, bool optimize)
     // Free variables
     free(line);
     fclose(f);
+
     // Optimize if needed
     if (optimize)
         optimize_c_struct(&c_s);
@@ -301,15 +302,19 @@ void optimize_c_struct(C_struct* c_s)
             gate = c_s->circuit[q][depth1];
             if (gate.id != gate_I.id && gate.id != gate_ctrl.id && gate.id != gate_ctrl_c.id) {
                 depth2 = depth1+1;
-                gate = c_s->circuit[q][depth2];
                 // Get the depth of the successive gate compared to the gate at the first depth
+                gate = c_s->circuit[q][depth2];
                 while (gate.id == gate_I.id || gate.id == gate_barrier.id) {
                     if (depth2 >= c_s->depth) break;
                     depth2++;
+                    gate = c_s->circuit[q][depth2];
                 }
                 // Check if these gates are the same, and if so, recursively optimize (since we dont know palindrome length)
-                if (find_palindromes(c_s, q, depth1, depth2))
+                if (find_palindromes(c_s, q, depth1, depth2)) {
+                    for (BDDVAR i = 0; i < gate.controlSize; i++)
+                        optimize_c_struct_p(c_s, gate.control[i], depth1, depth2);
                     optimize_c_struct_p(c_s, q, depth1, depth2);
+                }
             }
         }
     }
@@ -320,7 +325,8 @@ void optimize_c_struct_p(C_struct* c_s, BDDVAR q, BDDVAR depth1, BDDVAR depth2)
     // Initialise variables
     Gate gate;
     // First remove the two negating gates found in the previous iteration
-    remove_gates(c_s, q, depth1, depth2);
+    remove_gate(c_s, q, depth1);
+    remove_gate(c_s, q, depth2);
     // Find the first preceding gate on the qubit
     do {
         // If you reach the start of the circuit, a preceding gate cannot be found
@@ -328,7 +334,6 @@ void optimize_c_struct_p(C_struct* c_s, BDDVAR q, BDDVAR depth1, BDDVAR depth2)
         depth1--;
     }
     while (c_s->circuit[q][depth1].id == gate_barrier.id || c_s->circuit[q][depth1].id == gate_I.id);
-
     // Find the first successive gate on the qubit
     do {
         // If you reach the end of the circuit, a successive gate cannot be found
@@ -336,14 +341,16 @@ void optimize_c_struct_p(C_struct* c_s, BDDVAR q, BDDVAR depth1, BDDVAR depth2)
         depth2++;
     }
     while (c_s->circuit[q][depth2].id == gate_barrier.id || c_s->circuit[q][depth2].id == gate_I.id);
-
     // If two gates have been found, check all qubits
     for (BDDVAR q = 0; q < c_s->nvars; q++) {
         gate = c_s->circuit[q][depth1];
         if (gate.id != gate_I.id && gate.id != gate_ctrl.id && gate.id != gate_ctrl_c.id) {
             // Check if these gates are the same, and if so, recursively optimize (since we dont know palindrome length)
-            if(find_palindromes(c_s, q, depth1, depth2))
+            if(find_palindromes(c_s, q, depth1, depth2)) {
+                for (BDDVAR i = 0; i < gate.controlSize; i++)
+                    optimize_c_struct_p(c_s, gate.control[i], depth1, depth2);
                 optimize_c_struct_p(c_s, q, depth1, depth2);
+            }
         }
     }
 }
@@ -354,7 +361,7 @@ bool find_palindromes(C_struct* c_s, BDDVAR q, BDDVAR depth1, BDDVAR depth2)
     Gate gate1 = c_s->circuit[q][depth1];
     Gate gate2 = c_s->circuit[q][depth2];
     // If the two gates do not fit the negation criteria, return
-    if (gate1.id != gate2.id || gate1.rotation != gate2.rotation || gate1.rotation != -gate2.rotation)
+    if (gate1.id != gate2.id || (gate1.rotation + gate2.rotation != 1 && gate1.rotation != -gate2.rotation))
         return false;
     // Both gates must have the same controlsize, if not return false
     if(gate1.controlSize != gate2.controlSize)
@@ -381,16 +388,16 @@ bool find_palindromes(C_struct* c_s, BDDVAR q, BDDVAR depth1, BDDVAR depth2)
     return true;
 }
 
-void remove_gates(C_struct* c_s, BDDVAR q, BDDVAR depth1, BDDVAR depth2)
+void remove_gate(C_struct* c_s, BDDVAR q, BDDVAR depth)
 {
     // Remove all controls by placing identity gates
-    for (BDDVAR i = 0; i < c_s->circuit[q][depth1].controlSize; i++) {
-        c_s->circuit[c_s->circuit[q][depth1].control[i]][depth1] = gate_I;
-        c_s->circuit[c_s->circuit[q][depth1].control[i]][depth2] = gate_I;
+    if (c_s->circuit[q][depth].controlSize != 0) {
+        for (BDDVAR i = c_s->circuit[q][depth].control[0]; i < q; i++) {
+            c_s->circuit[i][depth] = gate_I;
+        }
     }
     // Remove the gate by placing identity gates
-    c_s->circuit[q][depth1] = gate_I;
-    c_s->circuit[q][depth2] = gate_I;
+    c_s->circuit[q][depth] = gate_I;
 }
 
 void reduce_c_struct(C_struct* c_s)
@@ -484,8 +491,11 @@ void print_c_struct(C_struct c_s, bool show_rotation)
                 // If a rotation has been found in the column, print accordingly
                 if (has_rotation) {
                     // If the current gate has a rotation, print its rotation
-                    if(c_s.circuit[i][j].id == gate_Rx.id || c_s.circuit[i][j].id == gate_Ry.id || c_s.circuit[i][j].id == gate_Rz.id)
+                    if(c_s.circuit[i][j].id == gate_Rx.id || c_s.circuit[i][j].id == gate_Ry.id || c_s.circuit[i][j].id == gate_Rz.id) {
                         printf("(%.4lf)",roundf(c_s.circuit[i][j].rotation*10000)/10000);
+                        if(negative_rotation && c_s.circuit[i][j].rotation >= 0)
+                            printf("-");
+                    }
                     // If the current gate does not have a rotation, print extra wire space for alignment
                     else {
                         if (negative_rotation)

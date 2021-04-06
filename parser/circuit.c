@@ -35,33 +35,33 @@ Circuit* create_circuit(char* filename)
     return circuit_s;
 }
 
-void print_circuit(Circuit circuit_s, bool show_rotation)
+void print_circuit(Circuit* circuit_s, bool show_rotation)
 {
     // Initialise variables
     bool has_rotation = false;
     bool negative_rotation = false;
     // Loop over all positions, going row by row
-    for (BDDVAR i = 0; i < circuit_s.nvars; i++) {
-        for (BDDVAR j = 0; j < circuit_s.depth; j++) {
+    for (BDDVAR i = 0; i < circuit_s->nvars; i++) {
+        for (BDDVAR j = 0; j < circuit_s->depth; j++) {
             // Print the gate
-            printf("-%s",circuit_s.circuit[i][j].gateSymbol);
+            printf("-%s",circuit_s->circuit[i][j].gateSymbol);
             // If rotation, check if a rotation needs to be printed in this column
             if (show_rotation) {
                 // Reset rotation variables
                 has_rotation = false;
                 negative_rotation = false;
                 // Check if any qubit in the column has a rotation and set variables accordingly
-                for (BDDVAR k = 0; k < circuit_s.nvars; k++) {
-                    if(circuit_s.circuit[k][j].id == gate_Rx.id || circuit_s.circuit[k][j].id == gate_Ry.id || circuit_s.circuit[k][j].id == gate_Rz.id)
+                for (BDDVAR k = 0; k < circuit_s->nvars; k++) {
+                    if(circuit_s->circuit[k][j].id == gate_Rx.id || circuit_s->circuit[k][j].id == gate_Ry.id || circuit_s->circuit[k][j].id == gate_Rz.id)
                         has_rotation = true;
-                    if(circuit_s.circuit[k][j].rotation < 0)
+                    if(circuit_s->circuit[k][j].rotation < 0)
                         negative_rotation = true;
                 }
                 // If a rotation has been found in the column, print accordingly
                 if (has_rotation) {
                     // If the current gate has a rotation, print its rotation
-                    if(circuit_s.circuit[i][j].id == gate_Rx.id || circuit_s.circuit[i][j].id == gate_Ry.id || circuit_s.circuit[i][j].id == gate_Rz.id)
-                        printf("(%.4lf)",roundf(circuit_s.circuit[i][j].rotation*10000)/10000);
+                    if(circuit_s->circuit[i][j].id == gate_Rx.id || circuit_s->circuit[i][j].id == gate_Ry.id || circuit_s->circuit[i][j].id == gate_Rz.id)
+                        printf("(%.4lf)",roundf(circuit_s->circuit[i][j].rotation*10000)/10000);
                     // If the current gate does not have a rotation, print extra wire space for alignment
                     else {
                         if (negative_rotation)
@@ -80,8 +80,8 @@ void print_circuit(Circuit circuit_s, bool show_rotation)
 void delete_circuit(Circuit* circuit_s)
 {
     // Loop over all positions in the circuit
-    for (BDDVAR j = 0; j < circuit_s->max_wire; j++) {
-        for (BDDVAR i = 0; i < circuit_s->max_qubits; i++) {
+    for (BDDVAR j = 0; j < circuit_s->depth; j++) {
+        for (BDDVAR i = 0; i < circuit_s->nvars; i++) {
             // If the gate has control qubits, free the list of indices
             if (circuit_s->circuit[i][j].id != gate_I.id) {
                 if (circuit_s->circuit[i][j].control != NULL || circuit_s->circuit[i][j].controlSize != 0)
@@ -90,16 +90,19 @@ void delete_circuit(Circuit* circuit_s)
         }
     }
     // Free each wire
-    for (BDDVAR i = 0; i < circuit_s->max_qubits; i++)
+    for (BDDVAR i = 0; i < circuit_s->nvars; i++)
         free(circuit_s->circuit[i]);
     // Free the remaining data from the circuit struct
     free(circuit_s->circuit);
 }
 
-void skip_to_gate(Circuit* circuit_s, BDDVAR i)
+bool skip_to_gate(Circuit* circuit_s, BDDVAR i)
 {
     // Initialise variables
     bool depth_reached, is_gate_I, is_gate_barrier;
+    // Check if 'i' is valid
+    if (i >= circuit_s->nvars)
+        return false;
     // Walk over wire until the wire ends or you find a gate
     do {
         // Increase the progress of the wire
@@ -109,6 +112,7 @@ void skip_to_gate(Circuit* circuit_s, BDDVAR i)
         is_gate_I = circuit_s->circuit[i][circuit_s->progress[i]].id == gate_I.id;
         is_gate_barrier = circuit_s->circuit[i][circuit_s->progress[i]].id == gate_barrier.id;
     } while (depth_reached && (is_gate_I || is_gate_barrier));
+    return true;
 }
 
 TASK_IMPL_2(bool, advance, Circuit*, circuit_s, BDDVAR, q)
@@ -116,6 +120,9 @@ TASK_IMPL_2(bool, advance, Circuit*, circuit_s, BDDVAR, q)
     // Initialise variables
     Gate gate = circuit_s->circuit[q][circuit_s->progress[q]];
     BDDVAR gate_id = get_gateid(gate);
+    // Check if 'q' is valid
+    if (q >= circuit_s->nvars)
+        return false;
     // Check for every control qubit if the progress on that wire is equal to the progress of the target
     for (BDDVAR i = 0; i < gate.controlSize; i++) {
         if (circuit_s->circuit[gate.control[i]][circuit_s->progress[gate.control[i]]].id != gate_ctrl.id)
@@ -169,8 +176,8 @@ TASK_IMPL_1(BDDVAR, get_gateid, Gate, gate)
     else if (gate.id == gate_Rz.id)
         gate_id = GATEID_Rz(gate.rotation);
     else {
-        printf("Unknown gate: %d\n", gate.id);
-        exit(1);
+        fprintf(stderr, "Unknown gate: %d\n", gate.id);
+        exit(EXIT_FAILURE);
     }
     return gate_id;
 }

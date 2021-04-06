@@ -14,19 +14,20 @@ int main(int argc, char *argv[])
     // Initialise flag parameters
     char *filename = argv[1];
     bool optimize = false;
+    bool rotation = false;
     int opt;
 
     // Read flags from cmd and set parameters
-    while((opt = getopt(argc, argv, "f:o")) != -1) {
+    while((opt = getopt(argc, argv, "or")) != -1) {
         switch(opt) {
-            case 'f':
-                filename = optarg;
-                break;
             case 'o':
                 optimize = true;
                 break;
+            case 'r':
+                rotation = true;
+                break;
             default:
-                fprintf(stderr, "usage: %s file [-r runs][-s seed][-m matrix_node_limit]\n", argv[0]);
+                fprintf(stderr, "usage: %s file [-o optimize][-r show_rotations]\n", argv[0]);
                 exit(EXIT_FAILURE);
         }
     }
@@ -40,7 +41,7 @@ int main(int argc, char *argv[])
     // Create circuit struct
     C_struct c_s = make_c_struct(filename, optimize);
     // Print circuit
-    print_c_struct(c_s, false);
+    print_c_struct(c_s, rotation);
     // Free circuit variables
     delete_c_struct(&c_s);
     return 0;
