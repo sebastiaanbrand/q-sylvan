@@ -80,9 +80,13 @@ qdd_grover(BDDVAR n, bool *flag)
     return qdd;
 }
 
-
 QDD
 qdd_grover_matrix(BDDVAR n, bool *flag)
+{
+    return qdd_grover_matrix_multi_its(n, flag, 1);
+}
+
+QDD qdd_grover_matrix_multi_its(BDDVAR n, bool *flag, int t)
 {
     LACE_ME;
 
@@ -128,6 +132,13 @@ qdd_grover_matrix(BDDVAR n, bool *flag)
     grov_it = qdd_matmat_mult(first_n_X,  grov_it, nqubits);
     grov_it = qdd_matmat_mult(first_n_H,  grov_it, nqubits);
 
+    // Compute grov_it^t
+    QDD grov_its = grov_it;
+    for (int i = 1; i < t; i++) {
+        grov_its = qdd_matmat_mult(grov_its, grov_it, nqubits);
+    }
+    R = R / t;
+
     // Now, actually apply the circuit:
     // 1. Start with all zero state + ancilla: |000...0>|1>
     bool *init = malloc( sizeof(bool)*(nqubits) );
@@ -153,20 +164,20 @@ qdd_grover_matrix(BDDVAR n, bool *flag)
             // gc amp table
             QDD keep[2];
             keep[0] = state;
-            keep[1] = grov_it;
+            keep[1] = grov_its;
             qdd_gc_amp_table2(keep, 2);
             state = keep[0];
-            grov_it = keep[1];
+            grov_its = keep[1];
 
             // gc node table
             qdd_refs_push(state);
-            qdd_refs_push(grov_it);
+            qdd_refs_push(grov_its);
             sylvan_gc();
             qdd_refs_pop(2);
 
             // gc node table
         }
-        state = qdd_matvec_mult(grov_it, state, nqubits);
+        state = qdd_matvec_mult(grov_its, state, nqubits);
     }
     if (VERBOSE) {
         printf("\rGrover progress %lf%%\n", 100.);
