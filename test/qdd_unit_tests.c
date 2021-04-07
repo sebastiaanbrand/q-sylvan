@@ -1967,7 +1967,7 @@ int test_with(int amps_backend, int norm_strat)
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<11, -1, amps_backend, NORM_LOW);
+    sylvan_init_qdd(1LL<<11, -1, amps_backend, norm_strat);
     qdd_set_testing_mode(true); // turn on internal sanity tests
 
     printf("amps backend = %d, norm strategy = %d:\n", amps_backend, norm_strat);
