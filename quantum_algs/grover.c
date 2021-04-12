@@ -1,7 +1,13 @@
 #include "grover.h"
 #include "sylvan_qdd_complex.h"
 
-static bool VERBOSE = true;
+static bool VERBOSE = false;
+
+void
+qdd_grover_set_verbose(bool v)
+{
+    VERBOSE = v;
+}
 
 uint64_t
 qdd_grover_approx_number_of_gates(BDDVAR nbits)

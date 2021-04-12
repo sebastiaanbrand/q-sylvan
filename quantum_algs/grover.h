@@ -2,6 +2,9 @@
 
 #include "sylvan.h"
 
+/* default = false */
+void qdd_grover_set_verbose(bool v);
+
 /* Approximate number of gates for 'nbits'-bit Grover */
 uint64_t qdd_grover_approx_number_of_gates(BDDVAR nbits);
 

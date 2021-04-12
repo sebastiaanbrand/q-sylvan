@@ -270,6 +270,8 @@ double bench_grover_matrix_once(int num_bits, bool flag[], int workers, char *lo
     qdd_set_gc_amp_table_thres(ctable_gc_thres);
     qdd_set_caching_granularity(caching_granularity);
 
+    qdd_grover_set_verbose(true);
+
     QDD grov;
     uint64_t node_count_end;
     
