@@ -126,16 +126,16 @@ QDD qdd_grover_matrix_multi_its(BDDVAR n, bool *flag, int t)
     
     // Grover iteration = oracle + mean inversion
     grov_it = oracle;
-    grov_it = qdd_matmat_mult(first_n_H,  grov_it, nqubits);
-    grov_it = qdd_matmat_mult(first_n_X,  grov_it, nqubits);
-    grov_it = qdd_matmat_mult(first_n_CZ, grov_it, nqubits);
-    grov_it = qdd_matmat_mult(first_n_X,  grov_it, nqubits);
-    grov_it = qdd_matmat_mult(first_n_H,  grov_it, nqubits);
+    grov_it = qdd_matmat_mult(&first_n_H,  &grov_it, nqubits);
+    grov_it = qdd_matmat_mult(&first_n_X,  &grov_it, nqubits);
+    grov_it = qdd_matmat_mult(&first_n_CZ, &grov_it, nqubits);
+    grov_it = qdd_matmat_mult(&first_n_X,  &grov_it, nqubits);
+    grov_it = qdd_matmat_mult(&first_n_H,  &grov_it, nqubits);
 
     // Compute grov_it^t
     QDD grov_its = grov_it;
     for (int i = 1; i < t; i++) {
-        grov_its = qdd_matmat_mult(grov_its, grov_it, nqubits);
+        grov_its = qdd_matmat_mult(&grov_its, &grov_it, nqubits);
     }
     R = R / t;
 
@@ -147,7 +147,7 @@ QDD qdd_grover_matrix_multi_its(BDDVAR n, bool *flag, int t)
     QDD state = qdd_create_basis_state(nqubits, init);
 
     // 2. H on all qubits
-    state = qdd_matvec_mult(all_H, state, nqubits);
+    state = qdd_matvec_mult(&all_H, &state, nqubits);
 
     // 3. Grover iterations
     if (VERBOSE) {
@@ -177,7 +177,7 @@ QDD qdd_grover_matrix_multi_its(BDDVAR n, bool *flag, int t)
 
             // gc node table
         }
-        state = qdd_matvec_mult(grov_its, state, nqubits);
+        state = qdd_matvec_mult(&grov_its, &state, nqubits);
     }
     if (VERBOSE) {
         printf("\rGrover progress %lf%%\n", 100.);

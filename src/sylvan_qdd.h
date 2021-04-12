@@ -219,12 +219,12 @@ TASK_DECL_6(QDD, qdd_cgate_range_rec, QDD, uint32_t, BDDVAR, BDDVAR, BDDVAR, BDD
 
 
 /* Computes Mat * |vec> (Wrapper function) */
-#define qdd_matvec_mult(mat,vec,nvars) (CALL(qdd_matvec_mult,mat,vec,nvars))
-TASK_DECL_3(QDD, qdd_matvec_mult, QDD, QDD, BDDVAR);
+#define qdd_matvec_mult(ptr_mat,ptr_vec,nvars) (CALL(qdd_matvec_mult,ptr_mat,ptr_vec,nvars))
+TASK_DECL_3(QDD, qdd_matvec_mult, QDD *, QDD *, BDDVAR);
 
 /* Computes A*B (note generally AB != BA) (Wrapper function) */
-#define qdd_matmat_mult(a,b,nvars) (CALL(qdd_matmat_mult,a,b,nvars))
-TASK_DECL_3(QDD, qdd_matmat_mult, QDD, QDD, BDDVAR);
+#define qdd_matmat_mult(ptr_a,ptr_b,nvars) (CALL(qdd_matmat_mult,ptr_a,ptr_b,nvars))
+TASK_DECL_3(QDD, qdd_matmat_mult, QDD *, QDD *, BDDVAR);
 
 /**
  * Recursive implementation of matrix-vector mult and matrix-matrix mult.

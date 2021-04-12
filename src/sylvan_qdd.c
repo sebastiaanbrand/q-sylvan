@@ -834,13 +834,12 @@ TASK_IMPL_1(QDD, _fill_new_amp_table, QDD, qdd)
     return res;
 }
 
-void
-qdd_test_gc_amp_table(QDD *keep)
+bool
+qdd_test_gc_amp_table()
 {
     uint64_t entries = get_table_entries_estimate();
     uint64_t size    = get_table_size();
-    if ( ((double)entries / (double)size) > amp_table_gc_thres )
-        qdd_gc_amp_table(keep);
+    return ( ((double)entries / (double)size) > amp_table_gc_thres );
 }
 
 /*************************</cleaning amplitude table>**************************/
@@ -862,7 +861,8 @@ static void
 qdd_do_before_gate(QDD* qdd)
 {
     // check if ctable needs gc
-    if (auto_gc_amp_table) qdd_test_gc_amp_table(qdd);
+    if (auto_gc_amp_table && qdd_test_gc_amp_table())
+            qdd_gc_amp_table(qdd);
 
     if (periodic_gc_nodetable) {
         gate_counter++;
@@ -876,6 +876,20 @@ qdd_do_before_gate(QDD* qdd)
 
     // log stuff (if logging is enabled)
     qdd_stats_log(*qdd);
+}
+
+static void
+qdd_do_before_mult(QDD* a, QDD* b)
+{
+    // check if ctable needs gc
+    if (auto_gc_amp_table && qdd_test_gc_amp_table()) {
+        QDD keep[2];
+        keep[0] = *a;
+        keep[1] = *b;
+        qdd_gc_amp_table2(keep, 2);
+        *a = keep[0];
+        *b = keep[1];
+    }
 }
 
 /* Wrapper for applying a single qubit gate. */
@@ -1173,19 +1187,17 @@ TASK_IMPL_6(QDD, qdd_cgate_range_rec, QDD, q, uint32_t, gate, BDDVAR, c_first, B
 }
 
 /* Wrapper for matrix vector multiplication. */
-TASK_IMPL_3(QDD, qdd_matvec_mult, QDD, mat, QDD, vec, BDDVAR, nvars)
+TASK_IMPL_3(QDD, qdd_matvec_mult, QDD *, mat, QDD *, vec, BDDVAR, nvars)
 {
-    assert(!auto_gc_amp_table && "auto gc of ctable not implemented for mult operations");
-    qdd_do_before_gate(&vec);
-    return CALL(qdd_matvec_mult_rec, mat, vec, nvars, 0);
+    qdd_do_before_mult(mat, vec);
+    return CALL(qdd_matvec_mult_rec, *mat, *vec, nvars, 0);
 }
 
 /* Wrapper for matrix vector multiplication. */
-TASK_IMPL_3(QDD, qdd_matmat_mult, QDD, a, QDD, b, BDDVAR, nvars)
+TASK_IMPL_3(QDD, qdd_matmat_mult, QDD *, a, QDD *, b, BDDVAR, nvars)
 {
-    assert(!auto_gc_amp_table && "auto gc of ctable not implemented for mult operations");
-    //qdd_do_before_gate(&vec);
-    return CALL(qdd_matmat_mult_rec, a, b, nvars, 0);
+    qdd_do_before_mult(a, b);
+    return CALL(qdd_matmat_mult_rec, *a, *b, nvars, 0);
 }
 
 TASK_IMPL_4(QDD, qdd_matvec_mult_rec, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR, nextvar)
