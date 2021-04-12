@@ -78,6 +78,17 @@ C_struct make_c_struct(char *filename, bool optimize);
 void reallocate_wire(C_struct* c_s);
 
 /**
+ * Returns a copy of <c_s> where max_qubits and max_wire are set to nvars and depth respectively.
+ * 
+ * PARAMETERS:
+ * - c_s: circuit struct to copy
+ * 
+ * RETURN:
+ * - A new circuit struct which is a copy of the original (but max_qubits and max_wire changed)
+ */
+C_struct copy_c_struct(C_struct* c_s);
+
+/**
  * Frees all variables used by <c_s>
  * 
  * PARAMETERS:
@@ -141,6 +152,21 @@ void handle_barrier(C_struct* c_s, Gate gate_s);
  * - gate_s: the gate struct to be stored in <c_s>
  */
 void handle_gate(C_struct* c_s, BDDVAR n_qubits, BDDVAR* qubits, Gate Gate);
+
+/**
+ * Gets the depth of the first preceding (or successive) gate of the gate at position (<q>,<depth>) in 
+ * <c_s> if <successive> is false (or true).
+ * 
+ * PARAMETERS:
+ * - c_s: the circuit to be used
+ * - q: the qubit the gate is on
+ * - depth: the column of the current gate
+ * - successive: a variable which tells if the gate should be preceding or successive
+ * 
+ * RETURN:
+ * - the depth of the first preceding (or successive) gate
+ */
+BDDVAR get_next_gate(C_struct* c_s, BDDVAR q, BDDVAR depth, bool successive);
 
 /**
  * Optimize <c_s> by removing redundant gates by finding a set of gates which is an even palindrome 

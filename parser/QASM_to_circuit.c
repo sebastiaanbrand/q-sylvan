@@ -64,7 +64,9 @@ C_struct make_c_struct(char *filename, bool optimize)
         optimize_c_struct(&c_s);
     // Reduce circuit depth by parallelising
     reduce_c_struct(&c_s);
-    return c_s;
+    // Reduce circuit memory by copying the circuit struct (until depth)
+    C_struct final_c_s = copy_c_struct(&c_s);
+    return final_c_s;
 }
 
 void reallocate_wire(C_struct* c_s)
@@ -85,6 +87,24 @@ void reallocate_wire(C_struct* c_s)
         for (BDDVAR j = c_s->max_wire-incr; j < c_s->max_wire; j++)
             c_s->circuit[i][j] = gate_I;
     }
+}
+
+C_struct copy_c_struct(C_struct* c_s)
+{
+    // Create a default circuit struct
+    C_struct new_c_s = c_struct_default;
+    // Allocate space for the circuit
+    new_c_s.circuit = malloc(c_s->nvars*sizeof(c_s->circuit));
+    for (BDDVAR i = 0; i < c_s->nvars; ++i) {
+        new_c_s.circuit[i] = malloc(c_s->depth * sizeof(Gate));
+        for (BDDVAR j = 0; j < c_s->depth; j++)
+            new_c_s.circuit[i][j] = c_s->circuit[i][j];
+    }
+    new_c_s.nvars = c_s->nvars;
+    new_c_s.depth = c_s->depth;
+    new_c_s.max_qubits = c_s->nvars;
+    new_c_s.max_wire = c_s->depth;
+    return new_c_s;
 }
 
 void delete_c_struct(C_struct* c_s)
@@ -290,6 +310,18 @@ void handle_gate(C_struct* c_s, BDDVAR n_qubits, BDDVAR* qubits, Gate gate_s)
     c_s->circuit[qubits[n_qubits]][c_s->depth] = gate_s;
 }
 
+BDDVAR get_next_gate(C_struct* c_s, BDDVAR q, BDDVAR depth, bool successive)
+{
+    // Walk over the wire until a gate is found that is not a barrier or identity gate
+    do {
+        // If you reach the front or end of the circuit, a gate cannot be found
+        if (depth == 0 || depth >= c_s->depth) return c_s->depth;
+        depth += 2*successive-1;
+    }
+    while (c_s->circuit[q][depth].id == gate_barrier.id || c_s->circuit[q][depth].id == gate_I.id);
+    return depth;
+}
+
 void optimize_c_struct(C_struct* c_s)
 {
     // Initialise variables
@@ -301,14 +333,10 @@ void optimize_c_struct(C_struct* c_s)
             // No need to optimize identity gates or control gates (controls are done along with its target)
             gate = c_s->circuit[q][depth1];
             if (gate.id != gate_I.id && gate.id != gate_ctrl.id && gate.id != gate_ctrl_c.id) {
-                depth2 = depth1+1;
                 // Get the depth of the successive gate compared to the gate at the first depth
+                depth2 = get_next_gate(c_s, q, depth1, true);
+                if (depth2 == c_s->depth) break;
                 gate = c_s->circuit[q][depth2];
-                while (gate.id == gate_I.id || gate.id == gate_barrier.id) {
-                    if (depth2 >= c_s->depth) break;
-                    depth2++;
-                    gate = c_s->circuit[q][depth2];
-                }
                 // Check if these gates are the same, and if so, recursively optimize (since we dont know palindrome length)
                 if (find_palindromes(c_s, q, depth1, depth2)) {
                     for (BDDVAR i = 0; i < gate.controlSize; i++)
@@ -328,19 +356,11 @@ void optimize_c_struct_p(C_struct* c_s, BDDVAR q, BDDVAR depth1, BDDVAR depth2)
     remove_gate(c_s, q, depth1);
     remove_gate(c_s, q, depth2);
     // Find the first preceding gate on the qubit
-    do {
-        // If you reach the start of the circuit, a preceding gate cannot be found
-        if (depth1 == 0) return;
-        depth1--;
-    }
-    while (c_s->circuit[q][depth1].id == gate_barrier.id || c_s->circuit[q][depth1].id == gate_I.id);
+    depth1 = get_next_gate(c_s, q, depth1, false);
+    if (depth1 == c_s->depth) return;
     // Find the first successive gate on the qubit
-    do {
-        // If you reach the end of the circuit, a successive gate cannot be found
-        if (depth2 >= c_s->depth) return;
-        depth2++;
-    }
-    while (c_s->circuit[q][depth2].id == gate_barrier.id || c_s->circuit[q][depth2].id == gate_I.id);
+    depth2 = get_next_gate(c_s, q, depth2, true);
+    if (depth2 == c_s->depth) return;
     // If two gates have been found, check all qubits
     for (BDDVAR q = 0; q < c_s->nvars; q++) {
         gate = c_s->circuit[q][depth1];
