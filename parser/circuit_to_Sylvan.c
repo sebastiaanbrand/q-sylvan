@@ -308,9 +308,9 @@ int main(int argc, char *argv[])
     C_struct c_s = make_c_struct(filename, optimize);
     // Run the circuit based on method
     if (matrix != 0)
-        run_circuit_matrix(c_s, runs, matrix, false);
+        run_circuit_matrix(c_s, runs, matrix, true);
     else
-        run_c_struct(c_s, runs, false);
+        run_c_struct(c_s, runs, true);
     // Free variables
     delete_c_struct(&c_s);
     sylvan_quit();
