@@ -8,7 +8,12 @@ static long double TOLERANCE = 1e-14l;
 
 static inline bool flt_close(fl_t x, fl_t y) 
 {
-    return (flt_abs(x - y) < TOLERANCE);
+    if (TOLERANCE == 0.0) {
+        return x == y;
+    }
+    else {
+        return (flt_abs(x - y) < TOLERANCE);
+    }
 }
 
 static bool flt_compare(fl_t x, fl_t y)

@@ -68,6 +68,25 @@ int test_mpreal_tree_map()
     found = mpreal_tree_map_find_or_put(map, val2, &index2); test_assert(found == 0);
     test_assert(index1 != index2);
 
+    // test with tolerance = 0
+    mpreal_tree_map_free(map);
+    map = mpreal_tree_map_create(1<<10, 0.0);
+
+    val1.r = 0; val1.i = (2./3.);
+    val2.r = 0; val2.i = (2./3.);
+    found = mpreal_tree_map_find_or_put(map, val1, &index1); test_assert(found == 0);
+    found = mpreal_tree_map_find_or_put(map, val2, &index2); test_assert(found == 1);
+    test_assert(index1 == index2);
+
+    val1.r = 0; val1.i = 2.99999999999999855;
+    val2.r = 0; val2.i = 3.00000000000000123;
+    test_assert(val1.i != val2.i);
+    found = mpreal_tree_map_find_or_put(map, val1, &index1); test_assert(found == 0);
+    found = mpreal_tree_map_find_or_put(map, val2, &index2); test_assert(found == 0);
+    test_assert(index1 != index2);
+    val3 = mpreal_tree_map_get(map, index1);
+    test_assert(val3.r == val1.r && val3.i == val1.i);
+
     mpreal_tree_map_free(map);
     if(VERBOSE) printf("mpreal tree map tests:    ok\n");
     return 0;
