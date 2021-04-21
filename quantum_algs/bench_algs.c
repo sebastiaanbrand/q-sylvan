@@ -238,8 +238,8 @@ double bench_grover_once(int num_bits, bool flag[], int workers, char *fpath,
 }
 
 double bench_grover_matrix_once(int num_bits, bool flag[], int t, int workers, char *log_path, 
-                                char* dot_path ,uint64_t *nodes_peak, double *avg_nodes, 
-                                uint64_t *n_gates, double *prob_flag)
+                                char* dot_path, uint64_t *mat_nodes, uint64_t *nodes_peak, 
+                                double *avg_nodes, uint64_t *n_gates, double *prob_flag)
 {
     if (VERBOSE) {
         printf("bench grover, %d qubits, t=%d, %2d worker(s), ", num_bits+1, t, workers); 
@@ -272,12 +272,12 @@ double bench_grover_matrix_once(int num_bits, bool flag[], int t, int workers, c
 
     qdd_grover_set_verbose(true);
 
-    QDD grov;
+    QDD state, matrix;
     uint64_t node_count_end;
     
     qdd_stats_start(logfile);
 
-    grov = qdd_grover_matrix_multi_its(num_bits, flag, t);
+    state = qdd_grover_matrix_multi_its(num_bits, flag, t, &matrix);
 
     if (nodes_peak != NULL) *nodes_peak = qdd_stats_get_nodes_peak();
     if (avg_nodes  != NULL) *avg_nodes = qdd_stats_get_nodes_avg();
@@ -287,8 +287,9 @@ double bench_grover_matrix_once(int num_bits, bool flag[], int t, int workers, c
     t_end = wctime();
     runtime = (t_end - t_start);
 
-    node_count_end = qdd_countnodes(grov);
-    *prob_flag = amp_to_prob(qdd_get_amplitude(grov, flag))*2;
+    node_count_end = qdd_countnodes(state);
+    *prob_flag = amp_to_prob(qdd_get_amplitude(state, flag))*2;
+    *mat_nodes = qdd_countnodes(matrix);
     uint64_t np = (nodes_peak == NULL) ? 0 : *nodes_peak;
     if (VERBOSE) {
         printf("%ld nodes end (%ld peak), Pr(flag)=%.3lf, %lf sec\n", node_count_end, np, *prob_flag , runtime);
@@ -296,7 +297,7 @@ double bench_grover_matrix_once(int num_bits, bool flag[], int t, int workers, c
 
     if (dot_path != NULL) {
         FILE *fp = fopen(dot_path, "w");
-        qdd_fprintdot(fp, grov, false);
+        qdd_fprintdot(fp, state, false);
         fclose(fp);
     }
 
@@ -708,7 +709,7 @@ int bench_grover_matrix()
     strcpy(overview_fname, output_dir);
     strcat(overview_fname, "summary.csv");
     FILE *overview_file = fopen(overview_fname, "w");
-    fprintf(overview_file, "qubits, t, peak_nodes, avg_nodes, workers, "
+    fprintf(overview_file, "qubits, t, mat_nodes, peak_nodes, avg_nodes, workers, "
                            "gates, runtime, avg_gate_time, "
                            "plus_cacheput, plus_cached, "
                            "mult_cacheput, mult_cached, "
@@ -756,11 +757,11 @@ int bench_grover_matrix()
     int f_int;
 
     // G^t
-    int ts[] = {1,2,3,4};
+    int ts[] = {1,2,4,6,8};
 
     // runtimes are written to single file
     double runtime = 0, avg_gate_time = 0, avg_nodes = 0, prob_flag = 0;
-    uint64_t nodes_peak = 0, n_gates = 0;
+    uint64_t mat_nodes = 0, nodes_peak = 0, n_gates = 0;
     uint64_t mult_cached = 0, mult_cacheput = 0;
     uint64_t plus_cached = 0, plus_cacheput = 0;
     uint64_t amp_add_cached = 0, amp_add_cacheput = 0;
@@ -799,8 +800,8 @@ int bench_grover_matrix()
                     qdd_stats_set_granularity(log_granularity);
 
                     // bench twice, once with logging and once for timing
-                    runtime = bench_grover_matrix_once(n_bits[q], flag, ts[t], n_workers[w], NULL, dotfile_path, NULL, NULL, NULL, &prob_flag);
-                    //bench_grover_matrix_once(n_bits[q], flag, ts[t], n_workers[w], history_path, &nodes_peak, &avg_nodes, &n_gates, &prob_flag);
+                    runtime = bench_grover_matrix_once(n_bits[q], flag, ts[t], n_workers[w], NULL, dotfile_path, &mat_nodes, NULL, NULL, NULL, &prob_flag);
+                    //bench_grover_matrix_once(n_bits[q], flag, ts[t], n_workers[w], history_path, dotfile_path, &mat_nodes, &nodes_peak, &avg_nodes, &n_gates, &prob_flag);
 
                     // add summary of this run to overview file
                     avg_gate_time = runtime / (double) n_gates;
@@ -820,8 +821,9 @@ int bench_grover_matrix()
                     mul_down_total = sylvan_stats.counters[AMP_MUL_DOWN];
                     mul_down_found = sylvan_stats.counters[AMP_MUL_DOWN_CACHED];
                     #endif
-                    fprintf(overview_file, "%d, %d, %ld, %lf, %d, %ld, %lf, %.3e, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %d, %lf\n",
-                                            n_bits[q]+1, ts[t], nodes_peak, avg_nodes, n_workers[w],
+                    fprintf(overview_file, "%d, %d, %ld, %ld, %lf, %d, %ld, %lf, %.3e, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %ld, %d, %lf\n",
+                                            n_bits[q]+1, ts[t], mat_nodes, nodes_peak, 
+                                            avg_nodes, n_workers[w],
                                             n_gates, runtime, avg_gate_time, 
                                             plus_cacheput, plus_cached,
                                             mult_cacheput, mult_cached,

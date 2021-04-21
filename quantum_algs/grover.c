@@ -89,10 +89,11 @@ qdd_grover(BDDVAR n, bool *flag)
 QDD
 qdd_grover_matrix(BDDVAR n, bool *flag)
 {
-    return qdd_grover_matrix_multi_its(n, flag, 1);
+    QDD m;
+    return qdd_grover_matrix_multi_its(n, flag, 1, &m);
 }
 
-QDD qdd_grover_matrix_multi_its(BDDVAR n, bool *flag, int t)
+QDD qdd_grover_matrix_multi_its(BDDVAR n, bool *flag, int t, QDD *matrix)
 {
     LACE_ME;
 
@@ -144,6 +145,7 @@ QDD qdd_grover_matrix_multi_its(BDDVAR n, bool *flag, int t)
         grov_its = qdd_matmat_mult(&grov_its, &grov_it, nqubits);
     }
     R = R / t;
+    *matrix = grov_its;
 
     // Now, actually apply the circuit:
     // 1. Start with all zero state + ancilla: |000...0>|1>
