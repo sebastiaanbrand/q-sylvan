@@ -28,6 +28,8 @@ def parse_stuff():
                         dest='replot', default=False, action='store_true')
     parser.add_argument('--combined', help='plot current combined.csv data',
                         dest='only_combined', default=False, action='store_true')
+    parser.add_argument('--grover_matrix', help='plot grover matrix plots',
+                        dest='plot_grov_mat', default=False, action='store_true')
     global args 
     args = parser.parse_args()
 
@@ -246,9 +248,60 @@ def plot_all():
                     plot_histories(histories_path, output_folder, alg_name)
 
 
+def plot_grover_matrix(folder_path):
+    file_path = folder_path + 'summary.csv'
+    df = pd.read_csv(file_path)
+    df.columns = df.columns.str.strip()
+
+    # plot parallel speedups for different t's
+    for qubits in df['qubits'].unique():
+        # separate figure for each number of qubits
+        select = df[df['qubits'] == qubits]
+        for t in select['t'].unique():
+            # separate curve for each t
+            select2 = select[select['t'] == t]
+            data_x = select2['workers'].to_numpy()
+            data_y = select2['runtime'].to_numpy()
+            # normalize runtimes by runtime of single worker
+            assert data_x[0] == 1 # we need a 1 worker baseline to normalize
+            data_y = data_y[0] / data_y
+            avg_mat_nodes = (int) (select2['mat_nodes'].mean().round())
+            plt.plot(data_x, data_y, label='t = {} (~{} mat nodes)'.format(t, avg_mat_nodes))
+        plt.xlabel('workers')
+        plt.xticks(select['workers'].unique())
+        plt.ylabel('speedup')
+        plt.title('{} qubit Grover'.format(qubits) + ' as $(G^t)^{R/t}$')
+        plt.legend()
+        plt.savefig(folder_path + 'speedup_{}qubits'.format(qubits) + plt_format)
+        plt.clf()
+
+    # plot speedup for different t's (only for 1 worker)
+    select = df[df['workers'] == 1]
+    for qubits in select['qubits'].unique():
+        select2 = select[select['qubits'] == qubits]
+        data_x = select2['t'].to_numpy()
+        data_y = select2['runtime'].to_numpy()
+        plt.plot(data_x, data_y, label='{} qubits'.format(qubits))
+    plt.yscale('log')
+    plt.ylabel('runtime (s)')
+    plt.xlabel('$t$')
+    plt.title('speedup from running Grover as $(G^t)^{R/t}$ (1 worker)')
+    plt.legend()
+    plt.savefig(folder_path + 'Gt_speedup' + plt_format)
+    plt.clf()
+
+
+def plot_grover_matrix_all():
+    # TODO: loop over all
+    folder_path = bench_path + 'grover_matrix/1619081943/'
+    plot_grover_matrix(folder_path)
+
+
 if __name__ == '__main__':
     parse_stuff()
     if (args.only_combined):
         plot_combined()
+    elif (args.plot_grov_mat):
+        plot_grover_matrix_all()
     else:
         plot_all()
