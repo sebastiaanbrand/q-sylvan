@@ -2,6 +2,7 @@
 #include "sylvan_qdd_complex.h"
 
 static bool VERBOSE = false;
+static bool EXP_BY_SQUARING = true;
 
 void
 qdd_grover_set_verbose(bool v)
@@ -139,10 +140,17 @@ QDD qdd_grover_matrix_multi_its(BDDVAR n, bool *flag, int t, QDD *matrix)
     grov_it = qdd_matmat_mult(&first_n_X,  &grov_it, nqubits);
     grov_it = qdd_matmat_mult(&first_n_H,  &grov_it, nqubits);
 
-    // Compute grov_it^t
+        // Compute grov_it^t (by squaring if t is a power of 2)
     QDD grov_its = grov_it;
-    for (int i = 1; i < t; i++) {
-        grov_its = qdd_matmat_mult(&grov_its, &grov_it, nqubits);
+    if (EXP_BY_SQUARING && ((t & (t - 1)) == 0)) {
+        for (int i = 0; i < log2l(t); i++) {
+            grov_its = qdd_matmat_mult(&grov_its, &grov_its, nqubits);
+        }
+    }
+    else {
+        for (int i = 1; i < t; i++) {
+            grov_its = qdd_matmat_mult(&grov_its, &grov_it, nqubits);
+        }
     }
     R = R / t;
     *matrix = grov_its;
