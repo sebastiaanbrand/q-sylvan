@@ -273,7 +273,7 @@ void handle_gate(C_struct* c_s, BDDVAR n_qubits, BDDVAR* qubits, Gate gate_s)
     // Initialise variables
     Gate gate_ctrl_s;
     bool controlled = false;
-    BDDVAR j = 0;
+    BDDVAR j = 0, max = qubits[n_qubits];
     BDDVAR *control;
     // Increment the depth since were adding a column
     c_s->depth += 1;
@@ -281,14 +281,19 @@ void handle_gate(C_struct* c_s, BDDVAR n_qubits, BDDVAR* qubits, Gate gate_s)
     gate_s.controlSize = n_qubits;
     // If n_qubits is 0, it is not controlled
     if (n_qubits != 0) {
+        // Check if target is below controls
+        for (BDDVAR k = 0; k < n_qubits; k++) {
+            if (qubits[k] > max) {
+                max = qubits[k];
+            }
+        }
         // Create a list of control indices and store in <gate_s>
         control = malloc((n_qubits) * sizeof(BDDVAR));
         for (BDDVAR i = 0; i < n_qubits; i++) control[i] = qubits[i];
         gate_s.control = control;
         // Store all control gates in <c_s>
-        for (BDDVAR i = 0; i < c_s->nvars; i++) {
-            if (i == qubits[n_qubits]) break;
-            if (qubits[j] == i) {
+        for (BDDVAR i = 0; i < max+1; i++) {
+            if (i == qubits[j]) {
                 // Set controlled to true to place vertical bars from now on
                 controlled = true;
                 // Store target in control array of control gate (needed for optimisation)
@@ -451,24 +456,31 @@ void reduce_c_struct(C_struct* c_s)
 void reduce_gate(C_struct* c_s, BDDVAR target, BDDVAR depth)
 {
     // Initialise variables
-    BDDVAR curr;
+    BDDVAR curr, min = target, max = target;
     BDDVAR *control = c_s->circuit[target][depth].control;
     // Get the new reducable depth
     BDDVAR reduce = get_reduce_depth(c_s, target, depth);
     // If the gate has controls, also process those
     if (c_s->circuit[target][depth].controlSize != 0) {
+        // Check if target is below controls
+        for (BDDVAR k = 0; k < c_s->circuit[target][depth].controlSize; k++) {
+            min = (control[k] < min) ? control[k] : min;
+            max = (control[k] > max) ? control[k] : max;
+        }
         // Check everything between first control and target
-        for (BDDVAR i = control[0]; i < target; i++) {
+        for (BDDVAR i = min; i < max+1; i++) {
             // If the new reducable depth is less than the current, set current to new
             curr = get_reduce_depth(c_s, i, depth);
             if (curr > reduce) reduce = curr;
         }
-        // If the controls and gate are not reducable, return 
+        // If the controls and gate are not reducable, return
         if (reduce - depth <= 0) return;
         // Reduce the depth of all gates between first control and target
-        for (BDDVAR i = control[0]; i < target; i++) {
-            c_s->circuit[i][reduce] = c_s->circuit[i][depth];
-            c_s->circuit[i][depth] = gate_I;
+        for (BDDVAR i = min; i < max+1; i++) {
+            if (c_s->circuit[i][depth].id != gate_I.id && i != target) {
+                c_s->circuit[i][reduce] = c_s->circuit[i][depth];
+                c_s->circuit[i][depth] = gate_I;
+            }
         }
     }
     // If the gate is not reducable, return

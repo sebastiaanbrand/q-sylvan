@@ -2,6 +2,18 @@
 #include "sylvan.h"
 
 /**
+ * Prints the final results of the measured qubits (flagged by <measurements>).
+ * 
+ * PARAMETERS:
+ * - qdd: a QDD representing the statevector to be measured on
+ * - measurements: an array containing booleans, where the to be measured qubits are flagged
+ * - nvars: the number of qubits
+ * - runs: the number of times the flagged qubits in the statevector should be measured
+ * - show: toggle to print the measurement results
+ */
+void final_measure(QDD qdd, bool* measurements, BDDVAR nvars, BDDVAR shots, bool show);
+
+/**
  * Returns the Sylvan GATEID that corresponds to <gate>
  * 
  * PARAMETERS:
@@ -14,6 +26,20 @@
 TASK_DECL_1(BDDVAR, get_gate_id, Gate);
 
 /**
+ * Applies controlled <gate> to <qdd> on the qubit with index <i>.
+ * 
+ * PARAMETERS:
+ * - qdd: the statevector on which to apply the controlled <gate>
+ * - gate: the gate to be applied
+ * - i: the index of the qubit in <qdd> on which to apply the controlled <gate>
+ * 
+ * RETURN:
+ * - The statevector qdd where controlled <gate> has been applied on the qubit with index <i>
+ */
+#define apply_controlled_gate(qdd,gate,i,n) (CALL(apply_controlled_gate,qdd,gate,i,n));
+TASK_DECL_4(QDD, apply_controlled_gate, QDD, Gate, BDDVAR, BDDVAR);
+
+/**
  * Applies <gate> to <qdd> on the qubit with index <i>.
  * 
  * PARAMETERS:
@@ -24,8 +50,8 @@ TASK_DECL_1(BDDVAR, get_gate_id, Gate);
  * RETURN:
  * - The statevector qdd where <gate> has been applied on the qubit with index <i>
  */
-#define apply_gate(qdd,gate,i) (CALL(apply_gate,qdd,gate,i));
-TASK_DECL_3(QDD, apply_gate, QDD, Gate, BDDVAR);
+#define apply_gate(qdd,gate,i,n) (CALL(apply_gate,qdd,gate,i,n));
+TASK_DECL_4(QDD, apply_gate, QDD, Gate, BDDVAR, BDDVAR);
 
 /**
  * Generates a gate QDD with <n> qubits that represents <gate> applied to qubit <k>
@@ -42,16 +68,18 @@ TASK_DECL_3(QDD, apply_gate, QDD, Gate, BDDVAR);
 TASK_DECL_3(QDD, handle_control_matrix, Gate, BDDVAR, BDDVAR);
 
 /**
- * Prints the final results of the measured qubits (flagged by <measurements>).
+ * Generates a gate QDD with <n> qubits that represents a swap operation between <qubit1> and <qubit2>
  * 
  * PARAMETERS:
- * - qdd: a QDD representing the statevector to be measured on
- * - measurements: an array containing booleans, where the to be measured qubits are flagged
- * - nvars: the number of qubits
- * - runs: the number of times the flagged qubits in the statevector should be measured
- * - show: toggle to print the measurement results
+ * - qubit1: the index of the first qubit in the swap
+ * - qubit2: the index of the second qubit in the swap
+ * - n: the total number of qubits
+ * 
+ * RETURN:
+ * - The gate QDD with <n> qubits that represents a swap operation between <qubit1> and <qubit2>
  */
-void final_measure(QDD qdd, bool* measurements, BDDVAR nvars, BDDVAR shots, bool show);
+#define circuit_swap_matrix(qubit1,qubit2,n) (CALL(circuit_swap_matrix,qubit1,qubit2,n));
+TASK_DECL_3(QDD, circuit_swap_matrix, BDDVAR, BDDVAR, BDDVAR);
 
 /**
  * Runs the circuit_struct <c_s> for <runs> times and prints the results if <show> is true.

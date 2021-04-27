@@ -101,41 +101,100 @@ TASK_IMPL_1(BDDVAR, get_gate_id, Gate, gate)
     return gate_id;
 }
 
-TASK_IMPL_3(QDD, apply_gate, QDD, qdd, Gate, gate, BDDVAR, i)
+TASK_IMPL_4(QDD, apply_controlled_gate, QDD, qdd, Gate, gate, BDDVAR, k, BDDVAR, n)
+{
+    // Create controlled gate qdd
+    QDD qdd_column = handle_control_matrix(gate, k, n);
+    // multiply with vector
+    qdd = qdd_matvec_mult(qdd_column, qdd, n);
+    return qdd;
+}
+
+TASK_IMPL_4(QDD, apply_gate, QDD, qdd, Gate, gate, BDDVAR, i, BDDVAR, n)
 {
     // Get the corresponding Sylvan GATEID of <gate>
     BDDVAR gate_id = get_gate_id(gate);
-
     // Apply <gate> using the corresponding controls (if any)
     if (gate.controlSize == 0)
         qdd = qdd_gate(qdd, gate_id, i);
-    else if (gate.controlSize == 1)
-        qdd = qdd_cgate(qdd, gate_id, gate.control[0], i);
-    else if (gate.controlSize == 2)
-        qdd = qdd_cgate2(qdd, gate_id, gate.control[0], gate.control[1], i);
-    else if (gate.controlSize == 3)
-        qdd = qdd_cgate3(qdd, gate_id, gate.control[0], gate.control[1], gate.control[2], i);
-    else {
-        // More than 3 controls are not fully implemented yet, easier to throw on all cases
-        fprintf(stderr, "Control-gates with more than 3 controls not implemented.\n");
-        exit(EXIT_FAILURE);
-    }
+    // else if (gate.controlSize > 0 && gate.controlSize <= 4) {
+    else
+        qdd = apply_controlled_gate(qdd, gate, i, n);
+    // }
+    // else {
+    //     // More than 3 controls are not fully implemented yet, easier to throw on all cases
+    //     fprintf(stderr, "Control-gates with more than 3 controls not implemented.\n");
+    //     exit(EXIT_FAILURE);
+    // }
     return qdd;
 }
 
 TASK_IMPL_3(QDD, handle_control_matrix, Gate, gate, BDDVAR, k, BDDVAR, n)
 {
     // Initialise variables
+    QDD qdd, qdd_next;
+    bool sorted = true;
+    BDDVAR temp, gate_id, control = k, index = 0;
     int *c_options = malloc(n * sizeof(int));
     for (BDDVAR i = 0; i < n; i++) c_options[i] = -1;
+    // Check if target is below controls
+    for (BDDVAR j = 0; j < gate.controlSize; j++) {
+        if (gate.control[j] > k)
+            sorted = false;
+        if (gate.control[j] > control) {
+            control = gate.control[j];
+            index = j;
+        }
+    }
+    qdd = qdd_create_all_identity_matrix(n);
+    // If target is not below some controls, swap target with lowest control
+    if (!sorted) {
+        qdd = circuit_swap_matrix(k, control, n);
+        temp = k;
+        k = gate.control[index];
+        gate.control[index] = temp;
+    }
     // Get the corresponding Sylvan GATEID from <gate>
-    BDDVAR gate_id = get_gate_id(gate);
+    gate_id = get_gate_id(gate);
     // Set the indexes of all controls of <gate> to 1
-    for (BDDVAR i = 0; i < gate.controlSize; i++) c_options[gate.control[i]] = 1;
+    for (BDDVAR i = 0; i < gate.controlSize; i++)
+        c_options[gate.control[i]] = 1;
     // Set the index the target of <gate> to 2
     c_options[k] = 2;
     // Create the gate QDD
-    QDD qdd = qdd_create_multi_cgate_rec(n, c_options, gate_id, 0);
+    qdd_next = qdd_create_multi_cgate_rec(n, c_options, gate_id, 0);
+    qdd = qdd_matmat_mult(qdd_next, qdd, n);
+    if (!sorted) {
+        qdd_next = circuit_swap_matrix(temp, k, n);
+        qdd = qdd_matmat_mult(qdd_next, qdd, n);
+        temp = k;
+        k = gate.control[index];
+        gate.control[index] = temp;
+    }
+    return qdd;
+}
+
+TASK_IMPL_3(QDD, circuit_swap_matrix, BDDVAR, qubit1, BDDVAR, qubit2, BDDVAR, n)
+{
+    // Initialise variables
+    QDD qdd, qdd_next;
+    int *c_options = malloc(n * sizeof(int));
+    for (BDDVAR i = 0; i < n; i++) c_options[i] = -1;
+    // Set qubit1 to 1
+    c_options[qubit1] = 1;
+    // Set qubit2 to 2
+    c_options[qubit2] = 2;
+
+    // Perform swap
+    qdd = qdd_create_multi_cgate_rec(n, c_options, GATEID_X, 0);
+    qdd_next = qdd_create_single_qubit_gate(n, qubit1, GATEID_H);
+    qdd = qdd_matmat_mult(qdd_next, qdd, n);
+    qdd_next = qdd_create_multi_cgate_rec(n, c_options, GATEID_Z, 0);
+    qdd = qdd_matmat_mult(qdd_next, qdd, n);
+    qdd_next = qdd_create_single_qubit_gate(n, qubit1, GATEID_H);
+    qdd = qdd_matmat_mult(qdd_next, qdd, n);
+    qdd_next = qdd_create_multi_cgate_rec(n, c_options, GATEID_X, 0);
+    qdd = qdd_matmat_mult(qdd_next, qdd, n);
     return qdd;
 }
 
@@ -215,7 +274,6 @@ QDD run_c_struct(C_struct c_s, BDDVAR runs, bool show)
     for (BDDVAR j = 0; j < c_s.depth; j++) {
         for (BDDVAR i = 0; i < c_s.nvars; i++) {
             gate = c_s.circuit[i][j];
-            
             // Skip barrier (does not affect runs)
             // Skip control gates (controls are used by target gate)
             if (gate.id == gate_barrier.id || gate.id == gate_ctrl.id || gate.id == gate_ctrl_c.id || gate.id == gate_I.id)
@@ -225,7 +283,7 @@ QDD run_c_struct(C_struct c_s, BDDVAR runs, bool show)
                 measurements[i] = true;
             // Apply gate
             else
-                qdd = apply_gate(qdd, gate, i);
+                qdd = apply_gate(qdd, gate, i, c_s.nvars);
         }
     }
     // Measure all qubits
