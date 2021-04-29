@@ -7,11 +7,11 @@
  * PARAMETERS:
  * - qdd: a QDD representing the statevector to be measured on
  * - measurements: an array containing booleans, where the to be measured qubits are flagged
- * - nvars: the number of qubits
+ * - qubits: the number of qubits
  * - runs: the number of times the flagged qubits in the statevector should be measured
  * - show: toggle to print the measurement results
  */
-void final_measure(QDD qdd, bool* measurements, BDDVAR nvars, BDDVAR shots, bool show);
+void final_measure(QDD qdd, bool* measurements, BDDVAR qubits, BDDVAR shots, bool show);
 
 /**
  * Returns the Sylvan GATEID that corresponds to <gate>
@@ -80,6 +80,34 @@ TASK_DECL_3(QDD, handle_control_matrix, Gate, BDDVAR, BDDVAR);
  */
 #define circuit_swap_matrix(qubit1,qubit2,n) (CALL(circuit_swap_matrix,qubit1,qubit2,n));
 TASK_DECL_3(QDD, circuit_swap_matrix, BDDVAR, BDDVAR, BDDVAR);
+
+/**
+ * Checks if the measuring gate at position (<qubit>,<depth>) in <c_s> is the last gate on that qubit
+ * 
+ * PARAMETERS:
+ * - c_s: the circuit on which to check this 
+ * - qubit: the index of the qubit
+ * - depth: the depth of the gate
+ * 
+ * RETURN:
+ * - true if it is the last gate, else false
+ */
+#define is_final_measure(c_s,qubit,depth) (CALL(is_final_measure,c_s,qubit,depth));
+TASK_DECL_3(bool, is_final_measure, C_struct, BDDVAR, BDDVAR);
+
+/**
+ * Checks if the classical register contains the expected value of the classical if statement
+ * 
+ * PARAMETERS:
+ * - bits: the number of bits in the register
+ * - expected: the expected number to see in the register
+ * - actual_list: the register containing the bits
+ * 
+ * RETURN:
+ * - true if they are equal, else false
+ */
+#define check_classical_if(bits,expected,actual_list) (CALL(check_classical_if,bits,expected,actual_list));
+TASK_DECL_3(bool, check_classical_if, BDDVAR, BDDVAR, int*);
 
 /**
  * Runs the circuit_struct <c_s> for <runs> times and prints the results if <show> is true.

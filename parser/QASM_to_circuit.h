@@ -11,40 +11,42 @@ typedef struct Gate
     float rotation;
     BDDVAR *control;
     BDDVAR controlSize;
+    int classical_control;
 } Gate;
 
 // Default gates
-static const Gate gate_I = {0, "--", 0, NULL, 0};
-static const Gate gate_X = {1, "X-", 0.5, NULL, 0};
-static const Gate gate_Y = {2, "Y-", 0.5, NULL, 0};
-static const Gate gate_Z = {3, "Z-", 0.5, NULL, 0};
-static const Gate gate_H = {4, "H-", 0.5, NULL, 0};
-static const Gate gate_sX = {9, "sX", 0.25, NULL, 0};
-static const Gate gate_sY = {10, "sY", 0.25, NULL, 0};
-static const Gate gate_S = {5, "S-", 0.25, NULL, 0};
-static const Gate gate_Sd = {6, "Sd", -0.25, NULL, 0};
-static const Gate gate_T = {7, "T-", 0.125, NULL, 0};
-static const Gate gate_Td = {8, "Td", -0.125, NULL, 0};
-static const Gate gate_Rx = {11, "Rx", 0, NULL, 0};
-static const Gate gate_Ry = {12, "Ry", 0, NULL, 0};
-static const Gate gate_Rz = {13, "Rz", 0, NULL, 0};
-static const Gate gate_ctrl = {14, "@-", 0, NULL, 0};
-static const Gate gate_ctrl_c = {15, "|-", 0, NULL, 0};
-static const Gate gate_measure = {16, "M-", 0, NULL, 0};
-static const Gate gate_barrier = {17, "#-", 0, NULL, 0};
+static const Gate gate_I = {0, "--", 0, NULL, 0, -1};
+static const Gate gate_X = {1, "X-", 0.5, NULL, 0, -1};
+static const Gate gate_Y = {2, "Y-", 0.5, NULL, 0, -1};
+static const Gate gate_Z = {3, "Z-", 0.5, NULL, 0, -1};
+static const Gate gate_H = {4, "H-", 0.5, NULL, 0, -1};
+static const Gate gate_sX = {9, "sX", 0.25, NULL, 0, -1};
+static const Gate gate_sY = {10, "sY", 0.25, NULL, 0, -1};
+static const Gate gate_S = {5, "S-", 0.25, NULL, 0, -1};
+static const Gate gate_Sd = {6, "Sd", -0.25, NULL, 0, -1};
+static const Gate gate_T = {7, "T-", 0.125, NULL, 0, -1};
+static const Gate gate_Td = {8, "Td", -0.125, NULL, 0, -1};
+static const Gate gate_Rx = {11, "Rx", 0, NULL, 0, -1};
+static const Gate gate_Ry = {12, "Ry", 0, NULL, 0, -1};
+static const Gate gate_Rz = {13, "Rz", 0, NULL, 0, -1};
+static const Gate gate_ctrl = {14, "@-", 0, NULL, 0, -1};
+static const Gate gate_ctrl_c = {15, "|-", 0, NULL, 0, -1};
+static const Gate gate_measure = {16, "M-", 0, NULL, 0, -1};
+static const Gate gate_barrier = {17, "#-", 0, NULL, 0, -1};
 
 // Circuit struct
 typedef struct C_struct
 {
     Gate** circuit;
-    BDDVAR nvars;
+    BDDVAR qubits;
+    BDDVAR bits;
     BDDVAR depth;
     BDDVAR max_qubits;
     BDDVAR max_wire;
 } C_struct;
 
 // Default circuit
-static const C_struct c_struct_default = {NULL, 0, 0, 128, 1024};
+static const C_struct c_struct_default = {NULL, 0, 0, 0, 128, 1024};
 
 /**
  * Creates a circuit struct that represents the circuit described in <filename>. If
@@ -52,7 +54,7 @@ static const C_struct c_struct_default = {NULL, 0, 0, 128, 1024};
  * 
  * ATTRIBUTES:
  * - circuit: a two dimensional array containing gates corresponding to the QASM file
- * - nvars: number of rows/qubits in the circuit
+ * - qubits: number of rows/qubits in the circuit
  * - depth: number of columns in the circuit
  * - max_qubits: the maximum number of qubits
  * - max_wire: the maximum wire length (can be extended with 'reallocate_wire')
@@ -78,7 +80,7 @@ C_struct make_c_struct(char *filename, bool optimize);
 void reallocate_wire(C_struct* c_s);
 
 /**
- * Returns a copy of <c_s> where max_qubits and max_wire are set to nvars and depth respectively.
+ * Returns a copy of <c_s> where max_qubits and max_wire are set to qubits and depth respectively.
  * 
  * PARAMETERS:
  * - c_s: circuit struct to copy
@@ -131,7 +133,7 @@ bool get_qubits_c_struct(char* token, BDDVAR n_qubits, BDDVAR* qubits);
  * RETURN:
  * - the number of controls (including target) <gate_s> has. If the gate is unknown controls is 0.
  */
-BDDVAR get_gateid_c_struct(char* gate_str, Gate* gate);
+int get_gateid_c_struct(char* gate_str, Gate* gate);
 
 /**
  * Stores a barrier gate across the whole current column.
@@ -220,6 +222,16 @@ void remove_gate(C_struct* c_s, BDDVAR q, BDDVAR depth);
  * - c_s: the circuit which depth should be reduced
  */
 void reduce_c_struct(C_struct* c_s);
+
+/**
+ * Reduces the depth of a gate on qubit <target> in column <depth> which is classically controlled.
+ * 
+ * PARAMETERS:
+ * - c_s: the circuit in which the depth a gate needs to be reduced
+ * - target: the qubit on which the gate is
+ * - depth: the column in which the gate is
+ */
+void reduce_classical_gate(C_struct* c_s, BDDVAR target, BDDVAR depth);
 
 /**
  * Reduces the depth of a gate on qubit <target> in column <depth>.

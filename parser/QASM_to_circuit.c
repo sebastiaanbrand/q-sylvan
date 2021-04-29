@@ -31,7 +31,7 @@ C_struct make_c_struct(char *filename, bool optimize)
     while ((read = getline(&line, &len, f)) != -1) {
         index++;
         // If the circuit takes more than 128 qubits, give error
-        if (c_s.nvars >= c_s.max_qubits) {
+        if (c_s.qubits >= c_s.max_qubits) {
             fprintf(stderr, "Too much qubits, current maximum is 128.\n");
             exit(EXIT_FAILURE);
         }
@@ -94,15 +94,16 @@ C_struct copy_c_struct(C_struct* c_s)
     // Create a default circuit struct
     C_struct new_c_s = c_struct_default;
     // Allocate space for the circuit
-    new_c_s.circuit = malloc(c_s->nvars*sizeof(c_s->circuit));
-    for (BDDVAR i = 0; i < c_s->nvars; ++i) {
+    new_c_s.circuit = malloc(c_s->qubits*sizeof(c_s->circuit));
+    for (BDDVAR i = 0; i < c_s->qubits; ++i) {
         new_c_s.circuit[i] = malloc(c_s->depth * sizeof(Gate));
         for (BDDVAR j = 0; j < c_s->depth; j++)
             new_c_s.circuit[i][j] = c_s->circuit[i][j];
     }
-    new_c_s.nvars = c_s->nvars;
+    new_c_s.qubits = c_s->qubits;
+    new_c_s.bits = c_s->bits;
     new_c_s.depth = c_s->depth;
-    new_c_s.max_qubits = c_s->nvars;
+    new_c_s.max_qubits = c_s->qubits;
     new_c_s.max_wire = c_s->depth;
     return new_c_s;
 }
@@ -130,31 +131,50 @@ bool handle_line_c_struct(char* line, C_struct* c_s)
 {
     // Initialise variables
     Gate gate_s;
-    BDDVAR n_qubits = 0;
+    int n_qubits = 0;
     // tokenize string
     char* gate_str = strtok(line, " ");
     char* targets_str = strtok(NULL, "");
     // Create all-zero state with given size
     if (strstr(gate_str, "qreg") != NULL) {
-        if(!get_qubits_c_struct(targets_str, 0, &c_s->nvars))
+        if(!get_qubits_c_struct(targets_str, 0, &c_s->qubits))
+            return false;
+    }
+    else if (strstr(gate_str, "creg") != NULL) {
+        if(!get_qubits_c_struct(targets_str, 0, &c_s->bits))
             return false;
     }
     else {
         // Get the gate struct corresponding to the gate command and the qubit count
         n_qubits = get_gateid_c_struct(gate_str, &gate_s);
-        // If n_qubits is 0 there is an unknown command in <line>
-        if (n_qubits != 0) {
+        // If -1 is returned, an if statement is found
+        if (n_qubits == -1) {
+            gate_str = strtok(gate_str, "=");
+            gate_str = strtok(NULL, "=");
+            gate_str = strtok(gate_str, ")");
+            BDDVAR expected = (BDDVAR)atoi(gate_str);
+            gate_str = strtok(targets_str, " ");
+            targets_str = strtok(NULL, "");
+            // Get the gate struct corresponding to the gate command and the qubit count
+            n_qubits = get_gateid_c_struct(gate_str, &gate_s);
+            gate_s.classical_control = expected;
+        }
+        // If n_qubits is 0 there is an unknown command in <line> and if it is -1 the if statement failed
+        if (n_qubits > 0) {
             // Handle barrier
             if (gate_s.id == gate_barrier.id)
                handle_barrier(c_s, gate_s);
             else {
+                // If it is a measure gate, at a control to store the classical target
+                if (gate_s.id == gate_measure.id)
+                    n_qubits++;
                 // Get the target qubit(s) and handle the gate
                 BDDVAR *qubits = malloc((n_qubits) * sizeof(BDDVAR));
                 if(!get_qubits_c_struct(targets_str, n_qubits-1, qubits))
                     return false;
                 // Check if all qubits are within range of the circuit
-                for (BDDVAR i = 0; i < n_qubits; i++) {
-                    if(qubits[i] >= c_s->nvars)
+                for (int i = 0; i < n_qubits; i++) {
+                    if(qubits[i] >= c_s->qubits)
                         return false;
                 }
                 // Store the gate and free variables
@@ -192,17 +212,19 @@ bool get_qubits_c_struct(char* token, BDDVAR n_qubits, BDDVAR* qubits)
     return true;
 }
 
-BDDVAR get_gateid_c_struct(char* gate_str, Gate* gate_s)
+int get_gateid_c_struct(char* gate_str, Gate* gate_s)
 {
     // Count the controls, starting by 1 (there is always a target)
     // Skip creg, not needed (TODO: maybe implement later?)
-    BDDVAR n_qubits = 1;
+    int n_qubits = 1;
     while(gate_str[0] == 'c' && strcmp(gate_str, "creg") != 0) {
         gate_str++;
         n_qubits++;
     }
     // Handle gates
-    if (strcmp(gate_str, "i") == 0)
+    if (gate_str[0] == 'i' && gate_str[1] == 'f')
+        return -1;
+    else if (strcmp(gate_str, "i") == 0)
         *gate_s = gate_I;
     else if (strcmp(gate_str, "x") == 0)
         *gate_s = gate_X;
@@ -256,16 +278,16 @@ void handle_barrier(C_struct* c_s, Gate gate_s)
     // Increment the depth since were adding a column
     c_s->depth++;
     // Place barriers on all qubits except the last
-    for (BDDVAR i = 0; i < c_s->nvars-1; i++)
+    for (BDDVAR i = 0; i < c_s->qubits-1; i++)
         c_s->circuit[i][c_s->depth] = gate_s;
     // Create a list of control indices and store in barrier gate
     // These controls are needed for removing consecutive barriers
-    BDDVAR *control = malloc((c_s->nvars-1) * sizeof(BDDVAR));
-    for (BDDVAR i = 0; i < c_s->nvars-1; i++) control[i] = i;
+    BDDVAR *control = malloc((c_s->qubits-1) * sizeof(BDDVAR));
+    for (BDDVAR i = 0; i < c_s->qubits-1; i++) control[i] = i;
     gate_s.control = control;
-    gate_s.controlSize = c_s->nvars-1;
+    gate_s.controlSize = c_s->qubits-1;
     // Set controlled barrier gate as last gate
-    c_s->circuit[c_s->nvars-1][c_s->depth] = gate_s;
+    c_s->circuit[c_s->qubits-1][c_s->depth] = gate_s;
 }
 
 void handle_gate(C_struct* c_s, BDDVAR n_qubits, BDDVAR* qubits, Gate gate_s)
@@ -333,7 +355,7 @@ void optimize_c_struct(C_struct* c_s)
     BDDVAR depth2;
     Gate gate;
     // Loop over all places in the circuit
-    for (BDDVAR q = 0; q < c_s->nvars; q++) {
+    for (BDDVAR q = 0; q < c_s->qubits; q++) {
         for (BDDVAR depth1 = 0; depth1 < c_s->depth; depth1++) {
             // No need to optimize identity gates or control gates (controls are done along with its target)
             gate = c_s->circuit[q][depth1];
@@ -367,7 +389,7 @@ void optimize_c_struct_p(C_struct* c_s, BDDVAR q, BDDVAR depth1, BDDVAR depth2)
     depth2 = get_next_gate(c_s, q, depth2, true);
     if (depth2 == c_s->depth) return;
     // If two gates have been found, check all qubits
-    for (BDDVAR q = 0; q < c_s->nvars; q++) {
+    for (BDDVAR q = 0; q < c_s->qubits; q++) {
         gate = c_s->circuit[q][depth1];
         if (gate.id != gate_I.id && gate.id != gate_ctrl.id && gate.id != gate_ctrl_c.id) {
             // Check if these gates are the same, and if so, recursively optimize (since we dont know palindrome length)
@@ -431,17 +453,19 @@ void reduce_c_struct(C_struct* c_s)
     BDDVAR k = 0;
     // Reduce depth by moving gates to the left if possible
     for (BDDVAR j = 1; j <= c_s->depth; j++) {
-        for (BDDVAR i = 0; i < c_s->nvars; i++) {
-            if ((c_s->circuit[i][j].id != gate_I.id && 
-                c_s->circuit[i][j].id != gate_ctrl.id && 
-                c_s->circuit[i][j].id != gate_ctrl_c.id &&
-                c_s->circuit[i][j].id != gate_barrier.id) || 
-                (c_s->circuit[i][j].id == gate_barrier.id && i == c_s->nvars-1))
-                reduce_gate(c_s, i, j);
+        for (BDDVAR i = 0; i < c_s->qubits; i++) {
+            if ((c_s->circuit[i][j].id != gate_I.id && c_s->circuit[i][j].id != gate_ctrl.id && 
+            c_s->circuit[i][j].id != gate_ctrl_c.id && c_s->circuit[i][j].id != gate_barrier.id) || 
+            (c_s->circuit[i][j].id == gate_barrier.id && i == c_s->qubits-1)) {
+                if (c_s->circuit[i][j].classical_control == -1)
+                    reduce_gate(c_s, i, j);
+                else
+                    reduce_classical_gate(c_s, i, j);
+            }
         }
     }
     // Get new depth
-    for (BDDVAR i = 0; i < c_s->nvars; i++) {
+    for (BDDVAR i = 0; i < c_s->qubits; i++) {
         for (BDDVAR j = c_s->depth; j-- > 0;) {
             if (c_s->circuit[i][j].id != gate_I.id) {
                 k = j < k ? k : j;
@@ -451,6 +475,42 @@ void reduce_c_struct(C_struct* c_s)
     }
     // Set new depth
     c_s->depth = k+1;
+}
+
+void reduce_classical_gate(C_struct* c_s, BDDVAR target, BDDVAR depth)
+{
+    // Initialise variables
+    BDDVAR curr, reduce = depth, min = target, max = target;
+    BDDVAR *control = c_s->circuit[target][depth].control;
+    // Get the new reducable depth
+    for (BDDVAR i = 0; i < c_s->qubits; i++) {
+        curr = depth;
+        // While possible, reduce depth by one
+        while (curr > 0 && (c_s->circuit[i][curr-1].id == gate_I.id))
+            curr--;
+        if (curr > reduce) reduce = curr;
+    }
+    reduce--;
+    // If the controls and gate are not reducable, return
+    if (reduce - depth <= 0) return;
+    // If the gate has controls, also process those
+    if (c_s->circuit[target][depth].controlSize != 0) {
+        // Check if target is below controls
+        for (BDDVAR k = 0; k < c_s->circuit[target][depth].controlSize; k++) {
+            min = (control[k] < min) ? control[k] : min;
+            max = (control[k] > max) ? control[k] : max;
+        }
+        // Reduce the depth of all gates between first control and target
+        for (BDDVAR i = min; i < max+1; i++) {
+            if (c_s->circuit[i][depth].id != gate_I.id && i != target) {
+                c_s->circuit[i][reduce] = c_s->circuit[i][depth];
+                c_s->circuit[i][depth] = gate_I;
+            }
+        }
+    }
+    // Reduce the depth of the gate
+    c_s->circuit[target][reduce] = c_s->circuit[target][depth];
+    c_s->circuit[target][depth] = gate_I;
 }
 
 void reduce_gate(C_struct* c_s, BDDVAR target, BDDVAR depth)
@@ -504,7 +564,7 @@ void print_c_struct(C_struct c_s, bool show_rotation)
     bool has_rotation = false;
     bool negative_rotation = false;
     // Loop over all positions, going row by row
-    for (BDDVAR i = 0; i < c_s.nvars; i++) {
+    for (BDDVAR i = 0; i < c_s.qubits; i++) {
         for (BDDVAR j = 0; j < c_s.depth; j++) {
             // Print the gate
             printf("-%s",c_s.circuit[i][j].gateSymbol);
@@ -514,7 +574,7 @@ void print_c_struct(C_struct c_s, bool show_rotation)
                 has_rotation = false;
                 negative_rotation = false;
                 // Check if any qubit in the column has a rotation and set variables accordingly
-                for (BDDVAR k = 0; k < c_s.nvars; k++) {
+                for (BDDVAR k = 0; k < c_s.qubits; k++) {
                     if(c_s.circuit[k][j].id == gate_Rx.id || c_s.circuit[k][j].id == gate_Ry.id || c_s.circuit[k][j].id == gate_Rz.id)
                         has_rotation = true;
                     if(c_s.circuit[k][j].rotation < 0)
