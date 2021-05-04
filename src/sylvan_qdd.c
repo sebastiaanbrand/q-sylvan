@@ -930,6 +930,19 @@ TASK_IMPL_5(QDD, qdd_cgate_range, QDD, qdd, uint32_t, gate, BDDVAR, c_first, BDD
     return qdd_cgate_range_rec(qdd,gate,c_first,c_last,t);
 }
 
+static void
+norm_plus_cache_key(QDD a, QDD b, QDD *x, QDD *y)
+{
+    if (a < b) {
+        *x = a;
+        *y = b;
+    }
+    else {
+        *x = b;
+        *y = a;
+    }
+}
+
 TASK_IMPL_2(QDD, qdd_plus, QDD, a, QDD, b)
 {
     // Trivial cases
@@ -960,9 +973,11 @@ TASK_IMPL_2(QDD, qdd_plus, QDD, a, QDD, b)
     }
 
     // Check cache
+    QDD x, y;
+    norm_plus_cache_key(a, b, &x, &y); // (a + b) = (b + a) so normalize cache key
     bool cachenow = ((topvar % granularity) == 0);
     if (cachenow) {
-        if (cache_get3(CACHE_QDD_PLUS, sylvan_false, a, b, &res)) {
+        if (cache_get3(CACHE_QDD_PLUS, sylvan_false, x, y, &res)) {
             sylvan_stats_count(QDD_PLUS_CACHED);
             return res;
         }
@@ -990,7 +1005,7 @@ TASK_IMPL_2(QDD, qdd_plus, QDD, a, QDD, b)
     // Put in cache, return
     res = qdd_makenode(topvar, low, high);
     if (cachenow) {
-        if (cache_put3(CACHE_QDD_PLUS, sylvan_false, a, b, res)) 
+        if (cache_put3(CACHE_QDD_PLUS, sylvan_false, x, y, res)) 
             sylvan_stats_count(QDD_PLUS_CACHEDPUT);
     }
     return res;
