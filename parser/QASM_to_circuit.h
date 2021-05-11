@@ -11,28 +11,29 @@ typedef struct Gate
     float rotation;
     BDDVAR *control;
     BDDVAR controlSize;
-    int classical_control;
+    int16_t classical_control;
+    int16_t classical_expect;
 } Gate;
 
 // Default gates
-static const Gate gate_I = {0, "--", 0, NULL, 0, -1};
-static const Gate gate_X = {1, "X-", 0.5, NULL, 0, -1};
-static const Gate gate_Y = {2, "Y-", 0.5, NULL, 0, -1};
-static const Gate gate_Z = {3, "Z-", 0.5, NULL, 0, -1};
-static const Gate gate_H = {4, "H-", 0.5, NULL, 0, -1};
-static const Gate gate_sX = {9, "sX", 0.25, NULL, 0, -1};
-static const Gate gate_sY = {10, "sY", 0.25, NULL, 0, -1};
-static const Gate gate_S = {5, "S-", 0.25, NULL, 0, -1};
-static const Gate gate_Sd = {6, "Sd", -0.25, NULL, 0, -1};
-static const Gate gate_T = {7, "T-", 0.125, NULL, 0, -1};
-static const Gate gate_Td = {8, "Td", -0.125, NULL, 0, -1};
-static const Gate gate_Rx = {11, "Rx", 0, NULL, 0, -1};
-static const Gate gate_Ry = {12, "Ry", 0, NULL, 0, -1};
-static const Gate gate_Rz = {13, "Rz", 0, NULL, 0, -1};
-static const Gate gate_ctrl = {14, "@-", 0, NULL, 0, -1};
-static const Gate gate_ctrl_c = {15, "|-", 0, NULL, 0, -1};
-static const Gate gate_measure = {16, "M-", 0, NULL, 0, -1};
-static const Gate gate_barrier = {17, "#-", 0, NULL, 0, -1};
+static const Gate gate_I = {0, "--", 0, NULL, 0, -1, -1};
+static const Gate gate_X = {1, "X-", 0.5, NULL, 0, -1, -1};
+static const Gate gate_Y = {2, "Y-", 0.5, NULL, 0, -1, -1};
+static const Gate gate_Z = {3, "Z-", 0.5, NULL, 0, -1, -1};
+static const Gate gate_H = {4, "H-", 0.5, NULL, 0, -1, -1};
+static const Gate gate_sX = {9, "sX", 0.25, NULL, 0, -1, -1};
+static const Gate gate_sY = {10, "sY", 0.25, NULL, 0, -1, -1};
+static const Gate gate_S = {5, "S-", 0.25, NULL, 0, -1, -1};
+static const Gate gate_Sd = {6, "Sd", -0.25, NULL, 0, -1, -1};
+static const Gate gate_T = {7, "T-", 0.125, NULL, 0, -1, -1};
+static const Gate gate_Td = {8, "Td", -0.125, NULL, 0, -1, -1};
+static const Gate gate_Rx = {11, "Rx", 0, NULL, 0, -1, -1};
+static const Gate gate_Ry = {12, "Ry", 0, NULL, 0, -1, -1};
+static const Gate gate_Rz = {13, "Rz", 0, NULL, 0, -1, -1};
+static const Gate gate_ctrl = {14, "@-", 0, NULL, 0, -1, -1};
+static const Gate gate_ctrl_c = {15, "|-", 0, NULL, 0, -1, -1};
+static const Gate gate_measure = {16, "M-", 0, NULL, 0, -1, -1};
+static const Gate gate_barrier = {17, "#-", 0, NULL, 0, -1, -1};
 
 // Circuit struct
 typedef struct C_struct
@@ -134,6 +135,16 @@ bool get_qubits_c_struct(char* token, BDDVAR n_qubits, BDDVAR* qubits);
  * - the number of controls (including target) <gate_s> has. If the gate is unknown controls is 0.
  */
 int get_gateid_c_struct(char* gate_str, Gate* gate);
+
+/**
+ * Stores a measurement gate.
+ * 
+ * PARAMETERS:
+ * - c_s: the circuit in which to store the measurement gate
+ * - gate_s: the measurement gate struct (needed so we do not overwrite the default?)
+ * - qubits: the target qubit for the gate and target bit for the measurement
+ */
+void handle_measure(C_struct* c_s, Gate gate_s, BDDVAR* qubits);
 
 /**
  * Stores a barrier gate across the whole current column.

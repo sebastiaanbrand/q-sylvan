@@ -149,15 +149,24 @@ bool handle_line_c_struct(char* line, C_struct* c_s)
         n_qubits = get_gateid_c_struct(gate_str, &gate_s);
         // If -1 is returned, an if statement is found
         if (n_qubits == -1) {
-            gate_str = strtok(gate_str, "=");
-            gate_str = strtok(NULL, "=");
-            gate_str = strtok(gate_str, ")");
-            BDDVAR expected = (BDDVAR)atoi(gate_str);
+            char* reg = gate_str;
             gate_str = strtok(targets_str, " ");
             targets_str = strtok(NULL, "");
             // Get the gate struct corresponding to the gate command and the qubit count
             n_qubits = get_gateid_c_struct(gate_str, &gate_s);
-            gate_s.classical_control = expected;
+            reg = strtok(reg, "=");
+            BDDVAR expected = 1;
+            gate_str = strtok(NULL, "=");
+            if (gate_str != NULL) {
+                gate_str = strtok(gate_str, ")");
+                expected = (BDDVAR)atoi(gate_str);
+            }
+            reg = strtok(reg, "[");
+            reg = strtok(NULL, "]");
+            // If we can find a bracket, the if statement is on a single bit
+            if (reg != NULL)
+                gate_s.classical_control = (int)atoi(reg);
+            gate_s.classical_expect = expected;
         }
         // If n_qubits is 0 there is an unknown command in <line> and if it is -1 the if statement failed
         if (n_qubits > 0) {
@@ -177,8 +186,12 @@ bool handle_line_c_struct(char* line, C_struct* c_s)
                     if(qubits[i] >= c_s->qubits)
                         return false;
                 }
+                // Handle measure separately
+                if (gate_s.id == gate_measure.id)
+                    handle_measure(c_s, gate_s, qubits);
                 // Store the gate and free variables
-                handle_gate(c_s, n_qubits-1, qubits, gate_s);
+                else
+                    handle_gate(c_s, n_qubits-1, qubits, gate_s);
                 free(qubits);
             }
         }
@@ -273,6 +286,18 @@ int get_gateid_c_struct(char* gate_str, Gate* gate_s)
     return n_qubits;
 }
 
+void handle_measure(C_struct* c_s, Gate gate_s, BDDVAR* qubits)
+{
+    // Increment the depth since were adding a column
+    c_s->depth++;
+    // Set target register as control
+    gate_s.controlSize = 1;
+    gate_s.control = malloc(sizeof(BDDVAR));
+    gate_s.control[0] = qubits[1];
+    // Set measure on correct qubit
+    c_s->circuit[qubits[0]][c_s->depth] = gate_s;
+}
+
 void handle_barrier(C_struct* c_s, Gate gate_s)
 {
     // Increment the depth since were adding a column
@@ -305,9 +330,8 @@ void handle_gate(C_struct* c_s, BDDVAR n_qubits, BDDVAR* qubits, Gate gate_s)
     if (n_qubits != 0) {
         // Check if target is below controls
         for (BDDVAR k = 0; k < n_qubits; k++) {
-            if (qubits[k] > max) {
+            if (qubits[k] > max)
                 max = qubits[k];
-            }
         }
         // Create a list of control indices and store in <gate_s>
         control = malloc((n_qubits) * sizeof(BDDVAR));
@@ -457,7 +481,7 @@ void reduce_c_struct(C_struct* c_s)
             if ((c_s->circuit[i][j].id != gate_I.id && c_s->circuit[i][j].id != gate_ctrl.id && 
             c_s->circuit[i][j].id != gate_ctrl_c.id && c_s->circuit[i][j].id != gate_barrier.id) || 
             (c_s->circuit[i][j].id == gate_barrier.id && i == c_s->qubits-1)) {
-                if (c_s->circuit[i][j].classical_control == -1)
+                if (c_s->circuit[i][j].classical_expect == -1)
                     reduce_gate(c_s, i, j);
                 else
                     reduce_classical_gate(c_s, i, j);
@@ -567,7 +591,10 @@ void print_c_struct(C_struct c_s, bool show_rotation)
     for (BDDVAR i = 0; i < c_s.qubits; i++) {
         for (BDDVAR j = 0; j < c_s.depth; j++) {
             // Print the gate
-            printf("-%s",c_s.circuit[i][j].gateSymbol);
+            if (c_s.circuit[i][j].classical_expect != -1)
+                printf("c%s",c_s.circuit[i][j].gateSymbol);
+            else
+                printf("-%s",c_s.circuit[i][j].gateSymbol);
             // If rotation, check if a rotation needs to be printed in this column
             if (show_rotation) {
                 // Reset rotation variables

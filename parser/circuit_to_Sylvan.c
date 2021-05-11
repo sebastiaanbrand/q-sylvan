@@ -210,12 +210,16 @@ TASK_IMPL_3(bool, is_final_measure, C_struct, c_s, BDDVAR, qubit, BDDVAR, depth)
     return true;
 }
 
-TASK_IMPL_3(bool, check_classical_if, BDDVAR, bits, BDDVAR, expected, int*, actual_list)
+TASK_IMPL_3(bool, check_classical_if, BDDVAR, bits, Gate, gate, int*, actual_list)
 {
-    BDDVAR actual = 0;
-    for (BDDVAR i = 0; i < bits; i++)
-        actual += actual_list[i]*pow(2, i);
-    return (expected == actual);
+    int actual = 0;
+    if (gate.classical_control == -1) {
+        for (BDDVAR i = 0; i < bits; i++)
+            actual += actual_list[i]*pow(2, i);
+    }
+    else
+        actual = actual_list[gate.classical_control];
+    return (gate.classical_expect == actual);
 }
 
 QDD run_circuit_matrix(C_struct c_s, BDDVAR runs, BDDVAR limit, bool show)
@@ -247,14 +251,15 @@ QDD run_circuit_matrix(C_struct c_s, BDDVAR runs, BDDVAR limit, bool show)
             if (gate.id == gate_barrier.id || gate.id == gate_ctrl.id || gate.id == gate_ctrl_c.id || gate.id == gate_I.id)
                 continue;
             // If classical control is not equal to max qubits, the gate is classically controlled
-            if (gate.classical_control != -1) {
-                satisfied = check_classical_if(c_s.bits, gate.classical_control, results);
+            if (gate.classical_expect != -1) {
+                satisfied = check_classical_if(c_s.bits, gate, results);
                 if (!satisfied)
                     continue;
             }
             // Set measurement flag
             if (gate.id == gate_measure.id) {
                 final = is_final_measure(c_s, i, j);
+                // If it is not a final measure, measure now and update QDD
                 if (final) {
                     measurements[i] = true;
                 }
@@ -264,7 +269,7 @@ QDD run_circuit_matrix(C_struct c_s, BDDVAR runs, BDDVAR limit, bool show)
                     qdd = qdd_matmat_mult(qdd_column, qdd, c_s.qubits);
                     // Multiply with the vector and measure
                     vec = qdd_matvec_mult(qdd, vec, c_s.qubits);
-                    vec = qdd_measure_qubit(vec, i, c_s.qubits, &results[i], p);
+                    vec = qdd_measure_qubit(vec, i, c_s.qubits, &results[gate.control[0]], p);
                     // Reset qdd and gateids
                     qdd = qdd_create_single_qubit_gates_same(c_s.qubits, GATEID_I);
                     for(BDDVAR k = 0; k < i; k++)
@@ -325,8 +330,8 @@ QDD run_c_struct(C_struct c_s, BDDVAR runs, bool show)
         for (BDDVAR i = 0; i < c_s.qubits; i++) {
             gate = c_s.circuit[i][j];
             // If classical control is not equal to max qubits, the gate is classically controlled
-            if (gate.classical_control != -1) {
-                satisfied = check_classical_if(c_s.bits, gate.classical_control, results);
+            if (gate.classical_expect != -1) {
+                satisfied = check_classical_if(c_s.bits, gate, results);
                 if (!satisfied)
                     continue;
             }
@@ -340,7 +345,7 @@ QDD run_c_struct(C_struct c_s, BDDVAR runs, bool show)
                 if (final)
                     measurements[i] = true;
                 else
-                    qdd = qdd_measure_qubit(qdd, i, c_s.qubits, &results[i], p);
+                    qdd = qdd_measure_qubit(qdd, i, c_s.qubits, &results[gate.control[0]], p);
             }
             // Apply gate
             else

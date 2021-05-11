@@ -106,8 +106,8 @@ TASK_DECL_3(bool, is_final_measure, C_struct, BDDVAR, BDDVAR);
  * RETURN:
  * - true if they are equal, else false
  */
-#define check_classical_if(bits,expected,actual_list) (CALL(check_classical_if,bits,expected,actual_list));
-TASK_DECL_3(bool, check_classical_if, BDDVAR, BDDVAR, int*);
+#define check_classical_if(bits,gate,actual_list) (CALL(check_classical_if,bits,gate,actual_list));
+TASK_DECL_3(bool, check_classical_if, BDDVAR, Gate, int*);
 
 /**
  * Runs the circuit_struct <c_s> for <runs> times and prints the results if <show> is true.
