@@ -1707,6 +1707,7 @@ int test_measurements()
     // test having measured |0> and |1> at least once each for |00+>, |0+0> and 
     // |+00>. (the probability that that doesn't happen is about 99.7% for 
     // repeat = 10)
+    // TODO: maybe write a test which is not probabilistic?
     test_assert(m_zer[0] > 0);  test_assert(m_zer[0] < repeat);
     test_assert(m_zer[1] > 0);  test_assert(m_zer[1] < repeat);
     test_assert(m_zer[2] > 0);  test_assert(m_zer[2] < repeat);

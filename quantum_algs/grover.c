@@ -140,7 +140,7 @@ QDD qdd_grover_matrix_multi_its(BDDVAR n, bool *flag, int t, QDD *matrix)
     grov_it = qdd_matmat_mult(&first_n_X,  &grov_it, nqubits);
     grov_it = qdd_matmat_mult(&first_n_H,  &grov_it, nqubits);
 
-        // Compute grov_it^t (by squaring if t is a power of 2)
+    // Compute grov_it^t (by squaring if t is a power of 2)
     QDD grov_its = grov_it;
     if (EXP_BY_SQUARING && ((t & (t - 1)) == 0)) {
         for (int i = 0; i < log2l(t); i++) {
