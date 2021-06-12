@@ -29,5 +29,6 @@ QDD qdd_grover_matrix(BDDVAR n, bool *flag);
 /**
  * Instead of applying iteration matrix G, R times, applies G^t, R/t times.
  * For t=1 this function acts as the "normal" matrix implementation of Grover.
+ * (matrix is returned as arg for nodecount purposes)
  */
 QDD qdd_grover_matrix_multi_its(BDDVAR n, bool *flag, int t, QDD *matrix);

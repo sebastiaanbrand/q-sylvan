@@ -303,6 +303,29 @@ refs_table_t qdd_refs;
 refs_table_t qdd_protected;
 static int qdd_protected_created = 0;
 
+void
+qdd_protect(MTBDD *a)
+{
+    if (!qdd_protected_created) {
+        // In C++, sometimes mtbdd_protect is called before Sylvan is initialized. Just create a table.
+        protect_create(&qdd_protected, 4096);
+        qdd_protected_created = 1;
+    }
+    protect_up(&qdd_protected, (size_t)a);
+}
+
+void
+qdd_unprotect(MTBDD *a)
+{
+    if (qdd_protected.refs_table != NULL) protect_down(&qdd_protected, (size_t)a);
+}
+
+size_t
+qdd_count_protected()
+{
+    return protect_count(&qdd_protected);
+}
+
 /* Called during garbage collection */
 VOID_TASK_0(qdd_gc_mark_external_refs)
 {
@@ -772,6 +795,34 @@ qdd_gc_amp_table(QDD *keep)
 }
 
 void
+qdd_gc_amp_table_keep_protected()
+{
+    // gc amp table and keep amps of protected qdds (and update those)
+    LACE_ME; 
+    
+    // 1. Create new amp table
+    init_new_empty_table();
+
+    // 2. Fill new table with amps in protected qdd's and update those qdd's
+    uint64_t *it = protect_iter(&qdd_protected, 0, qdd_protected.refs_size);
+    while (it != NULL) {
+        QDD *to_protect_amps = (QDD*)protect_next(&qdd_protected, &it, qdd_protected.refs_size);
+        if (to_protect_amps != NULL) {
+            *to_protect_amps = _fill_new_amp_table(*to_protect_amps);
+        }
+    }
+
+    // 3. Delete old amp table
+    delete_old_table();
+
+    // 4. Any cache we migh have is now invalid because the same amplitudes 
+    //    might now have different indices in the amp table
+    sylvan_clear_cache();
+}
+
+// TODO: remove this function and replace it everywhere with the function 
+// above which uses qdd_protectec
+void
 qdd_gc_amp_table2(QDD keep[], int num)
 {
     LACE_ME;
@@ -879,16 +930,11 @@ qdd_do_before_gate(QDD* qdd)
 }
 
 static void
-qdd_do_before_mult(QDD* a, QDD* b)
+qdd_do_before_mult()
 {
     // check if ctable needs gc
     if (auto_gc_amp_table && qdd_test_gc_amp_table()) {
-        QDD keep[2];
-        keep[0] = *a;
-        keep[1] = *b;
-        qdd_gc_amp_table2(keep, 2);
-        *a = keep[0];
-        *b = keep[1];
+        qdd_gc_amp_table_keep_protected();
     }
 }
 
@@ -1202,17 +1248,17 @@ TASK_IMPL_6(QDD, qdd_cgate_range_rec, QDD, q, uint32_t, gate, BDDVAR, c_first, B
 }
 
 /* Wrapper for matrix vector multiplication. */
-TASK_IMPL_3(QDD, qdd_matvec_mult, QDD *, mat, QDD *, vec, BDDVAR, nvars)
+TASK_IMPL_3(QDD, qdd_matvec_mult, QDD, mat, QDD, vec, BDDVAR, nvars)
 {
-    qdd_do_before_mult(mat, vec);
-    return CALL(qdd_matvec_mult_rec, *mat, *vec, nvars, 0);
+    qdd_do_before_mult();
+    return CALL(qdd_matvec_mult_rec, mat, vec, nvars, 0);
 }
 
 /* Wrapper for matrix vector multiplication. */
-TASK_IMPL_3(QDD, qdd_matmat_mult, QDD *, a, QDD *, b, BDDVAR, nvars)
+TASK_IMPL_3(QDD, qdd_matmat_mult, QDD, a, QDD, b, BDDVAR, nvars)
 {
-    qdd_do_before_mult(a, b);
-    return CALL(qdd_matmat_mult_rec, *a, *b, nvars, 0);
+    qdd_do_before_mult();
+    return CALL(qdd_matmat_mult_rec, a, b, nvars, 0);
 }
 
 TASK_IMPL_4(QDD, qdd_matvec_mult_rec, QDD, mat, QDD, vec, BDDVAR, nvars, BDDVAR, nextvar)
