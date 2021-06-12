@@ -203,7 +203,7 @@ int test_grover_cnf()
         //     printf("%lf", amp_to_prob(a));
         //     printf("\n");
         // }
-        if (x[0] == ans2[0] && x[1] == ans2[1])
+        if (x[0] == ans3[0] && x[1] == ans3[1])
             prob += amp_to_prob(a);
     }
     test_assert(qdd_is_unitvector(grov, nqubits+1+clauses));
