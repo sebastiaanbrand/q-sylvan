@@ -10,18 +10,19 @@ Circuit* create_circuit(char* filename)
     // Create a circuit struct
     Circuit *circuit_s = malloc(sizeof(Circuit));
     // Create a progress array
-    BDDVAR* progress = malloc(c_s.nvars * sizeof(BDDVAR));
-    for (BDDVAR i = 0; i < c_s.nvars; i++) progress[i] = 0;
+    BDDVAR* progress = malloc(c_s.qubits * sizeof(BDDVAR));
+    for (BDDVAR i = 0; i < c_s.qubits; i++) progress[i] = 0;
 
     // Copy important info
     circuit_s->progress = progress;
-    circuit_s->nvars = c_s.nvars;
+    circuit_s->qubits = c_s.qubits;
+    circuit_s->bits = c_s.bits;
     circuit_s->depth = c_s.depth;
     // Create an initial all-zero qdd
-    circuit_s->qdd = qdd_create_all_zero_state(circuit_s->nvars);
+    circuit_s->qdd = qdd_create_all_zero_state(circuit_s->qubits);
     // Copy the circuit
-    circuit_s->circuit = malloc(circuit_s->nvars*sizeof(circuit_s->circuit));
-    for (BDDVAR i = 0; i < circuit_s->nvars; ++i) {
+    circuit_s->circuit = malloc(circuit_s->qubits*sizeof(circuit_s->circuit));
+    for (BDDVAR i = 0; i < circuit_s->qubits; ++i) {
         circuit_s->circuit[i] = malloc(circuit_s->depth * sizeof(Gate));
         for (BDDVAR j = 0; j < circuit_s->depth; j++) {
             circuit_s->circuit[i][j] = c_s.circuit[i][j];
@@ -41,7 +42,7 @@ void print_circuit(Circuit* circuit_s, bool show_rotation)
     bool has_rotation = false;
     bool negative_rotation = false;
     // Loop over all positions, going row by row
-    for (BDDVAR i = 0; i < circuit_s->nvars; i++) {
+    for (BDDVAR i = 0; i < circuit_s->qubits; i++) {
         for (BDDVAR j = 0; j < circuit_s->depth; j++) {
             // Print the gate
             printf("-%s",circuit_s->circuit[i][j].gateSymbol);
@@ -51,7 +52,7 @@ void print_circuit(Circuit* circuit_s, bool show_rotation)
                 has_rotation = false;
                 negative_rotation = false;
                 // Check if any qubit in the column has a rotation and set variables accordingly
-                for (BDDVAR k = 0; k < circuit_s->nvars; k++) {
+                for (BDDVAR k = 0; k < circuit_s->qubits; k++) {
                     if(circuit_s->circuit[k][j].id == gate_Rx.id || circuit_s->circuit[k][j].id == gate_Ry.id || circuit_s->circuit[k][j].id == gate_Rz.id)
                         has_rotation = true;
                     if(circuit_s->circuit[k][j].rotation < 0)
@@ -84,7 +85,7 @@ void delete_circuit(Circuit* circuit_s)
 {
     // Loop over all positions in the circuit
     for (BDDVAR j = 0; j < circuit_s->depth; j++) {
-        for (BDDVAR i = 0; i < circuit_s->nvars; i++) {
+        for (BDDVAR i = 0; i < circuit_s->qubits; i++) {
             // If the gate has control qubits, free the list of indices
             if (circuit_s->circuit[i][j].id != gate_I.id) {
                 if (circuit_s->circuit[i][j].control != NULL || circuit_s->circuit[i][j].controlSize != 0)
@@ -93,7 +94,7 @@ void delete_circuit(Circuit* circuit_s)
         }
     }
     // Free each wire
-    for (BDDVAR i = 0; i < circuit_s->nvars; i++)
+    for (BDDVAR i = 0; i < circuit_s->qubits; i++)
         free(circuit_s->circuit[i]);
     // Free the remaining data from the circuit struct
     free(circuit_s->circuit);
@@ -104,7 +105,7 @@ bool skip_to_gate(Circuit* circuit_s, BDDVAR i)
     // Initialise variables
     bool depth_reached, is_gate_I, is_gate_barrier;
     // Check if 'i' is valid
-    if (i >= circuit_s->nvars)
+    if (i >= circuit_s->qubits)
         return false;
     // Walk over wire until the wire ends or you find a gate
     do {
@@ -120,12 +121,12 @@ bool skip_to_gate(Circuit* circuit_s, BDDVAR i)
 
 TASK_IMPL_2(bool, advance, Circuit*, circuit_s, BDDVAR, q)
 {
+    // Check if 'q' is valid
+    if (q >= circuit_s->qubits)
+        return false;
     // Initialise variables
     Gate gate = circuit_s->circuit[q][circuit_s->progress[q]];
     BDDVAR gate_id = get_gateid(gate);
-    // Check if 'q' is valid
-    if (q >= circuit_s->nvars)
-        return false;
     // Check for every control qubit if the progress on that wire is equal to the progress of the target
     for (BDDVAR i = 0; i < gate.controlSize; i++) {
         if (circuit_s->circuit[gate.control[i]][circuit_s->progress[gate.control[i]]].id != gate_ctrl.id)

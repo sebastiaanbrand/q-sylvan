@@ -6,7 +6,8 @@
 // Circuit struct
 typedef struct Circuit {
     Gate** circuit;
-    BDDVAR nvars;
+    BDDVAR qubits;
+    BDDVAR bits;
     BDDVAR depth;
     BDDVAR* progress;
     QDD qdd;
@@ -17,10 +18,10 @@ typedef struct Circuit {
  * 
  * ATTRIBUTES:
  * - circuit: a two dimensional array containing gates corresponding to the QASM file
- * - nvars: number of rows/qubits in the circuit
+ * - qubits: number of rows/qubits in the circuit
  * - depth: number of columns in the circuit
  * - qdd: A QDD state vector, set in the all-zero state
- * - progress: a list of 'nvars' values that keep track the progress of each qubit, initialised to zero
+ * - progress: a list of 'qubits' values that keep track the progress of each qubit, initialised to zero
  * 
  * PARAMETERS:
  * - filename: contains a path to a file describing a circuit in QASM 
