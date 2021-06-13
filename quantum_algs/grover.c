@@ -193,14 +193,10 @@ QDD qdd_grover_matrix_multi_its(BDDVAR n, bool *flag, int t, QDD *matrix)
             }
             
             // gc amp table
-            qdd_gc_amp_table_keep_protected();
+            qdd_gc_amp_table();
 
             // gc node table
-            qdd_refs_push(state);
-            qdd_refs_push(grov_its);
             sylvan_gc();
-            qdd_refs_pop(2);
-
         }
         state = qdd_matvec_mult(grov_its, state, nqubits);
     }

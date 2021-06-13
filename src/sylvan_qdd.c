@@ -304,7 +304,7 @@ refs_table_t qdd_protected;
 static int qdd_protected_created = 0;
 
 void
-qdd_protect(MTBDD *a)
+qdd_protect(QDD *a)
 {
     if (!qdd_protected_created) {
         // In C++, sometimes mtbdd_protect is called before Sylvan is initialized. Just create a table.
@@ -315,7 +315,7 @@ qdd_protect(MTBDD *a)
 }
 
 void
-qdd_unprotect(MTBDD *a)
+qdd_unprotect(QDD *a)
 {
     if (qdd_protected.refs_table != NULL) protect_down(&qdd_protected, (size_t)a);
 }
@@ -789,13 +789,7 @@ qdd_get_gc_amp_table_thres()
 
 
 void
-qdd_gc_amp_table(QDD *keep)
-{
-    qdd_gc_amp_table2(keep, 1);
-}
-
-void
-qdd_gc_amp_table_keep_protected()
+qdd_gc_amp_table()
 {
     // gc amp table and keep amps of protected qdds (and update those)
     LACE_ME; 
@@ -811,31 +805,6 @@ qdd_gc_amp_table_keep_protected()
             *to_protect_amps = _fill_new_amp_table(*to_protect_amps);
         }
     }
-
-    // 3. Delete old amp table
-    delete_old_table();
-
-    // 4. Any cache we migh have is now invalid because the same amplitudes 
-    //    might now have different indices in the amp table
-    sylvan_clear_cache();
-}
-
-// TODO: remove this function and replace it everywhere with the function 
-// above which uses qdd_protectec
-void
-qdd_gc_amp_table2(QDD keep[], int num)
-{
-    LACE_ME;
-    // 1. Create new amp table
-    init_new_empty_table();
-
-    // 2. Fill new table with amps present in given QDDs
-    //for (int i = 0; i < n_qdds; i++) qdds[i] = _fill_new_amp_table(qdds[i]);
-    for (int k = 0; k < num; k++)
-        keep[k] = _fill_new_amp_table(keep[k]);
-
-    //uint64_t in_use = count_amplitude_table_enries();
-    //printf("amps in use after gc: %ld\n", in_use);
 
     // 3. Delete old amp table
     delete_old_table();
@@ -912,16 +881,19 @@ static void
 qdd_do_before_gate(QDD* qdd)
 {
     // check if ctable needs gc
-    if (auto_gc_amp_table && qdd_test_gc_amp_table())
-            qdd_gc_amp_table(qdd);
+    if (auto_gc_amp_table && qdd_test_gc_amp_table()) {
+        qdd_protect(qdd);
+        qdd_gc_amp_table();
+        qdd_unprotect(qdd);
+    }
 
     if (periodic_gc_nodetable) {
         gate_counter++;
         if (gate_counter % periodic_gc_nodetable ==  0) {
             LACE_ME;
-            qdd_refs_push(*qdd);
+            qdd_protect(qdd);
             sylvan_gc();
-            qdd_refs_pop(1);
+            qdd_unprotect(qdd);
         }
     }
 
@@ -934,7 +906,7 @@ qdd_do_before_mult()
 {
     // check if ctable needs gc
     if (auto_gc_amp_table && qdd_test_gc_amp_table()) {
-        qdd_gc_amp_table_keep_protected();
+        qdd_gc_amp_table();
     }
 }
 
