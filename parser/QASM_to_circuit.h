@@ -156,6 +156,38 @@ void handle_measure(C_struct* c_s, Gate gate_s, BDDVAR* qubits);
 void handle_barrier(C_struct* c_s, Gate gate_s);
 
 /**
+ * Swap two array elements
+ * 
+ * PARAMETERS:
+ * - a: the first array element
+ * - b: the second array element
+ */
+void swap(BDDVAR* a, BDDVAR* b);
+
+/**
+ * A partition function for quicksort
+ * 
+ * PARAMETERS:
+ * - qubits: the circuit in which to store the barrier column
+ * - low: the first index of the array
+ * - high: the last index of  the array
+ * 
+ * RETURN:
+ * - the pivot index
+ */
+BDDVAR partition(BDDVAR* qubits, int low, int high);
+
+/**
+ * Uses quicksort to sort the qubits
+ * 
+ * PARAMETERS:
+ * - qubits: the circuit in which to store the barrier column
+ * - low: the first index of the array
+ * - high: the last index of  the array
+ */
+void sort(BDDVAR* qubits, int low, int high);
+
+/**
  * Stores <gate_s> and corresponding control gates on all indices of <qubits> in <c_s>.
  * 
  * PARAMETERS:

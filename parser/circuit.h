@@ -7,6 +7,7 @@
 typedef struct Circuit {
     Gate** circuit;
     BDDVAR qubits;
+    BDDVAR bits;
     BDDVAR depth;
     BDDVAR* progress;
     QDD qdd;

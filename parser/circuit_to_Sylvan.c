@@ -3,60 +3,23 @@
 #include "sylvan.h"
 #include "sylvan_qdd_complex.h"
 
-void final_measure(QDD qdd, bool* measurements, BDDVAR qubits, BDDVAR runs, bool show)
+void final_measure(QDD qdd, int* measurements, C_struct c_s, bool* results)
 {
     // Initialise variables
-    bool *ms = malloc(qubits * sizeof(bool));
-    double *p = malloc(qubits * sizeof(double));
-    int *hits = malloc(pow(2,qubits) * sizeof(int));
-    for(int i = 0; i < pow(2,qubits); i++) { hits[i] = 0; }
+    bool *ms = malloc(c_s.qubits * sizeof(bool));
+    double *p = malloc(c_s.qubits * sizeof(double));
 
     // Run the circuit <runs> times
-    for(BDDVAR i = 0; i < runs; i++) { 
-        qdd_measure_all(qdd, qubits, ms, p);
-        hits[bitarray_to_int(ms, qubits, false)]++;
-    }
-
+    qdd_measure_all(qdd, c_s.qubits, ms, p);
     // Reformat circuit results based on what qubits were measured
-    BDDVAR index, j, sum = 0;
-    for (BDDVAR i = 0; i < qubits; i++) { if (measurements[i]) sum++; }
-    int *probs = malloc(pow(2, sum) * sizeof(int));
-    for (int k = 0; k < pow(2, sum); k++) probs[k] = 0;
-    for (int k = 0; k < (1 << (qubits)); k++) {
-        bool *x = int_to_bitarray(k, qubits, false);
-        j = sum-1;
-        index = 0;
-        for (BDDVAR i = qubits; i > 0; i--)
-            if (measurements[i-1]) { index += x[i-1] * pow(2, j--); }
-        probs[index] += hits[k];
-        free(x);
-    }
-
-    // Print reformatted circuit results if <show> is toggled
-    if (show) {
-        for(int k = 0; k < pow(2, sum); k++) {
-            if (probs[k] != 0) {
-                bool *x = int_to_bitarray(k, qubits, false);
-                j = sum-1;
-                for (BDDVAR i = qubits; i > 0 ; i--) {
-                    if (measurements[i-1]) {
-                        printf("%d", x[j]);
-                        j--;
-                    }
-                    else
-                        printf("_");
-                }
-                printf(": %d\n", probs[k]);
-                free(x);
-            }
-        }
+    for (BDDVAR i = 0; i < c_s.qubits; i++) {
+        if (measurements[i] != -1)
+            results[measurements[i]] = ms[i];
     }
 
     // Free variables
     free(ms);
     free(p);
-    free(hits);
-    free(probs);
 }
 
 TASK_IMPL_1(BDDVAR, get_gate_id, Gate, gate)
@@ -210,7 +173,7 @@ TASK_IMPL_3(bool, is_final_measure, C_struct, c_s, BDDVAR, qubit, BDDVAR, depth)
     return true;
 }
 
-TASK_IMPL_3(bool, check_classical_if, BDDVAR, bits, Gate, gate, int*, actual_list)
+TASK_IMPL_3(bool, check_classical_if, BDDVAR, bits, Gate, gate, bool*, actual_list)
 {
     int actual = 0;
     if (gate.classical_control == -1) {
@@ -222,24 +185,360 @@ TASK_IMPL_3(bool, check_classical_if, BDDVAR, bits, Gate, gate, int*, actual_lis
     return (gate.classical_expect == actual);
 }
 
-QDD run_circuit_matrix(C_struct c_s, BDDVAR runs, BDDVAR limit, bool show)
+bool check_measuring_gates(C_struct c_s)
+{
+    for (BDDVAR i = 0; i < c_s.qubits; i++) {
+        for (BDDVAR j = 0; j < c_s.depth; j++) {
+            if (c_s.circuit[i][j].id == gate_measure.id) {
+                for (BDDVAR k = j+1; k < c_s.depth; k++) {
+                    if (c_s.circuit[i][k].id == gate_measure.id)
+                        return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+void skip(C_struct c_s, BDDVAR* progress, BDDVAR i, bool skip_barrier)
+{
+    // Initialise variables
+    bool depth_reached, is_gate_I, is_gate_ctrl_c, is_gate_barrier;
+    // Walk over wire until the wire ends or you find a gate
+    if (progress[i] > c_s.depth) return;
+    do {
+        // Increase the progress of the wire
+        progress[i]++;
+        //Check contitions of next position and store results for while loop
+        depth_reached = progress[i] < c_s.depth;
+        is_gate_I = c_s.circuit[i][progress[i]].id == gate_I.id;
+        is_gate_ctrl_c = c_s.circuit[i][progress[i]].id == gate_ctrl_c.id;
+        is_gate_barrier = c_s.circuit[i][progress[i]].id == gate_barrier.id;
+    } while (depth_reached && (is_gate_I || is_gate_ctrl_c || (is_gate_barrier && skip_barrier)));
+}
+
+QDD measure(QDD qdd, BDDVAR i, BDDVAR n, bool* result)
+{
+    LACE_ME;
+    int temp;
+    double *p = malloc(sizeof(double));
+    QDD new_qdd = qdd_measure_qubit(qdd, i, n, &temp, p);
+    *result = (bool) temp;
+    return new_qdd;
+}
+
+bool check_gate(C_struct c_s, Gate gate, BDDVAR* progress, BDDVAR i, bool* results)
+{
+    LACE_ME;
+    bool ctrl_progress = true;
+    if (gate.id == gate_ctrl.id || progress[i] >= c_s.depth)
+        return false;
+    // If some of its controls are blocked, the gate cannot be applied
+    for (BDDVAR j = 0; j < gate.controlSize; j++) {
+        if (progress[gate.control[j]] != progress[i])
+            ctrl_progress = false;
+    }
+    if (!ctrl_progress)
+        return false;
+    // If classical control is not equal to max qubits, the gate is classically controlled
+    if (gate.classical_expect != -1) {
+        bool satisfied = check_classical_if(c_s.bits, gate, results);
+        if (!satisfied)
+            return false;
+    }
+    return true;
+}
+
+QDD greedy(C_struct c_s, QDD prev_qdd, BDDVAR* column, int* measurements, bool* results, bool experiments, BDDVAR* n_gates)
+{
+    // Inisialise variables
+    LACE_ME;
+    Gate gate, best_gate = gate_I;
+    bool final, loop = true;
+    BDDVAR best_nodecount, curr_nodecount, k = 0;
+    QDD best_qdd = prev_qdd, curr_qdd = prev_qdd;
+    // Create a progress array
+    BDDVAR* progress = malloc(c_s.qubits * sizeof(BDDVAR));
+    for (BDDVAR i = 0; i < c_s.qubits; i++) progress[i] = *column;
+    if (experiments) {
+        best_nodecount = qdd_countnodes(prev_qdd);
+        printf("nodecount vec: %d at %d\n", best_nodecount, *n_gates);
+    }
+    for (BDDVAR i = 0; i < c_s.qubits; i++) {
+        gate = c_s.circuit[i][progress[i]];
+        if (gate.id == gate_I.id)
+            skip(c_s, progress, i, false);
+    }
+    // Loop over all places in the circuit
+    while(loop) {
+        best_nodecount = pow(2, c_s.qubits+1);
+        best_gate = gate_barrier;
+        for (BDDVAR i = 0; i < c_s.qubits; i++) {
+            gate = c_s.circuit[i][progress[i]];
+            // if (gate.id == gate_I.id)
+            //     skip(c_s, progress, i, false);
+            if (!check_gate(c_s, gate, progress, i, results))
+                continue;
+            // Skip barrier and recheck qubit
+            if (gate.id != gate_barrier.id) {
+                // Set measurement flag
+                if (gate.id == gate_measure.id) {
+                    final = is_final_measure(c_s, i, progress[i]);
+                    if (final)
+                        measurements[i] = gate.control[0];
+                    else {
+                        curr_qdd = measure(prev_qdd, i, c_s.qubits, &results[gate.control[0]]);
+                        // results[gate.control[0]] = (bool) result;
+                    }
+                }
+                else
+                    curr_qdd = apply_gate(prev_qdd, gate, i, c_s.qubits);
+                curr_nodecount = qdd_countnodes(curr_qdd);
+                if (curr_nodecount < best_nodecount) {
+                    best_nodecount = curr_nodecount;
+                    best_qdd = curr_qdd;
+                    best_gate = gate;
+                    k = i;
+                }
+            }
+        }
+        if (best_gate.id != gate_barrier.id) {
+            // continue to the next gate(s)
+            if (best_gate.id != gate_measure.id) {
+                for (BDDVAR i = 0; i < best_gate.controlSize; i++)
+                    skip(c_s, progress, best_gate.control[i], false);
+            }
+            skip(c_s, progress, k, false);
+            prev_qdd = best_qdd;
+            *n_gates = *n_gates + 1;
+            if (experiments)
+                printf("nodecount vec: %d at %d\n", best_nodecount, *n_gates);
+        }
+        // Check if all wires are fully expanded (all gates are applied) or all qubits reached a barrier
+        loop = false;
+        for (BDDVAR i = 0; i < c_s.qubits; i++) {
+            if (progress[i] < c_s.depth && c_s.circuit[i][progress[i]].id != gate_barrier.id)
+                loop = true;
+        }
+    }
+    best_nodecount = qdd_countnodes(prev_qdd);
+    if (experiments)
+        printf("nodecount vec: %d at %d\n", best_nodecount, *n_gates);
+    *column = progress[0];
+    return prev_qdd;
+}
+
+QDD matmat(C_struct c_s, QDD vec, BDDVAR* column, int* measurements, bool* results, int limit, bool experiments, BDDVAR* n_gates)
+{
+    LACE_ME;
+    Gate gate;
+    bool final, satisfied;
+    BDDVAR nodecount, j;
+    BDDVAR *gateids = malloc(c_s.qubits * sizeof(BDDVAR));
+    QDD qdd, qdd_column;
+    qdd = qdd_create_single_qubit_gates_same(c_s.qubits, GATEID_I);
+    qdd_column = qdd;
+    if (experiments) {
+        nodecount = qdd_countnodes(qdd);
+        printf("nodecount mat: %d at %d\n", nodecount, *n_gates);
+        nodecount = qdd_countnodes(vec);
+        printf("nodecount vec: %d at %d\n", nodecount, *n_gates);
+    }
+    // Loop over all places in the circuit
+    for (j = *column+1; j < c_s.depth; j++) {
+        for (BDDVAR i = 0; i < c_s.qubits; i++) {
+            gate = c_s.circuit[i][j];
+            // Preset gateid (overwritten if needed)
+            gateids[i] = GATEID_I;
+            // Skip barrier (does not affect runs)
+            // Skip control gates (controls are used by target gate)
+            if (gate.id == gate_barrier.id || gate.id == gate_ctrl.id || gate.id == gate_ctrl_c.id || gate.id == gate_I.id)
+                continue;
+            // If classical control is not equal to -1, the gate is classically controlled
+            if (gate.classical_expect != -1) {
+                satisfied = check_classical_if(c_s.bits, gate, results);
+                if (!satisfied)
+                    continue;
+            }
+            // Set measurement flag
+            if (gate.id == gate_measure.id) {
+                final = is_final_measure(c_s, i, j);
+                // If it is not a final measure, measure now and update QDD
+                if (final)
+                    measurements[i] = gate.control[0];
+                else {
+                    // Multiply everything currently already in the column
+                    qdd_column = qdd_create_single_qubit_gates(c_s.qubits, gateids);
+                    qdd = qdd_matmat_mult(qdd_column, qdd, c_s.qubits);
+                    // Multiply with the vector and measure
+                    vec = qdd_matvec_mult(qdd, vec, c_s.qubits);
+                    vec = measure(vec, i, c_s.qubits, &results[gate.control[0]]);
+                    // Reset qdd and gateids
+                    qdd = qdd_create_single_qubit_gates_same(c_s.qubits, GATEID_I);
+                    for(BDDVAR k = 0; k < i; k++)
+                        gateids[k] = GATEID_I;
+                }
+            }
+            // Handle controlled gates
+            else if (gate.controlSize != 0) {
+                qdd_column = handle_control_matrix(gate, i, c_s.qubits);
+                // Separately multiply with gate QDD (not together with column)
+                qdd = qdd_matmat_mult(qdd_column, qdd, c_s.qubits);
+            }
+            // Set single gate in gateids
+            else
+                gateids[i] = get_gate_id(gate);
+            *n_gates = *n_gates+1;
+        }
+        // If barrier, check if it starts a palindrome
+        if (gate.id == gate_barrier.id)
+            break;
+        else {
+            // Create gate QDD out of current column (gateids)
+            qdd_column = qdd_create_single_qubit_gates(c_s.qubits, gateids);
+            // Multiply with previous columns
+            qdd = qdd_matmat_mult(qdd_column, qdd, c_s.qubits);
+        }
+        // Keep track of the all time highest node count in the matrices
+        nodecount = qdd_countnodes(qdd);
+        // If nodecount of column QDD is over limit...
+        if (limit > 0 && nodecount > (BDDVAR)limit) {
+            // Multiply with statevector QDD and reset column QDD
+            vec = qdd_matvec_mult(qdd, vec, c_s.qubits);
+            qdd = qdd_create_single_qubit_gates_same(c_s.qubits, GATEID_I);
+        }
+        else if (experiments)
+            printf("nodecount mat: %d at %d\n", nodecount, *n_gates);
+    }
+    *column = j+1;
+    // Final multiply with statevector QDD
+    vec = qdd_matvec_mult(qdd, vec, c_s.qubits);
+    qdd = qdd_create_single_qubit_gates_same(c_s.qubits, GATEID_I);
+    if (experiments) {
+        nodecount = qdd_countnodes(qdd);
+        printf("nodecount mat: %d at %d\n", nodecount, *n_gates);
+        nodecount = qdd_countnodes(vec);
+        printf("nodecount vec: %d at %d\n", nodecount, *n_gates);
+    }
+    // Free variables
+    free(gateids);
+    return vec;
+}
+
+QDD run_circuit_balance(C_struct c_s, int* measurements, bool* results, int limit, bool experiments)
+{
+    // Inisialise variables
+    LACE_ME;
+    for (BDDVAR i = 0; i < c_s.bits; i++) results[i] = 0;
+    for (BDDVAR i = 0; i < c_s.qubits; i++) measurements[i] = -1;
+    BDDVAR n_gates = 0, column = 0;
+    QDD vec = qdd_create_all_zero_state(c_s.qubits);
+
+    while (column < c_s.depth) {
+        vec = greedy(c_s, vec, &column, measurements, results, experiments, &n_gates);
+        if (experiments)
+            printf("palindrome start at: %d\n", n_gates);
+        vec = matmat(c_s, vec, &column, measurements, results, limit, experiments, &n_gates);
+        if (experiments && column < c_s.depth)
+            printf("palindrome end at: %d\n", n_gates);
+    }
+    return vec;
+}
+
+QDD greedy_run_circuit(C_struct c_s, int* measurements, bool* results, bool experiments)
+{
+    // Inisialise variables
+    LACE_ME;
+    Gate gate, best_gate = gate_I;
+    bool final, loop = true;
+    BDDVAR best_nodecount, curr_nodecount, k = 0;
+    for (BDDVAR i = 0; i < c_s.bits; i++) results[i] = 0;
+    for (BDDVAR i = 0; i < c_s.qubits; i++) measurements[i] = -1;
+    QDD prev_qdd = qdd_create_all_zero_state(c_s.qubits);
+    QDD best_qdd = prev_qdd, curr_qdd = prev_qdd;
+    // Create a progress array
+    BDDVAR* progress = malloc(c_s.qubits * sizeof(BDDVAR));
+    for (BDDVAR i = 0; i < c_s.qubits; i++) progress[i] = 0;
+    if (experiments) {
+        best_nodecount = qdd_countnodes(prev_qdd);
+        printf("nodecount: %d\n", best_nodecount);
+    }
+    for (BDDVAR i = 0; i < c_s.qubits; i++) {
+        gate = c_s.circuit[i][progress[i]];
+        if (gate.id == gate_I.id)
+            skip(c_s, progress, i, true);
+    }
+    // Loop over all places in the circuit
+    while(loop) {
+        best_nodecount = pow(2, c_s.qubits+1);
+        for (BDDVAR i = 0; i < c_s.qubits; i++) {
+            gate = c_s.circuit[i][progress[i]];
+            if (!check_gate(c_s, gate, progress, i, results))
+                continue;
+            // Skip barrier and recheck qubit
+            if (gate.id == gate_barrier.id) {
+                skip(c_s, progress, i, true);
+            }
+            else {
+                // Set measurement flag
+                if (gate.id == gate_measure.id) {
+                    final = is_final_measure(c_s, i, progress[i]);
+                    if (final)
+                        measurements[i] = gate.control[0];
+                    else
+                        curr_qdd = measure(prev_qdd, i, c_s.qubits, &results[gate.control[0]]);
+                }
+                else
+                    curr_qdd = apply_gate(prev_qdd, gate, i, c_s.qubits);
+                curr_nodecount = qdd_countnodes(curr_qdd);
+                if (curr_nodecount < best_nodecount) {
+                    best_nodecount = curr_nodecount;
+                    best_qdd = curr_qdd;
+                    best_gate = gate;
+                    k = i;
+                }
+            }
+        }
+        if (experiments)
+            printf("nodecount: %d\n", best_nodecount);
+        // continue to the next gate(s)
+        if (best_gate.id != gate_measure.id) {
+            for (BDDVAR i = 0; i < best_gate.controlSize; i++)
+                skip(c_s, progress, best_gate.control[i], true);
+        }
+        skip(c_s, progress, k, true);
+        prev_qdd = best_qdd;
+        // Check if all wires are fully expanded (all gates are applied)
+        loop = false;
+        for (BDDVAR i = 0; i < c_s.qubits; i++) {
+            if (progress[i] < c_s.depth)
+                loop = true;
+        }
+    }
+    return prev_qdd;
+}
+
+QDD run_circuit_matrix(C_struct c_s, int* measurements, bool* results, int limit, bool experiments)
 {
     // Inisialise variables
     LACE_ME;
     Gate gate;
-    bool final, satisfied;
-    double *p = malloc(sizeof(double));
-    bool* measurements = malloc(c_s.qubits * sizeof(bool));
-    for (BDDVAR i = 0; i < c_s.qubits; i++) measurements[i] = false;
-    int* results = malloc(c_s.bits * sizeof(int));
+    bool final, satisfied, palindrome = false;
     for (BDDVAR i = 0; i < c_s.bits; i++) results[i] = 0;
-    BDDVAR gate_id;
+    for (BDDVAR i = 0; i < c_s.qubits; i++) measurements[i] = -1;
+    BDDVAR gate_id, nodecount, n_gates = 0;
     BDDVAR *gateids = malloc(c_s.qubits * sizeof(BDDVAR));
     QDD qdd, qdd_column;
     QDD vec = qdd_create_all_zero_state(c_s.qubits);
     qdd = qdd_create_single_qubit_gates_same(c_s.qubits, GATEID_I);
     qdd_column = qdd;
 
+    if (experiments) {
+        nodecount = qdd_countnodes(qdd);
+        printf("nodecount mat: %d at %d\n", nodecount, n_gates);
+        nodecount = qdd_countnodes(vec);
+        printf("nodecount vec: %d at %d\n", nodecount, n_gates);
+    }
     // Loop over all places in the circuit
     for (BDDVAR j = 0; j < c_s.depth; j++) {
         for (BDDVAR i = 0; i < c_s.qubits; i++) {
@@ -250,7 +549,7 @@ QDD run_circuit_matrix(C_struct c_s, BDDVAR runs, BDDVAR limit, bool show)
             // Skip control gates (controls are used by target gate)
             if (gate.id == gate_barrier.id || gate.id == gate_ctrl.id || gate.id == gate_ctrl_c.id || gate.id == gate_I.id)
                 continue;
-            // If classical control is not equal to max qubits, the gate is classically controlled
+            // If classical control is not equal to -1, the gate is classically controlled
             if (gate.classical_expect != -1) {
                 satisfied = check_classical_if(c_s.bits, gate, results);
                 if (!satisfied)
@@ -261,7 +560,7 @@ QDD run_circuit_matrix(C_struct c_s, BDDVAR runs, BDDVAR limit, bool show)
                 final = is_final_measure(c_s, i, j);
                 // If it is not a final measure, measure now and update QDD
                 if (final) {
-                    measurements[i] = true;
+                    measurements[i] = gate.control[0];
                 }
                 else {
                     // Multiply everything currently already in the column
@@ -269,7 +568,7 @@ QDD run_circuit_matrix(C_struct c_s, BDDVAR runs, BDDVAR limit, bool show)
                     qdd = qdd_matmat_mult(qdd_column, qdd, c_s.qubits);
                     // Multiply with the vector and measure
                     vec = qdd_matvec_mult(qdd, vec, c_s.qubits);
-                    vec = qdd_measure_qubit(vec, i, c_s.qubits, &results[gate.control[0]], p);
+                    vec = measure(vec, i, c_s.qubits, &results[gate.control[0]]);
                     // Reset qdd and gateids
                     qdd = qdd_create_single_qubit_gates_same(c_s.qubits, GATEID_I);
                     for(BDDVAR k = 0; k < i; k++)
@@ -287,44 +586,65 @@ QDD run_circuit_matrix(C_struct c_s, BDDVAR runs, BDDVAR limit, bool show)
                 gate_id = get_gate_id(gate);
                 gateids[i] = gate_id;
             }
+            n_gates++;
         }
-        // Skip barrier (whole column has no effect)
-        if (gate.id != gate_barrier.id) {
+        // If barrier, check if it starts a palindrome
+        if (gate.id == gate_barrier.id) {
+            palindrome = !palindrome;
+            if (!palindrome && experiments)
+                printf("palindrome end at: %d\n", n_gates);
+            // get_palindrome_middle(c_s, j, &palindrome);
+            if (palindrome && experiments)
+                printf("palindrome start at: %d\n", n_gates);
+        }
+        else {
             // Create gate QDD out of current column (gateids)
             qdd_column = qdd_create_single_qubit_gates(c_s.qubits, gateids);
             // Multiply with previous columns
             qdd = qdd_matmat_mult(qdd_column, qdd, c_s.qubits);
         }
+        // Keep track of the all time highest node count in the matrices
+        nodecount = qdd_countnodes(qdd);
         // If nodecount of column QDD is over limit...
-        if (qdd_countnodes(qdd) > limit) {
+        if (limit > 0 && (nodecount > (BDDVAR)limit || gate.id == gate_barrier.id)) {
             // Multiply with statevector QDD and reset column QDD
             vec = qdd_matvec_mult(qdd, vec, c_s.qubits);
             qdd = qdd_create_single_qubit_gates_same(c_s.qubits, GATEID_I);
         }
+        if (experiments) {
+            printf("nodecount mat: %d at %d\n", nodecount, n_gates);
+            nodecount = qdd_countnodes(vec);
+            printf("nodecount vec: %d at %d\n", nodecount, n_gates);
+        }
     }
     // Final multiply with statevector QDD
     vec = qdd_matvec_mult(qdd, vec, c_s.qubits);
-    // Measure all qubits
-    final_measure(vec, measurements, c_s.qubits, runs, show);
+    if (experiments) {
+        nodecount = qdd_countnodes(vec);
+        printf("nodecount vec: %d at %d\n", nodecount, n_gates);
+    }
     // Free variables
-    free(measurements);
     free(gateids);
     return vec;
 }
 
-QDD run_c_struct(C_struct c_s, BDDVAR runs, bool show)
+QDD run_c_struct(C_struct c_s, int* measurements, bool* results, bool experiments)
 {
     // Inisialise variables
     LACE_ME;
     Gate gate;
     bool final, satisfied;
     double *p = malloc(sizeof(double));
-    bool* measurements = malloc(c_s.qubits * sizeof(bool));
-    for (BDDVAR i = 0; i < c_s.qubits; i++) measurements[i] = false;
-    int* results = malloc(c_s.bits * sizeof(int));
+    int result;
+    BDDVAR nodecount;
     for (BDDVAR i = 0; i < c_s.bits; i++) results[i] = 0;
+    for (BDDVAR i = 0; i < c_s.qubits; i++) measurements[i] = -1;
     QDD qdd = qdd_create_all_zero_state(c_s.qubits);
 
+    if (experiments) {
+        nodecount = qdd_countnodes(qdd);
+        printf("nodecount: %d\n", nodecount);
+    }
     // Loop over all places in the circuit
     for (BDDVAR j = 0; j < c_s.depth; j++) {
         for (BDDVAR i = 0; i < c_s.qubits; i++) {
@@ -343,19 +663,21 @@ QDD run_c_struct(C_struct c_s, BDDVAR runs, bool show)
             else if (gate.id == gate_measure.id) {
                 final = is_final_measure(c_s, i, j);
                 if (final)
-                    measurements[i] = true;
-                else
-                    qdd = qdd_measure_qubit(qdd, i, c_s.qubits, &results[gate.control[0]], p);
+                    measurements[i] = gate.control[0];
+                else {
+                    qdd = qdd_measure_qubit(qdd, i, c_s.qubits, &result, p);
+                    results[gate.control[0]] = (bool) result;
+                }
             }
             // Apply gate
             else
                 qdd = apply_gate(qdd, gate, i, c_s.qubits);
+            if (experiments) {
+                nodecount = qdd_countnodes(qdd);
+                printf("nodecount: %d\n", nodecount);
+            }
         }
     }
-    // Measure all qubits
-    final_measure(qdd, measurements, c_s.qubits, runs, show);
-    // Free variables
-    free(measurements);
     return qdd;
 }
 
@@ -383,12 +705,15 @@ int main(int argc, char *argv[])
     char *filename = argv[1];
     BDDVAR runs = 100;
     BDDVAR seed = 100;
-    BDDVAR matrix = 0;
-    bool optimize = false;
+    int matrix = 0, balance = 0;
+    bool intermediate_experiments, greedy= false, optimize = false, experiment_time = false;
+    bool intermediate_measuring = false, experiments = false;
     int opt;
+    QDD qdd;
+    BDDVAR res;
 
     // Read flags from cmd and set parameters
-    while((opt = getopt(argc, argv, "s:r:m:o")) != -1) {
+    while((opt = getopt(argc, argv, "s:r:m:ogetb:")) != -1) {
         switch(opt) {
             case 'r':
                 runs = atoi(optarg);
@@ -397,10 +722,22 @@ int main(int argc, char *argv[])
                 seed = atoi(optarg);
                 break;
             case 'm':
-                matrix = abs(atoi(optarg));
+                matrix = atoi(optarg);
+                break;
+            case 'b':
+                balance = atoi(optarg);
                 break;
             case 'o':
                 optimize = true;
+                break;
+            case 'g':
+                greedy = true;
+                break;
+            case 'e':
+                experiments = true;
+                break;
+            case 't':
+                experiment_time = true;
                 break;
             default:
                 fprintf(stderr, "usage: %s file [-r runs][-s seed][-m matrix_node_limit][-o optimize]\n", argv[0]);
@@ -425,16 +762,79 @@ int main(int argc, char *argv[])
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<16, -1, COMP_HASHMAP, NORM_LARGEST);
+    sylvan_init_qdd(1LL<<25, -1, COMP_HASHMAP, NORM_LARGEST);
     qdd_set_testing_mode(true); // turn on internal sanity tests
 
     // Create a circuit struct representing the QASM circuit in the given file
     C_struct c_s = make_c_struct(filename, optimize);
-    // Run the circuit based on method
-    if (matrix != 0)
-        run_circuit_matrix(c_s, runs, matrix, true);
-    else
-        run_c_struct(c_s, runs, true);
+    
+    int* measurements = malloc(c_s.qubits * sizeof(int));
+    bool* bit_res = malloc(c_s.bits * sizeof(bool));
+    bool* bit_print;
+    intermediate_measuring = check_measuring_gates(c_s);
+    BDDVAR* results = malloc(pow(2,c_s.bits) * sizeof(BDDVAR));
+    for (BDDVAR i = 0; i < pow(2,c_s.bits); i++) results[i] = 0;
+    BDDVAR* nodecount_matrix = malloc(sizeof(BDDVAR));
+    *nodecount_matrix = 0;
+    BDDVAR* nodecount = malloc(sizeof(BDDVAR));
+    *nodecount = 0;
+    time_t start,end;
+    start=clock();
+
+    if (intermediate_measuring) {
+        intermediate_experiments = experiments;
+        // Run the circuit based on method
+        for (BDDVAR i = 0; i < runs; i++) {
+            if (greedy)
+                qdd = greedy_run_circuit(c_s, measurements, bit_res, intermediate_experiments);
+            else if (matrix != 0)
+                qdd = run_circuit_matrix(c_s, measurements, bit_res, matrix, intermediate_experiments);
+            else if (balance != 0)
+                qdd = run_circuit_balance(c_s, measurements, bit_res, balance, intermediate_experiments);
+            else
+                qdd = run_c_struct(c_s, measurements, bit_res, intermediate_experiments);
+            // Measure all qubits
+            final_measure(qdd, measurements, c_s, bit_res);
+            res = bitarray_to_int(bit_res, c_s.bits, false);
+            results[res]++;
+            experiments = false;
+            intermediate_experiments = false;
+        }
+    }
+    else {
+        // Run the circuit based on method
+        if (greedy)
+                qdd = greedy_run_circuit(c_s, measurements, bit_res, experiments);
+        else if (matrix != 0)
+            qdd = run_circuit_matrix(c_s, measurements, bit_res, matrix, experiments);
+        else if (balance != 0)
+            qdd = run_circuit_balance(c_s, measurements, bit_res, balance, experiments);
+        else
+            qdd = run_c_struct(c_s, measurements, bit_res, experiments);
+        // Measure all qubits
+        for (BDDVAR i = 0; i < runs; i++) {
+            final_measure(qdd, measurements, c_s, bit_res);
+            res = bitarray_to_int(bit_res, c_s.bits, false);
+            results[res]++;
+        }
+    }
+
+    // If experiments is true, print time
+    end=clock();
+    if (experiment_time)
+        printf("milliseconds: %ld\n", ((end-start)*1000)/CLOCKS_PER_SEC);
+
+    if (!experiments && !experiment_time) {
+        // Print reformatted circuit results if <show> is toggled
+        for (BDDVAR i = 0; i < pow(2,c_s.bits); i++) {
+            if (results[i] != 0) {
+                bit_print = int_to_bitarray(i,c_s.bits,true);
+                for (BDDVAR j = 0; j < c_s.bits; j++) { printf("%d", bit_print[j]); }
+                printf(": %d\n", results[i]);
+            }
+        }
+    }
+
     // Free variables
     delete_c_struct(&c_s);
     sylvan_quit();

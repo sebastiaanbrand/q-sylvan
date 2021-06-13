@@ -315,12 +315,42 @@ void handle_barrier(C_struct* c_s, Gate gate_s)
     c_s->circuit[c_s->qubits-1][c_s->depth] = gate_s;
 }
 
+void swap(BDDVAR* a, BDDVAR* b)
+{
+    BDDVAR t = *a;
+    *a = *b;
+    *b = t;
+}
+
+BDDVAR partition(BDDVAR* qubits, int low, int high)
+{
+    BDDVAR pivot = qubits[high];
+    int i = (low - 1);
+    for (int j = low; j < high; j++) {
+        if (qubits[j] < pivot) {
+            i++;
+            swap(&qubits[i], &qubits[j]);
+        }
+    }
+    i++;
+    swap(&qubits[i],&qubits[high]);
+    return i;
+}
+
+void sort(BDDVAR* qubits, int low, int high)
+{
+    if (low < high) {
+        int pi = partition(qubits, low, high);
+        sort(qubits,low,pi-1);
+        sort(qubits,pi+1,high);
+    }
+}
+
 void handle_gate(C_struct* c_s, BDDVAR n_qubits, BDDVAR* qubits, Gate gate_s)
 {
     // Initialise variables
     Gate gate_ctrl_s;
-    bool controlled = false;
-    BDDVAR j = 0, max = qubits[n_qubits];
+    BDDVAR j = 0, target = qubits[n_qubits];
     BDDVAR *control;
     // Increment the depth since were adding a column
     c_s->depth += 1;
@@ -328,24 +358,19 @@ void handle_gate(C_struct* c_s, BDDVAR n_qubits, BDDVAR* qubits, Gate gate_s)
     gate_s.controlSize = n_qubits;
     // If n_qubits is 0, it is not controlled
     if (n_qubits != 0) {
-        // Check if target is below controls
-        for (BDDVAR k = 0; k < n_qubits; k++) {
-            if (qubits[k] > max)
-                max = qubits[k];
-        }
         // Create a list of control indices and store in <gate_s>
         control = malloc((n_qubits) * sizeof(BDDVAR));
         for (BDDVAR i = 0; i < n_qubits; i++) control[i] = qubits[i];
         gate_s.control = control;
+        // sort qubits to place controls and in-betweens
+        sort(qubits, 0, n_qubits);
         // Store all control gates in <c_s>
-        for (BDDVAR i = 0; i < max+1; i++) {
+        for (BDDVAR i = qubits[0]; i <= qubits[n_qubits]; i++) {
             if (i == qubits[j]) {
-                // Set controlled to true to place vertical bars from now on
-                controlled = true;
                 // Store target in control array of control gate (needed for optimisation)
                 gate_ctrl_s = gate_ctrl;
                 gate_ctrl_s.control = malloc(sizeof(BDDVAR));
-                gate_ctrl_s.control[0] = qubits[n_qubits];
+                gate_ctrl_s.control[0] = target;
                 gate_ctrl_s.controlSize = 1;
                 // Store control gate in <c_s>
                 c_s->circuit[i][c_s->depth] = gate_ctrl_s;
@@ -353,12 +378,12 @@ void handle_gate(C_struct* c_s, BDDVAR n_qubits, BDDVAR* qubits, Gate gate_s)
                 j++;
             }
             // Once you find a control qubit, place vertical bars between controls and target
-            else if (controlled)
+            else
                 c_s->circuit[i][c_s->depth] = gate_ctrl_c;
         }
     }
     // Store gate on target qubit in <c_s>
-    c_s->circuit[qubits[n_qubits]][c_s->depth] = gate_s;
+    c_s->circuit[target][c_s->depth] = gate_s;
 }
 
 BDDVAR get_next_gate(C_struct* c_s, BDDVAR q, BDDVAR depth, bool successive)

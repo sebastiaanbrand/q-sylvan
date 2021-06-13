@@ -11,7 +11,7 @@
  * - runs: the number of times the flagged qubits in the statevector should be measured
  * - show: toggle to print the measurement results
  */
-void final_measure(QDD qdd, bool* measurements, BDDVAR qubits, BDDVAR shots, bool show);
+void final_measure(QDD qdd, int* measurements, C_struct c_s, bool* results);
 
 /**
  * Returns the Sylvan GATEID that corresponds to <gate>
@@ -107,37 +107,139 @@ TASK_DECL_3(bool, is_final_measure, C_struct, BDDVAR, BDDVAR);
  * - true if they are equal, else false
  */
 #define check_classical_if(bits,gate,actual_list) (CALL(check_classical_if,bits,gate,actual_list));
-TASK_DECL_3(bool, check_classical_if, BDDVAR, Gate, int*);
+TASK_DECL_3(bool, check_classical_if, BDDVAR, Gate, bool*);
 
 /**
- * Runs the circuit_struct <c_s> for <runs> times and prints the results if <show> is true.
- * The run is done using the matrx-matrix method. Gate QDDs are multiplied with eachother
+ * Checks if the circuit has intermediate measuring gates, or if the circuit is only
+ * measured at the end of the circuit.
+ * 
+ * PARAMETERS:
+ * - c_s: the circuit_struct to be checked
+ * 
+ * RETURN:
+ * - true if there are intermediate  measuring gates, else false
+ */
+bool check_measuring_gates(C_struct c_s);
+
+/**
+ * Advances the progress of qubit <i> to the next gate
+ * 
+ * PARAMETERS:
+ * - c_s: the circuit_struct
+ * - progress: the progress array
+ * - i: the qubit index
+ * - skip_barrier: skips barrier if true
+ */
+void skip(C_struct c_s, BDDVAR* progress, BDDVAR i, bool skip_barrier);
+
+/**
+ * Measures qubit <i>.
+ * 
+ * PARAMETERS:
+ * - qdd: the qdd to be measured on
+ * - i: the qubit to measure
+ * - n: the number of qubits in <qdd>
+ * - result: the result of the measurement
+ * 
+ * RETURN:
+ * - the resulting qdd after measuring
+ **/
+QDD measure(QDD qdd, BDDVAR i, BDDVAR n, bool* result);
+
+/**
+ * Checks for the greedy method if the controls of a gate are free and if it satisfies the classical
+ * control (if it is classically controlled).
+ * 
+ * PARAMETERS:
+ * - c_s: the circuit struct
+ * - gate: the gate to check
+ * - progress: the progress counter of all qubits
+ * - i: the gate index
+ * - results: the classical register
+ * 
+ * RETURN:
+ * - true if everything is satisfied, else false
+ **/
+bool check_gate(C_struct c_s, Gate gate, BDDVAR* progress, BDDVAR i, bool* results);
+
+/**
+ * A subfunction which runs the greedy method from <column> to the next barrier.
+ * 
+ * PARAMETERS:
+ * - c_s: the circuit struct
+ * - prev_qdd: the current qdd
+ * - column: the current column
+ * - measurements: the final measurement flags
+ * - results: the classical register
+ * - experiments: prints nodecounts if true
+ * - n_gates: the current number of nodes already applied
+ * 
+ * RETURN:
+ * - the resulting qdd after applying all gates between column and the next barrier
+ **/
+QDD greedy(C_struct c_s, QDD prev_qdd, BDDVAR* column, int* measurements, bool* results, bool experiments, BDDVAR* n_gates);
+
+/**
+ * A subfunction which runs the matmat method from <column> to the next barrier.
+ * 
+ * PARAMETERS:
+ * - c_s: the circuit struct
+ * - vec: the current qdd
+ * - column: the current column
+ * - measurements: the final measurement flags
+ * - results: the classical register
+ * - limit: the node-threshold to check if a matvec multiplication should be done
+ * - experiments: prints nodecounts if true
+ * - n_gates: the current number of nodes already applied
+ * 
+ * RETURN:
+ * - the resulting qdd after applying all gates between column and the next barrier
+ **/
+QDD matmat(C_struct c_s, QDD vec, BDDVAR* column, int* measurements, bool* results, int limit, bool experiments, BDDVAR* n_gates);
+
+/**
+ * Runs the circuit_struct <c_s> with a greedy method and stores measurements in <bit_res>. 
+ * The run is done using the matrx-vector method. Each gate is directly multiplied with 
+ * the statevector QDD.
+ * 
+ * PARAMETERS:
+ * - c_s: the circuit_struct to be run
+ * - bit_res: the bit register to store measurements in
+ * - nodes: the maximum number of nodes in the QDD at any point in the algorithm
+ * 
+ * RETURN:
+ * - The resulting statevector QDD after running the circuit
+ */
+QDD greedy_run_circuit(C_struct c_s, int* measurements, bool* results, bool experiments);
+
+/**
+ * Runs the circuit_struct <c_s> for <runs>  and stores measurements in <bit_res>.
+ * The run is done using the matrix-matrix method. Gate QDDs are multiplied with eachother
  * until the end of the circuit is reached, after which the resulting QDD is multiplied with
  * the statevector QDD. When number of nodes in the gate QDD exceed <limit>, the QDD is 
  * multiplied with the statevector QDD and the gate QDD is reset. This is to prevent exploding QDDs.
  * 
  * PARAMETERS:
  * - c_s: the circuit_struct to be run
- * - runs: the number of runs that should be done
+ * - bit_res: the bit register to store measurements in
  * - limit: the maximum number of nodes in the gate QDD
- * - show: prints the circuit results if set to true
+ * - nodes: the maximum number of nodes in the QDD at any point in the algorithm
  * 
  * RETURN:
  * - The resulting statevector QDD after running the circuit
  */
-QDD run_c_struct_matrix(C_struct c_s, BDDVAR shots, bool show);
+QDD run_c_struct_matrix(C_struct c_s, int* measurements, bool* bit_res, int limit, bool experiments);
 
 /**
- * Runs the circuit_struct <c_s> for <runs> times and prints the results if <show> is true.
- * The run is done using the matrx-vector method. Each gate is directly multiplied with
- * the statevector QDD.
+ * Runs the circuit_struct <c_s> and stores measurements in <bit_res>. The run is done using the
+ * matrix-vector method. Each gate is directly multiplied with the statevector QDD.
  * 
  * PARAMETERS:
  * - c_s: the circuit_struct to be run
- * - runs: the number of runs that should be done
- * - show: prints the circuit results if set to true
+ * - bit_res: the bit register to store measurements in
+ * - nodes: the maximum number of nodes in the QDD at any point in the algorithm
  * 
  * RETURN:
  * - The resulting statevector QDD after running the circuit
  */
-QDD run_c_struct(C_struct c_s, BDDVAR shots, bool show);
+QDD run_c_struct(C_struct c_s, int* measurements, bool* bit_res, bool experiments);

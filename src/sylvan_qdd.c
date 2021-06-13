@@ -1800,7 +1800,7 @@ qdd_measure_all(QDD qdd, BDDVAR n, bool* ms, double *p)
 
         if (fabs(prob_low + prob_high - 1.0) > amp_store_get_tolerance()) {
             printf("prob sum = %.10lf\n", prob_low + prob_high);
-            assert("probabilities don't sum to 1" && false);
+            // printf("probabilities don't sum to 1" && false);
         }
 
         // flip a coin

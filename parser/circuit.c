@@ -16,6 +16,7 @@ Circuit* create_circuit(char* filename)
     // Copy important info
     circuit_s->progress = progress;
     circuit_s->qubits = c_s.qubits;
+    circuit_s->bits = c_s.bits;
     circuit_s->depth = c_s.depth;
     // Create an initial all-zero qdd
     circuit_s->qdd = qdd_create_all_zero_state(circuit_s->qubits);
@@ -120,12 +121,12 @@ bool skip_to_gate(Circuit* circuit_s, BDDVAR i)
 
 TASK_IMPL_2(bool, advance, Circuit*, circuit_s, BDDVAR, q)
 {
-    // Initialise variables
-    Gate gate = circuit_s->circuit[q][circuit_s->progress[q]];
-    BDDVAR gate_id = get_gateid(gate);
     // Check if 'q' is valid
     if (q >= circuit_s->qubits)
         return false;
+    // Initialise variables
+    Gate gate = circuit_s->circuit[q][circuit_s->progress[q]];
+    BDDVAR gate_id = get_gateid(gate);
     // Check for every control qubit if the progress on that wire is equal to the progress of the target
     for (BDDVAR i = 0; i < gate.controlSize; i++) {
         if (circuit_s->circuit[gate.control[i]][circuit_s->progress[gate.control[i]]].id != gate_ctrl.id)
