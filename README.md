@@ -6,7 +6,8 @@ Q-Sylvan extends [Sylvan](https://github.com/trolando/sylvan) with QMDDs, as wel
 ## Installation
 
 ### Dependencies
-Q-Sylvan requires the following libraries: `GMP`,  `MPFR`, and `MPFR C++`. On Ubuntu it should be possible to install these with
+Q-Sylvan requires the following libraries: `popt`, `GMP`,  `MPFR`, and `MPFR C++`. On Ubuntu it should be possible to install these with
+- `sudo apt-get install libpopt-dev`
 - `sudo apt-get install libgmp3-dev`
 - `sudo apt-get install libmpfr-dev`
 - `sudo apt-get install mpfrc++`
