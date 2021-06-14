@@ -689,10 +689,14 @@ QDD run_c_struct(C_struct c_s, int* measurements, bool* results, bool experiment
  * - filename: the path to the file containing the QASM circuit code
  * 
  * FLAGS:
- * [-r runs] (optional) the number of runs to perform
- * [-s seed] (optional) the randomness seed to be used
- * [-m matrix] (optional) the boundaray value of nodes in a tree before multiplying with the state vector
+ * [-r runs (int)] (optional) the number of runs to perform
+ * [-s seed (int)] (optional) the randomness seed to be used
+ * [-m matrix (int)] (optional) the boundaray value of nodes in a tree before multiplying with the state vector
+ * [-g greedy] (optional) runs the circuit matrix-vector method using a greedy algorithm
+ * [-b balance (int)] (optional) runs the circuit switching between matrix-matrix method and greedy method
  * [-o optimize] (optional) optimize the circuit if true. This option will remove negating gates before running
+ * [-e experiment] (optional) prints the nodcount and palindrome signals
+ * [-t time] (optional) prints the time taken to run the circuit
  * 
  * NOTE:
  * Since multiplying a gate-QDD with a gate-QDD is more expensive than multiplying a gate-QDD with
@@ -740,7 +744,7 @@ int main(int argc, char *argv[])
                 experiment_time = true;
                 break;
             default:
-                fprintf(stderr, "usage: %s file [-r runs][-s seed][-m matrix_node_limit][-o optimize]\n", argv[0]);
+                fprintf(stderr, "usage: %s file [-r runs][-s seed][-m node_limit][-o optimize]\n", argv[0]);
                 exit(EXIT_FAILURE);
         }
     }
