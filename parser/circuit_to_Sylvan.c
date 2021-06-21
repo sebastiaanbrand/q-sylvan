@@ -547,6 +547,10 @@ QDD run_circuit_matrix(C_struct c_s, int* measurements, bool* results, int limit
     qdd = qdd_create_single_qubit_gates_same(c_s.qubits, GATEID_I);
     qdd_column = qdd;
 
+    qdd_protect(&vec);
+    qdd_protect(&qdd);
+    qdd_protect(&qdd_column);
+
     if (experiments) {
         nodecount = qdd_countnodes(qdd);
         printf("nodecount mat: %d at %d\n", nodecount, n_gates);
@@ -639,6 +643,9 @@ QDD run_circuit_matrix(C_struct c_s, int* measurements, bool* results, int limit
     }
     // Free variables
     free(gateids);
+    qdd_unprotect(&vec);
+    qdd_unprotect(&qdd);
+    qdd_unprotect(&qdd_column);
     return vec;
 }
 
