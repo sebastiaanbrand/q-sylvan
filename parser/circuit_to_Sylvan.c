@@ -622,14 +622,17 @@ QDD run_circuit_matrix(C_struct c_s, int* measurements, bool* results, int limit
             qdd = qdd_matmat_mult(qdd_column, qdd, c_s.qubits);
         }
         // Keep track of the all time highest node count in the matrices
-        nodecount = qdd_countnodes(qdd);
         // If nodecount of column QDD is over limit...
-        if (limit > 0 && (nodecount > (BDDVAR)limit || gate.id == gate_barrier.id)) {
-            // Multiply with statevector QDD and reset column QDD
-            vec = qdd_matvec_mult(qdd, vec, c_s.qubits);
-            qdd = qdd_create_single_qubit_gates_same(c_s.qubits, GATEID_I);
+        if (limit > 0) {
+            nodecount = qdd_countnodes(qdd);
+            if (nodecount > (BDDVAR)limit || gate.id == gate_barrier.id) {
+                // Multiply with statevector QDD and reset column QDD
+                vec = qdd_matvec_mult(qdd, vec, c_s.qubits);
+                qdd = qdd_create_single_qubit_gates_same(c_s.qubits, GATEID_I);
+            }
         }
         if (experiments) {
+            nodecount = qdd_countnodes(qdd);
             printf("nodecount mat: %d at %d\n", nodecount, n_gates);
             nodecount = qdd_countnodes(vec);
             printf("nodecount vec: %d at %d\n", nodecount, n_gates);
