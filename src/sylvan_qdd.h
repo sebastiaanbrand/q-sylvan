@@ -137,6 +137,21 @@ VOID_TASK_DECL_1(qdd_gc_mark_rec, QDD);
 #define qdd_gc_mark_rec(qdd) CALL(qdd_gc_mark_rec, qdd)
 
 /**
+ * Store the pointer <ptr> in the pointers table.
+ */
+void qdd_protect(QDD* ptr);
+
+/**
+ * Delete the pointer <ptr> from the pointers table.
+ */
+void qdd_unprotect(QDD* ptr);
+
+/**
+ * Compute the number of pointers in the pointers table.
+ */
+size_t qdd_count_protected(void);
+
+/**
  * Push a QDD variable to the pointer reference stack.
  * During gc the variable will be inspected and the contents will be marked.
  */
@@ -530,8 +545,7 @@ void qdd_set_auto_gc_amp_table(bool enabled);
 /* default 0.5 */
 void qdd_set_gc_amp_table_thres(double fraction_filled);
 double qdd_get_gc_amp_table_thres();
-void qdd_gc_amp_table(QDD *keep);
-void qdd_gc_amp_table2(QDD keep[], int num);
+void qdd_gc_amp_table();
 void qdd_test_gc_amptable(QDD *keep);
 /**
  * Recursive function for moving amps from old to new amp table.

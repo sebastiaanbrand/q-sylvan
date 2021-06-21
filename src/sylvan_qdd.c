@@ -303,6 +303,29 @@ refs_table_t qdd_refs;
 refs_table_t qdd_protected;
 static int qdd_protected_created = 0;
 
+void
+qdd_protect(QDD *a)
+{
+    if (!qdd_protected_created) {
+        // In C++, sometimes mtbdd_protect is called before Sylvan is initialized. Just create a table.
+        protect_create(&qdd_protected, 4096);
+        qdd_protected_created = 1;
+    }
+    protect_up(&qdd_protected, (size_t)a);
+}
+
+void
+qdd_unprotect(QDD *a)
+{
+    if (qdd_protected.refs_table != NULL) protect_down(&qdd_protected, (size_t)a);
+}
+
+size_t
+qdd_count_protected()
+{
+    return protect_count(&qdd_protected);
+}
+
 /* Called during garbage collection */
 VOID_TASK_0(qdd_gc_mark_external_refs)
 {
@@ -766,25 +789,22 @@ qdd_get_gc_amp_table_thres()
 
 
 void
-qdd_gc_amp_table(QDD *keep)
+qdd_gc_amp_table()
 {
-    qdd_gc_amp_table2(keep, 1);
-}
-
-void
-qdd_gc_amp_table2(QDD keep[], int num)
-{
-    LACE_ME;
+    // gc amp table and keep amps of protected qdds (and update those)
+    LACE_ME; 
+    
     // 1. Create new amp table
     init_new_empty_table();
 
-    // 2. Fill new table with amps present in given QDDs
-    //for (int i = 0; i < n_qdds; i++) qdds[i] = _fill_new_amp_table(qdds[i]);
-    for (int k = 0; k < num; k++)
-        keep[k] = _fill_new_amp_table(keep[k]);
-
-    //uint64_t in_use = count_amplitude_table_enries();
-    //printf("amps in use after gc: %ld\n", in_use);
+    // 2. Fill new table with amps in protected qdd's and update those qdd's
+    uint64_t *it = protect_iter(&qdd_protected, 0, qdd_protected.refs_size);
+    while (it != NULL) {
+        QDD *to_protect_amps = (QDD*)protect_next(&qdd_protected, &it, qdd_protected.refs_size);
+        if (to_protect_amps != NULL) {
+            *to_protect_amps = _fill_new_amp_table(*to_protect_amps);
+        }
+    }
 
     // 3. Delete old amp table
     delete_old_table();
@@ -834,13 +854,12 @@ TASK_IMPL_1(QDD, _fill_new_amp_table, QDD, qdd)
     return res;
 }
 
-void
-qdd_test_gc_amp_table(QDD *keep)
+bool
+qdd_test_gc_amp_table()
 {
     uint64_t entries = get_table_entries_estimate();
     uint64_t size    = get_table_size();
-    if ( ((double)entries / (double)size) > amp_table_gc_thres )
-        qdd_gc_amp_table(keep);
+    return ( ((double)entries / (double)size) > amp_table_gc_thres );
 }
 
 /*************************</cleaning amplitude table>**************************/
@@ -862,20 +881,33 @@ static void
 qdd_do_before_gate(QDD* qdd)
 {
     // check if ctable needs gc
-    if (auto_gc_amp_table) qdd_test_gc_amp_table(qdd);
+    if (auto_gc_amp_table && qdd_test_gc_amp_table()) {
+        qdd_protect(qdd);
+        qdd_gc_amp_table();
+        qdd_unprotect(qdd);
+    }
 
     if (periodic_gc_nodetable) {
         gate_counter++;
         if (gate_counter % periodic_gc_nodetable ==  0) {
             LACE_ME;
-            qdd_refs_push(*qdd);
+            qdd_protect(qdd);
             sylvan_gc();
-            qdd_refs_pop(1);
+            qdd_unprotect(qdd);
         }
     }
 
     // log stuff (if logging is enabled)
     qdd_stats_log(*qdd);
+}
+
+static void
+qdd_do_before_mult()
+{
+    // check if ctable needs gc
+    if (auto_gc_amp_table && qdd_test_gc_amp_table()) {
+        qdd_gc_amp_table();
+    }
 }
 
 /* Wrapper for applying a single qubit gate. */
@@ -916,6 +948,19 @@ TASK_IMPL_5(QDD, qdd_cgate_range, QDD, qdd, uint32_t, gate, BDDVAR, c_first, BDD
     return qdd_cgate_range_rec(qdd,gate,c_first,c_last,t);
 }
 
+static void
+norm_plus_cache_key(QDD a, QDD b, QDD *x, QDD *y)
+{
+    if (a < b) {
+        *x = a;
+        *y = b;
+    }
+    else {
+        *x = b;
+        *y = a;
+    }
+}
+
 TASK_IMPL_2(QDD, qdd_plus, QDD, a, QDD, b)
 {
     // Trivial cases
@@ -946,9 +991,11 @@ TASK_IMPL_2(QDD, qdd_plus, QDD, a, QDD, b)
     }
 
     // Check cache
+    QDD x, y;
+    norm_plus_cache_key(a, b, &x, &y); // (a + b) = (b + a) so normalize cache key
     bool cachenow = ((topvar % granularity) == 0);
     if (cachenow) {
-        if (cache_get3(CACHE_QDD_PLUS, sylvan_false, a, b, &res)) {
+        if (cache_get3(CACHE_QDD_PLUS, sylvan_false, x, y, &res)) {
             sylvan_stats_count(QDD_PLUS_CACHED);
             return res;
         }
@@ -976,7 +1023,7 @@ TASK_IMPL_2(QDD, qdd_plus, QDD, a, QDD, b)
     // Put in cache, return
     res = qdd_makenode(topvar, low, high);
     if (cachenow) {
-        if (cache_put3(CACHE_QDD_PLUS, sylvan_false, a, b, res)) 
+        if (cache_put3(CACHE_QDD_PLUS, sylvan_false, x, y, res)) 
             sylvan_stats_count(QDD_PLUS_CACHEDPUT);
     }
     return res;
@@ -1175,16 +1222,14 @@ TASK_IMPL_6(QDD, qdd_cgate_range_rec, QDD, q, uint32_t, gate, BDDVAR, c_first, B
 /* Wrapper for matrix vector multiplication. */
 TASK_IMPL_3(QDD, qdd_matvec_mult, QDD, mat, QDD, vec, BDDVAR, nvars)
 {
-    // assert(!auto_gc_amp_table && "auto gc of ctable not implemented for mult operations");
-    qdd_do_before_gate(&vec);
+    qdd_do_before_mult();
     return CALL(qdd_matvec_mult_rec, mat, vec, nvars, 0);
 }
 
 /* Wrapper for matrix vector multiplication. */
 TASK_IMPL_3(QDD, qdd_matmat_mult, QDD, a, QDD, b, BDDVAR, nvars)
 {
-    // assert(!auto_gc_amp_table && "auto gc of ctable not implemented for mult operations");
-    //qdd_do_before_gate(&vec);
+    qdd_do_before_mult();
     return CALL(qdd_matmat_mult_rec, a, b, nvars, 0);
 }
 

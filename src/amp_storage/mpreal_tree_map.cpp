@@ -8,17 +8,32 @@ static mpfr::mpreal TOLERANCE = 1e-14;
 
 static bool complex_custom_comp(mpreal_complex x, mpreal_complex y)
 {
-    if ((mpfr::abs(x.r - y.r) < TOLERANCE)) {
-        if ((mpfr::abs(x.i - y.i) < TOLERANCE)) {
-            // both within tolerance
-            return 0;
+    if (TOLERANCE == 0.0) {
+        if (x.r == y.r) {
+            if (x.i == y.i) {
+                return 0;
+            }
+            else {
+                return (x.i < y.i);
+            }
         }
         else {
-            return (x.i < y.i);
+            return (x.r < y.r);
         }
     }
     else {
-        return (x.r < y.r);
+        if ((mpfr::abs(x.r - y.r) < TOLERANCE)) {
+            if ((mpfr::abs(x.i - y.i) < TOLERANCE)) {
+                // both within tolerance
+                return 0;
+            }
+            else {
+                return (x.i < y.i);
+            }
+        }
+        else {
+            return (x.r < y.r);
+        }
     }
 }
 
@@ -50,7 +65,7 @@ mpreal_tree_map_create(unsigned int ms, double tol)
 {
     mpfr::mpreal::set_default_prec(MPREAL_PREC);
     mpreal_tree_map_t *map = (mpreal_tree_map_t *) calloc(1, sizeof(mpreal_tree_map_t));
-    if (tol > 0) TOLERANCE = tol;
+    TOLERANCE = tol;
     map->max_size = ms;
     map->entries = 0;
     map->mpreal_to_int = new map_mpreal_to_int_t;

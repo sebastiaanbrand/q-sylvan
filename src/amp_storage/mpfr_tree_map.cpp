@@ -4,16 +4,22 @@
 
 // float "equality" tolerance
 static mpfr_t TOLERANCE; // default 1e-14
+static double TOLERANCE_double;
 
 
 static bool mpfr_close(mpfr_srcptr x, mpfr_srcptr y) 
 {
-    mpfr_t diff;
-    mpfr_init2(diff, MPFR_PREC);
-    mpfr_sub(diff, x, y, DEFAULT_RND);
-    int cmp = mpfr_cmpabs(TOLERANCE, diff); // 1 if |a| > |b|, 0 if |a| == |b|, -1 if |a| < |b|
-    mpfr_clear(diff); // not sure if we need to manually clear these
-    return (cmp >= 0);
+    if (TOLERANCE_double == 0.0) {
+        return mpfr_eq(x, y, MPFR_PREC);
+    }
+    else {
+        mpfr_t diff;
+        mpfr_init2(diff, MPFR_PREC);
+        mpfr_sub(diff, x, y, DEFAULT_RND);
+        int cmp = mpfr_cmpabs(TOLERANCE, diff); // 1 if |a| > |b|, 0 if |a| == |b|, -1 if |a| < |b|
+        mpfr_clear(diff); // not sure if we need to manually clear these
+        return (cmp >= 0);
+    }
 }
 
 static bool mpfr_custom_comp(mpfr_srcptr x, mpfr_srcptr y)
@@ -52,6 +58,7 @@ mpfr_tree_map_create(unsigned int ms, double tol)
     mpfr_tree_map_t *map = (mpfr_tree_map_t *) calloc(1, sizeof(mpfr_tree_map_t));
     mpfr_init2(TOLERANCE, MPFR_PREC);
     mpfr_set_d(TOLERANCE, tol, DEFAULT_RND);
+    TOLERANCE_double = tol;
     map->max_size = ms;
     map->entries = 0;
     map->mpfr_to_int = new map_mpfr_to_int_t;

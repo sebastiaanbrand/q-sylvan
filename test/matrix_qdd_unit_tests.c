@@ -75,7 +75,7 @@ int test_x_gate()
     mTemp = qdd_matmat_mult(mX1,mX0, nqubits); test_assert(mTemp == mXXI);
 
     // calculate (X0 X1)|00> by multiplying X0 and X1 first
-    mTemp = qdd_matmat_mult(mX0,mX1, nqubits);
+    mTemp = qdd_matmat_mult(mX0, mX1, nqubits);
     v3 = qdd_create_all_zero_state(nqubits);
     v3 = qdd_matvec_mult(mTemp, v3, nqubits);
     test_assert(v3 == v5);
@@ -324,7 +324,7 @@ int test_phase_gates()
     x2[1] = 1; x2[0] = 1; a = qdd_get_amplitude(v0, x2); test_assert(a == comp_lookup(comp_make(-0.5,0)));
     test_assert(qdd_countnodes(v0) == 2);
 
-    v0 = qdd_matvec_mult(mZ1, v0, nqubits);
+    v0 = qdd_matvec_mult(mZ1,    v0, nqubits);
     v0 = qdd_matvec_mult(mTdag1, v0, nqubits);
     v0 = qdd_matvec_mult(mTdag1, v0, nqubits);
     v0 = qdd_matvec_mult(mTdag1, v0, nqubits);

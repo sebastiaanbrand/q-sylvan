@@ -69,7 +69,12 @@ rmap_get_tolerance()
 static bool
 real_close(fl_t *in_table, const fl_t* to_insert)
 {
-    return ((flt_abs(*in_table - *to_insert) < TOLERANCE));
+    if (TOLERANCE == 0.0) {
+        return (*in_table == *to_insert);
+    }
+    else {
+        return ((flt_abs(*in_table - *to_insert) < TOLERANCE));
+    }
 }
 
 int
@@ -79,7 +84,11 @@ rmap_find_or_put(const void *dbs, const fl_t *v, ref_t *ret)
     bucket_t *val  = (bucket_t *) v;
 
     // Round the value to compute the hash with, but store the actual value v
-    fl_t round_v = flt_round(*v / TOLERANCE) * TOLERANCE;
+    fl_t round_v;
+    if (TOLERANCE == 0.0)
+        round_v = *v;
+    else
+        round_v = flt_round(*v / TOLERANCE) * TOLERANCE;
 
     // fix 0 possibly having a sign
     if(round_v == 0.0) round_v = 0.0;

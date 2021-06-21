@@ -5,7 +5,6 @@
 #include "test_assert.h"
 #include "sylvan_qdd_complex.h"
 #include "sylvan_qdd_complex_mpreal.h"
-#include "sylvan_qdd_algebraic.h"
 #include "amp_storage/mpfr_tree_map.h"
 
 
@@ -57,7 +56,26 @@ int test_cmap()
     test_assert(index1 == index2);
     val3 = cmap_get(ctable, index1);
     test_assert(val3.r == val1.r && val3.i == val1.i);
-    
+
+
+    // test with tolerance = 0
+    cmap_free(ctable);
+    ctable = cmap_create(1<<10, 0.0);
+
+    val1 = comp_make(0.9, 2./3.);
+    val2 = comp_make(0.9, 2./3.);
+    found = cmap_find_or_put(ctable, &val1, &index1); test_assert(found == 0);
+    found = cmap_find_or_put(ctable, &val2, &index2); test_assert(found == 1);
+    test_assert(index1 == index2);
+
+    val1 = comp_make(2.99999999999999855, 0.0);
+    val2 = comp_make(3.00000000000000123, 0.0);
+    found = cmap_find_or_put(ctable, &val1, &index1); test_assert(found == 0);
+    found = cmap_find_or_put(ctable, &val2, &index2); test_assert(found == 0);
+    test_assert(index1 != index2);
+    val3 = cmap_get(ctable, index1);
+    test_assert(val3.r == val1.r && val3.i == val1.i);
+
     cmap_free(ctable);
     if(VERBOSE) printf("cmap tests:               ok\n");
     return 0;
@@ -107,6 +125,24 @@ int test_rmap()
     found = rmap_find_or_put(rtable, &val1, &index1); test_assert(found == 0);
     found = rmap_find_or_put(rtable, &val2, &index2); test_assert(found == 1);
     test_assert(index1 == index2);
+    val3 = *rmap_get(rtable, index1);
+    test_assert(val3 == val1);
+
+    // test with tolerance = 0
+    rmap_free(rtable);
+    rtable = rmap_create(1<<10, 0.0);
+
+    val1 = (2./3.);
+    val2 = (2./3.);
+    found = rmap_find_or_put(rtable, &val1, &index1); test_assert(found == 0);
+    found = rmap_find_or_put(rtable, &val2, &index2); test_assert(found == 1);
+    test_assert(index1 == index2);
+
+    val1 = 2.99999999999999855;
+    val2 = 3.00000000000000123;
+    found = rmap_find_or_put(rtable, &val1, &index1); test_assert(found == 0);
+    found = rmap_find_or_put(rtable, &val2, &index2); test_assert(found == 0);
+    test_assert(index1 != index2);
     val3 = *rmap_get(rtable, index1);
     test_assert(val3 == val1);
 
@@ -166,6 +202,24 @@ int test_tree_map()
     found = tree_map_find_or_put(tree_map, val1, &index1); test_assert(found == 0);
     found = tree_map_find_or_put(tree_map, val2, &index2); test_assert(found == 0);
     test_assert(index1 != index2);
+
+    // test with tolerance = 0
+    tree_map_free(tree_map);
+    tree_map = tree_map_create(1<<10, 0.0);
+
+    val1 = (2./3.);
+    val2 = (2./3.);
+    found = tree_map_find_or_put(tree_map, val1, &index1); test_assert(found == 0);
+    found = tree_map_find_or_put(tree_map, val2, &index2); test_assert(found == 1);
+    test_assert(index1 == index2);
+
+    val1 = 2.99999999999999855;
+    val2 = 3.00000000000000123;
+    found = tree_map_find_or_put(tree_map, val1, &index1); test_assert(found == 0);
+    found = tree_map_find_or_put(tree_map, val2, &index2); test_assert(found == 0);
+    test_assert(index1 != index2);
+    val3 = *tree_map_get(tree_map, index1);
+    test_assert(val3 == val1);
 
     tree_map_free(tree_map);
     if(VERBOSE) printf("tree map tests:           ok\n");
@@ -243,6 +297,28 @@ int test_mpfr_tree_map()
     mpfr_clear(val1);
     mpfr_clear(val2);
 
+    // test with tolerance = 0
+    mpfr_tree_map_free(map);
+    map = mpfr_tree_map_create(1<<10, 0.0);
+
+    mpfr_init2(val1, MPFR_PREC); mpfr_set_d(val1, 2./3., DEFAULT_RND);
+    mpfr_init2(val2, MPFR_PREC); mpfr_set_d(val2, 2./3., DEFAULT_RND);
+    found = mpfr_tree_map_find_or_put(map, val1, &index1); test_assert(found == 0);
+    found = mpfr_tree_map_find_or_put(map, val2, &index2); test_assert(found == 1);
+    test_assert(index1 == index2);
+    mpfr_clear(val1);
+    mpfr_clear(val2);
+
+    mpfr_init2(val1, MPFR_PREC); mpfr_set_d(val1, 0.0005000000000012, MPFR_PREC);
+    mpfr_init2(val2, MPFR_PREC); mpfr_set_d(val2, 0.0004999999999954, MPFR_PREC);
+    found = mpfr_tree_map_find_or_put(map, val1, &index1); test_assert(found == 0);
+    found = mpfr_tree_map_find_or_put(map, val2, &index2); test_assert(found == 0);
+    test_assert(index1 != index2);
+    res3 = mpfr_tree_map_get(map, index1);
+    test_assert(mpfr_equal_p(res3, val1));
+    mpfr_clear(val1);
+    mpfr_clear(val2);
+
     mpfr_tree_map_free(map);
     if(VERBOSE) printf("mpfr tree map tests:      ok\n");
     return 0;
@@ -295,7 +371,7 @@ int test_mpreal_complex_operations()
     // relevant header allows a C file to compile.
     
     free_mpreal_amplitude_table();
-    if(VERBOSE) printf("complex ops w/ mpreal:    WIP\n");
+    //if(VERBOSE) printf("complex ops w/ mpreal:    WIP\n");
     return 0;
 }
 
@@ -392,197 +468,6 @@ int test_complex_operations()
     test_assert(index3 == index4);  test_assert(comp_exact_equal(val3, val4));
 
     if(VERBOSE) printf("complex operations:       ok\n");
-    return 0;
-}
-
-int
-test_algebraic()
-{
-    double test_tol = 1e-9;
-    algebraic_t alg_a, alg_b, alg_c;
-    complex_t cmp_r, cmp_a, cmp_c;
-
-    algebraic_init();
-
-    /* test creation */
-    // 0
-    alg_a = algebraic_zero();
-    cmp_a = algebraic_to_comp(alg_a);
-    cmp_r = comp_zero();
-    test_assert(comp_epsilon_close(cmp_a, cmp_r, test_tol));
-
-    // 1
-    alg_a = algebraic_one();
-    cmp_a = algebraic_to_comp(alg_a);
-    cmp_r = comp_one();
-    test_assert(comp_epsilon_close(cmp_a, cmp_r, test_tol));
-
-    // sqrt(2)
-    alg_a = algebraic_sqrt2(1);
-    cmp_a = algebraic_to_comp(alg_a);
-    cmp_r = comp_make(sqrt(2.0), 0.0);
-    test_assert(comp_epsilon_close(cmp_a, cmp_r, test_tol));
-
-    // 1/sqrt(2)
-    alg_a = algebraic_sqrt2(-1);
-    cmp_a = algebraic_to_comp(alg_a);
-    cmp_r = comp_make(1.0/sqrt(2.0), 0.0);
-    test_assert(comp_epsilon_close(cmp_a, cmp_r, test_tol));
-
-    // 2
-    alg_a = algebraic_sqrt2(2);
-    cmp_a = algebraic_to_comp(alg_a);
-    cmp_r = comp_make(2.0, 0.0);
-    test_assert(comp_epsilon_close(cmp_a, cmp_r, test_tol));
-
-    // 1/2
-    alg_a = algebraic_sqrt2(-2);
-    cmp_a = algebraic_to_comp(alg_a);
-    cmp_r = comp_make(0.5, 0.0);
-    test_assert(comp_epsilon_close(cmp_a, cmp_r, test_tol));
-
-
-    /* test multiplication */
-    // 0 x 1
-    alg_a = algebraic_zero();
-    alg_b = algebraic_one();
-    alg_c = algebraic_mult(alg_a, alg_b);
-    cmp_c = algebraic_to_comp(alg_c);
-    cmp_r = comp_zero();
-    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
-
-    // 1 x 1
-    alg_a = algebraic_one();
-    alg_b = algebraic_one();
-    alg_c = algebraic_mult(alg_a, alg_b);
-    cmp_c = algebraic_to_comp(alg_c);
-    cmp_r = comp_one();
-    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
-
-    // 1 x sqrt(2)
-    alg_a = algebraic_one();
-    alg_b = algebraic_sqrt2(1);
-    alg_c = algebraic_mult(alg_a, alg_b);
-    cmp_c = algebraic_to_comp(alg_c);
-    cmp_r = comp_make(sqrt(2.0), 0.0);
-    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
-
-    // sqrt(2) x 1
-    alg_a = algebraic_sqrt2(1);
-    alg_b = algebraic_one();
-    alg_c = algebraic_mult(alg_a, alg_b);
-    cmp_c = algebraic_to_comp(alg_c);
-    cmp_r = comp_make(sqrt(2.0), 0.0);
-    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
-
-    // sqrt(2) x sqrt(2)
-    alg_a = algebraic_sqrt2(1);
-    alg_b = algebraic_sqrt2(1);
-    alg_c = algebraic_mult(alg_a, alg_b);
-    cmp_c = algebraic_to_comp(alg_c);
-    cmp_r = comp_make(2.0, 0.0);
-    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
-
-    // 1/sqrt(2) x 1/sqrt(2)
-    alg_a = algebraic_sqrt2(-1);
-    alg_b = algebraic_sqrt2(-1);
-    alg_c = algebraic_mult(alg_a, alg_b);
-    cmp_c = algebraic_to_comp(alg_c);
-    cmp_r = comp_make(0.5, 0.0);
-    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
-
-    // 1/sqrt(2) x sqrt(2)
-    alg_a = algebraic_sqrt2(-1);
-    alg_b = algebraic_sqrt2(1);
-    alg_c = algebraic_mult(alg_a, alg_b);
-    cmp_c = algebraic_to_comp(alg_c);
-    cmp_r = comp_make(1.0, 0.0);
-    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
-
-    // sqrt(2) x 1/sqrt(2)
-    alg_a = algebraic_sqrt2(1);
-    alg_b = algebraic_sqrt2(-1);
-    alg_c = algebraic_mult(alg_a, alg_b);
-    cmp_c = algebraic_to_comp(alg_c);
-    cmp_r = comp_make(1.0, 0.0);
-    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
-    
-
-    /* test addition */
-    // 0 + 0
-    alg_a = algebraic_zero();
-    alg_b = algebraic_zero();
-    alg_c = algebraic_add(alg_a, alg_b);
-    cmp_c = algebraic_to_comp(alg_c);
-    cmp_r = comp_make(0.0, 0.0);
-    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
-
-    // 0 + 1
-    alg_a = algebraic_zero();
-    alg_b = algebraic_one();
-    alg_c = algebraic_add(alg_a, alg_b);
-    cmp_c = algebraic_to_comp(alg_c);
-    cmp_r = comp_make(1.0, 0.0);
-    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
-
-    // 1 + 1
-    alg_a = algebraic_one();
-    alg_b = algebraic_one();
-    alg_c = algebraic_add(alg_a, alg_b);
-    cmp_c = algebraic_to_comp(alg_c);
-    cmp_r = comp_make(2.0, 0.0);
-    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
-
-    // 1 + 2
-    alg_a = algebraic_one();
-    alg_b = algebraic_sqrt2(2);
-    alg_c = algebraic_add(alg_a, alg_b);
-    cmp_c = algebraic_to_comp(alg_c);
-    cmp_r = comp_make(3.0, 0.0);
-    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
-
-    // 2 + 1
-    alg_a = algebraic_sqrt2(2);
-    alg_b = algebraic_one();
-    alg_c = algebraic_add(alg_a, alg_b);
-    cmp_c = algebraic_to_comp(alg_c);
-    cmp_r = comp_make(3.0, 0.0);
-    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
-
-    // 1 + 1/2
-    alg_a = algebraic_one();
-    alg_b = algebraic_sqrt2(-2);
-    alg_c = algebraic_add(alg_a, alg_b);
-    cmp_c = algebraic_to_comp(alg_c);
-    cmp_r = comp_make(1.5, 0.0);
-    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
-
-    // sqrt(2) + sqrt(2)
-    alg_a = algebraic_sqrt2(1);
-    alg_b = algebraic_sqrt2(1);
-    alg_c = algebraic_add(alg_a, alg_b);
-    cmp_c = algebraic_to_comp(alg_c);
-    cmp_r = comp_make(2.0 * sqrt(2.0), 0.0);
-    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
-
-    // 1 + sqrt(2)
-    alg_a = algebraic_one();
-    alg_b = algebraic_sqrt2(1);
-    alg_c = algebraic_add(alg_a, alg_b);
-    cmp_c = algebraic_to_comp(alg_c);
-    cmp_r = comp_make(1.0 + sqrt(2.0), 0.0);
-    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
-
-    // sqrt(2) + 1
-    alg_a = algebraic_sqrt2(1);
-    alg_b = algebraic_one();
-    alg_c = algebraic_add(alg_a, alg_b);
-    cmp_c = algebraic_to_comp(alg_c);
-    cmp_r = comp_make(1.0 + sqrt(2.0), 0.0);
-    test_assert(comp_epsilon_close(cmp_c, cmp_r, test_tol));
-
-
-    if(VERBOSE) printf("algebraic amps:           WIP\n");
     return 0;
 }
 
@@ -1822,6 +1707,7 @@ int test_measurements()
     // test having measured |0> and |1> at least once each for |00+>, |0+0> and 
     // |+00>. (the probability that that doesn't happen is about 99.7% for 
     // repeat = 10)
+    // TODO: maybe write a test which is not probabilistic?
     test_assert(m_zer[0] > 0);  test_assert(m_zer[0] < repeat);
     test_assert(m_zer[1] > 0);  test_assert(m_zer[1] < repeat);
     test_assert(m_zer[2] > 0);  test_assert(m_zer[2] < repeat);
@@ -2159,7 +2045,7 @@ int test_with(int amps_backend, int norm_strat)
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<11, -1, amps_backend, NORM_LOW);
+    sylvan_init_qdd(1LL<<11, -1, amps_backend, norm_strat);
     qdd_set_testing_mode(true); // turn on internal sanity tests
 
     printf("amps backend = %d, norm strategy = %d:\n", amps_backend, norm_strat);
@@ -2179,7 +2065,6 @@ int runtests()
     if (test_mpfr_tree_map()) return 1;
     if (test_mpreal_complex_operations()) return 1;
     if (test_mpfr_tree_map_scope()) return 1;
-    if (test_algebraic()) return 1;
     for (int backend = 0; backend < n_backends; backend++) {
         for (int norm_strat = 0; norm_strat < n_norm_stragegies; norm_strat++) {
             if (test_with(backend, norm_strat)) return 1;
