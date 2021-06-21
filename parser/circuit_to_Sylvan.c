@@ -1,7 +1,21 @@
+#include <popt.h>
+#include <sys/time.h>
+
 #include "circuit_to_Sylvan.h"
 
 #include "sylvan.h"
 #include "sylvan_qdd_complex.h"
+
+/**
+ * Obtain current wallclock time
+ */
+static double
+wctime()
+{
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return (tv.tv_sec + 1E-6 * tv.tv_usec);
+}
 
 void final_measure(QDD qdd, int* measurements, C_struct c_s, bool* results)
 {
@@ -681,6 +695,7 @@ QDD run_c_struct(C_struct c_s, int* measurements, bool* results, bool experiment
     return qdd;
 }
 
+// TODO: move this main to separate file?
 /**
  * Runs QASM circuit given by <filename> and prints the results.
  * Using the -m flag activates gate-gate multiplication runs, gate-statevector runs are used otherwise.
@@ -706,57 +721,66 @@ QDD run_c_struct(C_struct c_s, int* measurements, bool* results, bool experiment
 int main(int argc, char *argv[])
 {
     // Initialise flag parameters
-    char *filename = argv[1];
-    BDDVAR runs = 100;
-    BDDVAR seed = 100;
-    int matrix = 0, balance = 0;
-    bool intermediate_experiments, greedy= false, optimize = false, experiment_time = false;
-    bool intermediate_measuring = false, experiments = false;
-    int opt;
+    int flag_help = -1;
+    char *filename;
+    unsigned int runs = 1;
+    unsigned int seed = 0;
+    uint64_t matrix = 0;
+    uint64_t balance = 0;
+    bool greedy = false;
+    bool optimize = false;
+    bool experiment_time = false;
+    bool intermediate_measuring = false;
+    bool experiments = false;
+    bool intermediate_experiments;
     QDD qdd;
-    BDDVAR res;
+    uint64_t res;
 
-    // Read flags from cmd and set parameters
-    while((opt = getopt(argc, argv, "s:r:m:ogetb:")) != -1) {
-        switch(opt) {
-            case 'r':
-                runs = atoi(optarg);
-                break;
-            case 's':
-                seed = atoi(optarg);
-                break;
-            case 'm':
-                matrix = atoi(optarg);
-                break;
-            case 'b':
-                balance = atoi(optarg);
-                break;
-            case 'o':
-                optimize = true;
-                break;
-            case 'g':
-                greedy = true;
-                break;
-            case 'e':
-                experiments = true;
-                break;
-            case 't':
-                experiment_time = true;
-                break;
-            default:
-                fprintf(stderr, "usage: %s file [-r runs][-s seed][-m node_limit][-o optimize]\n", argv[0]);
-                exit(EXIT_FAILURE);
+    poptContext con;
+    struct poptOption optiontable[] = {
+        { "help", 'h', POPT_ARG_NONE, &flag_help, 'h', "Display available options.", NULL },
+        { "runs", 'r', POPT_ARG_INT, &runs, 'r', "Number of runs to perform. Default = 1.", NULL },
+        { "seed", 's', POPT_ARG_INT, &seed, 's', "Randomness seed to be used (!= 0). Default seeded with time().", NULL },
+        { "matrix", 'm', POPT_ARG_INT, &matrix, 'm', "Boundaray value of nodes in a DD before multiplying with the state vector.", NULL },
+        { "greedy", 'g', POPT_ARG_NONE, &greedy, 'g', "Runs the circuit matrix-vector method using a greedy algorithm.", NULL },
+        { "balance", 'b', POPT_ARG_INT, &balance, 'b', "Runs the circuit switching between matrix-matrix method and greedy method", NULL },
+        { "optimize", 'o', POPT_ARG_NONE, &optimize, 'o', "Optimize the circuit. This option will remove negating gates before running.", NULL },
+        { "experiment", 'e', POPT_ARG_NONE, &experiments, 'e', "Prints the nodecount and palindrome signals.", NULL },
+        { "time", 't', POPT_ARG_NONE, &experiment_time, 't', "Prints the time taken to run the circuit.", NULL },
+        {NULL, 0, 0, NULL, 0, NULL, NULL}
+    };
+    con = poptGetContext("q-sylvan-sim", argc, (const char **)argv, optiontable, 0);
+    poptSetOtherOptionHelp(con, "[OPTIONS..] <circuit.qasm>");
+    
+    if (argc < 2) {
+        poptPrintUsage(con, stderr, 0);
+        exit(1);
+    }
+    filename = argv[1];
+
+    char c;  
+    while ((c = poptGetNextOpt(con)) > 0) {  
+        switch (c) {
+            case 'h':
+                poptPrintHelp(con, stdout, 0);
+                return 0;
         }
     }
 
     // Set randomness seed
-    srand(seed);
+    if (seed == 0)
+        srand(time(NULL));
+    else
+         srand(seed);
     // Check if a file is given, if not, return an error
     if(access(filename, F_OK) != 0)
     {
         fprintf(stderr, "Invalid QASM file.\n");
         exit(EXIT_FAILURE);
     }
+
+    double start,end;
+    start = wctime();
 
     // Standard Lace initialization
     int workers = 1;
@@ -782,8 +806,6 @@ int main(int argc, char *argv[])
     *nodecount_matrix = 0;
     BDDVAR* nodecount = malloc(sizeof(BDDVAR));
     *nodecount = 0;
-    time_t start,end;
-    start=clock();
 
     if (intermediate_measuring) {
         intermediate_experiments = experiments;
@@ -824,9 +846,9 @@ int main(int argc, char *argv[])
     }
 
     // If experiments is true, print time
-    end=clock();
+    end = wctime();
     if (experiment_time)
-        printf("milliseconds: %ld\n", ((end-start)*1000)/CLOCKS_PER_SEC);
+        printf("seconds: %lf\n", (end-start));
 
     if (!experiments && !experiment_time) {
         // Print reformatted circuit results if <show> is toggled
