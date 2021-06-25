@@ -3,21 +3,6 @@
 #include "sylvan_int.h"
 
 
-const uint32_t GATEID_I = 0;
-const uint32_t GATEID_X = 1;
-const uint32_t GATEID_Y = 2;
-const uint32_t GATEID_Z = 3;
-const uint32_t GATEID_H = 4;
-const uint32_t GATEID_S = 5;
-const uint32_t GATEID_Sdag = 6;
-const uint32_t GATEID_T = 7;
-const uint32_t GATEID_Tdag = 8;
-const uint32_t GATEID_sqrtX = 9;
-const uint32_t GATEID_sqrtXdag = 10;
-const uint32_t GATEID_sqrtY = 11;
-const uint32_t GATEID_sqrtYdag = 12;
-
-
 static long double Pi;    // set value of global Pi
 
 
@@ -161,13 +146,13 @@ qdd_gates_init()
     gates[k][0] = comp_lookup(comp_make(0.5,-0.5)); gates[k][1] = comp_lookup(comp_make(0.5,-0.5));
     gates[k][2] = comp_lookup(comp_make(-0.5,0.5)); gates[k][3] = comp_lookup(comp_make(0.5,-0.5));
 
-    init_phase_gates(255);
+    qdd_phase_gates_init(255);
 
     next_custom_id = 0;
 }
 
 void
-init_phase_gates(int n)
+qdd_phase_gates_init(int n)
 {
     // add gate R_k to gates table
     // (note that R_0 = I, R_1 = Z, R_2 = S, R_4 = T)
