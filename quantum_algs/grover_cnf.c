@@ -1,5 +1,4 @@
 #include "grover_cnf.h"
-#include "sylvan_qdd_complex.h"
 
 TASK_IMPL_5(QDD, qdd_grover_cnf_iteration, QDD, qdd, BDDVAR, n, BDDVAR, k, BDDVAR, clauses, int*, oracle)
 {

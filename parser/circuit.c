@@ -1,8 +1,5 @@
 #include "circuit.h"
 
-#include "sylvan.h"
-#include "sylvan_qdd_complex.h"
-
 Circuit* create_circuit(char* filename)
 {
     // Create a c struct based on the file

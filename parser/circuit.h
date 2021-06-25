@@ -1,7 +1,6 @@
 #include <stdbool.h>
 
 #include "QASM_to_circuit.h"
-#include "sylvan.h"
 
 // Circuit struct
 typedef struct Circuit {

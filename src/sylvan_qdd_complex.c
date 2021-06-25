@@ -17,14 +17,6 @@ mmiller@cs.uvic.ca
 #include "sylvan_qdd_complex.h"
 
 
-/**********************************************
-Compute trig functions for angle factor*Pi/div
-Note use of cosl and sinl for long double computation
-**********************************************/
-//#define qdd_cos(fac,div) cosl((long double)(fac)*Pi/(long double)(div))
-//#define qdd_sin(fac,div) sinl((long double)(fac)*Pi/(long double)(div))
-static long double Pi;    // set value of global Pi
-
 // Table parameters
 static const double default_tolerance = 1e-14;
 static double tolerance;
@@ -43,20 +35,6 @@ void *amp_storage_old;
 const bool CACHE_AMP_OPS = true;
 const bool CACHE_INV_OPS = true;
 
-// TODO: enum?
-const uint32_t GATEID_I = 0;
-const uint32_t GATEID_X = 1;
-const uint32_t GATEID_Y = 2;
-const uint32_t GATEID_Z = 3;
-const uint32_t GATEID_H = 4;
-const uint32_t GATEID_S = 5;
-const uint32_t GATEID_Sdag = 6;
-const uint32_t GATEID_T = 7;
-const uint32_t GATEID_Tdag = 8;
-const uint32_t GATEID_sqrtX = 9;
-const uint32_t GATEID_sqrtXdag = 10;
-const uint32_t GATEID_sqrtY = 11;
-const uint32_t GATEID_sqrtYdag = 12;
 
 
 /* Shorthand functions for making complex numbers */
@@ -667,84 +645,6 @@ comp_print_bits(AMP a)
 }
 
 
-/*************************** <dynamic custom gates> ***************************/
-
-uint32_t next_custom_id; // set to 0 in init
-
-uint32_t
-get_custom_gate_id()
-{
-    next_custom_id++;
-    if (next_custom_id >= num_dynamic_gates) {
-        // max custom gates used, reset ID counter to 0 and clear opcache
-        next_custom_id = 0;
-        LACE_ME;
-        sylvan_clear_cache();
-    }
-    return num_static_gates + next_custom_id; // index offset by num_static_gates
-}
-
-uint32_t
-GATEID_Rz(fl_t a)
-{
-    // get gate id for this gate
-    uint32_t gate_id = get_custom_gate_id();
-
-    // initialize gate
-    double theta_over_2 = Pi * a;
-    AMP u00, u11;
-    u00 = comp_lookup(comp_make_angle(-theta_over_2));
-    u11 = comp_lookup(comp_make_angle(theta_over_2));
-    gates[gate_id][0] = u00;    gates[gate_id][1] = C_ZERO;
-    gates[gate_id][2] = C_ZERO; gates[gate_id][3] = u11;
-
-    // return (temporary) gate_id for this gate
-    return gate_id;
-}
-
-uint32_t
-GATEID_Rx(fl_t a)
-{
-    // get gate id for this gate
-    uint32_t gate_id = get_custom_gate_id();
-
-    // initialize gate
-    fl_t theta_over_2 = Pi * a;
-    AMP u00, u01, u10, u11;
-    u00 = comp_lookup(comp_make(flt_cos(theta_over_2), 0.0));
-    u01 = comp_lookup(comp_make(0.0, -flt_sin(theta_over_2)));
-    u10 = comp_lookup(comp_make(0.0, -flt_sin(theta_over_2)));
-    u11 = comp_lookup(comp_make(flt_cos(theta_over_2), 0.0));
-    gates[gate_id][0] = u00; gates[gate_id][1] = u01;
-    gates[gate_id][2] = u10; gates[gate_id][3] = u11;
-
-    // return (temporary) gate_id for this gate
-    return gate_id;
-}
-
-uint32_t
-GATEID_Ry(fl_t a)
-{
-    // get gate id for this gate
-    uint32_t gate_id = get_custom_gate_id();
-
-    // initialize gate
-    fl_t theta_over_2 = Pi * a;
-    AMP u00, u01, u10, u11;
-    u00 = comp_lookup(comp_make(flt_cos(theta_over_2),  0.0));
-    u01 = comp_lookup(comp_make(-flt_sin(theta_over_2), 0.0));
-    u10 = comp_lookup(comp_make(flt_sin(theta_over_2),  0.0));
-    u11 = comp_lookup(comp_make(flt_cos(theta_over_2),  0.0));
-    gates[gate_id][0] = u00; gates[gate_id][1] = u01;
-    gates[gate_id][2] = u10; gates[gate_id][3] = u11;
-
-    // return (temporary) gate_id for this gate
-    return gate_id;
-}
-
-/************************** </dynamic custom gates> ***************************/
-
-
 /* Managing the complex value table */
 
 void
@@ -773,99 +673,6 @@ init_amplitude_table(size_t size, long double tol, amp_storage_backend_t backend
     C_ONE     = comp_lookup(comp_one());
     C_ZERO    = comp_lookup(comp_zero());
     C_MIN_ONE = comp_lookup(comp_minus_one());
-
-    Pi = 2.0 * flt_acos(0.0);
-
-    init_gates();
-}
-
-void
-init_gates()
-{
-    // initialize 2x2 gates (complex values from gates currently stored in 
-    // same table as complex amplitude values)
-    uint32_t k;
-
-    k = GATEID_I;
-    gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
-    gates[k][2] = C_ZERO; gates[k][3] = C_ONE;
-
-    k = GATEID_X;
-    gates[k][0] = C_ZERO; gates[k][1] = C_ONE;
-    gates[k][2] = C_ONE;  gates[k][3] = C_ZERO;
-
-    k = GATEID_Y;
-    gates[k][0] = C_ZERO; gates[k][1] = comp_lookup(comp_make(0.0, -1.0));
-    gates[k][2] = comp_lookup(comp_make(0.0, 1.0));  gates[k][3] = C_ZERO;
-
-    k = GATEID_Z;
-    gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
-    gates[k][2] = C_ZERO; gates[k][3] = C_MIN_ONE;
-
-    k = GATEID_H;
-    gates[k][0] = gates[k][1] = gates[k][2] = comp_lookup(comp_make(1.0/flt_sqrt(2.0),0));
-    gates[k][3] = comp_lookup(comp_make(-1.0/flt_sqrt(2.0),0));
-
-    k = GATEID_S;
-    gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
-    gates[k][2] = C_ZERO; gates[k][3] = comp_lookup(comp_make(0.0, 1.0));
-
-    k = GATEID_Sdag;
-    gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
-    gates[k][2] = C_ZERO; gates[k][3] = comp_lookup(comp_make(0.0, -1.0));
-
-    k = GATEID_T;
-    gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
-    gates[k][2] = C_ZERO; gates[k][3] = comp_lookup(comp_make(1.0/flt_sqrt(2.0), 1.0/flt_sqrt(2.0)));
-
-    k = GATEID_Tdag;
-    gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
-    gates[k][2] = C_ZERO; gates[k][3] = comp_lookup(comp_make(1.0/flt_sqrt(2.0), -1.0/flt_sqrt(2.0)));
-
-    k = GATEID_sqrtX;
-    gates[k][0] = comp_lookup(comp_make(0.5, 0.5)); gates[k][1] = comp_lookup(comp_make(0.5,-0.5));
-    gates[k][2] = comp_lookup(comp_make(0.5,-0.5)); gates[k][3] = comp_lookup(comp_make(0.5, 0.5));
-
-    k = GATEID_sqrtXdag;
-    gates[k][0] = comp_lookup(comp_make(0.5,-0.5)); gates[k][1] = comp_lookup(comp_make(0.5, 0.5));
-    gates[k][2] = comp_lookup(comp_make(0.5, 0.5)); gates[k][3] = comp_lookup(comp_make(0.5,-0.5));
-
-    k = GATEID_sqrtY;
-    gates[k][0] = comp_lookup(comp_make(0.5, 0.5)); gates[k][1] = comp_lookup(comp_make(-0.5,-0.5));
-    gates[k][2] = comp_lookup(comp_make(0.5, 0.5)); gates[k][3] = comp_lookup(comp_make(0.5, 0.5));
-
-    k = GATEID_sqrtYdag;
-    gates[k][0] = comp_lookup(comp_make(0.5,-0.5)); gates[k][1] = comp_lookup(comp_make(0.5,-0.5));
-    gates[k][2] = comp_lookup(comp_make(-0.5,0.5)); gates[k][3] = comp_lookup(comp_make(0.5,-0.5));
-
-    init_phase_gates(255);
-
-    next_custom_id = 0;
-}
-
-void
-init_phase_gates(int n)
-{
-    // add gate R_k to gates table
-    // (note that R_0 = I, R_1 = Z, R_2 = S, R_4 = T)
-    uint32_t gate_id;
-    fl_t angle;
-    complex_t cartesian;
-    for (int k=0; k<=n; k++) {
-        // forward rotation
-        angle = 2*Pi / (fl_t)(1<<k);
-        cartesian = comp_make_angle(angle);
-        gate_id = GATEID_Rk(k);
-        gates[gate_id][0] = C_ONE;  gates[gate_id][1] = C_ZERO;
-        gates[gate_id][2] = C_ZERO; gates[gate_id][3] = comp_lookup(cartesian);
-
-        // backward rotation
-        angle = -2*Pi / (fl_t)(1<<k);
-        cartesian = comp_make_angle(angle);
-        gate_id = GATEID_Rk_dag(k);
-        gates[gate_id][0] = C_ONE;  gates[gate_id][1] = C_ZERO;
-        gates[gate_id][2] = C_ZERO; gates[gate_id][3] = comp_lookup(cartesian);
-    }
 }
 
 double

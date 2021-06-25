@@ -1,5 +1,4 @@
 #include "shor.h"
-#include "sylvan_qdd_complex.h"
 
 static bool testing_mode = 0; // turns on/off (expensive) sanity checks
 

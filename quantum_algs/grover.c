@@ -1,5 +1,4 @@
 #include "grover.h"
-#include "sylvan_qdd_complex.h"
 
 static bool VERBOSE = false;
 static bool EXP_BY_SQUARING = true;

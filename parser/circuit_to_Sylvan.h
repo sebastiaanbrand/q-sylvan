@@ -1,5 +1,4 @@
 #include "QASM_to_circuit.h"
-#include "sylvan.h"
 
 /**
  * Prints the final results of the measured qubits (flagged by <measurements>).

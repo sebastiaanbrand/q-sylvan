@@ -23,7 +23,8 @@
 #include "sylvan_int.h"
 #include "sylvan_qdd.h"
 #include "sylvan_refs.h"
-#include "sylvan_qdd_complex_include.h"
+#include "sylvan_qdd_complex.h"
+#include "sylvan_qdd_gates.h"
 
 static int granularity = 1; // operation cache access granularity
 static bool testing_mode = 0; // turns on/off (expensive) sanity checks
@@ -499,6 +500,7 @@ sylvan_init_qdd(size_t ctable_size, double ctable_tolerance, int amps_backend, i
     }
 
     init_amplitude_table(ctable_size, ctable_tolerance, amps_backend);
+    qdd_gates_init();
 
     switch (norm_strat)
     {

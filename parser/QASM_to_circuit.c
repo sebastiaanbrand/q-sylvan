@@ -1,8 +1,5 @@
 #include "QASM_to_circuit.h"
 
-#include "sylvan.h"
-#include "sylvan_qdd_complex.h"
-
 C_struct make_c_struct(char *filename, bool optimize)
 {
     // Open the QASM file (or give error)
