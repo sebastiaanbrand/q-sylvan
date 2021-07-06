@@ -1,9 +1,8 @@
 #include <stdio.h>
 #include <time.h>
 
-#include "sylvan.h"
+#include "q_sylvan.h"
 #include "test_assert.h"
-#include "sylvan_qdd_complex.h"
 
 bool VERBOSE = true;
 

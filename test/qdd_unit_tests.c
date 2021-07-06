@@ -1,10 +1,8 @@
 #include <stdio.h>
 #include <time.h>
 
-#include "sylvan.h"
+#include "q_sylvan.h"
 #include "test_assert.h"
-#include "sylvan_qdd_complex.h"
-#include "sylvan_qdd_complex_mpreal.h"
 #include "amp_storage/mpfr_tree_map.h"
 
 
@@ -360,18 +358,6 @@ int test_mpfr_tree_map_scope()
     if (scope2(map)) return 1;
     mpfr_tree_map_free(map);
     if(VERBOSE) printf("mpfr scope test:          ok\n");
-    return 0;
-}
-
-int test_mpreal_complex_operations()
-{
-    init_mpreal_amplitude_table(1<<12, 1e-14);
-
-    // mostly just have this here for now to make sure the inclusion of the 
-    // relevant header allows a C file to compile.
-    
-    free_mpreal_amplitude_table();
-    //if(VERBOSE) printf("complex ops w/ mpreal:    WIP\n");
     return 0;
 }
 
@@ -2063,7 +2049,6 @@ int runtests()
     if (test_rmap()) return 1;
     if (test_tree_map()) return 1;
     if (test_mpfr_tree_map()) return 1;
-    if (test_mpreal_complex_operations()) return 1;
     if (test_mpfr_tree_map_scope()) return 1;
     for (int backend = 0; backend < n_backends; backend++) {
         for (int norm_strat = 0; norm_strat < n_norm_stragegies; norm_strat++) {

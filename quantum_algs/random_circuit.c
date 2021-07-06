@@ -1,5 +1,4 @@
 #include "random_circuit.h"
-#include "sylvan_qdd_complex.h"
 
 // don't use for heap / malloced arrays
 #define len(x) (sizeof(x) / sizeof(x[0]))

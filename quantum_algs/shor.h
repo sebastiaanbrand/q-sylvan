@@ -1,6 +1,4 @@
-#include <stdbool.h>
-
-#include "sylvan.h"
+#include <q_sylvan.h>
 
 /**
  * The flollowing functions are a breakdown of the components needed for Shor

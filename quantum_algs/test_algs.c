@@ -2,8 +2,7 @@
 #include <time.h>
 
 #include "test_assert.h"
-#include "sylvan.h"
-#include "sylvan_qdd_complex_include.h"
+#include "q_sylvan.h"
 
 #include "grover.h"
 #include "grover_cnf.h"

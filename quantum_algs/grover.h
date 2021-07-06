@@ -1,6 +1,4 @@
-#include <stdbool.h>
-
-#include "sylvan.h"
+#include <q_sylvan.h>
 
 /* default = false */
 void qdd_grover_set_verbose(bool v);

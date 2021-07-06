@@ -3,9 +3,6 @@
 
 #include "circuit_to_Sylvan.h"
 
-#include "sylvan.h"
-#include "sylvan_qdd_complex.h"
-
 /**
  * Obtain current wallclock time
  */

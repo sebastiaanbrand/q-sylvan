@@ -1,7 +1,6 @@
 #include <stdbool.h>
 
-#include "sylvan.h"
-#include "sylvan_qdd_complex.h"
+#include "q_sylvan.h"
 
 // Gates struct
 typedef struct Gate

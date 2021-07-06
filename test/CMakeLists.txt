@@ -7,12 +7,6 @@ target_link_libraries(test_cxx sylvan stdc++)
 add_executable(qdd_unit_tests qdd_unit_tests.c)
 target_link_libraries(qdd_unit_tests sylvan)
 
-# TODO: move tests for specific tables to the util folder
-# (just generally organize code + tests better)
-add_executable(mpreal_unit_tests mpreal_unit_tests.cpp)
-target_link_libraries(mpreal_unit_tests util sylvan) 
-# sylvan because we're also testing complex operations (which are in sylavn_qdd_complex_mpreal)
-
 add_executable(matrix_qdd_unit_tests matrix_qdd_unit_tests.c)
 target_link_libraries(matrix_qdd_unit_tests sylvan)
 

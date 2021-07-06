@@ -1,5 +1,4 @@
 #include "supremacy.h"
-#include "sylvan_qdd_complex.h"
 
 static uint32_t
 random_sqrtXY()

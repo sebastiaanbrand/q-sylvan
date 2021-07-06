@@ -3,8 +3,7 @@
 #include <sys/types.h>
 #include <sys/time.h>
 
-#include "sylvan.h"
-#include "sylvan_qdd_complex_include.h"
+#include "q_sylvan.h"
 #include "grover.h"
 #include "random_circuit.h"
 #include "shor.h"
@@ -57,7 +56,6 @@ write_parameters(FILE *file)
     fprintf(file, "  \"amp_table_tolerance\": %.5e,\n", ctable_tolerance);
     fprintf(file, "  \"amp_storage_backend\": %d,\n", amp_backend);
     fprintf(file, "  \"weight_norm_strategy\": %d,\n", norm_strategy);
-    fprintf(file, "  \"USING_MPREAL\": %d,\n", USING_MPREAL);
     fprintf(file, "  \"flt_quad\": %d,\n", flt_quad);
     fprintf(file, "  \"ctable_gc_thres\": %lf,\n", ctable_gc_thres);
     fprintf(file, "  \"CACHE_INV_OPS\": %d,\n", CACHE_INV_OPS);
