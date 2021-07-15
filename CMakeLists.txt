@@ -23,9 +23,6 @@ message(STATUS "Compiler: ${CMAKE_CXX_COMPILER_ID}")
 
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/")
 
-#set(CMAKE_C_FLAGS "-O2 -Wextra -Wall -Werror -fno-strict-aliasing ${CMAKE_C_FLAGS}")
-#set(CMAKE_CXX_FLAGS "-O2 -Wextra -Wall -Werror -fno-strict-aliasing -Wno-deprecated ${CMAKE_CXX_FLAGS}")
-# Disabled warnings as errors during dev 
 set(CMAKE_C_FLAGS "-O2 -Wextra -Wall -fno-strict-aliasing ${CMAKE_C_FLAGS}")
 set(CMAKE_CXX_FLAGS "-O2 -Wextra -Wall -fno-strict-aliasing -Wno-deprecated ${CMAKE_CXX_FLAGS}")
 
@@ -61,8 +58,6 @@ add_subdirectory(src)
 add_subdirectory(test)
 add_subdirectory(parser)
 add_subdirectory(quantum_algs)
-
-add_subdirectory(examples)
 
 option(SYLVAN_BUILD_DOCS "Build documentation" OFF)
 if(SYLVAN_BUILD_DOCS)

@@ -6,11 +6,15 @@ set(SOURCES
     supremacy.c
 )
 
-add_executable(bench_algs bench_algs.c ${SOURCES})
-target_link_libraries(bench_algs sylvan)
-
+# Tests
 add_executable(test_algs test_algs.c ${SOURCES})
 target_link_libraries(test_algs sylvan)
+add_test(test_algs test_algs)
+
+
+# Benchmarks
+add_executable(bench_algs bench_algs.c ${SOURCES})
+target_link_libraries(bench_algs sylvan)
 
 # Include profiler if installed
 include(CheckIncludeFiles)

@@ -196,12 +196,6 @@ int test_grover_cnf()
     for (int k = 0; k < (1<<(nqubits+1+clauses)); k++) {
         bool *x = int_to_bitarray(k, nqubits+1+clauses, true);
         a = qdd_get_amplitude(grov, x);
-        // if (a != 0) {
-        //     _print_bitstring(x,nqubits+1+clauses,false);
-        //     printf("\t");
-        //     printf("%lf", amp_to_prob(a));
-        //     printf("\n");
-        // }
         if (x[0] == ans3[0] && x[1] == ans3[1])
             prob += amp_to_prob(a);
     }
@@ -224,12 +218,6 @@ int test_grover_cnf()
     for (int k = 0; k < (1<<(nqubits+1+clauses)); k++) {
         bool *x = int_to_bitarray(k, nqubits+1+clauses, true);
         a = qdd_get_amplitude(grov, x);
-        // if (a != 0) {
-        //     _print_bitstring(x,nqubits+1+clauses,false);
-        //     printf("\t");
-        //     printf("%lf", amp_to_prob(a));
-        //     printf("\n");
-        // }
         if (x[0] == ans4[0] && x[1] == ans4[1] && x[2] == ans4[2] && x[3] == ans4[3])
             prob += amp_to_prob(a);
     }
@@ -385,7 +373,6 @@ int runtests()
     if (test_grover()) return 1;
     if (test_grover_matrix()) return 1;
     if (test_grover_cnf()) return 1;
-    // if (test_grover_cnf_matrix()) return 1;
     if (test_shor()) return 1;
 
     return 0;

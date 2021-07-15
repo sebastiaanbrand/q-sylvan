@@ -6,11 +6,9 @@ Q-Sylvan extends [Sylvan](https://github.com/trolando/sylvan) with QMDDs, as wel
 ## Installation
 
 ### Dependencies
-Q-Sylvan requires the following libraries: `popt`, `GMP`,  `MPFR`, and `MPFR C++`. On Ubuntu it should be possible to install these with
+Q-Sylvan requires the following libraries: `popt` and `GMP`. On Ubuntu it should be possible to install these with
 - `sudo apt-get install libpopt-dev`
 - `sudo apt-get install libgmp3-dev`
-- `sudo apt-get install libmpfr-dev`
-- `sudo apt-get install mpfrc++`
 
 
 ### Compiling the code
@@ -20,12 +18,16 @@ After downloading or cloning the repository, from the repository folder the code
 3. `cmake ..`
 4. `make`
 
+Test can be run with `make test`.
+
 Installing should also be possible with `make install` but this will clash with any other version of Sylvan already installed.
+
 
 ## Example usage
 ```
 TODO
 ```
+
 
 ## Folders overview
 ```

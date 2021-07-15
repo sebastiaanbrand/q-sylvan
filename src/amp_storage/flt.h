@@ -6,6 +6,7 @@
  * rest of the implementation entirely (/mostly) independent of this.
  */ 
 
+#include <math.h>
 #include <quadmath.h>
 
 // What size float to use (double or __float128 (quad) )
