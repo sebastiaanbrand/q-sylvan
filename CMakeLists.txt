@@ -56,7 +56,7 @@ include(CTest)
 
 add_subdirectory(src)
 add_subdirectory(test)
-add_subdirectory(parser)
+add_subdirectory(qasm)
 add_subdirectory(examples)
 
 option(SYLVAN_BUILD_DOCS "Build documentation" OFF)
