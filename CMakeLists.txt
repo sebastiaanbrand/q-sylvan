@@ -57,7 +57,7 @@ include(CTest)
 add_subdirectory(src)
 add_subdirectory(test)
 add_subdirectory(parser)
-add_subdirectory(quantum_algs)
+add_subdirectory(examples)
 
 option(SYLVAN_BUILD_DOCS "Build documentation" OFF)
 if(SYLVAN_BUILD_DOCS)
