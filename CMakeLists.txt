@@ -23,14 +23,11 @@ message(STATUS "Compiler: ${CMAKE_CXX_COMPILER_ID}")
 
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/")
 
-#set(CMAKE_C_FLAGS "-O2 -Wextra -Wall -Werror -fno-strict-aliasing ${CMAKE_C_FLAGS}")
-#set(CMAKE_CXX_FLAGS "-O2 -Wextra -Wall -Werror -fno-strict-aliasing -Wno-deprecated ${CMAKE_CXX_FLAGS}")
-# Disabled warnings as errors during dev 
 set(CMAKE_C_FLAGS "-O2 -Wextra -Wall -fno-strict-aliasing ${CMAKE_C_FLAGS}")
 set(CMAKE_CXX_FLAGS "-O2 -Wextra -Wall -fno-strict-aliasing -Wno-deprecated ${CMAKE_CXX_FLAGS}")
 
 
-option(WITH_COVERAGE "Add generation of test coverage" OFF)
+option(WITH_COVERAGE "Add generation of test coverage" ON)
 if(WITH_COVERAGE)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0 -g -coverage")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O0 -g -coverage")
@@ -59,12 +56,8 @@ include(CTest)
 
 add_subdirectory(src)
 add_subdirectory(test)
-add_subdirectory(quantum_algs)
-
-option(SYLVAN_BUILD_EXAMPLES "Build example tools" OFF)
-if(SYLVAN_BUILD_EXAMPLES)
-    add_subdirectory(examples)
-endif()
+add_subdirectory(qasm)
+add_subdirectory(examples)
 
 option(SYLVAN_BUILD_DOCS "Build documentation" OFF)
 if(SYLVAN_BUILD_DOCS)

@@ -15,33 +15,32 @@ mmiller@cs.uvic.ca
 
 #include "sylvan_int.h"
 #include "sylvan_qdd_complex.h"
-#include "util/cmap.h"
 
 
-/**********************************************
-Compute trig functions for angle factor*Pi/div
-Note use of cosl and sinl for long double computation
-**********************************************/
-#define qdd_cos(fac,div) cosl((long double)(fac)*Pi/(long double)(div))
-#define qdd_sin(fac,div) sinl((long double)(fac)*Pi/(long double)(div))
+// Table parameters
+static const double default_tolerance = 1e-14;
+static double tolerance;
+static amp_storage_backend_t amp_backend;
+size_t table_size;
 
+// Keep estimate for number of entries for gc purposes
+size_t table_entries_est;
+DECLARE_THREAD_LOCAL(table_entries_local, size_t); // these are added to _est
+static const uint64_t table_entries_local_buffer = 1000; // every 1000 entries
 
-static long double Pi;    // set value of global Pi
+// Actual table (old is used for gc purposes)
+void *amp_storage;
+void *amp_storage_old;
 
+const bool CACHE_AMP_OPS = true;
+const bool CACHE_INV_OPS = true;
 
-size_t ctable_size;
-size_t ctable_entries_est;
-DECLARE_THREAD_LOCAL(ctable_entries_local, size_t); // these are added to _est
-static const uint64_t ctable_entries_local_buffer = 1000; // every 1000 entries
-cmap_t *ctable;
-cmap_t *ctable_old;
-static bool CACHE_AMP_OPS = true;
 
 
 /* Shorthand functions for making complex numbers */
 
 complex_t
-comp_make(double r, double i)
+comp_make(fl_t r, fl_t i)
 {
     complex_t res;
     res.r = r;
@@ -50,11 +49,11 @@ comp_make(double r, double i)
 }
 
 complex_t
-comp_make_angle(double theta)
+comp_make_angle(fl_t theta)
 {
     complex_t c;
-    c.r = cos(theta);
-    c.i = sin(theta);
+    c.r = flt_cos(theta);
+    c.i = flt_sin(theta);
     return c;
 }
 
@@ -76,13 +75,130 @@ comp_minus_one()
     return comp_make(-1.0, 0.0);
 }
 
-
-
-double
+fl_t
 comp_qmake(int a, int b, int c)
 {
-    return (((double) a + ((double) b) * sqrt (2.0)) / (double) (c));
+    return (( a +  b * flt_sqrt(2.0)) / c);
 }
+
+
+/* Cache puts / gets */
+
+// deterministically order {a,b} for caching commuting op(a,b)
+static void
+order_inputs(AMP *a, AMP *b) 
+{
+    AMP x = (*a > *b) ? *a : *b;
+    AMP y = (*a > *b) ? *b : *a;
+    *a = x;
+    *b = y;
+}
+
+static void
+cache_put_add(AMP a, AMP b, AMP res)
+{
+    order_inputs(&a, &b);
+    if (cache_put3(CACHE_AMP_ADD, a, b, sylvan_false, res)) {
+        sylvan_stats_count(AMP_ADD_CACHEDPUT);
+    }
+}
+
+static bool
+cache_get_add(AMP a, AMP b, AMP *res)
+{
+    order_inputs(&a, &b);
+    if (cache_get3(CACHE_AMP_ADD, a, b, sylvan_false, res)) {
+        sylvan_stats_count(AMP_ADD_CACHED);
+        return true;
+    }
+    return false;
+}
+
+static void
+cache_put_sub(AMP a, AMP b, AMP res)
+{
+    if (cache_put3(CACHE_AMP_SUB, a, b, sylvan_false, res)) {
+        sylvan_stats_count(AMP_SUB_CACHEDPUT);
+    }
+}
+
+static bool
+cache_get_sub(AMP a, AMP b, AMP *res)
+{
+    if (cache_get3(CACHE_AMP_SUB, a, b, sylvan_false, res)) {
+        sylvan_stats_count(AMP_SUB_CACHED);
+        return true;
+    }
+    return false;
+}
+
+static void
+cache_put_mul(AMP a, AMP b, AMP res)
+{
+    order_inputs(&a, &b);
+    if (cache_put3(CACHE_AMP_MUL, a, b, sylvan_false, res)) {
+        sylvan_stats_count(AMP_MUL_CACHEDPUT);
+    }
+    if (CACHE_INV_OPS) {
+        // put inverse as well (empirically seems not so beneficial)
+        if (cache_put3(CACHE_AMP_DIV, res, b, sylvan_false, a)) {
+            sylvan_stats_count(AMP_DIV_CACHEDPUT);
+        }
+        if (cache_put3(CACHE_AMP_DIV, res, a, sylvan_false, b)) {
+            sylvan_stats_count(AMP_DIV_CACHEDPUT);
+        }
+    }
+}
+
+static bool
+cache_get_mul(AMP a, AMP b, AMP *res)
+{
+    order_inputs(&a, &b);
+    if (cache_get3(CACHE_AMP_MUL, a, b, sylvan_false, res)) {
+        sylvan_stats_count(AMP_MUL_CACHED);
+        return true;
+    }
+    return false;
+}
+
+// uses different stats counter for propagating edge weights down
+static bool
+cache_get_mul_down(AMP a, AMP b, AMP *res)
+{
+    sylvan_stats_count(AMP_MUL_DOWN);
+    order_inputs(&a, &b);
+    if (cache_get3(CACHE_AMP_MUL, a, b, sylvan_false, res)) {
+        sylvan_stats_count(AMP_MUL_DOWN_CACHED);
+        return true;
+    }
+    return false;
+}
+
+static void
+cache_put_div(AMP a, AMP b, AMP res)
+{
+    if (cache_put3(CACHE_AMP_DIV, a, b, sylvan_false, res)) {
+        sylvan_stats_count(AMP_DIV_CACHEDPUT);
+    }
+    if (CACHE_INV_OPS) {
+        // put inverse as well (empirically seems beneficial)
+        order_inputs(&b, &res);
+        if (cache_put3(CACHE_AMP_MUL, b, res, sylvan_false, a)) {
+            sylvan_stats_count(AMP_MUL_CACHEDPUT);
+        }
+    }
+}
+
+static bool
+cache_get_div(AMP a, AMP b, AMP *res)
+{
+    if (cache_get3(CACHE_AMP_DIV, a, b, sylvan_false, res)) {
+        sylvan_stats_count(AMP_DIV_CACHED);
+        return true;
+    }
+    return false;
+}
+
 
 
 
@@ -133,9 +249,7 @@ amp_add(AMP a, AMP b)
     // check cache
     AMP res;
     if (CACHE_AMP_OPS) {
-        if (cache_get3(CACHE_AMP_ADD, a, b, sylvan_false, &res)) {
-            return res; // TODO: counters for these cache lookups/puts
-        }
+        if (cache_get_add(a, b, &res)) return res;
     }
 
     // compute and hash result to ctable
@@ -147,7 +261,7 @@ amp_add(AMP a, AMP b)
 
     // insert in cache
     if (CACHE_AMP_OPS) {
-        cache_put3(CACHE_AMP_ADD, a, b, sylvan_false, res);
+        cache_put_add(a, b, res);
     }
     return res;
 }
@@ -162,9 +276,7 @@ amp_sub(AMP a, AMP b)
     // check cache
     AMP res;
     if (CACHE_AMP_OPS) {
-        if (cache_get3(CACHE_AMP_SUB, a, b, sylvan_false, &res)) {
-            return res; // TODO: counters for these cache lookups/puts
-        }
+        if (cache_get_sub(a, b, &res)) return res;
     }
 
     // compute and hash result to ctable
@@ -176,13 +288,13 @@ amp_sub(AMP a, AMP b)
 
     // insert in cache
     if (CACHE_AMP_OPS) {
-        cache_put3(CACHE_AMP_SUB, a, b, sylvan_false, res);
+        cache_put_sub(a, b, res);
     }
     return res;
 }
 
 AMP
-amp_mul(AMP a, AMP b)
+_amp_mul(AMP a, AMP b, bool mul_down)
 {
     // special cases
     if (a == C_ONE) return b;
@@ -192,8 +304,11 @@ amp_mul(AMP a, AMP b)
     // check cache
     AMP res;
     if (CACHE_AMP_OPS) {
-        if (cache_get3(CACHE_AMP_MUL, a, b, sylvan_false, &res)) {
-            return res; // TODO: counters for these cache lookups/puts
+        if (mul_down) {
+            if (cache_get_mul_down(a, b, &res)) return res;
+        }
+        else {
+            if (cache_get_mul(a, b, &res)) return res;
         }
     }
 
@@ -206,10 +321,12 @@ amp_mul(AMP a, AMP b)
 
     // insert in cache
     if (CACHE_AMP_OPS) {
-        cache_put3(CACHE_AMP_MUL, a, b, sylvan_false, res);
+        cache_put_mul(a, b, res);
     }
     return res;
 }
+AMP amp_mul(AMP a, AMP b) { return _amp_mul(a, b, false); }
+AMP amp_mul_down(AMP a, AMP b) { return _amp_mul(a, b, true); }
 
 AMP
 amp_div(AMP a, AMP b)
@@ -222,9 +339,7 @@ amp_div(AMP a, AMP b)
     // check cache
     AMP res;
     if (CACHE_AMP_OPS) {
-        if (cache_get3(CACHE_AMP_DIV, a, b, sylvan_false, &res)) {
-            return res; // TODO: counters for these cache lookups/puts
-        }
+        if (cache_get_div(a, b, &res)) return res;
     }
 
     // compute and hash result to ctable
@@ -236,11 +351,25 @@ amp_div(AMP a, AMP b)
 
     // insert in cache
     if (CACHE_AMP_OPS) {
-        cache_put3(CACHE_AMP_DIV, a, b, sylvan_false, res);
+        cache_put_div(a, b, res);
     }
     return res;
 }
 
+double
+amp_to_prob(AMP a)
+{
+    return comp_to_prob(comp_value(a));
+}
+
+AMP
+prob_to_amp(double a)
+{
+    complex_t c;
+    c.r = flt_sqrt(a);
+    c.i = 0;
+    return comp_lookup(c);
+}
 
 
 /* Arithmetic operations on complex structs */
@@ -249,7 +378,7 @@ complex_t
 comp_abs(complex_t a)
 {
     complex_t res;
-    res.r = sqrt( (a.r*a.r) + (a.i*a.i) );
+    res.r = flt_sqrt( (a.r*a.r) + (a.i*a.i) );
     res.i = 0.0;
     return res;
 }
@@ -303,7 +432,7 @@ complex_t
 comp_div(complex_t a, complex_t b)
 {
     complex_t res;
-    double denom;
+    fl_t denom;
     if (b.i == 0.0) {
         res.r = a.r / b.r;
         res.i = a.i / b.r;
@@ -318,7 +447,7 @@ comp_div(complex_t a, complex_t b)
 double
 comp_to_prob(complex_t a)
 {
-    double abs = sqrt( (a.r*a.r) + (a.i*a.i) );
+    double abs = flt_sqrt ( (a.r*a.r) + (a.i*a.i) );
     return (abs*abs);
 }
 
@@ -332,13 +461,78 @@ bool comp_exact_equal(complex_t a, complex_t b)
 
 bool comp_approx_equal(complex_t a, complex_t b)
 {
-    return comp_epsilon_close(a, b, TOLERANCE);
+    return comp_epsilon_close(a, b, amp_store_get_tol[amp_backend]());
 }
 
 bool comp_epsilon_close(complex_t a, complex_t b, double epsilon)
 {
-    return ( (fabs(a.r - b.r) < epsilon) && (fabs(a.i - b.i) < epsilon) );
+    return ( (flt_abs(a.r - b.r) < epsilon) && (flt_abs(a.i - b.i) < epsilon) );
 }
+
+/* Comparing AMPs */
+
+bool amp_exact_equal(AMP a, AMP b)
+{
+    return comp_exact_equal(comp_value(a), comp_value(b));
+}
+
+bool amp_approx_equal(AMP a, AMP b)
+{
+    return comp_approx_equal(comp_value(a), comp_value(b));
+}
+
+bool amp_epsilon_close(AMP a, AMP b, double epsilon)
+{
+    return comp_epsilon_close(comp_value(a), comp_value(b), epsilon);
+}
+
+
+/* normalization of two amps */
+
+AMP
+amp_normalize_low(AMP *low, AMP *high)
+{
+    // Normalize using low if low != 0
+    AMP norm;
+    if(*low != C_ZERO){
+        *high = amp_div(*high, *low);
+        norm  = *low;
+        *low  = C_ONE;
+    }
+    else {
+        norm  = *high;
+        *high = C_ONE;
+    }
+    return norm;
+}
+
+AMP
+amp_normalize_largest(AMP *low, AMP *high)
+{
+    AMP norm;
+    if (*low == *high) {
+        norm  = *low;
+        *low  = C_ONE;
+        *high = C_ONE;
+        return norm;
+    }
+
+    // Normalize using the absolute greatest value
+    complex_t cl = comp_value(*low);
+    complex_t ch = comp_value(*high);
+    if ( (cl.r*cl.r + cl.i*cl.i)  >=  (ch.r*ch.r + ch.i*ch.i) ) {
+        *high = amp_div(*high, *low);
+        norm = *low;
+        *low  = C_ONE;
+    }
+    else {
+        *low = amp_div(*low, *high);
+        norm  = *high;
+        *high = C_ONE;
+    }
+    return norm;
+}
+
 
 
 
@@ -362,18 +556,23 @@ AMP
 comp_try_lookup(complex_t c, bool *success)
 {
     uint64_t res;
-    int present = cmap_find_or_put(ctable, &c, &res);
-    if (present == 0) {
+    // TODO: have this function return the number of added elements instead  
+    int present = amp_store_find_or_put[amp_backend](amp_storage, &c, &res);
+    if (present == -1) {
+        *success = false;
+    }
+    else if (present == 0) {
         *success = true;
-        ctable_entries_local += 1;
-        if (ctable_entries_local >= ctable_entries_local_buffer) {
-            __sync_fetch_and_add(&ctable_entries_est, ctable_entries_local);
-            ctable_entries_local = 0;
+        table_entries_local += 1;
+        if (table_entries_local >= table_entries_local_buffer) {
+            __sync_fetch_and_add(&table_entries_est, table_entries_local);
+            table_entries_local = 0;
         }
     }
-    else if (present == 1) *success = true;
-    else                   *success = false;
-    return (AMP) res;
+    else {
+        *success = true;
+    }
+    return res;
 }
 
 complex_t
@@ -385,9 +584,7 @@ comp_value(AMP a)
     if (a == C_MIN_ONE) return comp_minus_one();
 
     // lookup
-    complex_t * res;
-    res = cmap_get(ctable, a);
-    return *res;
+    return amp_store_get[amp_backend](amp_storage, a);
 }
 
 /* used for gc of ctable */
@@ -399,9 +596,7 @@ comp_value_old(AMP a)
     if (a == C_ONE)     return comp_one();
     if (a == C_MIN_ONE) return comp_minus_one();
 
-    complex_t * res;
-    res = cmap_get(ctable_old, a);
-    return *res;
+    return amp_store_get[amp_backend](amp_storage_old, a);
 }
 
 
@@ -424,11 +619,11 @@ comp_print_digits(complex_t c, uint32_t digits)
 {
     if(c.r >= 0)
         printf(" ");
-    printf("%.*f", digits, c.r);
+    printf("%.*Lf", digits, (long double) c.r);
     if (c.i > 0)
-        printf("+%.*fi", digits, c.i);
+        printf("+%.*Lfi", digits, (long double) c.i);
     if (c.i < 0)
-        printf("%.*fi", digits, c.i);
+        printf("%.*Lfi", digits, (long double) c.i);
 }
 
 void
@@ -436,161 +631,96 @@ comp_print_digits_sci(complex_t c, uint32_t digits)
 {
     if(c.r >= 0)
         printf(" ");
-    printf("%.*e", digits, c.r);
+    printf("%.*Le", digits, (long double) c.r);
     if (c.i > 0)
-        printf("+%.*ei", digits, c.i);
+        printf("+%.*Lei", digits, (long double) c.i);
     if (c.i < 0)
-        printf("%.*ei", digits, c.i);
+        printf("%.*Lei", digits, (long double) c.i);
 }
 
 void
 comp_print_bits(AMP a)
 {
-    print_bitvalues(ctable, a);
+    print_bitvalues(amp_storage, a);
 }
-
 
 
 /* Managing the complex value table */
 
 void
-init_amplitude_table(size_t size)
+init_amplitude_table(size_t size, long double tol, amp_storage_backend_t backend)
 {
-    ctable_size = size;
-    ctable_entries_est = 0;
-    ctable_entries_local = 0;
+    tolerance = (tol < 0) ? default_tolerance : tol;
+    table_size = size;
+    amp_backend = backend;
+
+    table_entries_est = 0;
+    table_entries_local = 0;
+
+    init_amp_storage_functions();
+
+    // create actual table
+    amp_storage = amp_store_create[amp_backend](table_size, tolerance);
+    
     // NOTE: the sum of the local counters sometimes exceeds the actual total
     // number of entries (when just counting the global value with atomic adds
     // after every insert). This might be because 'ctable_entries_local = 0' 
     // doesn't set it to 0 for all threads. Since it's only an estimate it is
     // not a huge issue though.
     // TODO: figure out how to get lace to handle this counting better
-    
-    ctable = cmap_create(ctable_size);
+
 
     C_ONE     = comp_lookup(comp_one());
     C_ZERO    = comp_lookup(comp_zero());
     C_MIN_ONE = comp_lookup(comp_minus_one());
-
-    Pi = 2.0 * acos(0.0);
-
-    init_gates();
 }
 
-void
-init_gates()
+double
+amp_store_get_tolerance()
 {
-    // initialize 2x2 gates (complex values from gates currently stored in 
-    // same table as complex amplitude values)
-    uint32_t k;
-
-    k = GATEID_I;
-    gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
-    gates[k][2] = C_ZERO; gates[k][3] = C_ONE;
-
-    k = GATEID_X;
-    gates[k][0] = C_ZERO; gates[k][1] = C_ONE;
-    gates[k][2] = C_ONE;  gates[k][3] = C_ZERO;
-
-    k = GATEID_Y;
-    gates[k][0] = C_ZERO; gates[k][1] = comp_lookup(comp_make(0.0, -1.0));
-    gates[k][2] = comp_lookup(comp_make(0.0, 1.0));  gates[k][3] = C_ZERO;
-
-    k = GATEID_Z;
-    gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
-    gates[k][2] = C_ZERO; gates[k][3] = C_MIN_ONE;
-
-    k = GATEID_H;
-    gates[k][0] = gates[k][1] = gates[k][2] = comp_lookup(comp_make(1.0/sqrt(2.0),0));
-    gates[k][3] = comp_lookup(comp_make(-1.0/sqrt(2.0),0));
-
-    k = GATEID_S;
-    gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
-    gates[k][2] = C_ZERO; gates[k][3] = comp_lookup(comp_make(0.0, 1.0));
-
-    k = GATEID_T;
-    gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
-    gates[k][2] = C_ZERO; gates[k][3] = comp_lookup(comp_make(1.0/sqrt(2.0), 1.0/sqrt(2.0)));
-
-    k = GATEID_Tdag;
-    gates[k][0] = C_ONE;  gates[k][1] = C_ZERO;
-    gates[k][2] = C_ZERO; gates[k][3] = comp_lookup(comp_make(1.0/sqrt(2.0), -1.0/sqrt(2.0)));
-
-    k = GATEID_sqrtX;
-    gates[k][0] = comp_lookup(comp_make(0.5, 0.5)); gates[k][1] = comp_lookup(comp_make(0.5,-0.5));
-    gates[k][2] = comp_lookup(comp_make(0.5,-0.5)); gates[k][3] = comp_lookup(comp_make(0.5, 0.5));
-
-    k = GATEID_sqrtY;
-    gates[k][0] = comp_lookup(comp_make(0.5, 0.5)); gates[k][1] = comp_lookup(comp_make(-0.5,-0.5));
-    gates[k][2] = comp_lookup(comp_make(0.5, 0.5)); gates[k][3] = comp_lookup(comp_make(0.5, 0.5));
-
-    init_phase_gates(255);
-}
-
-void
-init_phase_gates(int n)
-{
-    // add gate R_k to gates table
-    // (note that R_0 = I, R_1 = Z, R_2 = S, R_4 = T)
-    uint32_t gate_id;
-    double angle;
-    complex_t cartesian;
-    for (int k=0; k<=n; k++) {
-        // forward rotation
-        angle = 2*Pi / pow(2.0, (double) k);
-        cartesian = comp_make_angle(angle);
-        gate_id = GATEID_Rk(k);
-        gates[gate_id][0] = C_ONE;  gates[gate_id][1] = C_ZERO;
-        gates[gate_id][2] = C_ZERO; gates[gate_id][3] = comp_lookup(cartesian);
-
-        // backward rotation
-        angle = -2*Pi / pow(2.0, (double) k);
-        cartesian = comp_make_angle(angle);
-        gate_id = GATEID_Rk_dag(k);
-        gates[gate_id][0] = C_ONE;  gates[gate_id][1] = C_ZERO;
-        gates[gate_id][2] = C_ZERO; gates[gate_id][3] = comp_lookup(cartesian);
-    }
+    return amp_store_get_tol[amp_backend]();
 }
 
 uint64_t
 count_amplitude_table_enries()
 {
-    return cmap_count_entries(ctable);
+    return amp_store_num_entries[amp_backend](amp_storage);
 }
 
 uint64_t
-get_ctable_entries_estimate()
+get_table_entries_estimate()
 {
-    return ctable_entries_est;
+    return table_entries_est;
 }
 
 uint64_t
-get_ctable_size()
+get_table_size()
 {
-    return ctable_size;
+    return table_size;
 }
 
 void
 free_amplitude_table()
 {
-    cmap_free(ctable);
+    amp_store_free[amp_backend](amp_storage);
 }
 
 void
 init_new_empty_table()
 {
     // point old to current (full) ctable
-    ctable_old = ctable;
+    amp_storage_old = amp_storage;
 
-    // re-init new (empty) ctable
-    init_amplitude_table(ctable_size);
+    // re-init new (empty) amp map
+    double tolerance = amp_store_get_tol[amp_backend]();
+    init_amplitude_table(table_size, tolerance, amp_backend);
 }
 
 void
 delete_old_table()
 {
     // delete  old (full) table
-    cmap_free(ctable_old);
+    amp_store_free[amp_backend](amp_storage_old);
 }
 
 AMP
