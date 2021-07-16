@@ -349,6 +349,9 @@ QDD matmat(C_struct c_s, QDD vec, BDDVAR* column, int* measurements, bool* resul
     QDD qdd, qdd_column;
     qdd = qdd_create_single_qubit_gates_same(c_s.qubits, GATEID_I);
     qdd_column = qdd;
+
+    qdd_protect(&qdd);
+    qdd_protect(&qdd_column);
     if (experiments) {
         nodecount = qdd_countnodes(qdd);
         printf("nodecount mat: %d at %d\n", nodecount, *n_gates);
@@ -433,6 +436,8 @@ QDD matmat(C_struct c_s, QDD vec, BDDVAR* column, int* measurements, bool* resul
     }
     // Free variables
     free(gateids);
+    qdd_unprotect(&qdd);
+    qdd_unprotect(&qdd_column);
     return vec;
 }
 
@@ -445,14 +450,17 @@ QDD run_circuit_balance(C_struct c_s, int* measurements, bool* results, int limi
     BDDVAR n_gates = 0, column = 0;
     QDD vec = qdd_create_all_zero_state(c_s.qubits);
 
+    qdd_protect(&vec);
     while (column < c_s.depth) {
         vec = greedy(c_s, vec, &column, measurements, results, experiments, &n_gates);
         if (experiments)
             printf("palindrome start at: %d\n", n_gates);
+        
         vec = matmat(c_s, vec, &column, measurements, results, limit, experiments, &n_gates);
         if (experiments && column < c_s.depth)
             printf("palindrome end at: %d\n", n_gates);
     }
+    qdd_unprotect(&vec);
     return vec;
 }
 
@@ -619,14 +627,17 @@ QDD run_circuit_matrix(C_struct c_s, int* measurements, bool* results, int limit
             qdd = qdd_matmat_mult(qdd_column, qdd, c_s.qubits);
         }
         // Keep track of the all time highest node count in the matrices
-        nodecount = qdd_countnodes(qdd);
         // If nodecount of column QDD is over limit...
-        if (limit > 0 && (nodecount > (BDDVAR)limit || gate.id == gate_barrier.id)) {
-            // Multiply with statevector QDD and reset column QDD
-            vec = qdd_matvec_mult(qdd, vec, c_s.qubits);
-            qdd = qdd_create_single_qubit_gates_same(c_s.qubits, GATEID_I);
+        if (limit > 0) {
+            nodecount = qdd_countnodes(qdd);
+            if (nodecount > (BDDVAR)limit) {
+                // Multiply with statevector QDD and reset column QDD
+                vec = qdd_matvec_mult(qdd, vec, c_s.qubits);
+                qdd = qdd_create_single_qubit_gates_same(c_s.qubits, GATEID_I);
+            }
         }
         if (experiments) {
+            nodecount = qdd_countnodes(qdd);
             printf("nodecount mat: %d at %d\n", nodecount, n_gates);
             nodecount = qdd_countnodes(vec);
             printf("nodecount vec: %d at %d\n", nodecount, n_gates);
@@ -727,15 +738,15 @@ int main(int argc, char *argv[])
     // Initialise flag parameters
     int flag_help = -1;
     char *filename;
-    unsigned int runs = 1;
+    unsigned int runs = 100;
     unsigned int seed = 0;
-    uint64_t matrix = 0;
-    uint64_t balance = 0;
-    bool greedy = false;
-    bool optimize = false;
-    bool experiment_time = false;
-    bool intermediate_measuring = false;
-    bool experiments = false;
+    int matrix = 0;
+    int balance = 0;
+    int greedy = 0;
+    int optimize = 0;
+    int experiment_time = 0;
+    int intermediate_measuring = 0;
+    int experiments = 0;
     bool intermediate_experiments;
     QDD qdd;
     uint64_t res;
@@ -763,13 +774,19 @@ int main(int argc, char *argv[])
     filename = argv[1];
 
     char c;  
-    while ((c = poptGetNextOpt(con)) > 0) {  
+    while ((c = poptGetNextOpt(con)) > 0) {
         switch (c) {
             case 'h':
                 poptPrintHelp(con, stdout, 0);
                 return 0;
         }
     }
+    printf("matrix %d\n", matrix);
+    printf("balance %d\n", balance);
+    printf("greedy %d\n", greedy);
+    printf("experiment_time %d\n", experiment_time);
+    printf("experiments %d\n", experiments);
+    printf("seed %d\n", seed);
 
     // Set randomness seed
     if (seed == 0)
@@ -794,7 +811,7 @@ int main(int argc, char *argv[])
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<25, -1, COMP_HASHMAP, NORM_LARGEST);
+    sylvan_init_qdd(1LL<<25, 1e-10, COMP_HASHMAP, NORM_LARGEST);
     qdd_set_testing_mode(true); // turn on internal sanity tests
 
     // Create a circuit struct representing the QASM circuit in the given file
