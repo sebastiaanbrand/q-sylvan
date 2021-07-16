@@ -1611,6 +1611,7 @@ qdd_circuit(QDD qdd, uint32_t circ_id, BDDVAR t1, BDDVAR t2)
         case CIRCID_QFT_inv       : return qdd_circuit_QFT_inv(qdd, t1, t2);
         default :
             assert ("Invalid circuit ID" && false);
+            return QDD_TERMINAL;
     }
 }
 

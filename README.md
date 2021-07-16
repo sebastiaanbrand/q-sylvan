@@ -1,5 +1,8 @@
 # Q-Sylvan
 
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![CI testing](https://github.com/sebastiaanbrand/q-sylvan/actions/workflows/cmake.yml/badge.svg)](https://github.com/sebastiaanbrand/q-sylvan/actions/workflows/cmake.yml)
+
 Q-Sylvan extends [Sylvan](https://github.com/trolando/sylvan) with QMDDs, as well as functionality to simulate quantum circuits.
 
 

@@ -12,6 +12,6 @@ add_library(amp_storage SHARED
         MurmurHash3.h MurmurHash3.c
         util.h)
 
-target_link_libraries(amp_storage "-lquadmath" mpfr)
+target_link_libraries(amp_storage "-lquadmath")
 
 add_subdirectory(test)
