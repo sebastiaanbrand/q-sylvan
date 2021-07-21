@@ -1930,6 +1930,12 @@ qdd_get_amplitude(QDD q, bool* basis_state)
     return res;
 }
 
+complex_t
+qdd_get_amplitude_as_complex(QDD q, bool *basis_state)
+{
+    return comp_value(qdd_get_amplitude(q, basis_state));
+}
+
 
 /***********************<measurements and probabilities>***********************/
 

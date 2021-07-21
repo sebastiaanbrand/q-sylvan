@@ -396,6 +396,16 @@ QDD qdd_measure_all(QDD qdd, BDDVAR n, bool* ms, double *p);
 TASK_DECL_3(double, qdd_unnormed_prob, QDD, BDDVAR, BDDVAR);
 
 /**
+ * Get the index of the amplitude of given basis state.
+ * 
+ * @param qdd A QDD encoding some quantum state |\psi>.
+ * @param basis_state A bitstring x of some computational basis state |x>.
+ * 
+ * @return The index of amplitude <x|\psi>.
+ */
+AMP qdd_get_amplitude(QDD qdd, bool* basis_state);
+
+/**
  * Get amplitude of given basis state.
  * 
  * @param qdd A QDD encoding some quantum state |\psi>.
@@ -403,7 +413,7 @@ TASK_DECL_3(double, qdd_unnormed_prob, QDD, BDDVAR, BDDVAR);
  * 
  * @return The amplitude <x|\psi>.
  */
-AMP qdd_get_amplitude(QDD qdd, bool* basis_state);
+complex_t qdd_get_amplitude_as_complex(QDD qdd, bool *basis_state);
 
 /**
  * Creates a QDD for an n-qubit state |00...0>.
@@ -478,7 +488,8 @@ QDD qdd_create_single_qubit_gates_same(BDDVAR n, uint32_t gateid);
 QDD qdd_create_controlled_gate(BDDVAR n, BDDVAR c, BDDVAR t, uint32_t gateid);
 
 /**
- * Creates a QDD matrix which does gateid(c,t) and I on all other qubits.
+ * Creates a controlled-`gateid` gate which acts on the qubits as specified by
+ * `c_options`.
  * 
  * @param n Total number of qubits.
  * @param c_options Array of length n with option for each qubit k: {

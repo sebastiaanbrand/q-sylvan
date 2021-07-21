@@ -3,7 +3,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![CI testing](https://github.com/sebastiaanbrand/q-sylvan/actions/workflows/cmake.yml/badge.svg)](https://github.com/sebastiaanbrand/q-sylvan/actions/workflows/cmake.yml)
 
-Q-Sylvan extends [Sylvan](https://github.com/trolando/sylvan) with QMDDs, as well as functionality to simulate quantum circuits.
+Q-Sylvan extends [Sylvan](https://github.com/trolando/sylvan) (1.4.0) with QMDDs, as well as functionality to simulate quantum circuits.
 
 
 ## Installation
@@ -11,7 +11,7 @@ Q-Sylvan extends [Sylvan](https://github.com/trolando/sylvan) with QMDDs, as wel
 ### Dependencies
 Q-Sylvan requires the following libraries: `popt` and `GMP`. On Ubuntu it should be possible to install these with
 - `sudo apt-get install libpopt-dev`
-- `sudo apt-get install libgmp3-dev`
+- `sudo apt-get install libgmp-dev`
 
 
 ### Compiling the code
@@ -23,7 +23,7 @@ After downloading or cloning the repository, from the repository folder the code
 
 Test can be run with `make test`.
 
-Installing should also be possible with `make install` but this will clash with any other version of Sylvan already installed.
+Installing should also be possible with `make install` but this will currently clash with any other version of Sylvan already installed.
 
 
 ## Example usage
@@ -43,7 +43,7 @@ bool outcome[] = {0, 0};
 double prob;
 qdd_measure_all(state, nqubits, outcome, &prob);
 ```
-This code can be found in `examples/bell_state.c` and after compiling the code as described above can be run with `./examples/bell_state` from the `build/` directory.
+This code can be found in [`examples/bell_state.c`](examples/bell_state.c) and after compiling the code as described above can be run with `./examples/bell_state` from the `build/` directory. A more complete set of available functions can be found [here](docs/c_interface.md).
 
 ### QASM interface
 ```C
@@ -63,11 +63,9 @@ x q[0];
 measure q[0]->c[0];
 measure q[1]->c[1];
 ```
-This code can be found in `qasm/circuits/bell_state.qasm` and can be run with `./qasm/circuit_to_Sylvan ../qasm/circuits/bell_state.qasm -r=100` from the `build/` directory.
+This code can be found in [`qasm/circuits/bell_state.qasm`](qasm/circuits/bell_state.qasm) and can be run with `./qasm/circuit_to_Sylvan ../qasm/circuits/bell_state.qasm -r=100` from the `build/` directory.
 
 
-## Folders overview
-```
-TODO
-```
+## Documentation
+A more complete documentation of the C interface can be found [here](docs/c_interface.md).
 
