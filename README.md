@@ -48,7 +48,6 @@ This code can be found in [`examples/bell_state.c`](examples/bell_state.c) and a
 ### QASM interface
 ```C
 OPENQASM 2.0;
-include "qelib1.inc";
 
 // 2 qubit quantum register and 2 bit classical register
 qreg q[2];
@@ -63,9 +62,8 @@ x q[0];
 measure q[0]->c[0];
 measure q[1]->c[1];
 ```
-This code can be found in [`qasm/circuits/bell_state.qasm`](qasm/circuits/bell_state.qasm) and can be run with `./qasm/circuit_to_Sylvan ../qasm/circuits/bell_state.qasm -r=100` from the `build/` directory.
+This code can be found in [`qasm/circuits/bell_state.qasm`](qasm/circuits/bell_state.qasm) and can be run with `./qasm/circuit_to_Sylvan ../qasm/circuits/bell_state.qasm -r=100` from the `build/` directory. A more complete set of supported QASM statements can be found [here](docs/qasm_interface.md).
 
 
 ## Documentation
-A more complete documentation of the C interface can be found [here](docs/c_interface.md).
-
+A more complete documentation of the C interface can be found [here](docs/c_interface.md), and of the QASM interface [here](docs/qasm_interface.md).

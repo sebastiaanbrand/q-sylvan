@@ -29,7 +29,7 @@ C_struct make_c_struct(char *filename, bool optimize)
         index++;
         // If the circuit takes more than 128 qubits, give error
         if (c_s.qubits >= c_s.max_qubits) {
-            fprintf(stderr, "Too much qubits, current maximum is 128.\n");
+            fprintf(stderr, "Too many qubits, current maximum is 128.\n");
             exit(EXIT_FAILURE);
         }
         // If the current maximum depth is reached, increase the depth and reallocate

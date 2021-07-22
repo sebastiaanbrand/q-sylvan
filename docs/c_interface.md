@@ -44,6 +44,11 @@ Note: For measurements, the post-measurement state is the return value of the me
 * `GATEID_sqrtXdag` : (&radic;X)<sup>&dagger;</sup> gate
 * `GATEID_sqrtY` : &radic;Y gate
 * `GATEID_sqrtYdag` : (&radic;Y)<sup>&dagger;</sup> gate
+* `GATEID_Rk(k)` : Phase gate with angle 2&pi; &times; 1/2<sup>k</sup>
+* `GATEID_Rk_dag(k)` : Phase gate with angle 2&pi; &times; 1/2<sup>-k</sup>
+* `GATEID_Rx(a)` : Rotation around x-axis with angle 2&pi; &times; a
+* `GATEID_Ry(a)` : Rotation around y-axis with angle 2&pi; &times; a
+* `GATEID_Rz(a)` : Rotation around z-axis with angle 2&pi; &times; a
 
 
 ## Other

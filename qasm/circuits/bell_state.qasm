@@ -1,5 +1,4 @@
 OPENQASM 2.0;
-include "qelib1.inc";
 
 // 2 qubit quantum register and 2 bit classical register
 qreg q[2];
