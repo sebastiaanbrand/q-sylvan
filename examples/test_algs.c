@@ -34,6 +34,7 @@ int test_grover()
             prob += amp_to_prob(a);
         else
             test_assert(a == C_ZERO);
+        free(x); // int_to_bitarray mallocs
     }
     test_assert(fabs(prob - 1) < TOLERANCE);
 
@@ -55,6 +56,7 @@ int test_grover()
             prob += amp_to_prob(a);
         else
             test_assert(amp_to_prob(a) < 0.004);
+        free(x); // int_to_bitarray mallocs
     }
     test_assert(prob > 0.94);
 
@@ -82,6 +84,7 @@ int test_grover()
             prob += amp_to_prob(a);
         else
             test_assert(amp_to_prob(a) < 0.001);
+        free(x); // int_to_bitarray mallocs
     }
     test_assert(prob > 0.99);
 
@@ -113,6 +116,7 @@ int test_grover_matrix()
             prob += amp_to_prob(a);
         else
             test_assert(a == C_ZERO);
+        free(x); // int_to_bitarray mallocs
     }
     test_assert(fabs(prob - 1) < TOLERANCE);
 
@@ -134,6 +138,7 @@ int test_grover_matrix()
             prob += amp_to_prob(a);
         else
             test_assert(amp_to_prob(a) < 0.004);
+        free(x); // int_to_bitarray mallocs
     }
     test_assert(prob > 0.94);
 
@@ -161,6 +166,7 @@ int test_grover_matrix()
             prob += amp_to_prob(a);
         else
             test_assert(amp_to_prob(a) < 0.001);
+        free(x); // int_to_bitarray mallocs
     }
     test_assert(prob > 0.99);
 
@@ -198,6 +204,7 @@ int test_grover_cnf()
         a = qdd_get_amplitude(grov, x);
         if (x[0] == ans3[0] && x[1] == ans3[1])
             prob += amp_to_prob(a);
+        free(x); // int_to_bitarray mallocs
     }
     test_assert(qdd_is_unitvector(grov, nqubits+1+clauses));
 
@@ -220,6 +227,7 @@ int test_grover_cnf()
         a = qdd_get_amplitude(grov, x);
         if (x[0] == ans4[0] && x[1] == ans4[1] && x[2] == ans4[2] && x[3] == ans4[3])
             prob += amp_to_prob(a);
+        free(x); // int_to_bitarray mallocs
     }
     test_assert(qdd_is_unitvector(grov, nqubits+1+clauses));
 

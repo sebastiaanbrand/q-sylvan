@@ -95,5 +95,7 @@ qdd_grover_cnf(BDDVAR n, int* oracle, BDDVAR k, BDDVAR clauses, BDDVAR n_answers
         qdd = qdd_grover_cnf_iteration(qdd, n, k, clauses, oracle);
     }
 
+    free(init);
+
     return qdd;
 }

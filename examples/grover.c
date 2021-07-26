@@ -73,6 +73,7 @@ qdd_grover(BDDVAR n, bool *flag)
     for (BDDVAR k = 0; k < n; k++) init[k] = 0;
     init[n] = 1; 
     QDD qdd = qdd_create_basis_state(n+1, init);
+    free(init);
 
     // H on all qubits
     for (BDDVAR k = 0; k < n+1; k++) qdd = qdd_gate(qdd, GATEID_H, k);
@@ -82,6 +83,7 @@ qdd_grover(BDDVAR n, bool *flag)
     for (uint32_t i = 1; i <= R; i++) {
         qdd = qdd_grover_iteration(qdd, n, oracle);
     }
+    free(oracle);
 
     return qdd;
 }
@@ -205,6 +207,10 @@ QDD qdd_grover_matrix_multi_its(BDDVAR n, bool *flag, int t, QDD *matrix)
 
     qdd_unprotect(&grov_its);
     qdd_unprotect(&state);
+
+    free(init);
+    free(gate_list);
+    free(cgate_options);
 
     return state;
 }

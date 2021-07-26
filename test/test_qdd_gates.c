@@ -524,6 +524,7 @@ int test_controlled_range_gate()
         x_bits = int_to_bitarray(x, nqubits, true);
         a = qdd_get_amplitude(q10, x_bits); 
         test_assert(a == aRef);
+        free(x_bits); // int_to_bitarray mallocs
     }
 
     // CZ gate on c=0,1,2,3 t=7
@@ -540,6 +541,7 @@ int test_controlled_range_gate()
         else {
             test_assert(a == aRef);
         }
+        free(x_bits); // int_to_bitarray mallocs
     }
 
     // CZ gate on c=2,3,4,5 t=8
@@ -556,6 +558,7 @@ int test_controlled_range_gate()
         else {
             test_assert(a == aRef);
         }
+        free(x_bits); // int_to_bitarray mallocs
     }
 
     // TODO: test other gates as well
