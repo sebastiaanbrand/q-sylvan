@@ -3,7 +3,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![CI testing](https://github.com/sebastiaanbrand/q-sylvan/actions/workflows/cmake.yml/badge.svg)](https://github.com/sebastiaanbrand/q-sylvan/actions/workflows/cmake.yml)
 
-Q-Sylvan extends [Sylvan](https://github.com/trolando/sylvan) (1.4.0) with QMDDs, as well as functionality to simulate quantum circuits.
+Q-Sylvan extends the parallel decision diagram library [Sylvan](https://github.com/trolando/sylvan) (v1.4.0) with QMDDs, as well as functionality to simulate quantum circuits.
 
 
 ## Installation
@@ -67,3 +67,7 @@ This code can be found in [`qasm/circuits/bell_state.qasm`](qasm/circuits/bell_s
 
 ## Documentation
 A more complete documentation of the C interface can be found [here](docs/c_interface.md), and of the QASM interface [here](docs/qasm_interface.md).
+
+
+## Acknowledgements
+This work is supported by the [NEASQC](https://cordis.europa.eu/project/id/951821) project, funded by the European Union's Horizon 2020 programme, Grant Agreement No. 951821.
