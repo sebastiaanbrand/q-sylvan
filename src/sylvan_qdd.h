@@ -82,6 +82,7 @@ And analogously for the high edges.
 #include <stdint.h>
 
 #include "amp_storage/flt.h"
+#include "sylvan_qdd_gates.h"
 #include "sylvan_mtbdd.h"
 
 #ifdef __cplusplus
@@ -192,19 +193,19 @@ QDD qdd_refs_sync(QDD qdd);
 
 /* Applies given (single qubit) gate to |q>. (Wrapper function) */
 #define qdd_gate(qdd,gate,target) (CALL(qdd_gate,qdd,gate,target))
-TASK_DECL_3(QDD, qdd_gate, QDD, uint32_t, BDDVAR);
+TASK_DECL_3(QDD, qdd_gate, QDD, gate_id_t, BDDVAR);
 
 /* Applies given controlled gate to |q>. (Wrapper function) */
 #define qdd_cgate(qdd,gate,c,t) (CALL(qdd_cgate,qdd,gate,c,t))
 #define qdd_cgate2(qdd,gate,c1,c2,t) (CALL(qdd_cgate2,qdd,gate,c1,c2,t))
 #define qdd_cgate3(qdd,gate,c1,c2,c3,t) (CALL(qdd_cgate3,qdd,gate,c1,c2,c3,t))
-TASK_DECL_4(QDD, qdd_cgate,  QDD, uint32_t, BDDVAR, BDDVAR);
-TASK_DECL_5(QDD, qdd_cgate2, QDD, uint32_t, BDDVAR, BDDVAR, BDDVAR);
-TASK_DECL_6(QDD, qdd_cgate3, QDD, uint32_t, BDDVAR, BDDVAR, BDDVAR, BDDVAR);
+TASK_DECL_4(QDD, qdd_cgate,  QDD, gate_id_t, BDDVAR, BDDVAR);
+TASK_DECL_5(QDD, qdd_cgate2, QDD, gate_id_t, BDDVAR, BDDVAR, BDDVAR);
+TASK_DECL_6(QDD, qdd_cgate3, QDD, gate_id_t, BDDVAR, BDDVAR, BDDVAR, BDDVAR);
 
 /* Applies given controlled gate to |q>. (Wrapper function) */
 #define qdd_cgate_range(qdd,gate,c_first,c_last,t) (CALL(qdd_cgate_range,qdd,gate,c_first,c_last,t))
-TASK_DECL_5(QDD, qdd_cgate_range, QDD, uint32_t, BDDVAR, BDDVAR, BDDVAR);
+TASK_DECL_5(QDD, qdd_cgate_range, QDD, gate_id_t, BDDVAR, BDDVAR, BDDVAR);
 
 
 /**
@@ -217,20 +218,20 @@ TASK_DECL_2(QDD, qdd_plus, QDD, QDD);
  * Recursive implementation of applying single qubit gates
  */
 #define qdd_gate_rec(q,gate,target) (CALL(qdd_gate_rec,q,gate,target))
-TASK_DECL_3(QDD, qdd_gate_rec, QDD, uint32_t, BDDVAR);
+TASK_DECL_3(QDD, qdd_gate_rec, QDD, gate_id_t, BDDVAR);
 
 /**
  * Recursive implementation of applying controlled gates
  */
 #define qdd_cgate_rec(q,gate,cs,t) (CALL(qdd_cgate_rec,q,gate,cs,0,t))
-TASK_DECL_5(QDD, qdd_cgate_rec, QDD, uint32_t, BDDVAR*, uint32_t, BDDVAR);
+TASK_DECL_5(QDD, qdd_cgate_rec, QDD, gate_id_t, BDDVAR*, uint32_t, BDDVAR);
 
 /**
  * Recursive implementation of applying controlled gates where the controlles 
  * are defined by a range 'c_first' through 'c_last'.
  */
 #define qdd_cgate_range_rec(q,gate,c_first,c_last,t) (CALL(qdd_cgate_range_rec,q,gate,c_first,c_last,t,0))
-TASK_DECL_6(QDD, qdd_cgate_range_rec, QDD, uint32_t, BDDVAR, BDDVAR, BDDVAR, BDDVAR);
+TASK_DECL_6(QDD, qdd_cgate_range_rec, QDD, gate_id_t, BDDVAR, BDDVAR, BDDVAR, BDDVAR);
 
 
 /* Computes Mat * |vec> (Wrapper function) */
@@ -453,7 +454,7 @@ QDD qdd_create_all_identity_matrix(BDDVAR n);
  * 
  * @return A QDD encoding of I_0 \tensor ... U_t ... \tensor I_{n-1}
  */
-QDD qdd_create_single_qubit_gate(BDDVAR n, BDDVAR t, uint32_t gateid);
+QDD qdd_create_single_qubit_gate(BDDVAR n, BDDVAR t, gate_id_t gateid);
 
 /**
  * Creates a QDD matrix which applies the given list of n gates to n qubits.
@@ -463,7 +464,7 @@ QDD qdd_create_single_qubit_gate(BDDVAR n, BDDVAR t, uint32_t gateid);
  * 
  * @return A QDD encoding of U_0 \tensor U_1 \tensor ... \tensor U_{n-1}
  */
-QDD qdd_create_single_qubit_gates(BDDVAR n, uint32_t *gateid);
+QDD qdd_create_single_qubit_gates(BDDVAR n, gate_id_t *gateid);
 
 /**
  * Creates a QDD matrix which applies single qubit gate U to all qubits.
@@ -473,7 +474,7 @@ QDD qdd_create_single_qubit_gates(BDDVAR n, uint32_t *gateid);
  * 
  * @return A QDD encoding of U^{\tensor n}
  */
-QDD qdd_create_single_qubit_gates_same(BDDVAR n, uint32_t gateid);
+QDD qdd_create_single_qubit_gates_same(BDDVAR n, gate_id_t gateid);
 
 /**
  * Creates a QDD matrix which does gateid(c,t) and I on all other qubits.
@@ -485,7 +486,7 @@ QDD qdd_create_single_qubit_gates_same(BDDVAR n, uint32_t gateid);
  * 
  * @return A matrix QDD encoding of the controlled gate on given qubits.
  */
-QDD qdd_create_controlled_gate(BDDVAR n, BDDVAR c, BDDVAR t, uint32_t gateid);
+QDD qdd_create_controlled_gate(BDDVAR n, BDDVAR c, BDDVAR t, gate_id_t gateid);
 
 /**
  * Creates a controlled-`gateid` gate which acts on the qubits as specified by
@@ -502,7 +503,7 @@ QDD qdd_create_controlled_gate(BDDVAR n, BDDVAR c, BDDVAR t, uint32_t gateid);
  * @return A matrix QDD encoding of the multi-controlled gate on given qubits.
  */
 #define qdd_create_multi_cgate(n,c_options,gateid) qdd_create_multi_cgate_rec(n,c_options,gateid,0)
-QDD qdd_create_multi_cgate_rec(BDDVAR n, int *c_options, uint32_t gateid, BDDVAR k);
+QDD qdd_create_multi_cgate_rec(BDDVAR n, int *c_options, gate_id_t gateid, BDDVAR k);
 
 /**
  * Creates an n-qubit controlled Z gate, controlled on all qubits. 

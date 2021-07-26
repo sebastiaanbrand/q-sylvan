@@ -24,7 +24,6 @@
 #include "sylvan_qdd.h"
 #include "sylvan_refs.h"
 #include "sylvan_qdd_complex.h"
-#include "sylvan_qdd_gates.h"
 
 static int granularity = 1; // operation cache access granularity
 static bool testing_mode = 0; // turns on/off (expensive) sanity checks
@@ -913,14 +912,14 @@ qdd_do_before_mult()
 }
 
 /* Wrapper for applying a single qubit gate. */
-TASK_IMPL_3(QDD, qdd_gate, QDD, qdd, uint32_t, gate, BDDVAR, target)
+TASK_IMPL_3(QDD, qdd_gate, QDD, qdd, gate_id_t, gate, BDDVAR, target)
 {
     qdd_do_before_gate(&qdd);
     return qdd_gate_rec(qdd, gate, target);
 }
 
 /* Wrapper for applying a controlled gate with 1 control qubit. */
-TASK_IMPL_4(QDD, qdd_cgate, QDD, qdd, uint32_t, gate, BDDVAR, c, BDDVAR, t)
+TASK_IMPL_4(QDD, qdd_cgate, QDD, qdd, gate_id_t, gate, BDDVAR, c, BDDVAR, t)
 {
     qdd_do_before_gate(&qdd);
     BDDVAR cs[4] = {c, QDD_INVALID_VAR, QDD_INVALID_VAR, QDD_INVALID_VAR};
@@ -928,7 +927,7 @@ TASK_IMPL_4(QDD, qdd_cgate, QDD, qdd, uint32_t, gate, BDDVAR, c, BDDVAR, t)
 }
 
 /* Wrapper for applying a controlled gate with 2 control qubits. */
-TASK_IMPL_5(QDD, qdd_cgate2, QDD, qdd, uint32_t, gate, BDDVAR, c1, BDDVAR, c2, BDDVAR, t)
+TASK_IMPL_5(QDD, qdd_cgate2, QDD, qdd, gate_id_t, gate, BDDVAR, c1, BDDVAR, c2, BDDVAR, t)
 {
     qdd_do_before_gate(&qdd);
     BDDVAR cs[4] = {c1, c2, QDD_INVALID_VAR, QDD_INVALID_VAR};
@@ -936,7 +935,7 @@ TASK_IMPL_5(QDD, qdd_cgate2, QDD, qdd, uint32_t, gate, BDDVAR, c1, BDDVAR, c2, B
 }
 
 /* Wrapper for applying a controlled gate with 3 control qubits. */
-TASK_IMPL_6(QDD, qdd_cgate3, QDD, qdd, uint32_t, gate, BDDVAR, c1, BDDVAR, c2, BDDVAR, c3, BDDVAR, t)
+TASK_IMPL_6(QDD, qdd_cgate3, QDD, qdd, gate_id_t, gate, BDDVAR, c1, BDDVAR, c2, BDDVAR, c3, BDDVAR, t)
 {
     qdd_do_before_gate(&qdd);
     BDDVAR cs[4] = {c1, c2, c3, QDD_INVALID_VAR}; // last pos is a buffer
@@ -944,7 +943,7 @@ TASK_IMPL_6(QDD, qdd_cgate3, QDD, qdd, uint32_t, gate, BDDVAR, c1, BDDVAR, c2, B
 }
 
 /* Wrapper for applying a controlled gate where the controls are a range. */
-TASK_IMPL_5(QDD, qdd_cgate_range, QDD, qdd, uint32_t, gate, BDDVAR, c_first, BDDVAR, c_last, BDDVAR, t)
+TASK_IMPL_5(QDD, qdd_cgate_range, QDD, qdd, gate_id_t, gate, BDDVAR, c_first, BDDVAR, c_last, BDDVAR, t)
 {
     qdd_do_before_gate(&qdd);
     return qdd_cgate_range_rec(qdd,gate,c_first,c_last,t);
@@ -1031,7 +1030,7 @@ TASK_IMPL_2(QDD, qdd_plus, QDD, a, QDD, b)
     return res;
 }
 
-TASK_IMPL_3(QDD, qdd_gate_rec, QDD, q, uint32_t, gate, BDDVAR, target)
+TASK_IMPL_3(QDD, qdd_gate_rec, QDD, q, gate_id_t, gate, BDDVAR, target)
 {
     // Trivial cases
     if (QDD_AMP(q) == C_ZERO) return q;
@@ -1090,7 +1089,7 @@ TASK_IMPL_3(QDD, qdd_gate_rec, QDD, q, uint32_t, gate, BDDVAR, target)
     return res;
 }
 
-TASK_IMPL_5(QDD, qdd_cgate_rec, QDD, q, uint32_t, gate, BDDVAR*, cs, uint32_t, ci, BDDVAR, t)
+TASK_IMPL_5(QDD, qdd_cgate_rec, QDD, q, gate_id_t, gate, BDDVAR*, cs, uint32_t, ci, BDDVAR, t)
 {
     // Get current control qubit. If no more control qubits, apply gate here
     BDDVAR c = cs[ci];
@@ -1152,7 +1151,7 @@ TASK_IMPL_5(QDD, qdd_cgate_rec, QDD, q, uint32_t, gate, BDDVAR*, cs, uint32_t, c
     return res;
 }
 
-TASK_IMPL_6(QDD, qdd_cgate_range_rec, QDD, q, uint32_t, gate, BDDVAR, c_first, BDDVAR, c_last, BDDVAR, t, BDDVAR, k)
+TASK_IMPL_6(QDD, qdd_cgate_range_rec, QDD, q, gate_id_t, gate, BDDVAR, c_first, BDDVAR, c_last, BDDVAR, t, BDDVAR, k)
 {
     // Past last control (done with "control part" of controlled gate)
     if (k > c_last) {
@@ -1973,7 +1972,7 @@ qdd_create_basis_state(BDDVAR n, bool* x)
 }
 
 QDD
-qdd_stack_matrix(QDD below, BDDVAR k, uint32_t gateid)
+qdd_stack_matrix(QDD below, BDDVAR k, gate_id_t gateid)
 {
     // This function effectively does a Kronecker product gate \tensor below
     BDDVAR s, t;
@@ -2033,7 +2032,7 @@ qdd_create_all_identity_matrix(BDDVAR n)
 }
 
 QDD
-qdd_create_single_qubit_gate(BDDVAR n, BDDVAR t, uint32_t gateid)
+qdd_create_single_qubit_gate(BDDVAR n, BDDVAR t, gate_id_t gateid)
 {
     // Start at terminal and build backwards
     QDD prev = qdd_bundle_ptr_amp(QDD_TERMINAL, C_ONE);
@@ -2047,7 +2046,7 @@ qdd_create_single_qubit_gate(BDDVAR n, BDDVAR t, uint32_t gateid)
 }
 
 QDD
-qdd_create_single_qubit_gates(BDDVAR n, uint32_t *gateids)
+qdd_create_single_qubit_gates(BDDVAR n, gate_id_t *gateids)
 {
     // Start at terminal and build backwards
     QDD prev = qdd_bundle_ptr_amp(QDD_TERMINAL, C_ONE);
@@ -2058,7 +2057,7 @@ qdd_create_single_qubit_gates(BDDVAR n, uint32_t *gateids)
 }
 
 QDD
-qdd_create_single_qubit_gates_same(BDDVAR n, uint32_t gateid)
+qdd_create_single_qubit_gates_same(BDDVAR n, gate_id_t gateid)
 {
     // Start at terminal and build backwards
     QDD prev = qdd_bundle_ptr_amp(QDD_TERMINAL, C_ONE);
@@ -2069,7 +2068,7 @@ qdd_create_single_qubit_gates_same(BDDVAR n, uint32_t gateid)
 }
 
 QDD
-qdd_create_controlled_gate(BDDVAR n, BDDVAR c, BDDVAR t, uint32_t gateid)
+qdd_create_controlled_gate(BDDVAR n, BDDVAR c, BDDVAR t, gate_id_t gateid)
 {
     // for now, assume t > c
     assert(t > c);
@@ -2099,7 +2098,7 @@ qdd_create_controlled_gate(BDDVAR n, BDDVAR c, BDDVAR t, uint32_t gateid)
 }
 
 QDD
-qdd_create_multi_cgate_rec(BDDVAR n, int *c_options, uint32_t gateid, BDDVAR k)
+qdd_create_multi_cgate_rec(BDDVAR n, int *c_options, gate_id_t gateid, BDDVAR k)
 {
     // (assumes controls above target)
     // c_options[k] = -1 -> ignore qubit k (apply I)
