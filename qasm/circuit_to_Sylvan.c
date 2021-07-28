@@ -669,6 +669,7 @@ QDD run_c_struct(C_struct c_s, int* measurements, bool* results, bool experiment
     for (BDDVAR i = 0; i < c_s.bits; i++) results[i] = 0;
     for (BDDVAR i = 0; i < c_s.qubits; i++) measurements[i] = -1;
     QDD qdd = qdd_create_all_zero_state(c_s.qubits);
+    qdd_protect(&qdd);
 
     if (experiments) {
         nodecount = qdd_countnodes(qdd);
@@ -707,6 +708,7 @@ QDD run_c_struct(C_struct c_s, int* measurements, bool* results, bool experiment
             }
         }
     }
+    qdd_unprotect(&qdd);
     return qdd;
 }
 
@@ -811,7 +813,7 @@ int main(int argc, char *argv[])
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    sylvan_init_qdd(1LL<<25, 1e-10, COMP_HASHMAP, NORM_LARGEST);
+    sylvan_init_qdd_defaults(1LL<<23);
     qdd_set_testing_mode(true); // turn on internal sanity tests
 
     // Create a circuit struct representing the QASM circuit in the given file
