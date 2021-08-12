@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <time.h>
 
-#include "q_sylvan.h"
+#include "qsylvan.h"
 #include "test_assert.h"
 
 bool VERBOSE = true;

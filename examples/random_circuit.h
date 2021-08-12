@@ -1,4 +1,4 @@
-#include <q_sylvan.h>
+#include <qsylvan.h>
 
 void random_qubit(BDDVAR nqubits, BDDVAR *t);
 void random_control_target(BDDVAR nqubits, BDDVAR *c, BDDVAR *t);

@@ -1,4 +1,4 @@
-#include <q_sylvan.h>
+#include <qsylvan.h>
 
 /* Random bit array of lenght 'nqubits' */
 // bool *qdd_grover_cnf_random_flag(BDDVAR nqubits, BDDVAR clauses);

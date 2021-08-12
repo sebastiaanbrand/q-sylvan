@@ -8,10 +8,10 @@ set(SOURCES
 
 # Bell state example
 add_executable(bell_state bell_state.c)
-target_link_libraries(bell_state sylvan)
+target_link_libraries(bell_state qsylvan)
 
 # Tests
 add_executable(test_algs test_algs.c ${SOURCES})
-target_link_libraries(test_algs sylvan)
+target_link_libraries(test_algs qsylvan)
 add_test(test_algs test_algs)
 

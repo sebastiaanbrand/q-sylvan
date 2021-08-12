@@ -21,7 +21,7 @@ set(SOURCES
 set(HEADERS
     lace.h
     sylvan.h
-    q_sylvan.h
+    qsylvan.h
     sylvan_bdd.h
     sylvan_cache.h
     sylvan_config.h
@@ -47,22 +47,22 @@ add_subdirectory(amp_storage)
 option(BUILD_SHARED_LIBS "Enable/disable creation of shared libraries" ON)
 option(BUILD_STATIC_LIBS "Enable/disable creation of static libraries" ON)
 
-add_library(sylvan ${SOURCES})
+add_library(qsylvan ${SOURCES})
 
 find_package(GMP REQUIRED)
 
 include_directories(${GMP_INCLUDE_DIR})
 
-target_link_libraries(sylvan m pthread ${GMP_LIBRARIES} amp_storage)
+target_link_libraries(qsylvan m pthread ${GMP_LIBRARIES} amp_storage)
 
 if(UNIX AND NOT APPLE)
-    target_link_libraries(sylvan rt)
+    target_link_libraries(qsylvan rt)
 endif()
 
 option(SYLVAN_STATS "Collect statistics" OFF)
 if(SYLVAN_STATS)
-    set_target_properties(sylvan PROPERTIES COMPILE_DEFINITIONS "SYLVAN_STATS")
+    set_target_properties(qsylvan PROPERTIES COMPILE_DEFINITIONS "SYLVAN_STATS")
 endif()
 
-install(TARGETS sylvan DESTINATION "${CMAKE_INSTALL_LIBDIR}")
+install(TARGETS qsylvan DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 install(FILES ${HEADERS} DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}")

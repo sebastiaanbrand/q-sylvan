@@ -1,11 +1,11 @@
 cmake_minimum_required(VERSION 3.1)
 
-project(sylvan VERSION 1.4.0)
+project(qsylvan VERSION 1.0.0) # Based on Sylvan 1.4.0
 
-set(PROJECT_DESCRIPTION "Sylvan, a parallel decision diagram library")
-set(PROJECT_URL "https://github.com/trolando/sylvan")
+set(PROJECT_DESCRIPTION "Q-Sylvan, QMDD extension of Sylvan")
+set(PROJECT_URL "https://github.com/sebastiaanbrand/q-sylvan")
 
-message(STATUS "CMake build configuration for Sylvan ${PROJECT_VERSION}")
+message(STATUS "CMake build configuration for Q-Sylvan ${PROJECT_VERSION}")
 enable_language(C CXX)
 
 set(CMAKE_C_STANDARD 11)
@@ -14,12 +14,13 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Debug CACHE STRING "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel." FORCE)
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel." FORCE)
 ENDIF(NOT CMAKE_BUILD_TYPE)
 
 # Some info
 message(STATUS "OS: ${CMAKE_SYSTEM_NAME}")
 message(STATUS "Compiler: ${CMAKE_CXX_COMPILER_ID}")
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake/")
 
@@ -59,20 +60,10 @@ add_subdirectory(test)
 add_subdirectory(qasm)
 add_subdirectory(examples)
 
-option(SYLVAN_BUILD_DOCS "Build documentation" OFF)
-if(SYLVAN_BUILD_DOCS)
-    configure_file("docs/conf.py.in" "docs/conf.py" @ONLY)
-    find_package(Sphinx REQUIRED)
-    Sphinx_add_targets(sylvan ${CMAKE_CURRENT_BINARY_DIR}/docs ${CMAKE_CURRENT_SOURCE_DIR}/docs ${CMAKE_CURRENT_BINARY_DIR})
-    add_custom_target(update_gh_pages
-        COMMAND "${CMAKE_COMMAND}" -P "${CMAKE_MODULE_PATH}/UpdateGHPages.cmake")
-    add_dependencies(update_gh_pages sylvan_html)
-endif()
-
 set(CPACK_GENERATOR "DEB")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Multi-core implementation of decision diagrams")
-set(CPACK_PACKAGE_VENDOR "Tom van Dijk")
-set(CPACK_PACKAGE_CONTACT "Tom van Dijk <tom@tvandijk.nl>")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "QMDD extension of Sylvan")
+set(CPACK_PACKAGE_VENDOR "Sebastiaan Brand")
+set(CPACK_PACKAGE_CONTACT "Sebastiaan Brand <s.o.brand@liacs.leidenuniv.nl>")
 set(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_SOURCE_DIR}/README.md")
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/LICENSE")
 set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
@@ -82,5 +73,5 @@ set(CPACK_PACKAGE_VERSION_PATCH ${PROJECT_PATCH_VERSION})
 include(CPack)
 
 # pkg-config
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/sylvan.pc.cmake.in" "${CMAKE_CURRENT_BINARY_DIR}/sylvan.pc" @ONLY)
-install(FILES "${CMAKE_CURRENT_BINARY_DIR}/sylvan.pc" DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/qsylvan.pc.cmake.in" "${CMAKE_CURRENT_BINARY_DIR}/qsylvan.pc" @ONLY)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/qsylvan.pc" DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig")
