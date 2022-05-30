@@ -66,7 +66,7 @@ This code can be found in [`qasm/circuits/bell_state.qasm`](qasm/circuits/bell_s
 
 
 ## Documentation
-A more complete documentation of the C interface can be found [here](docs/c_interface.md), and of the QASM interface [here](docs/qasm_interface.md).
+A more complete documentation of the C interface can be found [here](docs/documentation/c_interface.md), and of the QASM interface [here](docs/documentation/qasm_interface.md).
 
 
 ## Acknowledgements

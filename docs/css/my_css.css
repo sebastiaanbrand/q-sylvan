@@ -1,0 +1,43 @@
+/* 
+<768  xs (for phones - screens less than 768px wide)
+>=768 sm (for tablets - screens equal to or greater than 768px wide)
+>=992 md (for small laptops - screens equal to or greater than 992px wide)
+>=1200 lg (for laptops and desktops - screens equal to or greater than 1200px wide)
+*/
+
+@media (min-width: 576px) and (max-width: 992px)
+{
+    .card-columns {
+        -webkit-column-count: 2;
+        -moz-column-count: 2;
+        column-count: 2;
+    }
+}
+
+html, body {
+    height: 100%;
+    margin: 0;
+  }
+
+#home-content
+{
+    min-height: 100%;
+}
+
+#banner
+{
+    padding-top: 50px;
+    padding-bottom: 50px;
+}
+
+#main-message
+{
+    padding-bottom: 20px;
+}
+
+.footer
+{
+    padding-top: 20px;
+    padding-bottom: 5px;
+}
+  
