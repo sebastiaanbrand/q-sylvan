@@ -43,7 +43,7 @@ bool outcome[] = {0, 0};
 double prob;
 qdd_measure_all(state, nqubits, outcome, &prob);
 ```
-This code can be found in [`examples/bell_state.c`](examples/bell_state.c) and after compiling the code as described above can be run with `./examples/bell_state` from the `build/` directory. A more complete set of available functions can be found [here](docs/c_interface.md).
+This code can be found in [`examples/bell_state.c`](examples/bell_state.c) and after compiling the code as described above can be run with `./examples/bell_state` from the `build/` directory. A more complete set of available functions can be found [here](docs/documentation/c_interface.md).
 
 ### QASM interface
 ```C
@@ -62,7 +62,7 @@ x q[0];
 measure q[0]->c[0];
 measure q[1]->c[1];
 ```
-This code can be found in [`qasm/circuits/bell_state.qasm`](qasm/circuits/bell_state.qasm) and can be run with `./qasm/circuit_to_Sylvan ../qasm/circuits/bell_state.qasm -r=100` from the `build/` directory. A more complete set of supported QASM statements can be found [here](docs/qasm_interface.md).
+This code can be found in [`qasm/circuits/bell_state.qasm`](qasm/circuits/bell_state.qasm) and can be run with `./qasm/circuit_to_Sylvan ../qasm/circuits/bell_state.qasm -r=100` from the `build/` directory. A more complete set of supported QASM statements can be found [here](docs/documentation/qasm_interface.md).
 
 
 ## Documentation
