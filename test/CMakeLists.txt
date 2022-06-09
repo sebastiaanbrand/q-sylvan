@@ -8,6 +8,11 @@ add_executable(test_cxx test_cxx.cpp)
 target_link_libraries(test_cxx qsylvan stdc++)
 add_test(test_cxx test_cxx)
 
+# test_qdd_normalization
+add_executable(test_qdd_normalization test_qdd_normalization.c)
+target_link_libraries(test_qdd_normalization qsylvan)
+add_test(test_qdd_normalization test_qdd_normalization)
+
 # test_qdd_basics
 add_executable(test_qdd_basics test_qdd_basics.c)
 target_link_libraries(test_qdd_basics qsylvan)

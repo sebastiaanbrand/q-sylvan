@@ -25,7 +25,8 @@ AMP C_MIN_ONE;
 
 /* Shorthand functions for making complex numbers */
 complex_t comp_make(fl_t r, fl_t i);
-complex_t comp_make_angle(fl_t theta);
+complex_t comp_make_angle(fl_t theta, fl_t mag);
+complex_t comp_make_angle1(fl_t theta);
 complex_t comp_zero();
 complex_t comp_one();
 complex_t comp_minus_one();
@@ -50,13 +51,16 @@ complex_t comp_add(complex_t a, complex_t b);
 complex_t comp_sub(complex_t a, complex_t b);
 complex_t comp_mul(complex_t a, complex_t b);
 complex_t comp_div(complex_t a, complex_t b);
+complex_t comp_sqr(complex_t a);
 double comp_to_prob(complex_t a);
 
 /* normalization of two amps */
 AMP amp_normalize_low(AMP *low, AMP *high);
 AMP amp_normalize_largest(AMP *low, AMP *high);
+AMP amp_normalize_sum(AMP *low, AMP *high);
 #define amp_normalize_low_ptr &amp_normalize_low
 #define amp_normalize_largest_ptr &amp_normalize_largest
+#define amp_normalize_sum_ptr &amp_normalize_sum
 
 /* Comparing AMPs */
 bool amp_exact_equal(AMP a, AMP b);

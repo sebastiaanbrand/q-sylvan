@@ -32,8 +32,8 @@ GATEID_Rz(fl_t a)
     // initialize gate
     double theta_over_2 = Pi * a;
     AMP u00, u11;
-    u00 = comp_lookup(comp_make_angle(-theta_over_2));
-    u11 = comp_lookup(comp_make_angle(theta_over_2));
+    u00 = comp_lookup(comp_make_angle1(-theta_over_2));
+    u11 = comp_lookup(comp_make_angle1(theta_over_2));
     gates[gate_id][0] = u00;    gates[gate_id][1] = C_ZERO;
     gates[gate_id][2] = C_ZERO; gates[gate_id][3] = u11;
 
@@ -162,14 +162,14 @@ qdd_phase_gates_init(int n)
     for (int k=0; k<=n; k++) {
         // forward rotation
         angle = 2*Pi / (fl_t)(1<<k);
-        cartesian = comp_make_angle(angle);
+        cartesian = comp_make_angle1(angle);
         gate_id = GATEID_Rk(k);
         gates[gate_id][0] = C_ONE;  gates[gate_id][1] = C_ZERO;
         gates[gate_id][2] = C_ZERO; gates[gate_id][3] = comp_lookup(cartesian);
 
         // backward rotation
         angle = -2*Pi / (fl_t)(1<<k);
-        cartesian = comp_make_angle(angle);
+        cartesian = comp_make_angle1(angle);
         gate_id = GATEID_Rk_dag(k);
         gates[gate_id][0] = C_ONE;  gates[gate_id][1] = C_ZERO;
         gates[gate_id][2] = C_ZERO; gates[gate_id][3] = comp_lookup(cartesian);
