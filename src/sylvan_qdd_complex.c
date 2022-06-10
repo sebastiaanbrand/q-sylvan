@@ -576,7 +576,7 @@ amp_normalize_sum(AMP *low, AMP *high)
     mag_a = mag_a / _norm;
     mag_b = mag_b / _norm;
 
-    // normalize phase (subtract theta_a from both) to have low \in R
+    // normalize phase (subtract theta_a from both) to have low \in R+
     theta_b = theta_b - theta_a;
     // theta_a will be set to 0 for a', but needed for norm
 
@@ -589,6 +589,16 @@ amp_normalize_sum(AMP *low, AMP *high)
     *low  = comp_lookup(a);
     *high = comp_lookup(b);
     return comp_lookup(norm);
+}
+
+AMP
+amp_get_low_sum_normalized(AMP high)
+{
+    // Get low from high, assuming |low|^2 + |high|^2 = 1, and low \in R+:
+    // a = sqrt(1 - |b|^2)
+    complex_t b = comp_value(high);
+    fl_t a = flt_sqrt(1.0 - (b.r*b.r) + (b.i*b.i)); 
+    return comp_lookup(comp_make(a, 0));
 }
 
 

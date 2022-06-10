@@ -58,6 +58,7 @@ double comp_to_prob(complex_t a);
 AMP amp_normalize_low(AMP *low, AMP *high);
 AMP amp_normalize_largest(AMP *low, AMP *high);
 AMP amp_normalize_sum(AMP *low, AMP *high);
+AMP amp_get_low_sum_normalized(AMP high);
 #define amp_normalize_low_ptr &amp_normalize_low
 #define amp_normalize_largest_ptr &amp_normalize_largest
 #define amp_normalize_sum_ptr &amp_normalize_sum
