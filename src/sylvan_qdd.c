@@ -200,7 +200,7 @@ qdd_bundle_ptr_amp(PTR p, AMP a)
 }
 
 static void
-qddnode_getchild_ptrs_amps(qddnode_t n, PTR *low, PTR *high, AMP *a, AMP *b)
+qddnode_unpack(qddnode_t n, PTR *low, PTR *high, AMP *a, AMP *b)
 {
     *low  = qddnode_getptrlow(n);
     *high = qddnode_getptrhigh(n);
@@ -228,7 +228,7 @@ qddnode_getchilderen(qddnode_t n, QDD *low, QDD *high)
 {
     PTR l, h;
     AMP a, b;
-    qddnode_getchild_ptrs_amps(n, &l, &h, &a, &b);
+    qddnode_unpack(n, &l, &h, &a, &b);
     *low  = qdd_bundle_ptr_amp(l, a);
     *high = qdd_bundle_ptr_amp(h, b);
 }
