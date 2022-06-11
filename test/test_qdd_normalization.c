@@ -118,6 +118,30 @@ int test_amp_normalize_sum()
     test_assert(comp_approx_equal(comp_value(a_recomputed), comp_value(a)));
     test_assert(a_recomputed == a);
 
+    // a = 1, b = i
+    a = C_ONE;
+    b = comp_lookup(comp_make(0, 1));
+    c = amp_normalize_sum(&a, &b);
+    a_recomputed = amp_get_low_sum_normalized(b);
+
+    test_assert(comp_approx_equal(comp_value(a), comp_make(1.0/flt_sqrt(2.0), 0)));
+    test_assert(comp_approx_equal(comp_value(b), comp_make(0, 1.0/flt_sqrt(2.0))));
+    test_assert(comp_approx_equal(comp_value(c), comp_make(flt_sqrt(2.0), 0)));
+    test_assert(comp_approx_equal(comp_value(a_recomputed), comp_value(a)));
+    test_assert(a_recomputed == a);
+
+    // a = (1 + i)/2, b = (1 - i)/2 (magnitude 1/sqrt(2) phase difference of -i)
+    a = comp_lookup(comp_make(0.5, 0.5));
+    b = comp_lookup(comp_make(0.5, -0.5));
+    c = amp_normalize_sum(&a, &b);
+    a_recomputed = amp_get_low_sum_normalized(b);
+
+    test_assert(comp_approx_equal(comp_value(a), comp_make(1.0/flt_sqrt(2), 0)));
+    test_assert(comp_approx_equal(comp_value(b), comp_make(0, -1.0/flt_sqrt(2))));
+    test_assert(comp_approx_equal(comp_value(c), comp_make(1.0/flt_sqrt(2.0), 1.0/flt_sqrt(2.0))));
+    test_assert(comp_approx_equal(comp_value(a_recomputed), comp_value(a)));
+    test_assert(a_recomputed == a);
+
     if (VERBOSE) printf("sum normalization:     ok\n");
     return 0;
 }

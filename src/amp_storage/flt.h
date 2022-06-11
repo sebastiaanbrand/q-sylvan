@@ -30,6 +30,9 @@ typedef struct complex_s {
     #define flt_acos(a) acosq(a)
     #define flt_sin(a) sinq(a)
     #define flt_asin(a) asinq(a)
+    #define tan(a) tanq(a)
+    #define atan(a) atanq(a)
+    #define atan2(a,b) atan2q(a,b)
     #define flt_sqrt(a) sqrtq(a)
 #else
     #define flt_abs(a) fabs(a)
@@ -38,6 +41,9 @@ typedef struct complex_s {
     #define flt_acos(a) acos(a)
     #define flt_sin(a) sin(a)
     #define flt_asin(a) asin(a)
+    #define flt_tan(a) tan(a)
+    #define flt_atan(a) atan(a)
+    #define flt_atan2(a,b) atan2(a,b)
     #define flt_sqrt(a) sqrt(a)
 #endif
 

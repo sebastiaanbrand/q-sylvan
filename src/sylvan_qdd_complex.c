@@ -63,6 +63,20 @@ comp_make_angle1(fl_t theta)
     return comp_make_angle(theta, 1);
 }
 
+void
+comp_cart_to_polar(fl_t r, fl_t i, fl_t *magnitude, fl_t *angle)
+{
+    *magnitude = flt_sqrt(r*r + i*i);
+    if (r != 0) {
+        *angle = flt_atan2(i, r);
+    }
+    else {
+        if (i > 0) *angle = flt_acos(0.0); //  pi/2
+        else if (i < 0) *angle = -flt_acos(0.0); // -pi/2
+        else *angle = 0; // i = 0
+    }
+}
+
 complex_t
 comp_zero()
 {
@@ -565,10 +579,9 @@ amp_normalize_sum(AMP *low, AMP *high)
     complex_t b = comp_value(*high);
 
     // convert to polar form
-    fl_t mag_a = flt_sqrt(a.r*a.r + a.i*a.i);
-    fl_t mag_b = flt_sqrt(b.r*b.r + b.i*b.i);
-    fl_t theta_a = flt_acos(a.r / mag_a);
-    fl_t theta_b = flt_acos(b.r / mag_b);
+    fl_t mag_a, mag_b, theta_a, theta_b;
+    comp_cart_to_polar(a.r, a.i, &mag_a, &theta_a);
+    comp_cart_to_polar(b.r, b.i, &mag_b, &theta_b);
     // TODO: special cases for a.i = 0 or a.r = 0 ?
 
     // normalize magnitudes
@@ -597,7 +610,7 @@ amp_get_low_sum_normalized(AMP high)
     // Get low from high, assuming |low|^2 + |high|^2 = 1, and low \in R+:
     // a = sqrt(1 - |b|^2)
     complex_t b = comp_value(high);
-    fl_t a = flt_sqrt(1.0 - (b.r*b.r) + (b.i*b.i)); 
+    fl_t a = flt_sqrt(1.0 - (b.r*b.r + b.i*b.i)); 
     return comp_lookup(comp_make(a, 0));
 }
 
