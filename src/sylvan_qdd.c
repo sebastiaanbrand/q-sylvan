@@ -2197,7 +2197,7 @@ qdd_create_all_control_phase(BDDVAR n, bool *x)
     }
     else if (x[n-1] == 0) {
         ccphase = qdd_stack_matrix(ccphase, n-1, GATEID_Z);
-        ccphase = qdd_bundle_ptr_amp(QDD_PTR(ccphase), C_MIN_ONE);
+        ccphase = qdd_bundle_ptr_amp(QDD_PTR(ccphase), amp_neg(QDD_AMP(ccphase)));
     }
 
     // Stack remaining controls
