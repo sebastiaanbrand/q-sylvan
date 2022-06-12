@@ -562,7 +562,7 @@ amp_normalize_largest(AMP *low, AMP *high)
 AMP
 amp_normalize_sum(AMP *low, AMP *high)
 {
-    // Deal with cases where at least one weight is zero
+    // Deal with cases where one weight is 0 (both 0 shouldn't end up here)
     if (*low == C_ZERO) {
         AMP res = *high;
         *high = C_ONE;
@@ -574,6 +574,8 @@ amp_normalize_sum(AMP *low, AMP *high)
         return res;
     }
 
+    // TODO: add caching
+
     // normalize such that |low|^2 + |high|^2 = 1
     complex_t a = comp_value(*low);
     complex_t b = comp_value(*high);
@@ -582,7 +584,6 @@ amp_normalize_sum(AMP *low, AMP *high)
     fl_t mag_a, mag_b, theta_a, theta_b;
     comp_cart_to_polar(a.r, a.i, &mag_a, &theta_a);
     comp_cart_to_polar(b.r, b.i, &mag_b, &theta_b);
-    // TODO: special cases for a.i = 0 or a.r = 0 ?
 
     // normalize magnitudes
     fl_t _norm = flt_sqrt(mag_a*mag_a + mag_b*mag_b);
@@ -596,12 +597,12 @@ amp_normalize_sum(AMP *low, AMP *high)
     // convert to cartesian form
     a = comp_make(mag_a, 0); // theta_a = 0
     b = comp_make_angle(theta_b, mag_b);
-    complex_t norm = comp_make_angle(theta_a, _norm);
+    complex_t c_norm = comp_make_angle(theta_a, _norm);
 
     // return
     *low  = comp_lookup(a);
     *high = comp_lookup(b);
-    return comp_lookup(norm);
+    return comp_lookup(c_norm);;
 }
 
 AMP
@@ -609,6 +610,8 @@ amp_get_low_sum_normalized(AMP high)
 {
     // Get low from high, assuming |low|^2 + |high|^2 = 1, and low \in R+:
     // a = sqrt(1 - |b|^2)
+    if (high == C_ZERO) return C_ONE;
+    if (high == C_ONE || high == C_MIN_ONE) return C_ZERO;
     complex_t b = comp_value(high);
     fl_t a = flt_sqrt(1.0 - (b.r*b.r + b.i*b.i)); 
     return comp_lookup(comp_make(a, 0));
