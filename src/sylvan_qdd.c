@@ -28,6 +28,7 @@
 static int granularity = 1; // operation cache access granularity
 static bool testing_mode = 0; // turns on/off (expensive) sanity checks
 static bool larger_amp_indices = false; // using [amps,ptr] [33,30] bits (default [23,40])
+static int weight_norm_strat = 0;
 
 static AMP (*normalize_weights)(AMP *, AMP *);
 
@@ -199,20 +200,26 @@ qdd_bundle_ptr_amp(PTR p, AMP a)
 }
 
 static void
-qddnode_getchild_ptrs_amps(qddnode_t n, PTR *low, PTR *high, AMP *a, AMP *b)
+qddnode_unpack(qddnode_t n, PTR *low, PTR *high, AMP *a, AMP *b)
 {
     *low  = qddnode_getptrlow(n);
     *high = qddnode_getptrhigh(n);
-
     bool norm_pos = (n->low & qdd_amp_pos_mask) >> 54;
     bool norm_val = (n->low & qdd_amp_val_mask) >> 53;
-    if (norm_pos == 0) { // low amp is C_ZERO or C_ONE, high amp in ctable
-        *a = (norm_val == 0) ? C_ZERO : C_ONE;
+
+    if (weight_norm_strat == NORM_SUM) {
         *b = QDD_AMP(n->high);
+        *a = amp_get_low_sum_normalized(*b);
     }
-    else { // high amp is C_ZERO or C_ONE, low amp in ctable
-        *b = (norm_val == 0) ? C_ZERO : C_ONE;
-        *a = QDD_AMP(n->high);
+    else {
+        if (norm_pos == 0) { // low amp is C_ZERO or C_ONE, high amp in ctable
+            *a = (norm_val == 0) ? C_ZERO : C_ONE;
+            *b = QDD_AMP(n->high);
+        }
+        else { // high amp is C_ZERO or C_ONE, low amp in ctable
+            *b = (norm_val == 0) ? C_ZERO : C_ONE;
+            *a = QDD_AMP(n->high);
+        }
     }
 }
 
@@ -221,7 +228,7 @@ qddnode_getchilderen(qddnode_t n, QDD *low, QDD *high)
 {
     PTR l, h;
     AMP a, b;
-    qddnode_getchild_ptrs_amps(n, &l, &h, &a, &b);
+    qddnode_unpack(n, &l, &h, &a, &b);
     *low  = qdd_bundle_ptr_amp(l, a);
     *high = qdd_bundle_ptr_amp(h, b);
 }
@@ -229,20 +236,42 @@ qddnode_getchilderen(qddnode_t n, QDD *low, QDD *high)
 static void
 qddnode_pack(qddnode_t n, BDDVAR var, PTR low, PTR high, AMP a, AMP b)
 {
-    assert(a == C_ZERO || a == C_ONE || b == C_ZERO || b == C_ONE);
+    // We only want to store 1 complex number per node (which has 2 outgoing
+    // edges). For NORM_LOW and NORM_LARGEST this is relatively easy because in
+    // both those cases there is at least one edge weight equal to 1 or 0.
+    //
+    // For NORM_SUM it is a bit more complicated: both edge weights can be
+    // outside of {0, 1}, but under the constraint that |low|^2 + |high|^2 = 1,
+    // (or both are 0) and that |low| \in R+, we only need to store high, and
+    // can derive low.
 
+    // these will be set depending on the normalization strategy
+    // (retrieval of edge weights is also dependent on normalization strategy)
     AMP amp_high;
-    bool norm_pos = (a == C_ZERO || a == C_ONE) ? 0 : 1;
+    bool norm_pos;
     bool norm_val;
-    if (norm_pos == 0) {
-        norm_val = (a == C_ZERO) ? 0 : 1;
-        amp_high = b;
+    
+    if (weight_norm_strat == NORM_SUM) {
+        assert(!(a == C_ZERO && b == C_ZERO)); // redundant node (caught before)
+        norm_pos = 0;
+        norm_val = 0;
+        amp_high = b; // we can derive a from b
     }
     else {
-        norm_val = (b == C_ZERO) ? 0 : 1;
-        amp_high = a;
+        /// weight_norm_strat == NORM_LOW or NORM_LARGEST
+        assert(a == C_ZERO || a == C_ONE || b == C_ZERO || b == C_ONE);
+        norm_pos = (a == C_ZERO || a == C_ONE) ? 0 : 1;
+        if (norm_pos == 0) {
+            norm_val = (a == C_ZERO) ? 0 : 1;
+            amp_high = b;
+        }
+        else {
+            norm_val = (b == C_ZERO) ? 0 : 1;
+            amp_high = a;
+        }
     }
 
+    // organize the bit structure of low and high
     n->low  = ((uint64_t)var)<<55 | ((uint64_t)norm_pos)<<54 | ((uint64_t)norm_val)<<53 | low;
     if (larger_amp_indices) {
         n->high = amp_high<<30 | high;
@@ -501,6 +530,7 @@ sylvan_init_qdd(size_t ctable_size, double ctable_tolerance, int amps_backend, i
     init_amplitude_table(ctable_size, ctable_tolerance, amps_backend);
     qdd_gates_init();
 
+    weight_norm_strat = norm_strat;
     switch (norm_strat)
     {
     case NORM_LARGEST:
@@ -508,6 +538,9 @@ sylvan_init_qdd(size_t ctable_size, double ctable_tolerance, int amps_backend, i
         break;
     case NORM_LOW:
         normalize_weights = amp_normalize_low_ptr;
+        break;
+    case NORM_SUM:
+        normalize_weights = amp_normalize_sum_ptr;
         break;
     default:
         printf("Edge weight normalization strategy not recognized\n");
@@ -2164,7 +2197,7 @@ qdd_create_all_control_phase(BDDVAR n, bool *x)
     }
     else if (x[n-1] == 0) {
         ccphase = qdd_stack_matrix(ccphase, n-1, GATEID_Z);
-        ccphase = qdd_bundle_ptr_amp(QDD_PTR(ccphase), C_MIN_ONE);
+        ccphase = qdd_bundle_ptr_amp(QDD_PTR(ccphase), amp_neg(QDD_AMP(ccphase)));
     }
 
     // Stack remaining controls

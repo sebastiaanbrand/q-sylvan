@@ -49,12 +49,32 @@ comp_make(fl_t r, fl_t i)
 }
 
 complex_t
-comp_make_angle(fl_t theta)
+comp_make_angle(fl_t theta, fl_t mag)
 {
     complex_t c;
-    c.r = flt_cos(theta);
-    c.i = flt_sin(theta);
+    c.r = flt_cos(theta) * mag;
+    c.i = flt_sin(theta) * mag;
     return c;
+}
+
+complex_t
+comp_make_angle1(fl_t theta)
+{
+    return comp_make_angle(theta, 1);
+}
+
+void
+comp_cart_to_polar(fl_t r, fl_t i, fl_t *magnitude, fl_t *angle)
+{
+    *magnitude = flt_sqrt(r*r + i*i);
+    if (r != 0) {
+        *angle = flt_atan2(i, r);
+    }
+    else {
+        if (i > 0) *angle = flt_acos(0.0); //  pi/2
+        else if (i < 0) *angle = -flt_acos(0.0); // -pi/2
+        else *angle = 0; // i = 0
+    }
 }
 
 complex_t
@@ -444,6 +464,12 @@ comp_div(complex_t a, complex_t b)
     return res;
 }
 
+complex_t
+comp_sqr(complex_t a)
+{
+    return comp_mul(a, a);
+}
+
 double
 comp_to_prob(complex_t a)
 {
@@ -533,6 +559,63 @@ amp_normalize_largest(AMP *low, AMP *high)
     return norm;
 }
 
+AMP
+amp_normalize_sum(AMP *low, AMP *high)
+{
+    // Deal with cases where one weight is 0 (both 0 shouldn't end up here)
+    if (*low == C_ZERO) {
+        AMP res = *high;
+        *high = C_ONE;
+        return res;
+    }
+    else if (*high == C_ZERO){
+        AMP res = *low;
+        *low = C_ONE;
+        return res;
+    }
+
+    // TODO: add caching
+
+    // normalize such that |low|^2 + |high|^2 = 1
+    complex_t a = comp_value(*low);
+    complex_t b = comp_value(*high);
+
+    // convert to polar form
+    fl_t mag_a, mag_b, theta_a, theta_b;
+    comp_cart_to_polar(a.r, a.i, &mag_a, &theta_a);
+    comp_cart_to_polar(b.r, b.i, &mag_b, &theta_b);
+
+    // normalize magnitudes
+    fl_t _norm = flt_sqrt(mag_a*mag_a + mag_b*mag_b);
+    mag_a = mag_a / _norm;
+    mag_b = mag_b / _norm;
+
+    // normalize phase (subtract theta_a from both) to have low \in R+
+    theta_b = theta_b - theta_a;
+    // theta_a will be set to 0 for a', but needed for norm
+
+    // convert to cartesian form
+    a = comp_make(mag_a, 0); // theta_a = 0
+    b = comp_make_angle(theta_b, mag_b);
+    complex_t c_norm = comp_make_angle(theta_a, _norm);
+
+    // return
+    *low  = comp_lookup(a);
+    *high = comp_lookup(b);
+    return comp_lookup(c_norm);;
+}
+
+AMP
+amp_get_low_sum_normalized(AMP high)
+{
+    // Get low from high, assuming |low|^2 + |high|^2 = 1, and low \in R+:
+    // a = sqrt(1 - |b|^2)
+    if (high == C_ZERO) return C_ONE;
+    if (high == C_ONE || high == C_MIN_ONE) return C_ZERO;
+    complex_t b = comp_value(high);
+    fl_t a = flt_sqrt(1.0 - (b.r*b.r + b.i*b.i)); 
+    return comp_lookup(comp_make(a, 0));
+}
 
 
 

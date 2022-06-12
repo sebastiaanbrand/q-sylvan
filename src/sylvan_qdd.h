@@ -115,6 +115,7 @@ static const BDDVAR     QDD_INVALID_VAR = UINT8_MAX;
 typedef enum weight_norm_strategy {
     NORM_LOW,
     NORM_LARGEST,
+    NORM_SUM,
     n_norm_stragegies
 } weight_norm_strategy_t;
 
