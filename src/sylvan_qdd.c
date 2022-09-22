@@ -830,6 +830,7 @@ qdd_gc_amp_table()
     
     // 1. Create new amp table
     init_new_empty_table();
+    qdd_gates_init(); // reinitialize the gate entries
 
     // 2. Fill new table with amps in protected qdd's and update those qdd's
     uint64_t *it = protect_iter(&qdd_protected, 0, qdd_protected.refs_size);
