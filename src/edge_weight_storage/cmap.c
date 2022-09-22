@@ -8,10 +8,10 @@
 #include <time.h>
 #include <math.h>
 
-#include "amp_storage/atomics.h"
-#include "amp_storage/cmap.h"
-#include "amp_storage/fast_hash.h"
-#include "amp_storage/util.h"
+#include "atomics.h"
+#include "cmap.h"
+#include "fast_hash.h"
+#include "util.h"
 
 #undef CACHE_LINE
 #undef CACHE_LINE_SIZE

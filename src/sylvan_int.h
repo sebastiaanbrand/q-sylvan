@@ -103,30 +103,35 @@ static const uint64_t CACHE_MTBDD_GEQ               = (54LL<<40);
 static const uint64_t CACHE_MTBDD_GREATER           = (55LL<<40);
 static const uint64_t CACHE_MTBDD_EVAL_COMPOSE      = (56LL<<40);
 
-// QDD operations
-static const uint64_t CACHE_QDD_PLUS                = (60LL<<40);
-static const uint64_t CACHE_QDD_GATE                = (61LL<<40);
-static const uint64_t CACHE_QDD_CGATE               = (62LL<<40);
-static const uint64_t CACHE_QDD_CGATE_RANGE         = (63LL<<40);
-static const uint64_t CACHE_QDD_MATVEC_MULT         = (64LL<<40);
-static const uint64_t CACHE_QDD_MATMAT_MULT         = (65LL<<40);
-static const uint64_t CACHE_QDD_SUBCIRC             = (66LL<<40);
-static const uint64_t CACHE_QDD_PROB                = (67LL<<40);
-static const uint64_t CACHE_QDD_CLEAN_AMP_TABLE     = (68LL<<40);
-static const uint64_t CACHE_QDD_IS_ORDERED          = (69LL<<40);
-static const uint64_t CACHE_QDD_INC_VARS            = (70LL<<40);
-static const uint64_t CACHE_QDD_REPLACE_TERMINAL    = (71LL<<40);
+// AADD operations
+static const uint64_t CACHE_AADD_PLUS               = (60LL<<40);
+static const uint64_t CACHE_AADD_MATVEC_MULT        = (61LL<<40);
+static const uint64_t CACHE_AADD_MATMAT_MULT        = (62LL<<40);
+static const uint64_t CACHE_AADD_REPLACE_TERMINAL   = (63LL<<40);
+static const uint64_t CACHE_AADD_INC_VARS           = (64LL<<40);
+static const uint64_t CACHE_AADD_CLEAN_WGT_TABLE    = (65LL<<40);
+static const uint64_t CACHE_AADD_IS_ORDERED         = (66LL<<40);
 
-// Complex number operations for QDDs
-static const uint64_t CACHE_AMP_ADD                 = (80LL<<40);
-static const uint64_t CACHE_AMP_SUB                 = (81LL<<40);
-static const uint64_t CACHE_AMP_MUL                 = (82LL<<40);
-static const uint64_t CACHE_AMP_DIV                 = (83LL<<40);
+// Operations on AADD edge weights
+static const uint64_t CACHE_WGT_ADD                 = (70LL<<40);
+static const uint64_t CACHE_WGT_SUB                 = (71LL<<40);
+static const uint64_t CACHE_WGT_MUL                 = (72LL<<40);
+static const uint64_t CACHE_WGT_DIV                 = (73LL<<40);
+
+// QMDD operations
+static const uint64_t CACHE_QMDD_GATE               = (80LL<<40);
+static const uint64_t CACHE_QMDD_CGATE              = (81LL<<40);
+static const uint64_t CACHE_QMDD_CGATE_RANGE        = (82LL<<40);
+static const uint64_t CACHE_QMDD_SUBCIRC            = (83LL<<40);
+static const uint64_t CACHE_QMDD_PROB               = (84LL<<40);
+
+
 
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
 
+#include <sylvan_aadd_int.h>
 #include <sylvan_mtbdd_int.h>
 #include <sylvan_ldd_int.h>
 

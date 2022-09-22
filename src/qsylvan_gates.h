@@ -1,10 +1,12 @@
-#ifndef SYLVAN_QDD_GATES_H
-#define SYLVAN_QDD_GATES_H
+#ifndef SYLVAN_QMDD_GATES_H
+#define SYLVAN_QMDD_GATES_H
 
 #include <stdint.h>
-#include "amp_storage/flt.h"
+#include <edge_weight_storage/flt.h>
 
-// GATE_ID's (gates are initialized in qdd_gates_init)
+typedef uint64_t AMP; // replace with AADD_WGT?
+
+// GATE_ID's (gates are initialized in qmdd_gates_init)
 // currently 24 bits available for this number (see GATE_OPID)
 typedef enum predef_gates {
     GATEID_I,
@@ -33,12 +35,12 @@ static const uint64_t num_dynamic_gates = 1000; // IDs in this rage are re-used
 // gates[k][3] = u11 (bottom right)
 uint64_t gates[n_predef_gates+256+256+1000][4]; // max 2^24 gates atm
 
-void qdd_gates_init();
+void qmdd_gates_init();
 // The next 255 gates are reserved for parameterized phase gates.
 // The reason why these are initialized beforhand instead of on-demand is that 
 // we would like a (for example) pi/16 gate to always have the same unique ID 
 // throughout the entire run of the circuit.
-void qdd_phase_gates_init(int n);
+void qmdd_phase_gates_init(int n);
 static inline uint32_t GATEID_Rk(int k) { return k + n_predef_gates; };
 // Another 255 parameterized phase gates, but this time with negative angles.
 static inline uint32_t GATEID_Rk_dag(int k){ return k + (n_predef_gates+256); };

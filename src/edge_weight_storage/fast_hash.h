@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#include "amp_storage/MurmurHash3.h"
+#include "MurmurHash3.h"
 
 typedef uint32_t hash32_t;
 typedef uint64_t hash64_t;

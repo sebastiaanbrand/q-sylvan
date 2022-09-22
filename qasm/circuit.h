@@ -9,7 +9,7 @@ typedef struct Circuit {
     BDDVAR bits;
     BDDVAR depth;
     BDDVAR* progress;
-    QDD qdd;
+    QMDD qmdd;
 } Circuit;
 
 /**
@@ -19,7 +19,7 @@ typedef struct Circuit {
  * - circuit: a two dimensional array containing gates corresponding to the QASM file
  * - qubits: number of rows/qubits in the circuit
  * - depth: number of columns in the circuit
- * - qdd: A QDD state vector, set in the all-zero state
+ * - qmdd: A QMDD state vector, set in the all-zero state
  * - progress: a list of 'qubits' values that keep track the progress of each qubit, initialised to zero
  * 
  * PARAMETERS:
@@ -61,7 +61,7 @@ void delete_circuit(Circuit* circuit_s);
 bool skip_to_gate(Circuit* circuit_s, BDDVAR i);
 
 /**
- Apply in the qdd by applying a gate on the current progress step of qubit q and increment the progress counter
+ Apply in the qmdd by applying a gate on the current progress step of qubit q and increment the progress counter
 
  * PARAMETERS:
  * - circuit_s: struct containing information about the circuit to be advanced
@@ -74,13 +74,13 @@ bool skip_to_gate(Circuit* circuit_s, BDDVAR i);
 TASK_DECL_2(bool, advance, Circuit*, BDDVAR);
 
 /**
- Helper function to get the qdd-based gateid from a gate_struct
+ Helper function to get the qmdd-based gateid from a gate_struct
 
  * PARAMETERS:
- * - gate: struct from which to get the qdd-based gateid
+ * - gate: struct from which to get the qmdd-based gateid
  * 
  * RETURN:
- * - returns the corresponding qdd-based gateid
+ * - returns the corresponding qmdd-based gateid
  */
 #define get_gateid(gate) (CALL(get_gateid,gate));
 TASK_DECL_1(BDDVAR, get_gateid, Gate);

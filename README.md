@@ -3,7 +3,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![CI testing](https://github.com/sebastiaanbrand/q-sylvan/actions/workflows/cmake.yml/badge.svg)](https://github.com/sebastiaanbrand/q-sylvan/actions/workflows/cmake.yml)
 
-Q-Sylvan extends the parallel decision diagram library [Sylvan](https://github.com/trolando/sylvan) (v1.4.0) with QMDDs, as well as functionality to simulate quantum circuits. This is currently still a beta version.
+Q-Sylvan extends the parallel decision diagram library [Sylvan](https://github.com/trolando/sylvan) (v1.4.0) with QMDDs (i.e. multiplicative AADDs), as well as functionality to simulate quantum circuits. This is currently still a beta version.
 
 
 ## Installation
@@ -33,15 +33,15 @@ The following code snippets are a toy example for creating the [Bell state](http
 ```C
 // Create |Phi^+>
 int nqubits = 2;
-QDD state = qdd_create_all_zero_state(nqubits);
-state = qdd_gate(state, GATEID_H, 0);     // H on q0
-state = qdd_cgate(state, GATEID_X, 0, 1); // CNOT on c=q0, t=q1
-state = qdd_gate(state, GATEID_X, 0);     // X on q0
+QMDD state = qmdd_create_all_zero_state(nqubits);
+state = qmdd_gate(state, GATEID_H, 0);     // H on q0
+state = qmdd_cgate(state, GATEID_X, 0, 1); // CNOT on c=q0, t=q1
+state = qmdd_gate(state, GATEID_X, 0);     // X on q0
 
 // Measure state
 bool outcome[] = {0, 0};
 double prob;
-qdd_measure_all(state, nqubits, outcome, &prob);
+qmdd_measure_all(state, nqubits, outcome, &prob);
 ```
 This code can be found in [`examples/bell_state.c`](examples/bell_state.c) and after compiling the code as described above can be run with `./examples/bell_state` from the `build/` directory. A more complete set of available functions can be found [here](docs/documentation/c_interface.md).
 

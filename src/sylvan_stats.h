@@ -32,8 +32,8 @@ typedef enum {
     BDD_NODES_REUSED,
     LDD_NODES_CREATED,
     LDD_NODES_REUSED,
-    QDD_NODES_CREATED,
-    QDD_NODES_REUSED,
+    AADD_NODES_CREATED,
+    AADD_NODES_REUSED,
 
     /* BDD operations */
     OPCOUNTER(BDD_ITE),
@@ -89,19 +89,21 @@ typedef enum {
     OPCOUNTER(LDD_RELPROD_UNION),
     OPCOUNTER(LDD_PROJECT_MINUS),
 
-    /* QDD operations */
-    OPCOUNTER(QDD_PLUS),
-    OPCOUNTER(QDD_MULT),
-    OPCOUNTER(QDD_GATE),
-    OPCOUNTER(QDD_CGATE),
-    OPCOUNTER(QDD_PROB),
+    /* AADD operations */
+    OPCOUNTER(AADD_PLUS),
+    OPCOUNTER(AADD_MULT),
+
+    /* QMDD operations */
+    OPCOUNTER(QMDD_GATE),
+    OPCOUNTER(QMDD_CGATE),
+    OPCOUNTER(QMDD_PROB),
 
     /* AMP arithmetic operations */
-    OPCOUNTER(AMP_ADD),
-    OPCOUNTER(AMP_SUB),
-    OPCOUNTER(AMP_MUL),
-    OPCOUNTER(AMP_DIV),
-    OPCOUNTER(AMP_MUL_DOWN), // seperate counter from regular mul
+    OPCOUNTER(WGT_ADD),
+    OPCOUNTER(WGT_SUB),
+    OPCOUNTER(WGT_MUL),
+    OPCOUNTER(WGT_DIV),
+    OPCOUNTER(WGT_MUL_DOWN), // seperate counter from regular mul
 
     /* Other counters */
     SYLVAN_GC_COUNT,

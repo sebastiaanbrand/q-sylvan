@@ -60,6 +60,10 @@ namespace sylvan {
 #include <sylvan_bdd.h>
 #include <sylvan_ldd.h>
 
+#ifndef __cplusplus
+#include <sylvan_aadd.h> // (need this here but issue w/ including in C++)
+#endif
+
 #ifdef __cplusplus
 }
 #endif

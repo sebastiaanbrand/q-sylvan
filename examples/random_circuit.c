@@ -59,8 +59,8 @@ random_univ(uint32_t *gateid)
 }
 
 
-QDD
-qdd_run_random_circuit(BDDVAR nqubits, uint64_t ngates, double cgate_ratio, uint64_t rseed)
+QMDD
+qmdd_run_random_circuit(BDDVAR nqubits, uint64_t ngates, double cgate_ratio, uint64_t rseed)
 {
     srand(rseed);
 
@@ -70,7 +70,7 @@ qdd_run_random_circuit(BDDVAR nqubits, uint64_t ngates, double cgate_ratio, uint
     double r;
     uint32_t U;
     bool cgate;
-    QDD qdd = qdd_create_all_zero_state(nqubits);
+    QMDD qmdd = qmdd_create_all_zero_state(nqubits);
 
     for (uint64_t g = 0; g < ngates; g++) {
         // choose 1 or 2 qubit gate
@@ -79,21 +79,21 @@ qdd_run_random_circuit(BDDVAR nqubits, uint64_t ngates, double cgate_ratio, uint
         if (cgate) {
             // choose target and control
             random_control_target(nqubits, &c, &t);
-            qdd = qdd_cgate(qdd, GATEID_Z, c, t);
+            qmdd = qmdd_cgate(qmdd, GATEID_Z, c, t);
         }
         else {
             // choose target qubit
             random_qubit(nqubits, &t);
             random_univ(&U); // TODO: parameterize gate-set
-            qdd = qdd_gate(qdd, U, t);
+            qmdd = qmdd_gate(qmdd, U, t);
         }
     }
 
-    return qdd;
+    return qmdd;
 }
 
-QDD
-qdd_run_random_single_qubit_gates(BDDVAR nqubits, uint64_t ngates, uint64_t rseed)
+QMDD
+qmdd_run_random_single_qubit_gates(BDDVAR nqubits, uint64_t ngates, uint64_t rseed)
 {
-    return qdd_run_random_circuit(nqubits, ngates, 0.0, rseed);
+    return qmdd_run_random_circuit(nqubits, ngates, 0.0, rseed);
 }

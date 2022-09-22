@@ -4,13 +4,13 @@
  * Prints the final results of the measured qubits (flagged by <measurements>).
  * 
  * PARAMETERS:
- * - qdd: a QDD representing the statevector to be measured on
+ * - qmdd: a QMDD representing the statevector to be measured on
  * - measurements: an array containing booleans, where the to be measured qubits are flagged
  * - qubits: the number of qubits
  * - runs: the number of times the flagged qubits in the statevector should be measured
  * - show: toggle to print the measurement results
  */
-void final_measure(QDD qdd, int* measurements, C_struct c_s, bool* results);
+void final_measure(QMDD qmdd, int* measurements, C_struct c_s, bool* results);
 
 /**
  * Returns the Sylvan GATEID that corresponds to <gate>
@@ -25,35 +25,35 @@ void final_measure(QDD qdd, int* measurements, C_struct c_s, bool* results);
 TASK_DECL_1(BDDVAR, get_gate_id, Gate);
 
 /**
- * Applies controlled <gate> to <qdd> on the qubit with index <i>.
+ * Applies controlled <gate> to <qmdd> on the qubit with index <i>.
  * 
  * PARAMETERS:
- * - qdd: the statevector on which to apply the controlled <gate>
+ * - qmdd: the statevector on which to apply the controlled <gate>
  * - gate: the gate to be applied
- * - i: the index of the qubit in <qdd> on which to apply the controlled <gate>
+ * - i: the index of the qubit in <qmdd> on which to apply the controlled <gate>
  * 
  * RETURN:
- * - The statevector qdd where controlled <gate> has been applied on the qubit with index <i>
+ * - The statevector qmdd where controlled <gate> has been applied on the qubit with index <i>
  */
-#define apply_controlled_gate(qdd,gate,i,n) (CALL(apply_controlled_gate,qdd,gate,i,n));
-TASK_DECL_4(QDD, apply_controlled_gate, QDD, Gate, BDDVAR, BDDVAR);
+#define apply_controlled_gate(qmdd,gate,i,n) (CALL(apply_controlled_gate,qmdd,gate,i,n));
+TASK_DECL_4(QMDD, apply_controlled_gate, QMDD, Gate, BDDVAR, BDDVAR);
 
 /**
- * Applies <gate> to <qdd> on the qubit with index <i>.
+ * Applies <gate> to <qmdd> on the qubit with index <i>.
  * 
  * PARAMETERS:
- * - qdd: the statevector on which to apply <gate>
+ * - qmdd: the statevector on which to apply <gate>
  * - gate: the gate to be applied
- * - i: the index of the qubit in <qdd> on which to apply <gate>
+ * - i: the index of the qubit in <qmdd> on which to apply <gate>
  * 
  * RETURN:
- * - The statevector qdd where <gate> has been applied on the qubit with index <i>
+ * - The statevector qmdd where <gate> has been applied on the qubit with index <i>
  */
-#define apply_gate(qdd,gate,i,n) (CALL(apply_gate,qdd,gate,i,n));
-TASK_DECL_4(QDD, apply_gate, QDD, Gate, BDDVAR, BDDVAR);
+#define apply_gate(qmdd,gate,i,n) (CALL(apply_gate,qmdd,gate,i,n));
+TASK_DECL_4(QMDD, apply_gate, QMDD, Gate, BDDVAR, BDDVAR);
 
 /**
- * Generates a gate QDD with <n> qubits that represents <gate> applied to qubit <k>
+ * Generates a gate QMDD with <n> qubits that represents <gate> applied to qubit <k>
  * 
  * PARAMETERS:
  * - gate: the gate to be applied
@@ -61,13 +61,13 @@ TASK_DECL_4(QDD, apply_gate, QDD, Gate, BDDVAR, BDDVAR);
  * - n: the total number of qubits
  * 
  * RETURN:
- * - The gate QDD with <n> qubits that represents <gate> applied to qubit <k>
+ * - The gate QMDD with <n> qubits that represents <gate> applied to qubit <k>
  */
 #define handle_control_matrix(gate,k,n) (CALL(handle_control_matrix,gate,k,n));
-TASK_DECL_3(QDD, handle_control_matrix, Gate, BDDVAR, BDDVAR);
+TASK_DECL_3(QMDD, handle_control_matrix, Gate, BDDVAR, BDDVAR);
 
 /**
- * Generates a gate QDD with <n> qubits that represents a swap operation between <qubit1> and <qubit2>
+ * Generates a gate QMDD with <n> qubits that represents a swap operation between <qubit1> and <qubit2>
  * 
  * PARAMETERS:
  * - qubit1: the index of the first qubit in the swap
@@ -75,10 +75,10 @@ TASK_DECL_3(QDD, handle_control_matrix, Gate, BDDVAR, BDDVAR);
  * - n: the total number of qubits
  * 
  * RETURN:
- * - The gate QDD with <n> qubits that represents a swap operation between <qubit1> and <qubit2>
+ * - The gate QMDD with <n> qubits that represents a swap operation between <qubit1> and <qubit2>
  */
 #define circuit_swap_matrix(qubit1,qubit2,n) (CALL(circuit_swap_matrix,qubit1,qubit2,n));
-TASK_DECL_3(QDD, circuit_swap_matrix, BDDVAR, BDDVAR, BDDVAR);
+TASK_DECL_3(QMDD, circuit_swap_matrix, BDDVAR, BDDVAR, BDDVAR);
 
 /**
  * Checks if the measuring gate at position (<qubit>,<depth>) in <c_s> is the last gate on that qubit
@@ -135,15 +135,15 @@ void skip(C_struct c_s, BDDVAR* progress, BDDVAR i, bool skip_barrier);
  * Measures qubit <i>.
  * 
  * PARAMETERS:
- * - qdd: the qdd to be measured on
+ * - qmdd: the qmdd to be measured on
  * - i: the qubit to measure
- * - n: the number of qubits in <qdd>
+ * - n: the number of qubits in <qmdd>
  * - result: the result of the measurement
  * 
  * RETURN:
- * - the resulting qdd after measuring
+ * - the resulting qmdd after measuring
  **/
-QDD measure(QDD qdd, BDDVAR i, BDDVAR n, bool* result);
+QMDD measure(QMDD qmdd, BDDVAR i, BDDVAR n, bool* result);
 
 /**
  * Checks for the greedy method if the controls of a gate are free and if it satisfies the classical
@@ -166,7 +166,7 @@ bool check_gate(C_struct c_s, Gate gate, BDDVAR* progress, BDDVAR i, bool* resul
  * 
  * PARAMETERS:
  * - c_s: the circuit struct
- * - prev_qdd: the current qdd
+ * - prev_qmdd: the current qmdd
  * - column: the current column
  * - measurements: the final measurement flags
  * - results: the classical register
@@ -174,16 +174,16 @@ bool check_gate(C_struct c_s, Gate gate, BDDVAR* progress, BDDVAR i, bool* resul
  * - n_gates: the current number of nodes already applied
  * 
  * RETURN:
- * - the resulting qdd after applying all gates between column and the next barrier
+ * - the resulting qmdd after applying all gates between column and the next barrier
  **/
-QDD greedy(C_struct c_s, QDD prev_qdd, BDDVAR* column, int* measurements, bool* results, bool experiments, BDDVAR* n_gates);
+QMDD greedy(C_struct c_s, QMDD prev_qmdd, BDDVAR* column, int* measurements, bool* results, bool experiments, BDDVAR* n_gates);
 
 /**
  * A subfunction which runs the matmat method from <column> to the next barrier.
  * 
  * PARAMETERS:
  * - c_s: the circuit struct
- * - vec: the current qdd
+ * - vec: the current qmdd
  * - column: the current column
  * - measurements: the final measurement flags
  * - results: the classical register
@@ -192,53 +192,53 @@ QDD greedy(C_struct c_s, QDD prev_qdd, BDDVAR* column, int* measurements, bool* 
  * - n_gates: the current number of nodes already applied
  * 
  * RETURN:
- * - the resulting qdd after applying all gates between column and the next barrier
+ * - the resulting qmdd after applying all gates between column and the next barrier
  **/
-QDD matmat(C_struct c_s, QDD vec, BDDVAR* column, int* measurements, bool* results, int limit, bool experiments, BDDVAR* n_gates);
+QMDD matmat(C_struct c_s, QMDD vec, BDDVAR* column, int* measurements, bool* results, int limit, bool experiments, BDDVAR* n_gates);
 
 /**
  * Runs the circuit_struct <c_s> with a greedy method and stores measurements in <bit_res>. 
  * The run is done using the matrx-vector method. Each gate is directly multiplied with 
- * the statevector QDD.
+ * the statevector QMDD.
  * 
  * PARAMETERS:
  * - c_s: the circuit_struct to be run
  * - bit_res: the bit register to store measurements in
- * - nodes: the maximum number of nodes in the QDD at any point in the algorithm
+ * - nodes: the maximum number of nodes in the QMDD at any point in the algorithm
  * 
  * RETURN:
- * - The resulting statevector QDD after running the circuit
+ * - The resulting statevector QMDD after running the circuit
  */
-QDD greedy_run_circuit(C_struct c_s, int* measurements, bool* results, bool experiments);
+QMDD greedy_run_circuit(C_struct c_s, int* measurements, bool* results, bool experiments);
 
 /**
  * Runs the circuit_struct <c_s> for <runs>  and stores measurements in <bit_res>.
- * The run is done using the matrix-matrix method. Gate QDDs are multiplied with eachother
- * until the end of the circuit is reached, after which the resulting QDD is multiplied with
- * the statevector QDD. When number of nodes in the gate QDD exceed <limit>, the QDD is 
- * multiplied with the statevector QDD and the gate QDD is reset. This is to prevent exploding QDDs.
+ * The run is done using the matrix-matrix method. Gate QMDDs are multiplied with eachother
+ * until the end of the circuit is reached, after which the resulting QMDD is multiplied with
+ * the statevector QMDD. When number of nodes in the gate QMDD exceed <limit>, the QMDD is 
+ * multiplied with the statevector QMDD and the gate QMDD is reset. This is to prevent exploding QMDDs.
  * 
  * PARAMETERS:
  * - c_s: the circuit_struct to be run
  * - bit_res: the bit register to store measurements in
- * - limit: the maximum number of nodes in the gate QDD
- * - nodes: the maximum number of nodes in the QDD at any point in the algorithm
+ * - limit: the maximum number of nodes in the gate QMDD
+ * - nodes: the maximum number of nodes in the QMDD at any point in the algorithm
  * 
  * RETURN:
- * - The resulting statevector QDD after running the circuit
+ * - The resulting statevector QMDD after running the circuit
  */
-QDD run_c_struct_matrix(C_struct c_s, int* measurements, bool* bit_res, int limit, bool experiments);
+QMDD run_c_struct_matrix(C_struct c_s, int* measurements, bool* bit_res, int limit, bool experiments);
 
 /**
  * Runs the circuit_struct <c_s> and stores measurements in <bit_res>. The run is done using the
- * matrix-vector method. Each gate is directly multiplied with the statevector QDD.
+ * matrix-vector method. Each gate is directly multiplied with the statevector QMDD.
  * 
  * PARAMETERS:
  * - c_s: the circuit_struct to be run
  * - bit_res: the bit register to store measurements in
- * - nodes: the maximum number of nodes in the QDD at any point in the algorithm
+ * - nodes: the maximum number of nodes in the QMDD at any point in the algorithm
  * 
  * RETURN:
- * - The resulting statevector QDD after running the circuit
+ * - The resulting statevector QMDD after running the circuit
  */
-QDD run_c_struct(C_struct c_s, int* measurements, bool* bit_res, bool experiments);
+QMDD run_c_struct(C_struct c_s, int* measurements, bool* bit_res, bool experiments);

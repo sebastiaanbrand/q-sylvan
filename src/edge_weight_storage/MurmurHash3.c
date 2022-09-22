@@ -7,7 +7,7 @@
 // compile and run any of them on any platform, but your performance with the
 // non-native version will be less than optimal.
 
-#include "amp_storage/MurmurHash3.h"
+#include "MurmurHash3.h"
 
 #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
 

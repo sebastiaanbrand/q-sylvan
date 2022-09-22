@@ -15,24 +15,24 @@
  * - Carries happen from q(k) -> q(k-1), i.e. towards the MSB, so if we write
  *   the state as |q0, q1, q2> carries go to the left (as normal).
  * 
- * @param qdd A QDD encoding a state |phi(x)> = QFT|x> with |x> a z-basis state.
+ * @param qmdd A QMDD encoding a state |phi(x)> = QFT|x> with |x> a z-basis state.
  * @param a A big-endian (MSB first) encoding of some integer.
  * 
- * @return A QDD encoding |phi(x + a)>, with (x+a)
+ * @return A QMDD encoding |phi(x + a)>, with (x+a)
  */
-QDD qdd_phi_add(QDD qdd, BDDVAR first, BDDVAR last, BDDVAR c1, BDDVAR c2, bool* a); // Fig. 3
-QDD qdd_phi_add_inv(QDD qdd, BDDVAR first, BDDVAR last,  BDDVAR c1, BDDVAR c2, bool* a);
+QMDD qmdd_phi_add(QMDD qmdd, BDDVAR first, BDDVAR last, BDDVAR c1, BDDVAR c2, bool* a); // Fig. 3
+QMDD qmdd_phi_add_inv(QMDD qmdd, BDDVAR first, BDDVAR last,  BDDVAR c1, BDDVAR c2, bool* a);
 
 /* Beauregard (2002) Fig. 5 */
-QDD qdd_phi_add_mod(QDD qdd, BDDVAR c1, BDDVAR c2, uint64_t a, uint64_t N);
-QDD qdd_phi_add_mod_inv(QDD qdd, BDDVAR c1, BDDVAR c2, uint64_t a, uint64_t N);
+QMDD qmdd_phi_add_mod(QMDD qmdd, BDDVAR c1, BDDVAR c2, uint64_t a, uint64_t N);
+QMDD qmdd_phi_add_mod_inv(QMDD qmdd, BDDVAR c1, BDDVAR c2, uint64_t a, uint64_t N);
 
 /* Beauregard (2002) Fig. 6 */
-QDD qdd_cmult(QDD qdd, uint64_t a, uint64_t N);
-QDD qdd_cmult_inv(QDD qdd, uint64_t a, uint64_t N);
+QMDD qmdd_cmult(QMDD qmdd, uint64_t a, uint64_t N);
+QMDD qmdd_cmult_inv(QMDD qmdd, uint64_t a, uint64_t N);
 
 /* Beauregard (2002) Fig. 7 */
-QDD qdd_shor_ua(QDD qdd, uint64_t a, uint64_t N);
+QMDD qmdd_shor_ua(QMDD qmdd, uint64_t a, uint64_t N);
 
 /* Beauregard (2002) Fig. 8 */
 uint64_t shor_period_finding(uint64_t a, uint64_t N);
@@ -47,4 +47,4 @@ void shor_set_globals(uint64_t a, uint64_t N);
  */
 uint64_t run_shor(uint64_t N, uint64_t a, bool verbose);
 
-void qdd_shor_set_testing_mode(bool on);
+void qmdd_shor_set_testing_mode(bool on);

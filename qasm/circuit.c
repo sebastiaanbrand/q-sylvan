@@ -15,8 +15,8 @@ Circuit* create_circuit(char* filename)
     circuit_s->qubits = c_s.qubits;
     circuit_s->bits = c_s.bits;
     circuit_s->depth = c_s.depth;
-    // Create an initial all-zero qdd
-    circuit_s->qdd = qdd_create_all_zero_state(circuit_s->qubits);
+    // Create an initial all-zero qmdd
+    circuit_s->qmdd = qmdd_create_all_zero_state(circuit_s->qubits);
     // Copy the circuit
     circuit_s->circuit = malloc(circuit_s->qubits*sizeof(circuit_s->circuit));
     for (BDDVAR i = 0; i < circuit_s->qubits; ++i) {
@@ -131,13 +131,13 @@ TASK_IMPL_2(bool, advance, Circuit*, circuit_s, BDDVAR, q)
     }
     // Handle single target and controlled gates
     if (gate.controlSize == 0)
-        circuit_s->qdd = qdd_gate(circuit_s->qdd, gate_id, q);
+        circuit_s->qmdd = qmdd_gate(circuit_s->qmdd, gate_id, q);
     else if (gate.controlSize == 1)
-        circuit_s->qdd = qdd_cgate(circuit_s->qdd, gate_id, gate.control[0], q);
+        circuit_s->qmdd = qmdd_cgate(circuit_s->qmdd, gate_id, gate.control[0], q);
     else if (gate.controlSize == 2)
-        circuit_s->qdd = qdd_cgate2(circuit_s->qdd, gate_id, gate.control[0], gate.control[1], q);
+        circuit_s->qmdd = qmdd_cgate2(circuit_s->qmdd, gate_id, gate.control[0], gate.control[1], q);
     else if (gate.controlSize == 3)
-        circuit_s->qdd = qdd_cgate3(circuit_s->qdd, gate_id, gate.control[0], gate.control[1], gate.control[2], q);
+        circuit_s->qmdd = qmdd_cgate3(circuit_s->qmdd, gate_id, gate.control[0], gate.control[1], gate.control[2], q);
     // Advance to the successive gate on each wire that was affected above
     for (BDDVAR i = 0; i < gate.controlSize; i++)
         skip_to_gate(circuit_s, gate.control[i]);

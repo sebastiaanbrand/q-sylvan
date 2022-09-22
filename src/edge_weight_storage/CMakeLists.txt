@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 2.7)
 
 include_directories(..)
 
-add_library(amp_storage SHARED
-        amp_storage_interface.c amp_storage_interface.h
+add_library(edge_weight_storage SHARED
+        wgt_storage_interface.c wgt_storage_interface.h
         tree_map.cpp tree_map.h
         cmap.c cmap.h
         rmap.c rmap.h
@@ -12,6 +12,6 @@ add_library(amp_storage SHARED
         MurmurHash3.h MurmurHash3.c
         util.h)
 
-target_link_libraries(amp_storage "-lquadmath")
+target_link_libraries(edge_weight_storage "-lquadmath")
 
 add_subdirectory(test)

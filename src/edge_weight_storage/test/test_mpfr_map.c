@@ -1,7 +1,7 @@
 #include <stdio.h>
 
 #include "test_assert.h"
-#include "../amp_storage_interface.h"
+#include "../wgt_storage_interface.h"
 #include "../mpfr_tree_map.h"
 
 bool VERBOSE = true;
