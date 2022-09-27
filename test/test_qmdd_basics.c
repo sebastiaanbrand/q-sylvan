@@ -322,7 +322,7 @@ int test_vector_addition()
     assert(q001 == q100);
     test_assert(!qmdd_is_unitvector(q001, 4));
 
-    if(VERBOSE) printf("qmdd vector addition:      ok\n");
+    if(VERBOSE) printf("qmdd vector addition:     ok\n");
     return 0;
 }
 

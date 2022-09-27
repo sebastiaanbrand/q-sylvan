@@ -430,6 +430,8 @@ wgt_div(AADD_WGT a, AADD_WGT b)
     weight_value(b, wb);
     weight_div(wa, wb);
     res = weight_lookup_ptr(wa);
+    free(wa);
+    free(wb);
 
     // insert in cache
     if (CACHE_WGT_OPS) {
