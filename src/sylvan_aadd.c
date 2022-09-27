@@ -213,6 +213,26 @@ VOID_TASK_0(aadd_refs_init)
     sylvan_gc_add_mark(TASK(aadd_refs_mark));
 }
 
+VOID_TASK_0(aadd_refs_cleanup_task)
+{
+    free(aadd_refs_key->pbegin);
+    free(aadd_refs_key->rbegin);
+    free(aadd_refs_key->sbegin);
+    free(aadd_refs_key);
+}
+
+/**
+ * Called by aadd_quit. Cleans up the (thread local) malloc'ed aadd_refs_key.
+ * 
+ * NOTE: this cleanup isn't done in sylvan_mtbdd.c, but not doing this causes
+ * memory leaks when calling initializing and quiting Sylvan multiple times
+ * during the same program run.
+ */
+VOID_TASK_0(aadd_refs_cleanup)
+{
+    TOGETHER(aadd_refs_cleanup_task);
+}
+
 void
 aadd_refs_ptrs_up(aadd_refs_internal_t aadd_refs_key)
 {
@@ -418,6 +438,8 @@ aadd_quit()
         protect_free(&aadd_protected);
         aadd_protected_created = 0;
     }
+    LACE_ME;
+    CALL(aadd_refs_cleanup);
     aadd_initialized = 0;
     sylvan_edge_weights_free();
 }
