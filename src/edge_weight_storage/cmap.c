@@ -56,9 +56,9 @@ print_bucket_floats(bucket_t *b)
 static void __attribute__((unused))
 print_bucket_bits(bucket_t* b)
 {
-    printf("%016lx", b->d[0]);
+    printf("%016" PRIu64, b->d[0]);
     for (unsigned int k = 1; k < entry_size; k++) {
-        printf(" %016lx", b->d[k]);
+        printf(" %016" PRIu64, b->d[k]);
     }
     printf("\n");
 }
@@ -174,14 +174,14 @@ cmap_count_entries(const void *dbs)
 }
 
 void
-print_bitvalues(const void *dbs, const ref_t ref)
+print_bitvalues(const void *dbs, const uint64_t ref)
 {
     cmap_t *cmap = (cmap_t *) dbs;
     complex_t c = cmap_get(cmap, ref);
     bucket_t *b = (bucket_t *) &c;
-    printf("%016lx", b->d[0]);
+    printf("%016" PRIu64, b->d[0]);
     for (unsigned int k = 1; k < entry_size; k++) {
-        printf(" %016lx", b->d[k]);
+        printf(" %016" PRIu64, b->d[k]);
     }
 }
 

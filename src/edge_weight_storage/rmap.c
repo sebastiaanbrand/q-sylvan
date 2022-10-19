@@ -1,6 +1,7 @@
 #include "rmap.h"
 
 #include <assert.h>
+#include <inttypes.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -190,7 +191,7 @@ rmap_print_bitvalues(const void *dbs, const ref_t ref)
     rmap_t * rmap = (rmap_t *) dbs;
     bucket_t *b = (bucket_t *) rmap_get(rmap, ref);
     for (unsigned int k = 1; k < entry_size; k++) {
-        printf(" %016lx", b->d[k]);
+        printf(" %016" PRIu64, b->d[k]);
     }
 }
 
