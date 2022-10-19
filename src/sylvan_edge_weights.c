@@ -108,6 +108,7 @@ static const uint64_t table_entries_local_buffer = 1000; // every 1000 entries
 void
 init_edge_weight_storage_gc()
 {
+    LOCALIZE_THREAD_LOCAL(table_entries_local, size_t);
     // NOTE: the sum of the local counters sometimes exceeds the actual total
     // number of entries (when just counting the global value with atomic adds
     // after every insert). This might be because 'ctable_entries_local = 0' 
@@ -116,6 +117,7 @@ init_edge_weight_storage_gc()
     // TODO: figure out how to get lace to handle this counting better
     table_entries_est = 0;
     table_entries_local = 0;
+    (void) table_entries_local;
 }
 
 uint64_t
@@ -126,6 +128,7 @@ wgt_table_entries_estimate()
 
 void wgt_table_gc_inc_entries_estimate()
 {
+    LOCALIZE_THREAD_LOCAL(table_entries_local, size_t);
     table_entries_local += 1;
     if (table_entries_local >= table_entries_local_buffer) {
         __sync_fetch_and_add(&table_entries_est, table_entries_local);
