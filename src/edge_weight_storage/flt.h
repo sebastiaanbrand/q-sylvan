@@ -7,12 +7,12 @@
  */ 
 
 #include <math.h>
-#include <quadmath.h>
 
 // What size float to use (double or __float128 (quad) )
-#define flt_quad 0
+#define flt_quad 0 // (setting to 1 might not work on MACOS)
 
 #if flt_quad
+    #include <quadmath.h>
     typedef __float128 fl_t;
 #else
     typedef double fl_t;
