@@ -14,19 +14,19 @@ typedef enum wgt_storage_backend {
 } wgt_storage_backend_t;
 
 // create(uint64_t size, double tolerance)
-void * (*wgt_store_create)();
+void * (*wgt_store_create)(uint64_t size, double tolerance);
 
 // free
 void (*wgt_store_free)();
 
 // find_or_put(void *dbs, complex_t *v, int *ret)
-int (*wgt_store_find_or_put)();
+int (*wgt_store_find_or_put)(const void *dbs, const complex_t *v, uint64_t *ret);
 
 // get(void *dbs, int ref)
-complex_t (*wgt_store_get)();
+complex_t (*wgt_store_get)(const void *dbs, const uint64_t ref);
 
 // num entries(void *dbs)
-unsigned long (*wgt_store_num_entries)();
+uint64_t (*wgt_store_num_entries)(const void *dbs);
 
 // get tolerance
 double (*wgt_store_get_tol)();

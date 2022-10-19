@@ -1,6 +1,7 @@
 #include "cmap.h"
 
 #include <assert.h>
+#include <inttypes.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -84,7 +85,7 @@ complex_close(complex_t *in_table, const complex_t* to_insert)
 }
 
 int
-cmap_find_or_put(const void *dbs, const complex_t *v, ref_t *ret)
+cmap_find_or_put(const void *dbs, const complex_t *v, uint64_t *ret)
 {
     cmap_t *cmap = (cmap_t *) dbs;
     bucket_t *val  = (bucket_t *) v;
@@ -115,8 +116,8 @@ cmap_find_or_put(const void *dbs, const complex_t *v, ref_t *ret)
 
     // Insert/lookup `v`
     for (unsigned int c = 0; c < cmap->threshold; c++) {
-        size_t              ref = hash & cmap->mask;
-        size_t              line_end = (ref & CL_MASK) + CACHE_LINE_SIZE;
+        uint64_t            ref = hash & cmap->mask;
+        uint64_t            line_end = (ref & CL_MASK) + CACHE_LINE_SIZE;
         for (size_t i = 0; i < CACHE_LINE_SIZE; i++) {
             
             // 1. Get bucket
@@ -155,7 +156,7 @@ cmap_find_or_put(const void *dbs, const complex_t *v, ref_t *ret)
 }
 
 complex_t
-cmap_get(const void *dbs, const ref_t ref)
+cmap_get(const void *dbs, const uint64_t ref)
 {
     cmap_t *cmap = (cmap_t *) dbs;
     return cmap->table[ref].c;

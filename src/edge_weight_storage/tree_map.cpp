@@ -39,8 +39,8 @@ typedef struct tree_map_s tree_map_t;
 struct tree_map_s {
     map_flt_to_int_t* flt_to_int;
     map_int_to_flt_t* int_to_flt;
-    unsigned long max_size;
-    unsigned long entries;
+    uint64_t max_size;
+    uint64_t entries;
 };
 
 static unsigned long
@@ -62,7 +62,7 @@ tree_map_unpack_indices(const tree_map_t * rmap, unsigned long bundle, unsigned 
 
 // tree_map_create()
 void *
-tree_map_create(unsigned long ms, double tol)
+tree_map_create(uint64_t ms, double tol)
 {
     tree_map_t *map = (tree_map_t *) calloc(1, sizeof(tree_map_t));
     TOLERANCE = tol;
@@ -85,7 +85,7 @@ tree_map_free(void *m)
 
 // tree_map_find_or_put()
 int
-tree_map_find_or_put(void *dbs, fl_t val, unsigned long *ret)
+tree_map_find_or_put(const void *dbs, const fl_t val, uint64_t *ret)
 {
     tree_map_t * map = (tree_map_t *) dbs;
     map_flt_to_int_t *f2i = map->flt_to_int;
@@ -120,9 +120,9 @@ tree_map_find_or_put(void *dbs, fl_t val, unsigned long *ret)
 }
 
 int
-tree_map_find_or_put2(void *dbs, complex_t *v, unsigned long *ret)
+tree_map_find_or_put2(const void *dbs, const complex_t *v, uint64_t *ret)
 {
-    unsigned long index_r, index_i;
+    uint64_t index_r = 0, index_i = 0;
     int found_r = tree_map_find_or_put(dbs, v->r, &index_r);
     int found_i = tree_map_find_or_put(dbs, v->i, &index_i);
     if (found_r == -1 || found_i == -1) return -1;
@@ -133,14 +133,14 @@ tree_map_find_or_put2(void *dbs, complex_t *v, unsigned long *ret)
 
 // tree_map_get()
 fl_t *
-tree_map_get(void *dbs, unsigned long ref)
+tree_map_get(const void *dbs, const uint64_t ref)
 {
     tree_map_t * map = (tree_map_t *) dbs;
     return &(map->int_to_flt->find(ref)->second); //return &(*(map->int_to_flt))[ref];
 }
 
 complex_t
-tree_map_get2(void *dbs, unsigned long ref)
+tree_map_get2(const void *dbs, const uint64_t ref)
 {
     complex_t res;
     unsigned long index_r, index_i;
@@ -155,8 +155,8 @@ tree_map_get2(void *dbs, unsigned long ref)
 }
 
 // tree_map_num_entries()
-unsigned long
-tree_map_num_entries(void *dbs)
+uint64_t
+tree_map_num_entries(const void *dbs)
 {
     tree_map_t * map = (tree_map_t *) dbs;
     return map->entries;

@@ -150,7 +150,7 @@ int test_tree_map()
 {
     void *tree_map = tree_map_create(1<<10, 1e-14);
 
-    unsigned long index1, index2;
+    ref_t index1, index2;
     fl_t val1, val2, val3;
     int found;
 

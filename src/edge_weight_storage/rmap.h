@@ -27,7 +27,7 @@
 #include "flt.h"
 
 
-typedef size_t ref_t;
+typedef uint64_t ref_t;
 
 /**
 \brief Create a new database.

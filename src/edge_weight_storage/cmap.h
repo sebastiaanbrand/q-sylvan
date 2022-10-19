@@ -27,9 +27,6 @@
 #include "flt.h"
 
 
-
-typedef size_t ref_t;
-
 /**
 \brief Create a new database.
 \param len The length of the vectors to be stored here
@@ -52,12 +49,12 @@ und.
 \retval idx The index that the vector was found or inserted at
 \return 1 if the vector was present, 0 if it was added, -1 if table was full
 */
-extern int cmap_find_or_put(const void *dbs, const complex_t *v, ref_t *ret);
+extern int cmap_find_or_put(const void *dbs, const complex_t *v, uint64_t *ret);
 
-extern complex_t cmap_get(const void *dbs, const ref_t ref);
+extern complex_t cmap_get(const void *dbs, const uint64_t ref);
 
 extern uint64_t cmap_count_entries(const void *dbs);
 
-extern void print_bitvalues(const void *dbs, const ref_t ref);
+extern void print_bitvalues(const void *dbs, const uint64_t ref);
 
 #endif // CMAP
