@@ -7,6 +7,7 @@
  */ 
 
 #include <math.h>
+#include <stdint.h>
 
 // What size float to use (double or __float128 (quad) )
 #define flt_quad 0 // (setting to 1 might not work on MACOS)
