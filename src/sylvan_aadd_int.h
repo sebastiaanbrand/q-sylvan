@@ -168,7 +168,7 @@ aaddnode_unpack(aaddnode_t n, AADD_TARG *low, AADD_TARG *high, AADD_WGT *a, AADD
     bool norm_pos = (n->low & aadd_wgt_pos_mask) >> 54;
     bool norm_val = (n->low & aadd_wgt_val_mask) >> 53;
 
-    if (weight_norm_strat == NORM_SUM_SQ) {
+    if (weight_norm_strat == NORM_L2) {
         *b = AADD_WEIGHT(n->high);
         *a = wgt_get_low_L2normed(*b);
     }
@@ -201,7 +201,7 @@ aaddnode_pack(aaddnode_t n, BDDVAR var, AADD_TARG low, AADD_TARG high, AADD_WGT 
     // edges). For NORM_LOW and NORM_LARGEST this is relatively easy because in
     // both those cases there is at least one edge weight equal to 1 or 0.
     //
-    // For NORM_SUM_SQ it is a bit more complicated: both edge weights can be
+    // For NORM_L2 it is a bit more complicated: both edge weights can be
     // outside of {0, 1}, but under the constraint that |low|^2 + |high|^2 = 1,
     // (or both are 0) and that |low| \in R+, we only need to store high, and
     // can derive low.
@@ -212,7 +212,7 @@ aaddnode_pack(aaddnode_t n, BDDVAR var, AADD_TARG low, AADD_TARG high, AADD_WGT 
     bool norm_pos;
     bool norm_val;
     
-    if (weight_norm_strat == NORM_SUM_SQ) {
+    if (weight_norm_strat == NORM_L2) {
         assert(!(a == AADD_ZERO && b == AADD_ZERO)); // redundant node (caught before)
         norm_pos = 0;
         norm_val = 0;

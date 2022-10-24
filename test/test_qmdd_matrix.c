@@ -695,7 +695,7 @@ int test_with(int wgt_backend, int norm_strat)
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
     double tolerance = -1; // default
-    if (norm_strat == NORM_SUM_SQ) tolerance = 1e-13;
+    if (norm_strat == NORM_L2) tolerance = 1e-13;
     qsylvan_init_simulator(1LL<<11, tolerance, wgt_backend, norm_strat);
     qmdd_set_testing_mode(true); // turn on internal sanity tests
     aadd_set_auto_gc_wgt_table(false); // no auto gc of ctable yet for mult operations
