@@ -35,6 +35,7 @@ static struct argp_option options[] =
 {
     {"workers", 'w', "<workers>", 0, "Number of workers (default=1)", 0},
     {"qubits", 'q', "<nqubits>", 0, "Number of qubits (must be set for Grover)", 0},
+    {"norm-strat", 's', "<low|largest|l2>", 0, "Edge weight normalization strategy", 0},
     {"grover-flag", 20, "<random|ones>", 0, "Grover flag (default=11..1)", 0},
     {0, 0, 0, 0, 0, 0}
 };
@@ -47,6 +48,12 @@ parse_opt(int key, char *arg, struct argp_state *state)
         break;
     case 'q':
         qubits = atoi(arg);
+        break;
+    case 's':
+        if (strcmp(arg, "low")==0) wgt_norm_strat = NORM_LOW;
+        else if (strcmp(arg, "largest")==0) wgt_norm_strat = NORM_LARGEST;
+        else if (strcasecmp(arg, "l2")==0) wgt_norm_strat = NORM_L2;
+        else argp_usage(state);
         break;
     case 20:
         if (strcmp(arg, "random")==0) grover_flag = 0;
@@ -96,10 +103,16 @@ static double t_start;
 #define INFO(s, ...) fprintf(stdout, "[% 8.2f] " s, wctime()-t_start, ##__VA_ARGS__)
 #define Abort(...) { fprintf(stderr, __VA_ARGS__); fprintf(stderr, "Abort at line %d!\n", __LINE__); exit(-1); }
 
+
 typedef struct stats {
     double runtime;
+    int success;
+    int64_t nodecount_final;
+    QMDD qmdd_res;
 } stats_t;
 stats_t stats = {0};
+
+// TODO: write stats (and relevant args) to csv file
 
 /*****************************</Info and logging>******************************/
 
@@ -112,16 +125,29 @@ stats_t stats = {0};
 void
 run_grover()
 {
-    if (qubits <= 0) {
-        Abort("--qubits=<num> must be set for Grover\n");
-    }
+    if (qubits <= 0) Abort("--qubits=<num> must be set for Grover\n");
 
     bool *flag;
-    if (grover_flag == 1) flag = qmdd_grover_ones_flag(qubits);
-    else flag = qmdd_grover_random_flag(qubits);
+    if (grover_flag == 1) flag = qmdd_grover_ones_flag(qubits+1);
+    else flag = qmdd_grover_random_flag(qubits+1);
 
-    INFO("Running Grover for %d qubits\n", qubits);
-    qmdd_grover(qubits, flag);
+    // Run + time Grover
+    double t1 = wctime();
+    INFO("Running Grover for %d qubits (+1 ancilla)\n", qubits);
+    stats.qmdd_res = qmdd_grover(qubits, flag);
+    double t2 = wctime();
+    stats.runtime = t2-t1;
+
+    // Sanity checks on final state
+    // 1. Check flag probability (marginalize ancilla qubit out)
+    flag[qubits] = 0; AADD_WGT amp0 = aadd_getvalue(stats.qmdd_res, flag);
+    flag[qubits] = 1; AADD_WGT amp1 = aadd_getvalue(stats.qmdd_res, flag);
+    double flag_prob = qmdd_amp_to_prob(amp0) + qmdd_amp_to_prob(amp1);
+    INFO("Measure Grover flag with prob %lf\n", flag_prob);
+
+    if (flag_prob > 0.9 && flag_prob < 1.0) {
+        stats.success = 1;
+    }
 
     free(flag);
 }
@@ -146,21 +172,29 @@ int main(int argc, char **argv)
     sylvan_init_package();
     qsylvan_init_simulator(wgt_tab_size, tolerance, wgt_table_type, wgt_norm_strat);
 
+    /* Print some info */
+    INFO("Edge weight normalization: %d\n", wgt_norm_strat);
+    INFO("Edge weight tolerance: %.3e\n", tolerance);
 
     /* Run the given quantum algorithm */
     if (algorithm == alg_grover) {
-        double t1 = wctime();
         run_grover();
-        double t2 = wctime();
-        stats.runtime = t2-t1;
         INFO("Grover Time: %f\n", stats.runtime);
     } else if (algorithm == alg_shor) {
         // TODO
-        printf("(WIP) run Shor\n");
+        sylvan_quit();
+        lace_exit();
+        Abort("(WIP) run Shor\n");
     } else if (algorithm == alg_supremacy) {
         // TODO
-        printf("(WIP) run %d-qubit supremacy circuit\n", qubits);
+        sylvan_quit();
+        lace_exit();
+        Abort("(WIP) run %d-qubit supremacy circuit\n", qubits);
     }
+
+    /* Some stats */
+    stats.nodecount_final = aadd_countnodes(stats.qmdd_res);
+    INFO("Final Nodecount: %ld\n", stats.nodecount_final);
 
 
     /* Cleanup */
