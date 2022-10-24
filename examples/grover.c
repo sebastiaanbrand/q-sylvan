@@ -26,6 +26,14 @@ qmdd_grover_random_flag(BDDVAR nbits)
     return flag;
 }
 
+bool *
+qmdd_grover_ones_flag(BDDVAR nbits)
+{
+    bool *flag = malloc( (sizeof(bool)*nbits) );
+    for (BDDVAR k = 0; k < nbits; k++) flag[k] = 1;
+    return flag;
+}
+
 static bool *
 append_one(BDDVAR n, bool *flag)
 {
