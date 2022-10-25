@@ -26,6 +26,8 @@ static int wgt_inv_caching  = 1;
 
 static int grover_flag = 1; // 0 = random, 1 = 11..1
 
+static char* csv_outputfile = NULL;
+
 enum algorithms {
     alg_grover,
     alg_shor,
@@ -37,9 +39,10 @@ static struct argp_option options[] =
     {"workers", 'w', "<workers>", 0, "Number of workers/threads (default=1)", 0},
     {"qubits", 'q', "<nqubits>", 0, "Number of qubits (must be set for Grover)", 0},
     {"norm-strat", 's', "<low|largest|l2>", 0, "Edge weight normalization strategy", 0},
+    {"tol", 1, "<tolerance>", 0, "Tolerance for deciding edge weights equal (default=1e-14)", 0},
+    {"inv-caching", 2, "<0|1>", 0, "Turn inverse chaching of edge weight computations on/off (default=on)", 0},
     {"grover-flag", 20, "<random|ones>", 0, "Grover flag (default=11..1)", 0},
-    {"tol", 100, "<tolerance>", 0, "Tolerance for deciding edge weights equal (default=1e-14)", 0},
-    {"inv-caching", 101, "<0|1>", 0, "Turn inverse chaching of edge weight computations on/off (default=on)", 0},
+    {"csv-output", 100, "<filename>", 0, "Write stats to given filename (or append if exists)", 0},
     {0, 0, 0, 0, 0, 0}
 };
 static error_t
@@ -58,16 +61,19 @@ parse_opt(int key, char *arg, struct argp_state *state)
         else if (strcasecmp(arg, "l2")==0) wgt_norm_strat = NORM_L2;
         else argp_usage(state);
         break;
+    case 1:
+        tolerance = atof(arg);
+        break;
+    case  2:
+        wgt_inv_caching = atoi(arg);
+        break;
     case 20:
         if (strcmp(arg, "random")==0) grover_flag = 0;
         else if (strcmp(arg, "ones")==0) grover_flag = 1;
         else argp_usage(state);
         break;
     case 100:
-        tolerance = atof(arg);
-        break;
-    case  101:
-        wgt_inv_caching = atoi(arg);
+        csv_outputfile = arg;
         break;
     case ARGP_KEY_ARG:
         if (state->arg_num >= 1) argp_usage(state);
@@ -123,7 +129,31 @@ typedef struct stats {
 } stats_t;
 stats_t stats = {0};
 
-// TODO: write stats (and relevant args) to csv file
+static void
+write_csv_stats()
+{
+    FILE *fp = fopen(csv_outputfile, "a");
+    // write header if file is empty
+    fseek (fp, 0, SEEK_END);
+        long size = ftell(fp);
+        if (size == 0)
+            fprintf(fp, "%s\n", "algorithm, nqubits, tolerance, norm-strat, inv-cache, success, final_nodecount, final_magnitude");
+    // append stats of this run
+    char* alg_name = "";
+    if (algorithm == alg_grover) alg_name = "Grover";
+    else if (algorithm == alg_shor) alg_name = "Shor";
+    else if (algorithm == alg_supremacy) alg_name = "Supremacy";
+    fprintf(fp, "%s, %d, %.3e, %d, %d, %d, %ld, %0.5lf\n",
+            alg_name,
+            stats.nqubits,
+            tolerance,
+            wgt_norm_strat,
+            wgt_inv_caching,
+            stats.success,
+            stats.final_nodecount,
+            stats.final_magnitude);
+    fclose(fp);
+}
 
 /*****************************</Info and logging>******************************/
 
@@ -176,7 +206,6 @@ int main(int argc, char **argv)
     argp_parse(&argp, argc, argv, 0, 0, 0);
     t_start = wctime();
 
-
     /* Init Lace + Sylvan */
     lace_init(workers, 0);
     lace_startup(0, NULL, NULL);
@@ -209,7 +238,10 @@ int main(int argc, char **argv)
     INFO("Magnitude of final state: %.05lf\n", stats.final_magnitude);
     stats.final_nodecount = aadd_countnodes(stats.final_qmdd);
     INFO("Final Nodecount: %ld\n", stats.final_nodecount);
-
+    if (csv_outputfile != NULL) {
+        INFO("Writing csv output to %s\n", csv_outputfile);
+        write_csv_stats();
+    }
 
     /* Cleanup */
     sylvan_quit();
