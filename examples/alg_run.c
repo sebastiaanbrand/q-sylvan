@@ -22,6 +22,7 @@ static size_t wgt_tab_size  = 1LL<<23;
 static double tolerance     = 1e-14;
 static int wgt_table_type   = COMP_HASHMAP;
 static int wgt_norm_strat   = NORM_LARGEST;
+static int wgt_inv_caching  = 1;
 
 static int grover_flag = 1; // 0 = random, 1 = 11..1
 
@@ -33,10 +34,12 @@ enum algorithms {
 
 static struct argp_option options[] =
 {
-    {"workers", 'w', "<workers>", 0, "Number of workers (default=1)", 0},
+    {"workers", 'w', "<workers>", 0, "Number of workers/threads (default=1)", 0},
     {"qubits", 'q', "<nqubits>", 0, "Number of qubits (must be set for Grover)", 0},
     {"norm-strat", 's', "<low|largest|l2>", 0, "Edge weight normalization strategy", 0},
     {"grover-flag", 20, "<random|ones>", 0, "Grover flag (default=11..1)", 0},
+    {"tol", 100, "<tolerance>", 0, "Tolerance for deciding edge weights equal (default=1e-14)", 0},
+    {"inv-caching", 101, "<0|1>", 0, "Turn inverse chaching of edge weight computations on/off (default=on)", 0},
     {0, 0, 0, 0, 0, 0}
 };
 static error_t
@@ -59,6 +62,12 @@ parse_opt(int key, char *arg, struct argp_state *state)
         if (strcmp(arg, "random")==0) grover_flag = 0;
         else if (strcmp(arg, "ones")==0) grover_flag = 1;
         else argp_usage(state);
+        break;
+    case 100:
+        tolerance = atof(arg);
+        break;
+    case  101:
+        wgt_inv_caching = atoi(arg);
         break;
     case ARGP_KEY_ARG:
         if (state->arg_num >= 1) argp_usage(state);
@@ -107,8 +116,10 @@ static double t_start;
 typedef struct stats {
     double runtime;
     int success;
-    int64_t nodecount_final;
-    QMDD qmdd_res;
+    int nqubits;
+    QMDD final_qmdd;
+    int64_t final_nodecount;
+    double final_magnitude;
 } stats_t;
 stats_t stats = {0};
 
@@ -126,6 +137,7 @@ void
 run_grover()
 {
     if (qubits <= 0) Abort("--qubits=<num> must be set for Grover\n");
+    stats.nqubits = qubits + 1;
 
     bool *flag;
     if (grover_flag == 1) flag = qmdd_grover_ones_flag(qubits+1);
@@ -134,14 +146,14 @@ run_grover()
     // Run + time Grover
     double t1 = wctime();
     INFO("Running Grover for %d qubits (+1 ancilla)\n", qubits);
-    stats.qmdd_res = qmdd_grover(qubits, flag);
+    stats.final_qmdd = qmdd_grover(qubits, flag);
     double t2 = wctime();
     stats.runtime = t2-t1;
 
     // Sanity checks on final state
     // 1. Check flag probability (marginalize ancilla qubit out)
-    flag[qubits] = 0; AADD_WGT amp0 = aadd_getvalue(stats.qmdd_res, flag);
-    flag[qubits] = 1; AADD_WGT amp1 = aadd_getvalue(stats.qmdd_res, flag);
+    flag[qubits] = 0; AADD_WGT amp0 = aadd_getvalue(stats.final_qmdd, flag);
+    flag[qubits] = 1; AADD_WGT amp1 = aadd_getvalue(stats.final_qmdd, flag);
     double flag_prob = qmdd_amp_to_prob(amp0) + qmdd_amp_to_prob(amp1);
     INFO("Measure Grover flag with prob %lf\n", flag_prob);
 
@@ -193,8 +205,10 @@ int main(int argc, char **argv)
     }
 
     /* Some stats */
-    stats.nodecount_final = aadd_countnodes(stats.qmdd_res);
-    INFO("Final Nodecount: %ld\n", stats.nodecount_final);
+    stats.final_magnitude = qmdd_get_magnitude(stats.final_qmdd, stats.nqubits);
+    INFO("Magnitude of final state: %.05lf\n", stats.final_magnitude);
+    stats.final_nodecount = aadd_countnodes(stats.final_qmdd);
+    INFO("Final Nodecount: %ld\n", stats.final_nodecount);
 
 
     /* Cleanup */

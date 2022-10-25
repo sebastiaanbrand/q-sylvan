@@ -1190,4 +1190,11 @@ qmdd_is_unitvector(QMDD qmdd, BDDVAR n)
     return qmdd_is_close_to_unitvector(qmdd, n, sylvan_edge_weights_tolerance()*10);
 }
 
+double
+qmdd_get_magnitude(QMDD qmdd, BDDVAR n)
+{
+    LACE_ME;
+    return qmdd_unnormed_prob(qmdd, 0, n);
+}
+
 /*******************************</Debug stuff>*********************************/
