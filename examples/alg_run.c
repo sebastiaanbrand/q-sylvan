@@ -137,19 +137,20 @@ write_csv_stats()
     fseek (fp, 0, SEEK_END);
         long size = ftell(fp);
         if (size == 0)
-            fprintf(fp, "%s\n", "algorithm, nqubits, tolerance, norm-strat, inv-cache, success, final_nodecount, final_magnitude");
+            fprintf(fp, "%s\n", "algorithm, nqubits, tolerance, norm-strat, inv-cache, success, runtime, final_nodecount, final_magnitude");
     // append stats of this run
     char* alg_name = "";
-    if (algorithm == alg_grover) alg_name = "Grover";
-    else if (algorithm == alg_shor) alg_name = "Shor";
-    else if (algorithm == alg_supremacy) alg_name = "Supremacy";
-    fprintf(fp, "%s, %d, %.3e, %d, %d, %d, %ld, %0.5lf\n",
+    if (algorithm == alg_grover) alg_name = "grover";
+    else if (algorithm == alg_shor) alg_name = "shor";
+    else if (algorithm == alg_supremacy) alg_name = "supremacy";
+    fprintf(fp, "%s, %d, %.3e, %d, %d, %d, %lf, %ld, %0.5lf\n",
             alg_name,
             stats.nqubits,
             tolerance,
             wgt_norm_strat,
             wgt_inv_caching,
             stats.success,
+            stats.runtime,
             stats.final_nodecount,
             stats.final_magnitude);
     fclose(fp);
