@@ -8,7 +8,7 @@
 
 typedef enum wgt_storage_backend {
     COMP_HASHMAP, 
-    REAL_HASHMAP, 
+    REAL_TUPLES_HASHMAP, 
     REAL_TREE,
     n_backends
 } wgt_storage_backend_t;

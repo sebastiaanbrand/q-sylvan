@@ -13,11 +13,11 @@ void init_wgt_storage_functions(wgt_storage_backend_t backend)
         wgt_store_num_entries = &cmap_count_entries;
         wgt_store_get_tol     = &cmap_get_tolerance;
         break;
-    case REAL_HASHMAP:
+    case REAL_TUPLES_HASHMAP:
         wgt_store_create      = &rmap_create;
         wgt_store_free        = &rmap_free;
-        wgt_store_find_or_put = &rmap_find_or_put2;
-        wgt_store_get         = &rmap_get2;
+        wgt_store_find_or_put = &rmap_find_or_put2; // tuples
+        wgt_store_get         = &rmap_get2;         // tuples
         wgt_store_num_entries = &rmap_count_entries;
         wgt_store_get_tol     = &rmap_get_tolerance;
         break;
