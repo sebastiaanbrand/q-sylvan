@@ -355,7 +355,7 @@ int test_shor()
     factor = 0;
     nqubits = ceil(log2(N))*2 + 3;
     while (!factor) {
-        factor = run_shor(N, 0, false);
+        factor = shor_run(N, 0, false);
         counter++;
     }
     if(VERBOSE) printf("qmdd %ld-qubit Shor:          ok (found factor %ld of %ld with %ld tries)\n", nqubits, factor, N, counter);
@@ -366,7 +366,7 @@ int test_shor()
     factor = 0;
     nqubits = ceil(log2(N))*2 + 3;
     while (!factor) {
-        factor = run_shor(N, 0, false);
+        factor = shor_run(N, 0, false);
         counter++;
     }
     if(VERBOSE) printf("qmdd %ld-qubit Shor:          ok (found factor %ld of %ld with %ld tries)\n", nqubits, factor, N, counter);

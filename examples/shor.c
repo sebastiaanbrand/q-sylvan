@@ -466,7 +466,7 @@ shor_generate_a(uint64_t N)
 }
 
 uint64_t
-run_shor(uint64_t N, uint64_t a, bool verbose)
+shor_run(uint64_t N, uint64_t a, bool verbose)
 {
     // The classical part
     if (a == 0) a = shor_generate_a(N);

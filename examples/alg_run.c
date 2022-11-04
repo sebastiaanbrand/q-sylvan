@@ -14,6 +14,7 @@
 static int algorithm = 0;
 static int qubits = 0; // must be set for Grover
 static int workers = 1;
+static int depth = 0; // must be set for supremacy
 static size_t min_tablesize = 1LL<<25;
 static size_t max_tablesize = 1LL<<25;
 static size_t min_cachesize = 1LL<<20;
@@ -25,6 +26,9 @@ static int wgt_norm_strat   = NORM_LARGEST;
 static int wgt_inv_caching  = 1;
 
 static int grover_flag = 1; // 0 = random, 1 = 11..1
+
+static int shor_N = 0;
+static int shor_a = 0;
 
 static char* csv_outputfile = NULL;
 
@@ -38,11 +42,14 @@ static struct argp_option options[] =
 {
     {"workers", 'w', "<workers>", 0, "Number of workers/threads (default=1)", 0},
     {"qubits", 'q', "<nqubits>", 0, "Number of qubits (must be set for Grover)", 0},
+    {"depth", 'd', "<depth>", 0, "Depth of circuits with arbitrary depth (e.g. supremacy)", 0},
     {"norm-strat", 's', "<low|largest|l2>", 0, "Edge weight normalization strategy", 0},
     {"tol", 1, "<tolerance>", 0, "Tolerance for deciding edge weights equal (default=1e-14)", 0},
     {"inv-caching", 2, "<0|1>", 0, "Turn inverse chaching of edge weight computations on/off (default=on)", 0},
     {"grover-flag", 20, "<random|ones>", 0, "Grover flag (default=11..1)", 0},
-    {"csv-output", 100, "<filename>", 0, "Write stats to given filename (or append if exists)", 0},
+    {"shor-N", 30, "<N>", 0, "N to factor with Shor's algorithm", 0},
+    {"shor-a", 31, "<a>", 0, "value 'a' to use in Shor's algorithm (chosen random if not set)", 0},
+    {"csv-output", 40, "<filename>", 0, "Write stats to given filename (or append if exists)", 0},
     {0, 0, 0, 0, 0, 0}
 };
 static error_t
@@ -55,6 +62,9 @@ parse_opt(int key, char *arg, struct argp_state *state)
     case 'q':
         qubits = atoi(arg);
         break;
+    case 'd':
+        depth = atoi(arg);
+        break;
     case 's':
         if (strcmp(arg, "low")==0) wgt_norm_strat = NORM_LOW;
         else if (strcmp(arg, "largest")==0) wgt_norm_strat = NORM_LARGEST;
@@ -64,7 +74,7 @@ parse_opt(int key, char *arg, struct argp_state *state)
     case 1:
         tolerance = atof(arg);
         break;
-    case  2:
+    case 2:
         wgt_inv_caching = atoi(arg);
         break;
     case 20:
@@ -72,7 +82,13 @@ parse_opt(int key, char *arg, struct argp_state *state)
         else if (strcmp(arg, "ones")==0) grover_flag = 1;
         else argp_usage(state);
         break;
-    case 100:
+    case 30:
+        shor_N = atoi(arg);
+        break;
+    case 31:
+        shor_a = atoi(arg);
+        break;
+    case 40:
         csv_outputfile = arg;
         break;
     case ARGP_KEY_ARG:
@@ -193,6 +209,39 @@ run_grover()
     }
 
     free(flag);
+    INFO("Grover Time: %f\n", stats.runtime);
+}
+
+void
+run_supremacy()
+{
+    if (depth <= 0) Abort("--depth=<depth> must be set for Supremacy\n");
+    if (qubits != 5 && qubits != 20) Abort("--qubits=<5|20> for supremacy\n");
+    stats.nqubits = qubits;
+
+    double t1 = wctime();
+    if (qubits == 5)        stats.final_qmdd = supremacy_5_1_circuit(depth);
+    else if (qubits == 20)  stats.final_qmdd = supremacy_5_4_circuit(depth);
+    double t2 = wctime();
+    stats.runtime = t2-t1;
+
+    INFO("Supremacy-%d Time: %f\n", qubits, stats.runtime);
+}
+
+void
+run_shor()
+{
+    if (shor_N <= 0) Abort("--shor-N=<N> must be set for Shor\n");
+
+    double t1 = wctime();
+    int factor = shor_run(shor_N, 0, false);
+    double t2 = wctime();
+    stats.runtime = t2-t1;
+    // TODO: obain qmdd + nqubits form Shor
+
+    INFO("Shor: Found factor %d of %d\n", factor, shor_N);
+
+    INFO("Shor Time: %f\n", stats.runtime);
 }
 
 /******************************</Run algorithms>*******************************/
@@ -221,17 +270,10 @@ int main(int argc, char **argv)
     /* Run the given quantum algorithm */
     if (algorithm == alg_grover) {
         run_grover();
-        INFO("Grover Time: %f\n", stats.runtime);
     } else if (algorithm == alg_shor) {
-        // TODO
-        sylvan_quit();
-        lace_exit();
-        Abort("(WIP) run Shor\n");
+        run_shor();
     } else if (algorithm == alg_supremacy) {
-        // TODO
-        sylvan_quit();
-        lace_exit();
-        Abort("(WIP) run %d-qubit supremacy circuit\n", qubits);
+        run_supremacy();
     }
 
     /* Some stats */

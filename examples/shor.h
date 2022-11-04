@@ -45,6 +45,6 @@ void shor_set_globals(uint64_t a, uint64_t N);
  * N is the number to factor, and 'a' is the value to use in a^x mod N. 
  * If 'a' is set to 0 a random 'a' is chosen.
  */
-uint64_t run_shor(uint64_t N, uint64_t a, bool verbose);
+uint64_t shor_run(uint64_t N, uint64_t a, bool verbose);
 
 void qmdd_shor_set_testing_mode(bool on);
