@@ -255,6 +255,8 @@ qmdd_shor_ua(QMDD qmdd,  uint64_t a, uint64_t N)
     return qmdd;
 }
 
+static QMDD final_qmdd;
+
 uint64_t
 shor_period_finding(uint64_t a, uint64_t N)
 {
@@ -310,6 +312,8 @@ shor_period_finding(uint64_t a, uint64_t N)
         // make sure q0 is in the |0> state
         if (m_outcome == 1) qmdd = qmdd_gate(qmdd, GATEID_X, shor_wires.top);
     }
+
+    final_qmdd = qmdd;
 
     // turn measurement outcomes into an integer
     uint64_t res = 0;
@@ -466,7 +470,7 @@ shor_generate_a(uint64_t N)
 }
 
 uint64_t
-run_shor(uint64_t N, uint64_t a, bool verbose)
+shor_run(uint64_t N, uint64_t a, bool verbose)
 {
     // The classical part
     if (a == 0) a = shor_generate_a(N);
@@ -495,4 +499,16 @@ run_shor(uint64_t N, uint64_t a, bool verbose)
     uint64_t denom = 1 << (2*shor_n);
 
     return shor_post_process(N, a, b, denom, verbose);
+}
+
+QMDD
+shor_get_final_qmdd()
+{
+    return final_qmdd;
+}
+
+QMDD
+shor_get_nqubits(uint64_t N)
+{
+    return 2*ceil(log2(N)) + 3;
 }

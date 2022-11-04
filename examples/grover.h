@@ -6,8 +6,11 @@ void qmdd_grover_set_verbose(bool v);
 /* Approximate number of gates for 'nbits'-bit Grover */
 uint64_t qmdd_grover_approx_number_of_gates(BDDVAR nbits);
 
-/* Random bit array of lenght 'nbits' */
+/* Random bit array of lenght 'nbits'. IMPORTANT: this returns a malloc array. */
 bool *qmdd_grover_random_flag(BDDVAR nbits);
+
+/* Bit array 11..1 of lenght 'nbits'. IMPORTANT: this returns a malloc array. */
+bool *qmdd_grover_ones_flag(BDDVAR nbits);
 
 /**
  * Implementation of Grover where the gates are seen as functions applied to

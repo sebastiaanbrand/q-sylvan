@@ -172,8 +172,14 @@ wgt_table_gc_keep(AADD_WGT a)
 
 /********************<For caching arithmetic operations>***********************/
 
-const bool CACHE_WGT_OPS = true;
-const bool CACHE_INV_OPS = true;
+static bool CACHE_WGT_OPS = true;
+static bool CACHE_INV_OPS = true;
+
+void
+wgt_set_inverse_chaching(bool on)
+{
+    CACHE_INV_OPS = on;
+}
 
 static void
 order_inputs(AADD_WGT *a, AADD_WGT *b) 

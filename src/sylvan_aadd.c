@@ -486,7 +486,7 @@ sylvan_init_aadd(size_t wgt_tab_size, double wgt_tab_tolerance, int edge_weigth_
     case NORM_LOW:
         normalize_weights = &wgt_norm_low;
         break;
-    case NORM_SUM_SQ:
+    case NORM_L2:
         normalize_weights = wgt_norm_L2;
         break;
     default:

@@ -155,7 +155,7 @@ QMDD qmdd_measure_all(QMDD qmdd, BDDVAR n, bool* ms, double *p);
 /**
  * (Recursive) helper function for obtaining probabilities for measurements
  */
-#define qmdd_unnormed_prob(qmdd, topvar, nvars) (CALL(qmdd_unnormed_prob,qmdd,topvar,nvars));
+#define qmdd_unnormed_prob(qmdd, topvar, nvars) (CALL(qmdd_unnormed_prob,qmdd,topvar,nvars))
 TASK_DECL_3(double, qmdd_unnormed_prob, QMDD, BDDVAR, BDDVAR);
 
 /**
@@ -351,6 +351,12 @@ void qmdd_set_testing_mode(bool on);
  */
 bool qmdd_is_close_to_unitvector(QMDD qmdd, BDDVAR n, double tol);
 bool qmdd_is_unitvector(QMDD qmdd, BDDVAR n);
+
+/**
+ * Get the magnitude of a given qmdd. (Should equal 1 if the qmdd represents a
+ * (pure) quantum state.
+*/
+double qmdd_get_magnitude(QMDD qmdd, BDDVAR n);
 
 /***************************</Debug functionality>*****************************/
 

@@ -96,6 +96,16 @@ void (*weight_fprint)(); // weight_fprint(FILE *stream, weight_t a)
 
 
 
+/********************<For caching arithmetic operations>***********************/
+
+void wgt_set_inverse_chaching(bool on);
+
+/*******************</For caching arithmetic operations>***********************/
+
+
+
+
+
 /*********************<Arithmetic functions on AADD_WGT's>*********************/
 
 /* Arithmetic operations on AADD_WGT's */
