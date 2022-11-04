@@ -232,12 +232,13 @@ void
 run_shor()
 {
     if (shor_N <= 0) Abort("--shor-N=<N> must be set for Shor\n");
+    stats.nqubits = shor_get_nqubits(shor_N);
 
     double t1 = wctime();
     int factor = shor_run(shor_N, 0, false);
     double t2 = wctime();
     stats.runtime = t2-t1;
-    // TODO: obain qmdd + nqubits form Shor
+    stats.final_qmdd = shor_get_final_qmdd();
 
     INFO("Shor: Found factor %d of %d\n", factor, shor_N);
 
