@@ -56,10 +56,10 @@ TASK_IMPL_3(QMDD, qmdd_grover_iteration, QMDD, qmdd, BDDVAR, n, bool*, oracle)
 
     // X on all qubits (except ancilla)
     for (BDDVAR k = 0; k < n; k++) qmdd = qmdd_gate(qmdd, GATEID_X, k);
-    
+
     // Controlled Z over all qubits (except ancilla)
     qmdd = qmdd_cgate_range(qmdd, GATEID_Z, 0, n-2, n-1);
-    
+
     // X on all qubits (except ancilla)
     for (BDDVAR k = 0; k < n; k++) qmdd = qmdd_gate(qmdd, GATEID_X, k);
 

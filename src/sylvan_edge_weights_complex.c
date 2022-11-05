@@ -214,9 +214,22 @@ wgt_complex_get_low_L2normed(AADD_WGT high)
     // a = sqrt(1 - |b|^2)
     if (high == AADD_ZERO) return AADD_ONE;
     if (high == AADD_ONE || high == AADD_MIN_ONE) return AADD_ZERO;
+
     complex_t b;
     weight_value(high, &b);
-    fl_t a = flt_sqrt(1.0 - (b.r*b.r + b.i*b.i)); 
+    fl_t mag_b = (b.r*b.r + b.i*b.i);
+    if (mag_b > 1.0) {
+        if (mag_b > 1.0 + 1e-6 && mag_b <= 1.1) { 
+            printf("Warning: |b| = %.15lf > 1.0\n", mag_b);
+            printf("Continuing with |b| = 1.0\n");
+        } else if (mag_b > 1.1) {
+            printf("Value error in L2 norm: |b| = %.15lf > 1.0\n", mag_b);
+            exit(1);
+        }
+        mag_b = 1.0;
+    }
+    fl_t a = flt_sqrt(1.0 - mag_b);
+
     return weight_complex_lookup(cmake(a, 0));
 }
 
