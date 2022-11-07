@@ -349,10 +349,7 @@ aadd_gc_wgt_table()
     LACE_ME;
 
     // 1. Create new edge weight table table
-    wgt_table_gc_init_new();
-    if (init_wgt_table_entries != NULL) {
-        init_wgt_table_entries();
-    }
+    wgt_table_gc_init_new(init_wgt_table_entries);
 
     // 2. Fill new table with wgts in protected AADDs and update those AADDs
     uint64_t *it = protect_iter(&aadd_protected, 0, aadd_protected.refs_size);

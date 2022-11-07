@@ -10,9 +10,9 @@
 weight_t weight_complex_malloc();
 void _weight_complex_value(void *wgt_store, AADD_WGT a, complex_t *res);
 AADD_WGT weight_complex_lookup(complex_t a);
-AADD_WGT weight_complex_lookup_ptr(complex_t *a);
+AADD_WGT _weight_complex_lookup_ptr(complex_t *a, void *wgt_store);
 
-void init_complex_one_zero();
+void init_complex_one_zero(void *wgt_store);
 
 void weight_complex_abs(complex_t *a);
 void weight_complex_neg(complex_t *a);

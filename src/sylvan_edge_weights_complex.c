@@ -43,13 +43,13 @@ _weight_complex_value(void *wgt_store, AADD_WGT a, complex_t *res)
 }
 
 AADD_WGT
-weight_complex_lookup_ptr(complex_t *a)
+_weight_complex_lookup_ptr(complex_t *a, void *wgt_store)
 {
     // TODO: catch czero() / cone() here?
     uint64_t res;
     bool success;
 
-    int present = wgt_store_find_or_put(wgt_storage, a, &res);
+    int present = wgt_store_find_or_put(wgt_store, a, &res);
     if (present == -1) {
         success = false;
     } else if (present == 0) { 
@@ -69,15 +69,16 @@ weight_complex_lookup_ptr(complex_t *a)
 AADD_WGT
 weight_complex_lookup(complex_t a)
 {
-    return weight_complex_lookup_ptr(&a);
+    return _weight_complex_lookup_ptr(&a, wgt_storage);
 }
 
 void
-init_complex_one_zero()
+init_complex_one_zero(void *wgt_store)
 {
-    AADD_ONE     = weight_complex_lookup(cone());
-    AADD_ZERO    = weight_complex_lookup(czero());
-    AADD_MIN_ONE = weight_complex_lookup(cmone());
+    complex_t a;
+    a = cone();     AADD_ONE     = _weight_complex_lookup_ptr(&a, wgt_store);
+    a = czero();    AADD_ZERO    = _weight_complex_lookup_ptr(&a, wgt_store);
+    a = cmone();    AADD_MIN_ONE = _weight_complex_lookup_ptr(&a, wgt_store);
 }
 
 void

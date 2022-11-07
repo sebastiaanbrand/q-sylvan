@@ -18,6 +18,7 @@ int test_grover_gc()
     double flag_prob = qmdd_amp_to_prob(amp0) + qmdd_amp_to_prob(amp1);
     free(flag);
 
+    printf("flag prob = %lf\n", flag_prob);
     test_assert(flag_prob > 0.9 && flag_prob < 1.0+1e-6);
 
     return 0;
@@ -62,7 +63,7 @@ int test_with(int amps_backend, int norm_strat)
 int runtests()
 {
     int backend = COMP_HASHMAP;
-    for (int norm_strat = 0; norm_strat < 2; norm_strat++) {
+    for (int norm_strat = 0; norm_strat < n_norm_strategies; norm_strat++) {
         if (test_with(backend, norm_strat)) return 1;
     }
     return 0;

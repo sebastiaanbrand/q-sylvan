@@ -21,16 +21,16 @@ typedef enum edge_weight_type {
 } edge_weight_type_t;
 
 
-// Actual table (old is used for gc purposes)
+// Actual table (new used for gc purposes)
 void *wgt_storage; // TODO: move to source file?
-void *wgt_storage_old;
+void *wgt_storage_new;
 
 
 /**********************<Managing the edge weight table>************************/
 
 void sylvan_init_edge_weights(size_t size, double tol, edge_weight_type_t edge_weight_type, wgt_storage_backend_t backend);
 void init_edge_weight_functions(edge_weight_type_t edge_weight_type);
-void init_edge_weight_storage(size_t size, double tol, wgt_storage_backend_t backend);
+void init_edge_weight_storage(size_t size, double tol, wgt_storage_backend_t backend, void **wgt_store);
 void (*init_wgt_table_entries)(); // set by sylvan_init_aadd
 
 uint64_t sylvan_get_edge_weight_table_size();
@@ -49,7 +49,7 @@ void sylvan_edge_weights_free();
 void init_edge_weight_storage_gc();
 uint64_t wgt_table_entries_estimate();
 void wgt_table_gc_inc_entries_estimate();
-void wgt_table_gc_init_new();
+void wgt_table_gc_init_new(void (*init_wgt_table_entries)());
 void wgt_table_gc_delete_old();
 AADD_WGT wgt_table_gc_keep(AADD_WGT a);
 
@@ -64,10 +64,9 @@ AADD_WGT wgt_table_gc_keep(AADD_WGT a);
 weight_t (*weight_malloc)();
 void (*_weight_value)(); // weight_value(WGT a, weight_type * res)
 AADD_WGT (*weight_lookup)(); // weight_lookup_(weight_type a)
-AADD_WGT (*weight_lookup_ptr)(); // weight_lookup_ptr(weight_type * a)
-
+AADD_WGT (*_weight_lookup_ptr)(); // _weight_lookup_ptr(weight_type *a, void *wgt_store)
+#define weight_lookup_ptr(a) _weight_lookup_ptr(a, wgt_storage)
 #define weight_value(a, res) _weight_value(wgt_storage, a, res)
-#define weight_value_old(a, res) _weight_value(wgt_storage_old, a, res) // TODO: move this to sylvan_edge_weights.c
 
 void (*init_one_zero)();
 

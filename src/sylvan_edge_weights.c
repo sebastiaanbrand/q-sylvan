@@ -16,7 +16,7 @@ size_t table_size;
 void sylvan_init_edge_weights(size_t size, double tol, edge_weight_type_t edge_weight_type, wgt_storage_backend_t backend)
 {
     init_edge_weight_functions(edge_weight_type);
-    init_edge_weight_storage(size, tol, backend);
+    init_edge_weight_storage(size, tol, backend, &wgt_storage);
     init_edge_weight_storage_gc();
 }
 
@@ -28,7 +28,7 @@ void init_edge_weight_functions(edge_weight_type_t edge_weight_type)
         weight_malloc       = &weight_complex_malloc;
         _weight_value       = &_weight_complex_value;
         weight_lookup       = &weight_complex_lookup;
-        weight_lookup_ptr   = &weight_complex_lookup_ptr;
+        _weight_lookup_ptr  = &_weight_complex_lookup_ptr;
         init_one_zero       = &init_complex_one_zero;
         weight_abs          = &weight_complex_abs;
         weight_neg          = &weight_complex_neg;
@@ -53,7 +53,7 @@ void init_edge_weight_functions(edge_weight_type_t edge_weight_type)
 }
 
 void
-init_edge_weight_storage(size_t size, double tol, wgt_storage_backend_t backend)
+init_edge_weight_storage(size_t size, double tol, wgt_storage_backend_t backend, void **wgt_store)
 {
     tolerance = (tol < 0) ? default_tolerance : tol;
     table_size = size;
@@ -62,10 +62,10 @@ init_edge_weight_storage(size_t size, double tol, wgt_storage_backend_t backend)
     init_wgt_storage_functions(backend);
 
     // create actual table
-    wgt_storage = wgt_store_create(table_size, tolerance);
+    *wgt_store = wgt_store_create(table_size, tolerance);
 
     // Set AADD_WGT values for 1, 0 (and -1)
-    init_one_zero();
+    init_one_zero(*wgt_store);
 }
 
 uint64_t
@@ -137,10 +137,10 @@ void wgt_table_gc_inc_entries_estimate()
 }
 
 void
-wgt_table_gc_init_new()
+wgt_table_gc_init_new(void (*init_wgt_table_entries)())
 {
-    // point old to current (full) table
-    wgt_storage_old = wgt_storage;
+    // init new (empty) edge weight storage
+    init_edge_weight_storage(table_size, tolerance, wgt_backend, &wgt_storage_new);
 
     // reset estimate entries counters
     LOCALIZE_THREAD_LOCAL(table_entries_local, size_t);
@@ -148,24 +148,32 @@ wgt_table_gc_init_new()
     table_entries_local = 0;
     (void) table_entries_local;
 
-    // re-init new (empty) edge weight storage
-    double tolerance = wgt_store_get_tol();
-    init_edge_weight_storage(table_size, tolerance, wgt_backend);
+    // Fill new with initial values (temp rename to wgt_store because
+    // init_wgt_table_entries initializes wgt_storage, not wgt_storage_new)
+    void *wgt_store_tmp = wgt_storage;
+    wgt_storage = wgt_storage_new;
+    if (init_wgt_table_entries != NULL) {
+        init_wgt_table_entries();
+    }
+    wgt_storage_new = wgt_storage;  // wgt_store_new now has initial values
+    wgt_storage = wgt_store_tmp;    // wgt_storage now has the old values
 }
 
 void
 wgt_table_gc_delete_old()
 {
-    // delete  old (full) table
-    wgt_store_free(wgt_storage_old);
+    // delete  old (full) table + set new as current
+    wgt_store_free(wgt_storage);
+    wgt_storage = wgt_storage_new;
 }
 
 AADD_WGT
 wgt_table_gc_keep(AADD_WGT a)
 {
+    // move from current (old) to new
     weight_t wa = weight_malloc();
-    weight_value_old(a, wa);
-    AADD_WGT res = weight_lookup_ptr(wa);
+    _weight_value(wgt_storage, a, wa);
+    AADD_WGT res = _weight_lookup_ptr(wa, wgt_storage_new);
     free(wa);
     return res;
 }
