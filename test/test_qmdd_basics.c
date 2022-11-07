@@ -260,7 +260,7 @@ int test_vector_addition()
     x4[3] = 1; x4[2] = 1; x4[1] = 0; x4[0] = 1; a = aadd_getvalue(q01, x4); test_assert(a == AADD_ZERO);
     x4[3] = 1; x4[2] = 1; x4[1] = 1; x4[0] = 0; a = aadd_getvalue(q01, x4); test_assert(a == AADD_ZERO);
     x4[3] = 1; x4[2] = 1; x4[1] = 1; x4[0] = 1; a = aadd_getvalue(q01, x4); test_assert(a == AADD_ZERO);
-    assert(q01 == q10);
+    test_assert(q01 == q10);
     test_assert(!qmdd_is_unitvector(q01, 4));
 
     // q1 + q1
@@ -318,8 +318,8 @@ int test_vector_addition()
     x4[3] = 1; x4[2] = 1; x4[1] = 0; x4[0] = 1; a = aadd_getvalue(q001, x4); test_assert(a == AADD_ZERO);
     x4[3] = 1; x4[2] = 1; x4[1] = 1; x4[0] = 0; a = aadd_getvalue(q001, x4); test_assert(a == AADD_ZERO);
     x4[3] = 1; x4[2] = 1; x4[1] = 1; x4[0] = 1; a = aadd_getvalue(q001, x4); test_assert(a == AADD_ZERO);
-    assert(q001 == q010);
-    assert(q001 == q100);
+    test_assert(q001 == q010);
+    test_assert(q001 == q100);
     test_assert(!qmdd_is_unitvector(q001, 4));
 
     if(VERBOSE) printf("qmdd vector addition:     ok\n");
@@ -365,7 +365,7 @@ int test_with(int amps_backend, int norm_strat)
 int runtests()
 {
     for (int backend = 0; backend < n_backends; backend++) {
-        for (int norm_strat = 0; norm_strat < n_norm_stragegies; norm_strat++) {
+        for (int norm_strat = 0; norm_strat < n_norm_strategies; norm_strat++) {
             if (test_with(backend, norm_strat)) return 1;
         }
     }

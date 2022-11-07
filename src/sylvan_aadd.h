@@ -20,7 +20,7 @@ typedef enum weight_norm_strategy {
     NORM_LOW,
     NORM_LARGEST,
     NORM_L2,
-    n_norm_stragegies
+    n_norm_strategies
 } weight_norm_strategy_t;
 
 

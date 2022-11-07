@@ -611,7 +611,7 @@ int test_with(int amps_backend, int norm_strat)
 int runtests()
 {
     for (int backend = 0; backend < n_backends; backend++) {
-        for (int norm_strat = 0; norm_strat < n_norm_stragegies; norm_strat++) {
+        for (int norm_strat = 0; norm_strat < n_norm_strategies; norm_strat++) {
             if (test_with(backend, norm_strat)) return 1;
         }
     }

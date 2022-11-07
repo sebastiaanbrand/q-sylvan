@@ -33,3 +33,8 @@ add_executable(test_qmdd_matrix test_qmdd_matrix.c)
 target_link_libraries(test_qmdd_matrix qsylvan)
 add_test(test_qmdd_matrix test_qmdd_matrix)
 
+# test_qmdd_gc
+add_executable(test_qmdd_gc test_qmdd_gc.c ../examples/grover.c)
+target_link_libraries(test_qmdd_gc qsylvan)
+add_test(test_qmdd_gc test_qmdd_gc)
+
