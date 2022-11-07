@@ -142,6 +142,12 @@ wgt_table_gc_init_new()
     // point old to current (full) table
     wgt_storage_old = wgt_storage;
 
+    // reset estimate entries counters
+    LOCALIZE_THREAD_LOCAL(table_entries_local, size_t);
+    table_entries_est = 0;
+    table_entries_local = 0;
+    (void) table_entries_local;
+
     // re-init new (empty) edge weight storage
     double tolerance = wgt_store_get_tol();
     init_edge_weight_storage(table_size, tolerance, wgt_backend);
