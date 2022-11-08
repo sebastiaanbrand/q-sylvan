@@ -237,20 +237,22 @@ run_shor()
 {
     if (shor_N <= 0) Abort("--shor-N=<N> must be set for Shor\n");
     stats.nqubits = shor_get_nqubits(shor_N);
+    if (shor_a == 0) shor_a = shor_generate_a(shor_N);
 
-
-    INFO("Running Shor with %d qubits to factor %d\n", stats.nqubits, shor_N);
+    INFO("Running Shor with %d qubits to factor %d, with --shor-a=%d\n", stats.nqubits, shor_N, shor_a);
     double t1 = wctime();
-    int factor = shor_run(shor_N, 0, false);
+    int factor = shor_run(shor_N, shor_a, false);
     double t2 = wctime();
     stats.runtime = t2-t1;
     stats.final_qmdd = shor_get_final_qmdd();
 
-    if (shor_N % factor == 0) {
+    if (factor != 0 && shor_N % factor == 0) {
+        INFO("Shor: Found factor %d of %d\n", factor, shor_N);
         stats.success = 1;
+    } else {
+        INFO("Shor: Did not find factor\n");
     }
-
-    INFO("Shor: Found factor %d of %d\n", factor, shor_N);
+    
     INFO("Shor Time: %f\n", stats.runtime);
 }
 
@@ -273,10 +275,15 @@ int main(int argc, char **argv)
     sylvan_init_package();
     qsylvan_init_simulator(wgt_tab_size, tolerance, wgt_table_type, wgt_norm_strat);
 
+    // e.g. for choosing random 'a' in Shor
+    int rs = time(NULL);
+    srand(rs);
+
     /* Print some info */
     INFO("Edge weight normalization: %d\n", wgt_norm_strat);
     INFO("Edge weight tolerance: %.3e\n", tolerance);
     INFO("Workers: %d\n", workers);
+    INFO("Random seed: %d\n", rs);
 
     /* Run the given quantum algorithm */
     if (algorithm == alg_grover) {
