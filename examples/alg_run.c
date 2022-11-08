@@ -153,18 +153,19 @@ write_csv_stats()
     fseek (fp, 0, SEEK_END);
         long size = ftell(fp);
         if (size == 0)
-            fprintf(fp, "%s\n", "algorithm, nqubits, tolerance, norm-strat, inv-cache, success, runtime, final_nodecount, final_magnitude");
+            fprintf(fp, "%s\n", "algorithm, nqubits, tolerance, norm-strat, inv-cache, workers, success, runtime, final_nodecount, final_magnitude");
     // append stats of this run
     char* alg_name = "";
     if (algorithm == alg_grover) alg_name = "grover";
     else if (algorithm == alg_shor) alg_name = "shor";
     else if (algorithm == alg_supremacy) alg_name = "supremacy";
-    fprintf(fp, "%s, %d, %.3e, %d, %d, %d, %lf, %ld, %0.5lf\n",
+    fprintf(fp, "%s, %d, %.3e, %d, %d, %d, %d, %lf, %ld, %0.5lf\n",
             alg_name,
             stats.nqubits,
             tolerance,
             wgt_norm_strat,
             wgt_inv_caching,
+            workers,
             stats.success,
             stats.runtime,
             stats.final_nodecount,
@@ -191,8 +192,8 @@ run_grover()
     else flag = qmdd_grover_random_flag(qubits+1);
 
     // Run + time Grover
-    double t1 = wctime();
     INFO("Running Grover for %d qubits (+1 ancilla)\n", qubits);
+    double t1 = wctime();
     stats.final_qmdd = qmdd_grover(qubits, flag);
     double t2 = wctime();
     stats.runtime = t2-t1;
@@ -225,6 +226,9 @@ run_supremacy()
     double t2 = wctime();
     stats.runtime = t2-t1;
 
+    // don't have a sanity check other than the magnitued of the final qmdd
+    stats.success = -1;
+
     INFO("Supremacy-%d Time: %f\n", qubits, stats.runtime);
 }
 
@@ -234,14 +238,19 @@ run_shor()
     if (shor_N <= 0) Abort("--shor-N=<N> must be set for Shor\n");
     stats.nqubits = shor_get_nqubits(shor_N);
 
+
+    INFO("Running Shor with %d qubits to factor %d\n", stats.nqubits, shor_N);
     double t1 = wctime();
     int factor = shor_run(shor_N, 0, false);
     double t2 = wctime();
     stats.runtime = t2-t1;
     stats.final_qmdd = shor_get_final_qmdd();
 
-    INFO("Shor: Found factor %d of %d\n", factor, shor_N);
+    if (shor_N % factor == 0) {
+        stats.success = 1;
+    }
 
+    INFO("Shor: Found factor %d of %d\n", factor, shor_N);
     INFO("Shor Time: %f\n", stats.runtime);
 }
 
@@ -267,6 +276,7 @@ int main(int argc, char **argv)
     /* Print some info */
     INFO("Edge weight normalization: %d\n", wgt_norm_strat);
     INFO("Edge weight tolerance: %.3e\n", tolerance);
+    INFO("Workers: %d\n", workers);
 
     /* Run the given quantum algorithm */
     if (algorithm == alg_grover) {
