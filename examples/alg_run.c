@@ -24,7 +24,7 @@ static size_t wgt_tab_size  = 1LL<<23;
 static double tolerance     = 1e-14;
 static int wgt_table_type   = COMP_HASHMAP;
 static int wgt_norm_strat   = NORM_LARGEST;
-static int wgt_inv_caching  = 1;
+static int wgt_inv_caching  = 1; // TODO: actually set inv_caching
 
 static int grover_flag = 1; // 0 = random, 1 = 11..1
 

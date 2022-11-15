@@ -1,5 +1,6 @@
 #include <popt.h>
 #include <sys/time.h>
+#include <libgen.h>
 
 #include "qsylvan_qasm.h"
 
@@ -746,6 +747,7 @@ int main(int argc, char *argv[])
     int flag_help = -1;
     char *filename;
     int workers = 1;
+    int wgt_norm_strat = NORM_LARGEST;
     unsigned int runs = 1;
     unsigned int seed = 0;
     int matrix = 0;
@@ -755,7 +757,8 @@ int main(int argc, char *argv[])
     int intermediate_measuring = 0;
     int experiments = 0;
     bool intermediate_experiments;
-    QMDD qmdd;
+    char *csv_outputfile = NULL;
+    QMDD qmdd = AADD_TERMINAL;
     uint64_t res;
 
     poptContext con;
@@ -769,6 +772,8 @@ int main(int argc, char *argv[])
         { "balance", 'b', POPT_ARG_INT, &balance, 'b', "Runs the circuit switching between matrix-matrix method and greedy method", NULL },
         { "optimize", 'o', POPT_ARG_NONE, &optimize, 'o', "Optimize the circuit. This option will remove negating gates before running.", NULL },
         { "experiment", 'e', POPT_ARG_NONE, &experiments, 'e', "Prints the nodecount and palindrome signals.", NULL },
+        { "norm-strat", 9, POPT_ARG_INT, &wgt_norm_strat, 9, "Weight norm strat as int: <0(low)|1(largest)|2(l2)>.", NULL },
+        { "csv-output", 10, POPT_ARG_STRING, &csv_outputfile, 10, "Write stats to given filename (or append if file exists.", NULL },
         {NULL, 0, 0, NULL, 0, NULL, NULL}
     };
     con = poptGetContext("q-sylvan-sim", argc, (const char **)argv, optiontable, 0);
@@ -789,6 +794,7 @@ int main(int argc, char *argv[])
         }
     }
     INFO("Option workers=%d\n", workers);
+    INFO("Option norm-strat=%d\n", wgt_norm_strat);
     INFO("Option matrix=%d\n", matrix);
     INFO("Option balance=%d\n", balance);
     INFO("Option greedy=%d\n", greedy);
@@ -817,7 +823,7 @@ int main(int argc, char *argv[])
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    qsylvan_init_defaults(1LL<<23);
+    qsylvan_init_simulator(1LL<<23, -1, COMP_HASHMAP, wgt_norm_strat);
     qmdd_set_testing_mode(true); // turn on internal sanity tests
 
     // Create a circuit struct representing the QASM circuit in the given file
@@ -874,7 +880,8 @@ int main(int argc, char *argv[])
 
     // If experiments is true, print time
     end = wctime();
-    INFO("Circuit runtime: %lf\n", (end-start));
+    double runtime = end-start;
+    INFO("Circuit runtime: %lf\n", runtime);
 
     if (!experiments) {
         INFO("Measurement outcomes: (%d) measurements\n", runs);
@@ -887,6 +894,36 @@ int main(int argc, char *argv[])
                 printf("> : %d\n", results[i]);
             }
         }
+    }
+
+    uint64_t final_nodecount = aadd_countnodes(qmdd);
+    double final_magnitude   = qmdd_get_magnitude(qmdd, c_s.qubits);
+    INFO("Nodecount of final state: %ld\n", final_nodecount);
+    INFO("Magnitude of final state: %.05lf\n", final_magnitude);
+    
+    if (csv_outputfile != NULL) {
+        INFO("Writing stats to %s\n", csv_outputfile);
+
+        FILE *fp = fopen(csv_outputfile, "a");
+        // write header if file is empty
+        fseek (fp, 0, SEEK_END);
+            long size = ftell(fp);
+            if (size == 0)
+                fprintf(fp, "%s\n", "algorithm, nqubits, tolerance, norm-strat, inv-cache, workers, runtime, final_nodecount, final_magnitude");
+        // append stats of this run
+        char *alg_name = basename(filename);
+        fprintf(fp, "%s, %d, %.3e, %d, %d, %d, %lf, %ld, %0.5lf\n",
+                alg_name,
+                c_s.qubits,
+                wgt_store_get_tol(),
+                weight_norm_strat,
+                1, // inverse caching, TODO: make this configerable
+                workers,
+                runtime,
+                final_nodecount,
+                final_magnitude);
+        fclose(fp);
+        free(csv_outputfile);
     }
 
     // Free variables
