@@ -14,6 +14,7 @@
 static int algorithm = 0;
 static int qubits = 0; // must be set for Grover
 static int workers = 1;
+static int rseed = 0;
 static int depth = 0; // must be set for supremacy
 static size_t min_tablesize = 1LL<<25;
 static size_t max_tablesize = 1LL<<25;
@@ -42,6 +43,7 @@ static struct argp_option options[] =
 {
     {"workers", 'w', "<workers>", 0, "Number of workers/threads (default=1)", 0},
     {"qubits", 'q', "<nqubits>", 0, "Number of qubits (must be set for Grover)", 0},
+    {"rseed", 'r', "<random-seed>", 0, "Set random seed", 0},
     {"depth", 'd', "<depth>", 0, "Depth of circuits with arbitrary depth (e.g. supremacy)", 0},
     {"norm-strat", 's', "<low|largest|l2>", 0, "Edge weight normalization strategy", 0},
     {"tol", 1, "<tolerance>", 0, "Tolerance for deciding edge weights equal (default=1e-14)", 0},
@@ -61,6 +63,9 @@ parse_opt(int key, char *arg, struct argp_state *state)
         break;
     case 'q':
         qubits = atoi(arg);
+        break;
+    case 'r':
+        rseed = atoi(arg);
         break;
     case 'd':
         depth = atoi(arg);
@@ -155,10 +160,11 @@ write_csv_stats()
         if (size == 0)
             fprintf(fp, "%s\n", "algorithm, nqubits, tolerance, norm-strat, inv-cache, workers, success, runtime, final_nodecount, final_magnitude");
     // append stats of this run
-    char* alg_name = "";
-    if (algorithm == alg_grover) alg_name = "grover";
-    else if (algorithm == alg_shor) alg_name = "shor";
-    else if (algorithm == alg_supremacy) alg_name = "supremacy";
+    int max_length = 100;
+    char alg_name[max_length];
+    if (algorithm == alg_grover) snprintf(alg_name, max_length, "grover");
+    else if (algorithm == alg_shor) snprintf(alg_name, max_length, "shor");
+    else if (algorithm == alg_supremacy) snprintf(alg_name, max_length, "supremacy-depth%d", depth);
     fprintf(fp, "%s, %d, %.3e, %d, %d, %d, %d, %lf, %ld, %0.5lf\n",
             alg_name,
             stats.nqubits,
@@ -276,14 +282,14 @@ int main(int argc, char **argv)
     qsylvan_init_simulator(wgt_tab_size, tolerance, wgt_table_type, wgt_norm_strat);
 
     // e.g. for choosing random 'a' in Shor
-    int rs = time(NULL);
-    srand(rs);
+    if (rseed == 0) rseed = time(NULL);
+    srand(rseed);
 
     /* Print some info */
     INFO("Edge weight normalization: %d\n", wgt_norm_strat);
     INFO("Edge weight tolerance: %.3e\n", tolerance);
     INFO("Workers: %d\n", workers);
-    INFO("Random seed: %d\n", rs);
+    INFO("Random seed: %d\n", rseed);
 
     /* Run the given quantum algorithm */
     if (algorithm == alg_grover) {
