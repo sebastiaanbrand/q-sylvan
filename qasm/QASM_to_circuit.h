@@ -131,7 +131,7 @@ bool get_qubits_c_struct(char* token, BDDVAR n_qubits, BDDVAR* qubits);
  * - gate_s: a pointer to a gate location where the resulting gate should be stored
  * 
  * RETURN:
- * - the number of controls (including target) <gate_s> has. If the gate is unknown controls is 0.
+ * - the number of controls (including target) <gate_s> has. Aborts if the gate is unknown.
  */
 int get_gateid_c_struct(char* gate_str, Gate* gate);
 

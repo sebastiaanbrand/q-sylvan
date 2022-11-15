@@ -277,7 +277,10 @@ int get_gateid_c_struct(char* gate_str, Gate* gate_s)
             gate_s->rotation = atof(gate_str);
         } else {
             // Unknown gate
-            return 0;
+            if (strcmp(gate_str, "OPENQASM") == 0) return 0;
+            if (strcmp(gate_str, "include") == 0) return 0;
+            fprintf(stderr, "Error: gate %s currently not supported\n", gate_str);
+            exit(1);
         }
     }
     return n_qubits;
