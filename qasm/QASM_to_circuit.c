@@ -271,15 +271,21 @@ int get_gateid_c_struct(char* gate_str, Gate* gate_s)
             gate_str = strtok(NULL, ")");
             *gate_s = gate_Ry;
             gate_s->rotation = atof(gate_str);
-        } else if (strcmp(gate_str, "rz") == 0) {
+        } else if (strcmp(gate_str, "rz") == 0 || strcmp(gate_str, "p") == 0) {
             gate_str = strtok(NULL, ")");
             *gate_s = gate_Rz;
             gate_s->rotation = atof(gate_str);
+            printf("rz(%lf)\n", gate_s->rotation);
         } else {
             // Unknown gate
             if (strcmp(gate_str, "OPENQASM") == 0) return 0;
             if (strcmp(gate_str, "include") == 0) return 0;
-            fprintf(stderr, "Error: gate %s currently not supported\n", gate_str);
+            fprintf(stderr, "ERROR: gate %s currently not supported\n", gate_str);
+            exit(1);
+        }
+        if (gate_s->rotation == 0) {
+            fprintf(stderr, "ERROR: Something when wrong parsing rotation angle...\n");
+            fprintf(stderr, " - Currently only floating point values are allowed (e.g. 1.5708, but not 'pi/2')\n");
             exit(1);
         }
     }
