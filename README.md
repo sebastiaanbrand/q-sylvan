@@ -62,7 +62,7 @@ x q[0];
 measure q[0]->c[0];
 measure q[1]->c[1];
 ```
-This code can be found in [`qasm/circuits/bell_state.qasm`](qasm/circuits/bell_state.qasm) and can be run with `./qasm/circuit_to_Sylvan ../qasm/circuits/bell_state.qasm -r=100` from the `build/` directory. A more complete set of supported QASM statements can be found [here](docs/documentation/qasm_interface.md).
+This code can be found in [`qasm/circuits/bell_state.qasm`](qasm/circuits/bell_state.qasm) and can be run with `./qasm/qsylvan_qasm ../qasm/circuits/bell_state.qasm -r=100` from the `build/` directory. A more complete set of supported QASM statements can be found [here](docs/documentation/qasm_interface.md).
 
 
 ## Documentation
