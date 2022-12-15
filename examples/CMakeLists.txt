@@ -12,7 +12,7 @@ target_link_libraries(bell_state qsylvan)
 
 # Executable to run algorithms
 add_executable(alg_run alg_run.c ${SOURCES})
-target_link_libraries(alg_run qsylvan)
+target_link_libraries(alg_run qsylvan argp)
 
 # Tests
 add_executable(test_algs test_algs.c ${SOURCES})
