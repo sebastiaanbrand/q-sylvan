@@ -135,8 +135,9 @@ static const uint64_t CACHE_QMDD_PROB               = (84LL<<40);
 #include <sylvan_mtbdd_int.h>
 #include <sylvan_ldd_int.h>
 
+#endif
+
 #ifdef __cplusplus
 } /* namespace */
 #endif
 
-#endif
