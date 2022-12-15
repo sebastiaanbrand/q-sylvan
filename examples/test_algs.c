@@ -1,3 +1,4 @@
+#include <inttypes.h>
 #include <stdio.h>
 #include <time.h>
 
@@ -358,7 +359,7 @@ int test_shor()
         factor = shor_run(N, 0, false);
         counter++;
     }
-    if(VERBOSE) printf("qmdd %ld-qubit Shor:          ok (found factor %ld of %ld with %ld tries)\n", nqubits, factor, N, counter);
+    if(VERBOSE) printf("qmdd %" PRIu64 "-qubit Shor:          ok (found factor %" PRIu64 " of %" PRIu64 " with %" PRIu64 " tries)\n", nqubits, factor, N, counter);
 
     // 35 = 5 x 7 (15 qubits)
     N = 35;
@@ -369,7 +370,7 @@ int test_shor()
         factor = shor_run(N, 0, false);
         counter++;
     }
-    if(VERBOSE) printf("qmdd %ld-qubit Shor:          ok (found factor %ld of %ld with %ld tries)\n", nqubits, factor, N, counter);
+    if(VERBOSE) printf("qmdd %" PRIu64 "-qubit Shor:          ok (found factor %" PRIu64 " of %" PRIu64 " with %" PRIu64 " tries)\n", nqubits, factor, N, counter);
 
 
     return 0;
