@@ -973,20 +973,20 @@ static void aaddnode_pprint(aaddnode_t n)
     BDDVAR var = aaddnode_getvar(n);
     AADD low, high;
     aaddnode_getchilderen(n, &low, &high);
-    printf("[var=%d, low=%lx, high=%lx, ", 
+    printf("[var=%d, low=%" PRIu64 ", high=%" PRIu64 ", ",
              var,
              AADD_TARGET(low),
              AADD_TARGET(high));
     if(AADD_WEIGHT(low) == AADD_ZERO)      printf("a=AADD_ZERO, ");
     else if(AADD_WEIGHT(high) == AADD_ONE)  printf("a=AADD_ONE, ");
     else {
-        printf("a=%lx, ", AADD_WEIGHT(low));
+        printf("a=%" PRIu64 ", ", AADD_WEIGHT(low));
         printf("("); wgt_fprint(stdout, AADD_WEIGHT(low)); printf(")");
     }                      
     if(AADD_WEIGHT(high) == AADD_ZERO)     printf("b=AADD_ZERO ");
     else if(AADD_WEIGHT(high) == AADD_ONE) printf("b=AADD_ONE, ");
     else {                     
-        printf("b=%lx", AADD_WEIGHT(high));
+        printf("b=%" PRIu64, AADD_WEIGHT(high));
         printf("("); wgt_fprint(stdout, AADD_WEIGHT(high)); printf(")");
     }
     printf("]\n");
@@ -999,7 +999,7 @@ _print_aadd(AADD a)
         aaddnode_t node = AADD_GETNODE(AADD_TARGET(a));
         if(!aaddnode_getmark(node)){
             aaddnode_setmark(node, 1);
-            printf("%lx\t", AADD_TARGET(a));
+            printf("%" PRIu64 "\t", AADD_TARGET(a));
             aaddnode_pprint(node);
             AADD low, high;
             aaddnode_getchilderen(node, &low, &high);
@@ -1012,7 +1012,7 @@ _print_aadd(AADD a)
 void
 aadd_printnodes(AADD a)
 {
-    printf("root edge: %lx, %lx = ",AADD_TARGET(a), AADD_WEIGHT(a));
+    printf("root edge: %" PRIu64 ", %" PRIu64 " = ",AADD_TARGET(a), AADD_WEIGHT(a));
     wgt_fprint(stdout, AADD_WEIGHT(a));
     printf("\n");
     _print_aadd(a);
@@ -1078,7 +1078,7 @@ aadd_fprintdot(FILE *out, AADD a, bool draw_zeros)
     fprintf(out, "];\n");
 
     // terminal node
-    fprintf(out, "%lu [shape=box, label=\"T\"];\n", AADD_TERMINAL);
+    fprintf(out, "%" PRIu64 " [shape=box, label=\"T\"];\n", AADD_TERMINAL);
 
     // recursively add nodes
     aadd_fprintdot_rec(out, a, draw_zeros);

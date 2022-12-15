@@ -1,3 +1,5 @@
+#include <inttypes.h>
+
 #include "shor.h"
 
 static bool testing_mode = 0; // turns on/off (expensive) sanity checks
@@ -393,8 +395,8 @@ shor_post_process(uint64_t N, uint64_t a, uint64_t b, uint64_t denom, bool verbo
 	}
 
     if (verbose) {
-        printf("Continued fraction expansion of %ld/%ld = ", b, denom);
-        for(int i = 0; i < cf_entries; i++) printf("%ld ", cf[i]);
+        printf("Continued fraction expansion of %" PRIu64 "/%" PRIu64 " = ", b, denom);
+        for(int i = 0; i < cf_entries; i++) printf("%" PRIu64 " ", cf[i]);
         printf("\n");
     }
 
@@ -409,10 +411,10 @@ shor_post_process(uint64_t N, uint64_t a, uint64_t b, uint64_t denom, bool verbo
 			denominator = tmp;
 		}
         if (verbose)
-            printf(" Candidate %ld/%ld: ", numerator, denominator);
+            printf(" Candidate %" PRIu64 "/%" PRIu64 ": ", numerator, denominator);
 		if(denominator > N) {
             if (verbose) {
-                printf(" denominator too large (greater than %ld)\n", N);
+                printf(" denominator too large (greater than %" PRIu64 ")\n", N);
                 printf("Factorization failed\n");
             }
             return 0;
@@ -421,7 +423,7 @@ shor_post_process(uint64_t N, uint64_t a, uint64_t b, uint64_t denom, bool verbo
 			if(fabs(delta) < 1.0/(2.0*old_denom)) {
 				if(modpow(a, denominator, N) == 1) {
                     if (verbose)
-                        printf("found period = %ld\n", denominator);
+                        printf("found period = %" PRIu64 "\n", denominator);
 					if(denominator & 1) {
                         if (verbose)
                             printf("Factorization failed (period is odd)\n");
@@ -440,8 +442,8 @@ shor_post_process(uint64_t N, uint64_t a, uint64_t b, uint64_t denom, bool verbo
                         }
                         if (verbose) {
                             printf("Factorization succeeded! Non-trivial factors are:\n");
-                            printf(" -- gcd(%ld^(%ld/2)-1,%ld)=%ld\n", N, denominator, N, f1);
-                            printf(" -- gcd(%ld^(%ld/2)+1,%ld)=%ld\n", N, denominator, N, f2);
+                            printf(" -- gcd(%" PRIu64 "^(%" PRIu64 "/2)-1,%" PRIu64 ")=%" PRIu64 "\n", N, denominator, N, f1);
+                            printf(" -- gcd(%" PRIu64 "^(%" PRIu64 "/2)+1,%" PRIu64 ")=%" PRIu64 "\n", N, denominator, N, f2);
                         }
                         return f1;
 					}
@@ -478,11 +480,11 @@ shor_run(uint64_t N, uint64_t a, bool verbose)
     shor_set_globals(a, N);
     
     if (verbose) {
-        printf("input N        = %ld [", N);
+        printf("input N        = %" PRIu64 " [", N);
         for (uint32_t i=0; i<shor_n; i++) printf("%d", shor_bits_N[i]);
         printf("]\n");
         printf("n (bits for N) = %d\n",  shor_n);
-        printf("random a       = %ld [", a);
+        printf("random a       = %" PRIu64 " [", a);
         for (uint32_t i=0; i<shor_n; i++) printf("%d", shor_bits_a[i]);
         printf("]\n\n");
 

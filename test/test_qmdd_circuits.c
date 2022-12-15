@@ -1,3 +1,4 @@
+#include <inttypes.h>
 #include <stdio.h>
 #include <time.h>
 
@@ -613,7 +614,7 @@ int test_5qubit_circuit()
     aadd_fprintdot(fp, q, true);
     fclose(fp);
 
-    if(VERBOSE) printf("qmdd 5 qubit circuit:      ok (%ld nodes)\n", node_count);
+    if(VERBOSE) printf("qmdd 5 qubit circuit:      ok (%" PRIu64 " nodes)\n", node_count);
     return 0;
 }
 
@@ -669,7 +670,7 @@ int test_10qubit_circuit()
     test_assert(aadd_equivalent(q, qref, 10, true,  VERBOSE)); // check exact equiv
     test_assert(q == qref);
 
-    if(VERBOSE) printf("qmdd 10 qubit circuit:     ok (%ld nodes)\n", node_count);
+    if(VERBOSE) printf("qmdd 10 qubit circuit:     ok (%" PRIu64 " nodes)\n", node_count);
     return 0;
 }
 
@@ -745,7 +746,7 @@ int test_20qubit_circuit()
     test_assert(aadd_equivalent(q, qref, 20, true,  VERBOSE)); // check exact equiv
     test_assert(q == qref);
 
-    if(VERBOSE) printf("qmdd 20 qubit circuit:     ok (%ld nodes)\n", node_count);
+    if(VERBOSE) printf("qmdd 20 qubit circuit:     ok (%" PRIu64 " nodes)\n", node_count);
     return 0;
 }
 
