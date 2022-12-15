@@ -5,6 +5,50 @@
 #include <sylvan_int.h>
 
 
+void *wgt_storage; // TODO: move to source file?
+void *wgt_storage_new;
+
+AADD_WGT AADD_ONE;
+AADD_WGT AADD_ZERO;
+AADD_WGT AADD_MIN_ONE;
+
+/**********************<Managing the edge weight table>************************/
+
+void sylvan_init_edge_weights(size_t size, double tol, edge_weight_type_t edge_weight_type, wgt_storage_backend_t backend);
+void init_edge_weight_functions(edge_weight_type_t edge_weight_type);
+void init_edge_weight_storage(size_t size, double tol, wgt_storage_backend_t backend, void **wgt_store);
+void (*init_wgt_table_entries)(); // set by sylvan_init_aadd
+uint64_t sylvan_get_edge_weight_table_size();
+double sylvan_edge_weights_tolerance();
+uint64_t sylvan_edge_weights_count_entries();
+void sylvan_edge_weights_free();
+
+/******************<Interface for different edge_weight_types>*****************/
+
+weight_t (*weight_malloc)();
+void (*_weight_value)(); // weight_value(WGT a, weight_type * res)
+AADD_WGT (*weight_lookup)(); // weight_lookup_(weight_type a)
+AADD_WGT (*_weight_lookup_ptr)(); // _weight_lookup_ptr(weight_type *a, void *wgt_store)
+void (*init_one_zero)();
+
+/* Arithmetic operations on edge weights */
+void (*weight_abs)(); // a <-- |a|
+void (*weight_neg)(); // a <-- -a
+void (*weight_sqr)(); // a <-- a^2
+void (*weight_add)(); // a <-- a + b
+void (*weight_sub)(); // a <-- a - b
+void (*weight_mul)(); // a <-- a * b
+void (*weight_div)(); // a <-- a / b
+bool (*weight_eq)(); // returns true iff a == b
+bool (*weight_eps_close)(); // returns true iff dist(a,b) < eps
+bool (*weight_greater)(); // returns true iff a > b
+
+/* Normalization methods */
+AADD_WGT (*wgt_norm_L2)(); // wgt_norm_L2(AADD_WGT *low, AADD_WGT *high)
+AADD_WGT (*wgt_get_low_L2normed)(); // wgt_get_low_L2normed(AADD_WGT high)
+
+void (*weight_fprint)(); // weight_fprint(FILE *stream, weight_t a)
+
 /**********************<Managing the edge weight table>************************/
 
 // Table parameters

@@ -33,7 +33,7 @@ static const uint64_t num_dynamic_gates = 1000; // IDs in this rage are re-used
 // gates[k][1] = u01 (top right)
 // gates[k][2] = u10 (bottom left)
 // gates[k][3] = u11 (bottom right)
-uint64_t gates[n_predef_gates+256+256+1000][4]; // max 2^24 gates atm
+extern uint64_t gates[n_predef_gates+256+256+1000][4]; // max 2^24 gates atm
 
 void qmdd_gates_init();
 // The next 255 gates are reserved for parameterized phase gates.

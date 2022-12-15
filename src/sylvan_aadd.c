@@ -27,6 +27,10 @@
 static int granularity = 1; // operation cache access granularity
 
 
+bool larger_wgt_indices;
+int weight_norm_strat;
+AADD_WGT (*normalize_weights)(AADD_WGT *, AADD_WGT *);
+
 /*******************<Garbage collection, references, marking>******************/
 
 /**
