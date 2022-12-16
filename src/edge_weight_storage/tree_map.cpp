@@ -2,6 +2,7 @@
 
 #include <map>
 #include <math.h>
+#include <cstdio>
 
 // float "equality" tolerance
 static long double TOLERANCE = 1e-14l;

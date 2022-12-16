@@ -13,3 +13,9 @@
 # Build
 /build
 *.so
+CMakeFiles/
+*.cmake
+*Makefile
+CMakeCache.txt
+qsylvan.pc
+*.swp

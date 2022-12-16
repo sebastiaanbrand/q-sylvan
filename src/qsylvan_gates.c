@@ -1,10 +1,10 @@
 #include <qsylvan_gates.h>
-#include <sylvan_edge_weights.h>
 #include <sylvan_int.h>
 
 
 static long double Pi;    // set value of global Pi
 
+uint64_t gates[n_predef_gates+256+256+1000][4];
 
 /********************** <dynamic custom rotation gates> ***********************/
 

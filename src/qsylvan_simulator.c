@@ -1,5 +1,6 @@
 #include <qsylvan_simulator.h>
 
+#include <inttypes.h>
 
 
 static bool testing_mode = 0; // turns on/off (expensive) sanity checks
@@ -1087,7 +1088,7 @@ qmdd_stats_log(QMDD qmdd)
     // Insert info
     uint64_t num_nodes = aadd_countnodes(qmdd);
     uint64_t num_amps  = sylvan_edge_weights_count_entries();
-    fprintf(qmdd_logfile, "%ld,%ld\n", num_nodes, num_amps);
+    fprintf(qmdd_logfile, "%" PRIu64 ",%" PRIu64 "\n", num_nodes, num_amps);
     logcounter++;
 
     // manually flush every 'statslog_buffer' entries

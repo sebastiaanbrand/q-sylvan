@@ -1,4 +1,5 @@
 #include <argp.h>
+#include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/time.h>
@@ -165,7 +166,7 @@ write_csv_stats()
     if (algorithm == alg_grover) snprintf(alg_name, max_length, "grover");
     else if (algorithm == alg_shor) snprintf(alg_name, max_length, "shor");
     else if (algorithm == alg_supremacy) snprintf(alg_name, max_length, "supremacy-depth%d", depth);
-    fprintf(fp, "%s, %d, %.3e, %d, %d, %d, %d, %lf, %ld, %0.5lf\n",
+    fprintf(fp, "%s, %d, %.3e, %d, %d, %d, %d, %lf, %" PRIu64 ", %0.5lf\n",
             alg_name,
             stats.nqubits,
             tolerance,
@@ -304,7 +305,7 @@ int main(int argc, char **argv)
     stats.final_magnitude = qmdd_get_magnitude(stats.final_qmdd, stats.nqubits);
     INFO("Magnitude of final state: %.05lf\n", stats.final_magnitude);
     stats.final_nodecount = aadd_countnodes(stats.final_qmdd);
-    INFO("Final Nodecount: %ld\n", stats.final_nodecount);
+    INFO("Final Nodecount: %" PRIu64 "\n", stats.final_nodecount);
     if (csv_outputfile != NULL) {
         INFO("Writing csv output to %s\n", csv_outputfile);
         write_csv_stats();

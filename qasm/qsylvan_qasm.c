@@ -1,3 +1,4 @@
+#include <inttypes.h>
 #include <popt.h>
 #include <sys/time.h>
 #include <libgen.h>
@@ -16,7 +17,7 @@ wctime()
 }
 
 static double t_start;
-#define INFO(s, ...) fprintf(stdout, "[% 8.2f] " s, wctime()-t_start, ##__VA_ARGS__)
+#define INFO(s, ...) fprintf(stdout, "[%8.2f] " s, wctime()-t_start, ##__VA_ARGS__)
 #define Abort(...) { fprintf(stderr, __VA_ARGS__); fprintf(stderr, "Abort at line %d!\n", __LINE__); exit(-1); }
 
 void final_measure(QMDD qmdd, int* measurements, C_struct c_s, bool* results)
@@ -898,7 +899,7 @@ int main(int argc, char *argv[])
 
     uint64_t final_nodecount = aadd_countnodes(qmdd);
     double final_magnitude   = qmdd_get_magnitude(qmdd, c_s.qubits);
-    INFO("Nodecount of final state: %ld\n", final_nodecount);
+    INFO("Nodecount of final state: %" PRIu64 "\n", final_nodecount);
     INFO("Magnitude of final state: %.05lf\n", final_magnitude);
     
     if (csv_outputfile != NULL) {
@@ -912,7 +913,7 @@ int main(int argc, char *argv[])
                 fprintf(fp, "%s\n", "algorithm, nqubits, tolerance, norm-strat, inv-cache, workers, runtime, final_nodecount, final_magnitude");
         // append stats of this run
         char *alg_name = basename(filename);
-        fprintf(fp, "%s, %d, %.3e, %d, %d, %d, %lf, %ld, %0.5lf\n",
+        fprintf(fp, "%s, %d, %.3e, %d, %d, %d, %lf, %" PRIu64 ", %0.5lf\n",
                 alg_name,
                 c_s.qubits,
                 wgt_store_get_tol(),

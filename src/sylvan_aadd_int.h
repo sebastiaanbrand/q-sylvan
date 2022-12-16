@@ -16,9 +16,9 @@
  * TODO: Maybe handle this in a cleaner way than with global variables?
  */
 // using [wgts,ptr] [33,30] bits (default [23,40])
-bool larger_wgt_indices;
-int weight_norm_strat;
-AADD_WGT (*normalize_weights)(AADD_WGT *, AADD_WGT *);
+extern bool larger_wgt_indices;
+extern int weight_norm_strat;
+extern AADD_WGT (*normalize_weights)(AADD_WGT *, AADD_WGT *);
 
 
 /*****************<Bit level manipulation of AADD / aaddnode_t>****************/

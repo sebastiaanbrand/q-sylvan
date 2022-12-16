@@ -12,6 +12,11 @@ add_library(edge_weight_storage SHARED
         MurmurHash3.h MurmurHash3.c
         util.h)
 
-target_link_libraries(edge_weight_storage "-lquadmath")
+
+option(SYLVAN_QUADMATH "128 bit arithmetic" OFF)
+if(SYLVAN_QUADMATH)
+    target_link_libraries(edge_weight_storage "-lquadmath")
+endif()
+
 
 add_subdirectory(test)

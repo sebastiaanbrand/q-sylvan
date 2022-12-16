@@ -7,9 +7,9 @@
 
 typedef uint64_t AADD_WGT;  // AADD edge weights (indices to table entries)
 
-AADD_WGT AADD_ONE;
-AADD_WGT AADD_ZERO;
-AADD_WGT AADD_MIN_ONE;
+extern AADD_WGT AADD_ONE;
+extern AADD_WGT AADD_ZERO;
+extern AADD_WGT AADD_MIN_ONE;
 
 typedef void* weight_t;
 
@@ -22,21 +22,21 @@ typedef enum edge_weight_type {
 
 
 // Actual table (new used for gc purposes)
-void *wgt_storage; // TODO: move to source file?
-void *wgt_storage_new;
+extern void *wgt_storage; // TODO: move to source file?
+extern void *wgt_storage_new;
 
 
 /**********************<Managing the edge weight table>************************/
 
-void sylvan_init_edge_weights(size_t size, double tol, edge_weight_type_t edge_weight_type, wgt_storage_backend_t backend);
-void init_edge_weight_functions(edge_weight_type_t edge_weight_type);
-void init_edge_weight_storage(size_t size, double tol, wgt_storage_backend_t backend, void **wgt_store);
-void (*init_wgt_table_entries)(); // set by sylvan_init_aadd
+extern void sylvan_init_edge_weights(size_t size, double tol, edge_weight_type_t edge_weight_type, wgt_storage_backend_t backend);
+extern void init_edge_weight_functions(edge_weight_type_t edge_weight_type);
+extern void init_edge_weight_storage(size_t size, double tol, wgt_storage_backend_t backend, void **wgt_store);
+extern void (*init_wgt_table_entries)(); // set by sylvan_init_aadd
 
-uint64_t sylvan_get_edge_weight_table_size();
-double sylvan_edge_weights_tolerance();
-uint64_t sylvan_edge_weights_count_entries();
-void sylvan_edge_weights_free();
+extern uint64_t sylvan_get_edge_weight_table_size();
+extern double sylvan_edge_weights_tolerance();
+extern uint64_t sylvan_edge_weights_count_entries();
+extern void sylvan_edge_weights_free();
 
 /*********************</Managing the edge weight table>************************/
 
@@ -46,12 +46,12 @@ void sylvan_edge_weights_free();
 
 /*************************<GC of edge weight table>****************************/
 
-void init_edge_weight_storage_gc();
-uint64_t wgt_table_entries_estimate();
-void wgt_table_gc_inc_entries_estimate();
-void wgt_table_gc_init_new(void (*init_wgt_table_entries)());
-void wgt_table_gc_delete_old();
-AADD_WGT wgt_table_gc_keep(AADD_WGT a);
+extern void init_edge_weight_storage_gc();
+extern uint64_t wgt_table_entries_estimate();
+extern void wgt_table_gc_inc_entries_estimate();
+extern void wgt_table_gc_init_new(void (*init_wgt_table_entries)());
+extern void wgt_table_gc_delete_old();
+extern AADD_WGT wgt_table_gc_keep(AADD_WGT a);
 
 /************************</GC of edge weight table>****************************/
 
@@ -61,33 +61,33 @@ AADD_WGT wgt_table_gc_keep(AADD_WGT a);
 
 /******************<Interface for different edge_weight_types>*****************/
 
-weight_t (*weight_malloc)();
-void (*_weight_value)(); // weight_value(WGT a, weight_type * res)
-AADD_WGT (*weight_lookup)(); // weight_lookup_(weight_type a)
-AADD_WGT (*_weight_lookup_ptr)(); // _weight_lookup_ptr(weight_type *a, void *wgt_store)
+extern weight_t (*weight_malloc)();
+extern void (*_weight_value)(); // weight_value(WGT a, weight_type * res)
+extern AADD_WGT (*weight_lookup)(); // weight_lookup_(weight_type a)
+extern AADD_WGT (*_weight_lookup_ptr)(); // _weight_lookup_ptr(weight_type *a, void *wgt_store)
 #define weight_lookup_ptr(a) _weight_lookup_ptr(a, wgt_storage)
 #define weight_value(a, res) _weight_value(wgt_storage, a, res)
 
-void (*init_one_zero)();
+extern void (*init_one_zero)();
 
 /* Arithmetic operations on edge weights */
-void (*weight_abs)(); // a <-- |a|
-void (*weight_neg)(); // a <-- -a
-void (*weight_sqr)(); // a <-- a^2
-void (*weight_add)(); // a <-- a + b
-void (*weight_sub)(); // a <-- a - b
-void (*weight_mul)(); // a <-- a * b
-void (*weight_div)(); // a <-- a / b
-bool (*weight_eq)(); // returns true iff a == b
-bool (*weight_eps_close)(); // returns true iff dist(a,b) < eps
+extern void (*weight_abs)(); // a <-- |a|
+extern void (*weight_neg)(); // a <-- -a
+extern void (*weight_sqr)(); // a <-- a^2
+extern void (*weight_add)(); // a <-- a + b
+extern void (*weight_sub)(); // a <-- a - b
+extern void (*weight_mul)(); // a <-- a * b
+extern void (*weight_div)(); // a <-- a / b
+extern bool (*weight_eq)(); // returns true iff a == b
+extern bool (*weight_eps_close)(); // returns true iff dist(a,b) < eps
 #define weight_approx_eq(a,b) weight_eps_close(a,b,sylvan_edge_weights_tolerance())
-bool (*weight_greater)(); // returns true iff a > b
+extern bool (*weight_greater)(); // returns true iff a > b
 
 /* Normalization methods */
-AADD_WGT (*wgt_norm_L2)(); // wgt_norm_L2(AADD_WGT *low, AADD_WGT *high)
-AADD_WGT (*wgt_get_low_L2normed)(); // wgt_get_low_L2normed(AADD_WGT high)
+extern AADD_WGT (*wgt_norm_L2)(); // wgt_norm_L2(AADD_WGT *low, AADD_WGT *high)
+extern AADD_WGT (*wgt_get_low_L2normed)(); // wgt_get_low_L2normed(AADD_WGT high)
 
-void (*weight_fprint)(); // weight_fprint(FILE *stream, weight_t a)
+extern void (*weight_fprint)(); // weight_fprint(FILE *stream, weight_t a)
 
 /*****************</Interface for different edge_weight_types>*****************/
 
