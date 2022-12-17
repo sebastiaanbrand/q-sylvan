@@ -155,7 +155,7 @@ QMDD qmdd_measure_all(QMDD qmdd, BDDVAR n, bool* ms, double *p);
 /**
  * (Recursive) helper function for obtaining probabilities for measurements
  */
-#define qmdd_unnormed_prob(qmdd, topvar, nvars) (CALL(qmdd_unnormed_prob,qmdd,topvar,nvars))
+#define qmdd_unnormed_prob(qmdd, topvar, nvars) (RUN(qmdd_unnormed_prob,qmdd,topvar,nvars))
 TASK_DECL_3(double, qmdd_unnormed_prob, QMDD, BDDVAR, BDDVAR);
 
 /**
@@ -197,38 +197,38 @@ AMP qmdd_amp_from_prob(double a);
 #define MAX_CONTROLS 3
 
 /* Applies given (single qubit) gate to |q>. (Wrapper function) */
-#define qmdd_gate(qmdd,gate,target) (CALL(qmdd_gate,qmdd,gate,target))
+#define qmdd_gate(qmdd,gate,target) (RUN(qmdd_gate,qmdd,gate,target))
 TASK_DECL_3(QMDD, qmdd_gate, QMDD, gate_id_t, BDDVAR);
 
 /* Applies given controlled gate to |q>. (Wrapper function) */
-#define qmdd_cgate(qmdd,gate,c,t) (CALL(qmdd_cgate,qmdd,gate,c,t))
-#define qmdd_cgate2(qmdd,gate,c1,c2,t) (CALL(qmdd_cgate2,qmdd,gate,c1,c2,t))
-#define qmdd_cgate3(qmdd,gate,c1,c2,c3,t) (CALL(qmdd_cgate3,qmdd,gate,c1,c2,c3,t))
+#define qmdd_cgate(qmdd,gate,c,t) (RUN(qmdd_cgate,qmdd,gate,c,t))
+#define qmdd_cgate2(qmdd,gate,c1,c2,t) (RUN(qmdd_cgate2,qmdd,gate,c1,c2,t))
+#define qmdd_cgate3(qmdd,gate,c1,c2,c3,t) (RUN(qmdd_cgate3,qmdd,gate,c1,c2,c3,t))
 TASK_DECL_4(QMDD, qmdd_cgate,  QMDD, gate_id_t, BDDVAR, BDDVAR);
 TASK_DECL_5(QMDD, qmdd_cgate2, QMDD, gate_id_t, BDDVAR, BDDVAR, BDDVAR);
 TASK_DECL_6(QMDD, qmdd_cgate3, QMDD, gate_id_t, BDDVAR, BDDVAR, BDDVAR, BDDVAR);
 
 /* Applies given controlled gate to |q>. (Wrapper function) */
-#define qmdd_cgate_range(qmdd,gate,c_first,c_last,t) (CALL(qmdd_cgate_range,qmdd,gate,c_first,c_last,t))
+#define qmdd_cgate_range(qmdd,gate,c_first,c_last,t) (RUN(qmdd_cgate_range,qmdd,gate,c_first,c_last,t))
 TASK_DECL_5(QMDD, qmdd_cgate_range, QMDD, gate_id_t, BDDVAR, BDDVAR, BDDVAR);
 
 /**
  * Recursive implementation of applying single qubit gates
  */
-#define qmdd_gate_rec(q,gate,target) (CALL(qmdd_gate_rec,q,gate,target))
+#define qmdd_gate_rec(q,gate,target) (RUN(qmdd_gate_rec,q,gate,target))
 TASK_DECL_3(QMDD, qmdd_gate_rec, QMDD, gate_id_t, BDDVAR);
 
 /**
  * Recursive implementation of applying controlled gates
  */
-#define qmdd_cgate_rec(q,gate,cs,t) (CALL(qmdd_cgate_rec,q,gate,cs,0,t))
+#define qmdd_cgate_rec(q,gate,cs,t) (RUN(qmdd_cgate_rec,q,gate,cs,0,t))
 TASK_DECL_5(QMDD, qmdd_cgate_rec, QMDD, gate_id_t, BDDVAR*, uint32_t, BDDVAR);
 
 /**
  * Recursive implementation of applying controlled gates where the controlles 
  * are defined by a range 'c_first' through 'c_last'.
  */
-#define qmdd_cgate_range_rec(q,gate,c_first,c_last,t) (CALL(qmdd_cgate_range_rec,q,gate,c_first,c_last,t,0))
+#define qmdd_cgate_range_rec(q,gate,c_first,c_last,t) (RUN(qmdd_cgate_range_rec,q,gate,c_first,c_last,t,0))
 TASK_DECL_6(QMDD, qmdd_cgate_range_rec, QMDD, gate_id_t, BDDVAR, BDDVAR, BDDVAR, BDDVAR);
 
 /******************************</Applying gates>*******************************/
@@ -282,7 +282,7 @@ QMDD qmdd_circuit(QMDD qmdd, circuit_id_t circ_id, BDDVAR t1, BDDVAR t2);
  * @param t1 BDDVAR. Parameter 1 for given circuit.
  * @param t2 BDDVAR. Parameter 2 for given circuit.
  */
-#define qmdd_ccircuit(qmdd, circ_id, cs, t1, t2) (CALL(qmdd_ccircuit,qmdd,circ_id,cs,0,t1,t2));
+#define qmdd_ccircuit(qmdd, circ_id, cs, t1, t2) (RUN(qmdd_ccircuit,qmdd,circ_id,cs,0,t1,t2));
 TASK_DECL_6(QMDD, qmdd_ccircuit, QMDD, circuit_id_t, BDDVAR*, uint32_t, BDDVAR, BDDVAR);
 
 /**

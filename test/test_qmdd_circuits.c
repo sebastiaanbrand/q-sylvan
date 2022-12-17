@@ -13,8 +13,6 @@ int test_swap_circuit()
     bool x3[] = {0,0,0};
     AMP a;
 
-    LACE_ME;
-
     q = qmdd_create_basis_state(3, x3);
     q = qmdd_gate(q, GATEID_X, 2);
     x3[2] = 0; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
@@ -63,8 +61,6 @@ int test_cswap_circuit()
 
     uint32_t cs[3];
     cs[0] = 0; cs[1] = AADD_INVALID_VAR; cs[2] = AADD_INVALID_VAR; // control only on q0
-
-    LACE_ME;
 
     x3[2]=1; x3[1]=0; x3[0]=0; 
     q = qmdd_create_basis_state(3, x3);
@@ -163,8 +159,6 @@ int test_cswap_circuit()
 
 int test_tensor_product()
 {
-    LACE_ME;
-
     QMDD q0, q1, qTest, qRef;
     bool x3[] = {0,1,0};
     bool x2[] = {1,0};
@@ -208,8 +202,6 @@ int test_measure_random_state(QMDD qmdd, BDDVAR nvars)
     QMDD qm;
     int m; double p;
 
-    LACE_ME;
-
     test_assert(aadd_is_ordered(qmdd, nvars));
     test_assert(qmdd_is_unitvector(qmdd, nvars));
     qm = qmdd_measure_q0(qmdd, nvars, &m, &p);
@@ -236,8 +228,6 @@ int test_measurements()
     int m;
     int repeat = 10;
     double prob;
-
-    LACE_ME;
     srand(time(NULL));
 
     // kets labeld as |q2, q1, q0>
@@ -471,8 +461,6 @@ int test_QFT()
     AMP a;
     complex_t c, cref;
 
-    LACE_ME;
-
     // 3 qubit QFT
     bool x3[] = {0,1,1}; // little endian (q0, q1, q2)
     q3 = qmdd_create_basis_state(3, x3);
@@ -562,8 +550,6 @@ int test_5qubit_circuit()
     bool x5[] = {0,0,0,0,0};
     FILE *fp;
     
-    LACE_ME;
-
     // 5 qubit state
     qref = qmdd_create_basis_state(n_qubits, x5);
     q    = qmdd_create_basis_state(n_qubits, x5);
@@ -624,8 +610,6 @@ int test_10qubit_circuit()
     uint64_t node_count;
     bool x10[] = {0,0,0,0,0,0,0,0,0,0};
     
-    LACE_ME;
-
     // 10 qubit state
     qref = qmdd_create_basis_state(10, x10);
     q    = qmdd_create_basis_state(10, x10);
@@ -679,8 +663,6 @@ int test_20qubit_circuit()
     QMDD q, qref;
     uint64_t node_count;
     bool x20[] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
-
-    LACE_ME;
 
     // 20 qubit state
     qref = qmdd_create_basis_state(20, x20);
@@ -772,10 +754,9 @@ int test_with(int amps_backend, int norm_strat)
 {
     // Standard Lace initialization
     int workers = 1;
-    lace_init(workers, 0);
+    lace_start(workers, 0);
     printf("%d worker(s), ", workers);
-    lace_startup(0, NULL, NULL);
-
+    
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
@@ -786,8 +767,6 @@ int test_with(int amps_backend, int norm_strat)
     int res = run_qmdd_tests();
 
     sylvan_quit();
-    lace_exit();
-
     return res;
 }
 

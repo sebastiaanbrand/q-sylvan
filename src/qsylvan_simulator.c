@@ -329,7 +329,6 @@ qmdd_do_before_gate(QMDD* qmdd)
     if (periodic_gc_nodetable) {
         gate_counter++;
         if (gate_counter % periodic_gc_nodetable == 0) {
-            LACE_ME;
             aadd_protect(qmdd);
             sylvan_gc();
             aadd_unprotect(qmdd);
@@ -581,7 +580,6 @@ qmdd_circuit_swap(QMDD qmdd, BDDVAR qubit1, BDDVAR qubit2)
 {
     assert (qubit1 < qubit2);
     
-    LACE_ME; // TODO: make this function a LACE function instead?
     QMDD res;
 
     // CNOT
@@ -613,8 +611,6 @@ qmdd_circuit_reverse_range(QMDD qmdd, BDDVAR first, BDDVAR last)
 QMDD
 qmdd_circuit_QFT(QMDD qmdd, BDDVAR first, BDDVAR last)
 {
-    LACE_ME;
-
     int k;
     QMDD res = qmdd;
     BDDVAR a, b;
@@ -638,8 +634,6 @@ qmdd_circuit_QFT(QMDD qmdd, BDDVAR first, BDDVAR last)
 QMDD
 qmdd_circuit_QFT_inv(QMDD qmdd, BDDVAR first, BDDVAR last)
 {
-    LACE_ME;
-    
     int k;
     QMDD res = qmdd;
     BDDVAR a, b;
@@ -821,8 +815,6 @@ qmdd_measure_qubit(QMDD qmdd, BDDVAR k, BDDVAR nvars, int *m, double *p)
 QMDD
 qmdd_measure_q0(QMDD qmdd, BDDVAR nvars, int *m, double *p)
 {  
-    LACE_ME;
-
     // get probabilities for q0 = |0> and q0 = |1>
     double prob_low, prob_high, prob_root;
 
@@ -873,8 +865,6 @@ qmdd_measure_q0(QMDD qmdd, BDDVAR nvars, int *m, double *p)
 QMDD
 qmdd_measure_all(QMDD qmdd, BDDVAR n, bool* ms, double *p)
 {
-    LACE_ME;
-
     aaddnode_t node;
     bool skipped;
     BDDVAR var;
@@ -1194,7 +1184,6 @@ qmdd_is_unitvector(QMDD qmdd, BDDVAR n)
 double
 qmdd_get_magnitude(QMDD qmdd, BDDVAR n)
 {
-    LACE_ME;
     return qmdd_unnormed_prob(qmdd, 0, n);
 }
 

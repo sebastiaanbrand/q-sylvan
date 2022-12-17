@@ -9,8 +9,6 @@ random_sqrtXY()
 QMDD
 supremacy_5_1_circuit(uint32_t depth)
 {
-    LACE_ME;
-
     // Start with |00000> state
     BDDVAR n_qubits = 5;
     QMDD qmdd = qmdd_create_all_zero_state(n_qubits);
@@ -71,8 +69,7 @@ QMDD
 supremacy_5_4_circuit(uint32_t depth)
 {
     // 5x4 "grid" from [Characterizing Quantum Supremacy in Near-Term Devices]
-    // (maybe a lot of hard-coded stuff but oh well...)
-    LACE_ME;
+    // (TODO: get rid of hard-coded stuff?)
 
     // Start with |00...0> state
     BDDVAR n_qubits = 20;

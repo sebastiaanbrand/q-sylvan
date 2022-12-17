@@ -38,9 +38,8 @@ int test_with(int amps_backend, int norm_strat)
 {
     // Standard Lace initialization
     int workers = 1;
-    lace_init(workers, 0);
+    lace_start(workers, 0);
     printf("%d worker(s), ", workers);
-    lace_startup(0, NULL, NULL);
 
     // Initialize Q-Sylvan with tolerance 0 (this creates larger QMDDs such that
     // garbage collection of the edge weight table is triggered earlier)
@@ -55,8 +54,6 @@ int test_with(int amps_backend, int norm_strat)
     int res = run_qmdd_tests();
 
     sylvan_quit();
-    lace_exit();
-
     return res;
 }
 

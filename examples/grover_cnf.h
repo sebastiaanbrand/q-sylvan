@@ -8,7 +8,7 @@
  * the QMDD.
  */
 QMDD qmdd_grover_cnf(BDDVAR n, int* oracle, BDDVAR k, BDDVAR clauses, BDDVAR n_answers);
-#define qmdd_grover_cnf_iteration(qmdd,n,k,clauses,oracle) (CALL(qmdd_grover_cnf_iteration,qmdd,n,k,clauses,oracle));
+#define qmdd_grover_cnf_iteration(qmdd,n,k,clauses,oracle) (RUN(qmdd_grover_cnf_iteration,qmdd,n,k,clauses,oracle));
 TASK_DECL_5(QMDD, qmdd_grover_cnf_iteration, QMDD, BDDVAR, BDDVAR,BDDVAR, int*);
 
 /**

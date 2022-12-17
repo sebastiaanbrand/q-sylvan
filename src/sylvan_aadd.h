@@ -27,7 +27,7 @@ typedef enum weight_norm_strategy {
 /*******************<Garbage collection, references, marking>******************/
 
 VOID_TASK_DECL_1(aadd_gc_mark_rec, AADD);
-#define aadd_gc_mark_rec(a) CALL(aadd_gc_mark_rec, a)
+#define aadd_gc_mark_rec(a) RUN(aadd_gc_mark_rec, a)
 
 /**
  * Store the pointer <a> in the pointers table.
@@ -97,7 +97,7 @@ bool aadd_test_gc_wgt_table();
 /**
  * Recursive function for moving weights from old to new edge weight table.
  */
-#define _fill_new_wgt_table(a) (CALL(_fill_new_wgt_table, a))
+#define _fill_new_wgt_table(a) (RUN(_fill_new_wgt_table, a))
 TASK_DECL_1(AADD, _fill_new_wgt_table, AADD);
 
 /************************</Cleaning edge weight table>*************************/
@@ -140,16 +140,16 @@ AADD_WGT aadd_getvalue(AADD a, bool* path);
 /**
  * Recursive implementation of vector addition.
  */
-#define aadd_plus(a,b) (CALL(aadd_plus,a,b))
+#define aadd_plus(a,b) (RUN(aadd_plus,a,b))
 TASK_DECL_2(AADD, aadd_plus, AADD, AADD);
 
 
 /* Computes Mat * |vec> (Wrapper function) */
-#define aadd_matvec_mult(mat,vec,nvars) (CALL(aadd_matvec_mult,mat,vec,nvars))
+#define aadd_matvec_mult(mat,vec,nvars) (RUN(aadd_matvec_mult,mat,vec,nvars))
 TASK_DECL_3(AADD, aadd_matvec_mult, AADD, AADD, BDDVAR);
 
 /* Computes A*B (note generally AB != BA) (Wrapper function) */
-#define aadd_matmat_mult(a,b,nvars) (CALL(aadd_matmat_mult,a,b,nvars))
+#define aadd_matmat_mult(a,b,nvars) (RUN(aadd_matmat_mult,a,b,nvars))
 TASK_DECL_3(AADD, aadd_matmat_mult, AADD, AADD, BDDVAR);
 
 /**

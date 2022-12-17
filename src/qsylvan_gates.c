@@ -17,7 +17,6 @@ get_custom_gate_id()
     if (next_custom_id >= num_dynamic_gates) {
         // max custom gates used, reset ID counter to 0 and clear opcache
         next_custom_id = 0;
-        LACE_ME;
         sylvan_clear_cache();
     }
     return num_static_gates + next_custom_id; // index offset by num_static_gates

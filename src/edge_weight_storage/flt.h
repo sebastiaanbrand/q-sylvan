@@ -48,46 +48,46 @@ typedef struct complex_s {
   fl_t r,i;
 } complex_t;
 
-inline complex_t cmake(fl_t r, fl_t i)
+static inline complex_t cmake(fl_t r, fl_t i)
 {
     complex_t res;
     res.r = r;
     res.i = i;
     return res;
 }
-inline complex_t cmake_angle(fl_t theta, fl_t mag)
+static inline complex_t cmake_angle(fl_t theta, fl_t mag)
 {
     complex_t c;
     c.r = flt_cos(theta) * mag;
     c.i = flt_sin(theta) * mag;
     return c;
 }
-inline complex_t czero() { return cmake(0.0, 0.0); }
-inline complex_t cone() { return cmake(1.0, 0.0); }
-inline complex_t cmone() { return cmake(-1.0, 0.0); }
+static inline complex_t czero() { return cmake(0.0, 0.0); }
+static inline complex_t cone() { return cmake(1.0, 0.0); }
+static inline complex_t cmone() { return cmake(-1.0, 0.0); }
 
-inline complex_t cadd(complex_t a, complex_t b)
+static inline complex_t cadd(complex_t a, complex_t b)
 {
     complex_t res;
     res.r = a.r + b.r;
     res.i = a.i + b.i;
     return res;
 }
-inline complex_t csub(complex_t a, complex_t b)
+static inline complex_t csub(complex_t a, complex_t b)
 {
     complex_t res;
     res.r = a.r - b.r;
     res.i = a.i - b.i;
     return res;
 }
-inline complex_t cmul(complex_t a, complex_t b)
+static inline complex_t cmul(complex_t a, complex_t b)
 {
     complex_t res;
     res.r = a.r * b.r - a.i * b.i;
     res.i = a.r * b.i + a.i * b.r;
     return res;
 }
-inline complex_t cdiv(complex_t a, complex_t b)
+static inline complex_t cdiv(complex_t a, complex_t b)
 {
     complex_t res;
     fl_t denom;

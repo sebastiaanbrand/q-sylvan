@@ -70,9 +70,7 @@ TASK_IMPL_3(QMDD, qmdd_grover_iteration, QMDD, qmdd, BDDVAR, n, bool*, oracle)
 
 QMDD
 qmdd_grover(BDDVAR n, bool *flag)
-{   
-    LACE_ME;
-
+{
     // not entirely sure about this, book says R <= ceil(pi/4 * sqrt(N))
     uint32_t R = floor( 3.14159265359/4.0 * sqrt( pow(2,n) ) );
 
@@ -105,8 +103,6 @@ qmdd_grover_matrix(BDDVAR n, bool *flag)
 
 QMDD qmdd_grover_matrix_multi_its(BDDVAR n, bool *flag, int t, QMDD *matrix)
 {
-    LACE_ME;
-
     BDDVAR nqubits = n + 1;
 
     // Number of Grover iterations

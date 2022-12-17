@@ -254,7 +254,6 @@ _aadd_makenode(BDDVAR var, AADD_TARG low, AADD_TARG high, AADD_WGT a, AADD_WGT b
     AADD_TARG index = llmsset_lookup(nodes, n.low, n.high, &created);
     if (index == 0) {
         printf("auto gc of node table triggered\n");
-        LACE_ME;
 
         aadd_refs_push(low);
         aadd_refs_push(high);

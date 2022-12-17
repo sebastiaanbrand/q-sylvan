@@ -13,8 +13,6 @@ int test_x_gate()
     bool x3[] = {0, 0, 0};
     BDDVAR nqubits;
 
-    LACE_ME;
-
     // Single qubit test
     x[0] = 0; q0 = qmdd_create_basis_state(1, x);
     x[0] = 1; q1 = qmdd_create_basis_state(1, x);
@@ -111,8 +109,6 @@ int test_h_gate()
     AMP a;
     BDDVAR nqubits;
 
-    LACE_ME;
-
     // Single qubit test
     x[0] = 0; q0 = qmdd_create_basis_state(1, x);
     x[0] = 1; q1 = qmdd_create_basis_state(1, x);
@@ -179,8 +175,6 @@ int test_phase_gates()
     QMDD q0, qZ, qS, qSS, qSdag, qSdagS, qT, qTT, qTTTT, qTTdag, qTdagT;
     bool x2[] = {0, 0};
     AMP a;
-
-    LACE_ME;
 
     // simple 2 qubit test
     x2[1] = 0; x2[0] = 0; q0 = qmdd_create_basis_state(2, x2);
@@ -293,8 +287,6 @@ int test_pauli_rotation_gates()
 {
     QMDD qInit, qTest, qRef;
     BDDVAR nqubits, t;
-
-    LACE_ME;
 
     // Rz rotations
     nqubits = 3, t = 1;
@@ -415,8 +407,6 @@ int test_cx_gate()
     bool x2[] = {0,0};
     AMP a;
 
-    LACE_ME;
-
     // Test Bell state
     x2[1] = 0; x2[0] = 0; qBell = qmdd_create_basis_state(2, x2);
     qBell = qmdd_gate(qBell, GATEID_H, 0);
@@ -447,8 +437,6 @@ int test_cz_gate()
     bool x2[] = {0, 0};
     AMP a;
 
-    LACE_ME;
-
     // 2 qubit graph state
     x2[1] = 0; x2[0] = 0; qGraph =qmdd_create_basis_state(2, x2);
     qGraph = qmdd_gate(qGraph, GATEID_H, 0);
@@ -477,8 +465,6 @@ int test_ccz_gate()
     QMDD q3;
     bool x3[] = {0,0,0};
     AMP a, aRef;
-
-    LACE_ME;
 
     q3 = qmdd_create_basis_state(3, x3);
     q3 = qmdd_gate(q3, GATEID_H, 0);
@@ -509,8 +495,6 @@ int test_controlled_range_gate()
     bool x10[] = {0,0,0,0,0,0,0,0,0,0};
     AMP a, aRef, aRefMin;
     bool *x_bits;
-
-    LACE_ME;
 
     BDDVAR nqubits = 10;
     q10 = qmdd_create_basis_state(10, x10);
@@ -589,9 +573,8 @@ int test_with(int amps_backend, int norm_strat)
 {
     // Standard Lace initialization
     int workers = 1;
-    lace_init(workers, 0);
+    lace_start(workers, 0);
     printf("%d worker(s), ", workers);
-    lace_startup(0, NULL, NULL);
 
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
@@ -603,7 +586,6 @@ int test_with(int amps_backend, int norm_strat)
     int res = run_qmdd_tests();
 
     sylvan_quit();
-    lace_exit();
 
     return res;
 }

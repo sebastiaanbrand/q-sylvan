@@ -32,6 +32,7 @@ namespace sylvan {
 
 #include <sylvan_cache.h>
 #include <sylvan_table.h>
+#include <sylvan_hash.h>
 
 #ifndef SYLVAN_INT_H
 #define SYLVAN_INT_H
@@ -47,7 +48,6 @@ extern llmsset_t nodes;
 
 /**
  * Macros for all operation identifiers for the operation cache
- * (Shift 40 bits left to avoid clash with (40 bit) BDD pointers when caching)
  */
 
 // BDD operations
@@ -68,8 +68,6 @@ static const uint64_t CACHE_BDD_CLOSURE             = (13LL<<40);
 static const uint64_t CACHE_BDD_ISBDD               = (14LL<<40);
 static const uint64_t CACHE_BDD_SUPPORT             = (15LL<<40);
 static const uint64_t CACHE_BDD_PATHCOUNT           = (16LL<<40);
-static const uint64_t CACHE_BDD_FORALL_PREIMAGE     = (17LL<<40);
-static const uint64_t CACHE_BDD_RELCOMP             = (18LL<<40);
 
 // MDD operations
 static const uint64_t CACHE_MDD_RELPROD             = (20LL<<40);
@@ -125,7 +123,21 @@ static const uint64_t CACHE_QMDD_CGATE_RANGE        = (82LL<<40);
 static const uint64_t CACHE_QMDD_SUBCIRC            = (83LL<<40);
 static const uint64_t CACHE_QMDD_PROB               = (84LL<<40);
 
-
+// ZDD operations
+static const uint64_t CACHE_ZDD_FROM_MTBDD          = (80LL<<40);
+static const uint64_t CACHE_ZDD_TO_MTBDD            = (81LL<<40);
+static const uint64_t CACHE_ZDD_EXTEND_DOMAIN       = (82LL<<40);
+static const uint64_t CACHE_ZDD_SUPPORT             = (83LL<<40);
+static const uint64_t CACHE_ZDD_PATHCOUNT           = (84LL<<40);
+static const uint64_t CACHE_ZDD_AND                 = (85LL<<40);
+static const uint64_t CACHE_ZDD_OR                  = (86LL<<40);
+static const uint64_t CACHE_ZDD_ITE                 = (87LL<<40);
+static const uint64_t CACHE_ZDD_NOT                 = (88LL<<40);
+static const uint64_t CACHE_ZDD_DIFF                = (89LL<<40);
+static const uint64_t CACHE_ZDD_EXISTS              = (90LL<<40);
+static const uint64_t CACHE_ZDD_PROJECT             = (91LL<<40);
+static const uint64_t CACHE_ZDD_ISOP                = (92LL<<40);
+static const uint64_t CACHE_ZDD_COVER_TO_BDD        = (93LL<<40);
 
 #ifdef __cplusplus
 }
@@ -134,10 +146,10 @@ static const uint64_t CACHE_QMDD_PROB               = (84LL<<40);
 #include <sylvan_aadd_int.h>
 #include <sylvan_mtbdd_int.h>
 #include <sylvan_ldd_int.h>
-
-#endif
+#include <sylvan_zdd_int.h>
 
 #ifdef __cplusplus
 } /* namespace */
 #endif
 
+#endif
