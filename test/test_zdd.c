@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -734,6 +735,11 @@ TASK_0(int, test_zdd_read_write)
     }
 
     FILE *f = tmpfile();
+    if (f == NULL) {
+        printf("Something went wrong with tmpfile()! %s\n", strerror(errno));
+        exit(1);
+    }
+
     zdd_writer_tobinary(f, zdd_set, set_count);
     rewind(f);
     ZDD test[set_count];
