@@ -694,6 +694,7 @@ int test_with(int wgt_backend, int norm_strat)
     int res = runtests();
 
     sylvan_quit();
+    lace_stop();
 
     return res;
 }

@@ -400,6 +400,7 @@ int main()
     int res = runtests();
 
     sylvan_quit();
+    lace_stop();
 
     return res;
 }

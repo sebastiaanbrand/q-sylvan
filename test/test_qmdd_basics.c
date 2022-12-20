@@ -352,6 +352,7 @@ int test_with(int amps_backend, int norm_strat)
     int res = run_qmdd_tests();
 
     sylvan_quit();
+    lace_stop();
 
     return res;
 }

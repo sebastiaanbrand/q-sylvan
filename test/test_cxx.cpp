@@ -57,6 +57,7 @@ int main()
     int res = RUN(runtest);
 
     sylvan_quit();
+    lace_stop();
 
     return res;
 }

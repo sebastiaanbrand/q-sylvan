@@ -312,6 +312,7 @@ int main(int argc, char **argv)
 
     /* Cleanup */
     sylvan_quit();
+    lace_stop();
 
     return 0;   
 }
