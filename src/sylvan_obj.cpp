@@ -23,13 +23,13 @@ using namespace sylvan;
  * Implementation of class Bdd
  */
 
-int
+bool
 Bdd::operator==(const Bdd& other) const
 {
     return bdd == other.bdd;
 }
 
-int
+bool
 Bdd::operator!=(const Bdd& other) const
 {
     return bdd != other.bdd;
@@ -42,29 +42,28 @@ Bdd::operator=(const Bdd& right)
     return *this;
 }
 
-int
+bool
 Bdd::operator<=(const Bdd& other) const
 {
     // TODO: better implementation, since we are not interested in the BDD result
-    LACE_ME;
     BDD r = sylvan_ite(this->bdd, sylvan_not(other.bdd), sylvan_false);
     return r == sylvan_false;
 }
 
-int
+bool
 Bdd::operator>=(const Bdd& other) const
 {
     // TODO: better implementation, since we are not interested in the BDD result
     return other <= *this;
 }
 
-int
+bool
 Bdd::operator<(const Bdd& other) const
 {
     return bdd != other.bdd && *this <= other;
 }
 
-int
+bool
 Bdd::operator>(const Bdd& other) const
 {
     return bdd != other.bdd && *this >= other;
@@ -85,14 +84,12 @@ Bdd::operator~() const
 Bdd
 Bdd::operator*(const Bdd& other) const
 {
-    LACE_ME;
     return Bdd(sylvan_and(bdd, other.bdd));
 }
 
 Bdd&
 Bdd::operator*=(const Bdd& other)
 {
-    LACE_ME;
     bdd = sylvan_and(bdd, other.bdd);
     return *this;
 }
@@ -100,14 +97,12 @@ Bdd::operator*=(const Bdd& other)
 Bdd
 Bdd::operator&(const Bdd& other) const
 {
-    LACE_ME;
     return Bdd(sylvan_and(bdd, other.bdd));
 }
 
 Bdd&
 Bdd::operator&=(const Bdd& other)
 {
-    LACE_ME;
     bdd = sylvan_and(bdd, other.bdd);
     return *this;
 }
@@ -115,14 +110,12 @@ Bdd::operator&=(const Bdd& other)
 Bdd
 Bdd::operator+(const Bdd& other) const
 {
-    LACE_ME;
     return Bdd(sylvan_or(bdd, other.bdd));
 }
 
 Bdd&
 Bdd::operator+=(const Bdd& other)
 {
-    LACE_ME;
     bdd = sylvan_or(bdd, other.bdd);
     return *this;
 }
@@ -130,14 +123,12 @@ Bdd::operator+=(const Bdd& other)
 Bdd
 Bdd::operator|(const Bdd& other) const
 {
-    LACE_ME;
     return Bdd(sylvan_or(bdd, other.bdd));
 }
 
 Bdd&
 Bdd::operator|=(const Bdd& other)
 {
-    LACE_ME;
     bdd = sylvan_or(bdd, other.bdd);
     return *this;
 }
@@ -145,14 +136,12 @@ Bdd::operator|=(const Bdd& other)
 Bdd
 Bdd::operator^(const Bdd& other) const
 {
-    LACE_ME;
     return Bdd(sylvan_xor(bdd, other.bdd));
 }
 
 Bdd&
 Bdd::operator^=(const Bdd& other)
 {
-    LACE_ME;
     bdd = sylvan_xor(bdd, other.bdd);
     return *this;
 }
@@ -160,124 +149,80 @@ Bdd::operator^=(const Bdd& other)
 Bdd
 Bdd::operator-(const Bdd& other) const
 {
-    LACE_ME;
-    return Bdd(sylvan_diff(bdd, other.bdd));
+    return Bdd(sylvan_and(bdd, sylvan_not(other.bdd)));
 }
 
 Bdd&
 Bdd::operator-=(const Bdd& other)
 {
-    LACE_ME;
-    bdd = sylvan_diff(bdd, other.bdd);
+    bdd = sylvan_and(bdd, sylvan_not(other.bdd));
     return *this;
-}
-
-BDD
-add_or_sub(BDD x, BDD y, BDD *cinout, bool sub)
-{
-    LACE_ME;
-    BDD xo   = sylvan_xor(x, y);
-    bdd_refs_push(xo);
-    BDD z  = sylvan_xor(xo, *cinout);
-    bdd_refs_push(z);
-    BDD and1 = sylvan_and(sub ? sylvan_not(x) : x, y);         // half adder carry/borrow
-    bdd_refs_push(and1);
-    BDD and2 = sylvan_and(sub ? sylvan_not(xo) : xo, *cinout);
-    bdd_refs_push(and2);
-    *cinout = sylvan_or(and1,  and2);                 // full adder carry/borrow
-    bdd_refs_pop(4);
-    return z;
-}
-
-Bdd
-Bdd::Add(Bdd &y, Bdd *out, Bdd &carry_in_out) const
-{
-    out->SetBdd(add_or_sub(this->bdd, y.bdd, &carry_in_out.bdd, false));
-    return out;
-}
-
-Bdd
-Bdd::Sub(Bdd &y, Bdd *out, Bdd &carry_in_out) const
-{
-    out->SetBdd(add_or_sub(this->bdd, y.bdd, &carry_in_out.bdd, true));
-    return out;
 }
 
 Bdd
 Bdd::AndAbstract(const Bdd &g, const BddSet &cube) const
 {
-    LACE_ME;
     return sylvan_and_exists(bdd, g.bdd, cube.set.bdd);
 }
 
 Bdd
 Bdd::ExistAbstract(const BddSet &cube) const
 {
-    LACE_ME;
     return sylvan_exists(bdd, cube.set.bdd);
 }
 
 Bdd
 Bdd::UnivAbstract(const BddSet &cube) const
 {
-    LACE_ME;
     return sylvan_forall(bdd, cube.set.bdd);
 }
 
 Bdd
 Bdd::Ite(const Bdd &g, const Bdd &h) const
 {
-    LACE_ME;
     return sylvan_ite(bdd, g.bdd, h.bdd);
 }
 
 Bdd
 Bdd::And(const Bdd &g) const
 {
-    LACE_ME;
     return sylvan_and(bdd, g.bdd);
 }
 
 Bdd
 Bdd::Or(const Bdd &g) const
 {
-    LACE_ME;
     return sylvan_or(bdd, g.bdd);
 }
 
 Bdd
 Bdd::Nand(const Bdd &g) const
 {
-    LACE_ME;
     return sylvan_nand(bdd, g.bdd);
 }
 
 Bdd
 Bdd::Nor(const Bdd &g) const
 {
-    LACE_ME;
     return sylvan_nor(bdd, g.bdd);
 }
 
 Bdd
 Bdd::Xor(const Bdd &g) const
 {
-    LACE_ME;
     return sylvan_xor(bdd, g.bdd);
 }
 
 Bdd
 Bdd::Xnor(const Bdd &g) const
 {
-    LACE_ME;
     return sylvan_equiv(bdd, g.bdd);
 }
 
-int
+bool
 Bdd::Leq(const Bdd &g) const
 {
     // TODO: better implementation, since we are not interested in the BDD result
-    LACE_ME;
     BDD r = sylvan_ite(bdd, sylvan_not(g.bdd), sylvan_false);
     return r == sylvan_false;
 }
@@ -285,57 +230,42 @@ Bdd::Leq(const Bdd &g) const
 Bdd
 Bdd::RelPrev(const Bdd& relation, const BddSet& cube) const
 {
-    LACE_ME;
     return sylvan_relprev(relation.bdd, bdd, cube.set.bdd);
-}
-
-Bdd
-Bdd::RelPrevForall(const Bdd& relation) const
-{
-    LACE_ME;
-    return sylvan_forall_preimage(bdd, relation.bdd);
 }
 
 Bdd
 Bdd::RelNext(const Bdd &relation, const BddSet &cube) const
 {
-    LACE_ME;
     return sylvan_relnext(bdd, relation.bdd, cube.set.bdd);
 }
 
 Bdd
 Bdd::Closure() const
 {
-    LACE_ME;
     return sylvan_closure(bdd);
 }
 
 Bdd
 Bdd::Constrain(const Bdd &c) const
 {
-    LACE_ME;
     return sylvan_constrain(bdd, c.bdd);
 }
 
 Bdd
 Bdd::Restrict(const Bdd &c) const
 {
-    LACE_ME;
     return sylvan_restrict(bdd, c.bdd);
 }
 
 Bdd
 Bdd::Compose(const BddMap &m) const
 {
-    LACE_ME;
     return sylvan_compose(bdd, m.bdd);
 }
 
 Bdd
 Bdd::Permute(const std::vector<uint32_t>& from, const std::vector<uint32_t>& to) const
 {
-    LACE_ME;
-
     /* Create a map */
     BddMap map;
     for (int i=from.size()-1; i>=0; i--) {
@@ -345,11 +275,10 @@ Bdd::Permute(const std::vector<uint32_t>& from, const std::vector<uint32_t>& to)
     return sylvan_compose(bdd, map.bdd);
 }
 
-BddSet
+Bdd
 Bdd::Support() const
 {
-    LACE_ME;
-    return BddSet(sylvan_support(bdd));
+    return sylvan_support(bdd);
 }
 
 BDD
@@ -381,14 +310,12 @@ Bdd::GetShaHash() const
 double
 Bdd::SatCount(const BddSet &variables) const
 {
-    LACE_ME;
     return sylvan_satcount(bdd, variables.set.bdd);
 }
 
 double
 Bdd::SatCount(size_t nvars) const
 {
-    LACE_ME;
     // Note: the mtbdd_satcount can be called without initializing the MTBDD module.
     return mtbdd_satcount(bdd, nvars);
 }
@@ -396,7 +323,6 @@ Bdd::SatCount(size_t nvars) const
 void
 Bdd::PickOneCube(const BddSet &variables, uint8_t *values) const
 {
-    LACE_ME;
     sylvan_sat_one(bdd, variables.set.bdd, values);
 }
 
@@ -439,21 +365,18 @@ Bdd::PickOneCube(const BddSet &variables) const
 Bdd
 Bdd::PickOneCube() const
 {
-    LACE_ME;
     return Bdd(sylvan_sat_one_bdd(bdd));
 }
 
 Bdd
 Bdd::UnionCube(const BddSet &variables, uint8_t *values) const
 {
-    LACE_ME;
     return sylvan_union_cube(bdd, variables.set.bdd, values);
 }
 
 Bdd
 Bdd::UnionCube(const BddSet &variables, std::vector<uint8_t> values) const
 {
-    LACE_ME;
     uint8_t *data = values.data();
     return sylvan_union_cube(bdd, variables.set.bdd, data);
 }
@@ -490,87 +413,56 @@ Bdd::NodeCount() const
     return sylvan_nodecount(bdd);
 }
 
-static const Bdd ONE(sylvan_true);
-static const Bdd ZERO(sylvan_false);
-
-const Bdd
+Bdd
 Bdd::bddOne()
 {
-    return ONE;
+    return sylvan_true;
 }
 
-const Bdd
+Bdd
 Bdd::bddZero()
 {
-    return ZERO;
+    return sylvan_false;
 }
 
 Bdd
 Bdd::bddVar(uint32_t index)
 {
-    LACE_ME;
     return sylvan_ithvar(index);
-}
-
-BDD
-bits(BDDSET x, size_t c, int *l, bool leq)
-{
-    LACE_ME;
-    if (sylvan_set_isempty(x)){
-        *l = 0;
-        return sylvan_true;
-    } else {
-        BDD R = bits(sylvan_set_next(x), c, l, leq);
-        if (c & (1 << (*l)++)) {
-            return sylvan_makenode(sylvan_set_first(x), leq ? sylvan_true : sylvan_false, R);
-        } else {
-            return sylvan_makenode(sylvan_set_first(x), R, sylvan_false);
-        }
-    }
-}
-
-
-void
-Bdd::setCube(BddSet x, size_t c)
-{
-    int l;
-    bdd = bits(x.set.bdd, c, &l, false);
 }
 
 Bdd
 Bdd::bddCube(const BddSet &variables, uint8_t *values)
 {
-    LACE_ME;
     return sylvan_cube(variables.set.bdd, values);
 }
 
 Bdd
 Bdd::bddCube(const BddSet &variables, std::vector<uint8_t> values)
 {
-    LACE_ME;
     uint8_t *data = values.data();
     return sylvan_cube(variables.set.bdd, data);
 }
 
-int
+bool
 Bdd::isConstant() const
 {
     return bdd == sylvan_true || bdd == sylvan_false;
 }
 
-int
+bool
 Bdd::isTerminal() const
 {
     return bdd == sylvan_true || bdd == sylvan_false;
 }
 
-int
+bool
 Bdd::isOne() const
 {
     return bdd == sylvan_true;
 }
 
-int
+bool
 Bdd::isZero() const
 {
     return bdd == sylvan_false;
@@ -605,89 +497,30 @@ BddMap::BddMap(uint32_t key_variable, const Bdd value)
 
 
 BddMap
-BddMap::operator&(const Bdd& other) const
+BddMap::operator+(const Bdd& other) const
 {
     return BddMap(sylvan_map_addall(bdd, other.bdd));
 }
 
 BddMap&
-BddMap::operator&=(const Bdd& other)
+BddMap::operator+=(const Bdd& other)
 {
     bdd = sylvan_map_addall(bdd, other.bdd);
     return *this;
 }
 
 BddMap
-BddMap::operator/(const Bdd& other) const
+BddMap::operator-(const Bdd& other) const
 {
     return BddMap(sylvan_map_removeall(bdd, other.bdd));
 }
 
 BddMap&
-BddMap::operator/=(const Bdd& other)
+BddMap::operator-=(const Bdd& other)
 {
     bdd = sylvan_map_removeall(bdd, other.bdd);
     return *this;
 }
-
-BDDMAP
-AddOrSub(BDD *carry, const BDDMAP &x, const BDDMAP &y, bool sub)
-{
-    if (!sylvan_map_isempty(x)) {
-        assert (!sylvan_map_isempty(y));
-        BDDMAP m = AddOrSub(carry, sylvan_map_next(x), sylvan_map_next(x), sub);
-        assert (sylvan_map_key(x) == sylvan_map_key(y));
-        BDD val_l = sylvan_map_value(x);
-        BDD val_r = sylvan_map_value(y);
-        BDD z = add_or_sub(val_l, val_r, carry, sub);
-        return sylvan_map_add(m, sylvan_map_key(x), z);
-    } else {
-        assert (sylvan_map_isempty(y));
-        *carry = sylvan_false;
-        return sylvan_map_empty();
-    }
-}
-
-BddMap
-BddMap::operator+(const Bdd& other) const
-{
-    BDD carry;
-    bdd_refs_pushptr(&carry);
-    BDDMAP out = AddOrSub(&carry, bdd, other.bdd, false);
-    bdd_refs_pop(1);
-    return BddMap(out);
-}
-
-BddMap&
-BddMap::operator+=(const Bdd& other)
-{
-    BDD carry;
-    bdd_refs_pushptr(&carry);
-    bdd = AddOrSub(&carry, bdd, other.bdd, false);
-    bdd_refs_pop(1);
-    return *this;
-}
-
-BddMap
-BddMap::operator-(const Bdd& other) const
-{
-    BDD carry;
-    bdd_refs_pushptr(&carry);
-    BDDMAP out = AddOrSub(&carry, bdd, other.bdd, true);
-    bdd_refs_pop(1);
-    return BddMap(out);
-}
-
-BddMap &
-BddMap::operator-=(const Bdd& other)
-{
-    BDD carry;
-    bdd_refs_pushptr(&carry);
-    bdd = AddOrSub(&carry, bdd, other.bdd, true);
-    bdd_refs_pop(1);
-    return *this;
-}
-
 
 void
 BddMap::put(uint32_t key, Bdd value)
@@ -707,7 +540,7 @@ BddMap::size() const
     return sylvan_map_count(bdd);
 }
 
-int
+bool
 BddMap::isEmpty() const
 {
     return sylvan_map_isempty(bdd);
@@ -763,37 +596,35 @@ Mtbdd::mtbddZero()
 Mtbdd
 Mtbdd::mtbddCube(const BddSet &variables, uint8_t *values, const Mtbdd &terminal)
 {
-    LACE_ME;
     return mtbdd_cube(variables.set.bdd, values, terminal.mtbdd);
 }
 
 Mtbdd
 Mtbdd::mtbddCube(const BddSet &variables, std::vector<uint8_t> values, const Mtbdd &terminal)
 {
-    LACE_ME;
     uint8_t *data = values.data();
     return mtbdd_cube(variables.set.bdd, data, terminal.mtbdd);
 }
 
-int
+bool
 Mtbdd::isTerminal() const
 {
     return mtbdd_isleaf(mtbdd);
 }
 
-int
+bool
 Mtbdd::isLeaf() const
 {
     return mtbdd_isleaf(mtbdd);
 }
 
-int
+bool
 Mtbdd::isOne() const
 {
     return mtbdd == mtbdd_true;
 }
 
-int
+bool
 Mtbdd::isZero() const
 {
     return mtbdd == mtbdd_false;
@@ -820,108 +651,94 @@ Mtbdd::Else() const
 Mtbdd
 Mtbdd::Negate() const
 {
-    LACE_ME;
     return mtbdd_negate(mtbdd);
 }
 
 Mtbdd
 Mtbdd::Apply(const Mtbdd &other, mtbdd_apply_op op) const
 {
-    LACE_ME;
     return mtbdd_apply(mtbdd, other.mtbdd, op);
 }
 
 Mtbdd
 Mtbdd::UApply(mtbdd_uapply_op op, size_t param) const
 {
-    LACE_ME;
     return mtbdd_uapply(mtbdd, op, param);
 }
 
 Mtbdd
 Mtbdd::Abstract(const BddSet &variables, mtbdd_abstract_op op) const
 {
-    LACE_ME;
     return mtbdd_abstract(mtbdd, variables.set.bdd, op);
 }
 
 Mtbdd
 Mtbdd::Ite(const Mtbdd &g, const Mtbdd &h) const
 {
-    LACE_ME;
     return mtbdd_ite(mtbdd, g.mtbdd, h.mtbdd);
 }
 
 Mtbdd
 Mtbdd::Plus(const Mtbdd &other) const
 {
-    LACE_ME;
     return mtbdd_plus(mtbdd, other.mtbdd);
 }
 
 Mtbdd
 Mtbdd::Times(const Mtbdd &other) const
 {
-    LACE_ME;
     return mtbdd_times(mtbdd, other.mtbdd);
 }
 
 Mtbdd
 Mtbdd::Min(const Mtbdd &other) const
 {
-    LACE_ME;
     return mtbdd_min(mtbdd, other.mtbdd);
 }
 
 Mtbdd
 Mtbdd::Max(const Mtbdd &other) const
 {
-    LACE_ME;
     return mtbdd_max(mtbdd, other.mtbdd);
 }
 
 Mtbdd
 Mtbdd::AbstractPlus(const BddSet &variables) const
 {
-    LACE_ME;
     return mtbdd_abstract_plus(mtbdd, variables.set.bdd);
 }
 
 Mtbdd
 Mtbdd::AbstractTimes(const BddSet &variables) const
 {
-    LACE_ME;
     return mtbdd_abstract_times(mtbdd, variables.set.bdd);
 }
 
 Mtbdd
 Mtbdd::AbstractMin(const BddSet &variables) const
 {
-    LACE_ME;
     return mtbdd_abstract_min(mtbdd, variables.set.bdd);
 }
 
 Mtbdd
 Mtbdd::AbstractMax(const BddSet &variables) const
 {
-    LACE_ME;
     return mtbdd_abstract_max(mtbdd, variables.set.bdd);
 }
 
 Mtbdd
 Mtbdd::AndExists(const Mtbdd &other, const BddSet &variables) const
 {
-    LACE_ME;
     return mtbdd_and_exists(mtbdd, other.mtbdd, variables.set.bdd);
 }
 
-int
+bool
 Mtbdd::operator==(const Mtbdd& other) const
 {
     return mtbdd == other.mtbdd;
 }
 
-int
+bool
 Mtbdd::operator!=(const Mtbdd& other) const
 {
     return mtbdd != other.mtbdd;
@@ -949,14 +766,12 @@ Mtbdd::operator~() const
 Mtbdd
 Mtbdd::operator*(const Mtbdd& other) const
 {
-    LACE_ME;
     return mtbdd_times(mtbdd, other.mtbdd);
 }
 
 Mtbdd&
 Mtbdd::operator*=(const Mtbdd& other)
 {
-    LACE_ME;
     mtbdd = mtbdd_times(mtbdd, other.mtbdd);
     return *this;
 }
@@ -964,14 +779,12 @@ Mtbdd::operator*=(const Mtbdd& other)
 Mtbdd
 Mtbdd::operator+(const Mtbdd& other) const
 {
-    LACE_ME;
     return mtbdd_plus(mtbdd, other.mtbdd);
 }
 
 Mtbdd&
 Mtbdd::operator+=(const Mtbdd& other)
 {
-    LACE_ME;
     mtbdd = mtbdd_plus(mtbdd, other.mtbdd);
     return *this;
 }
@@ -979,14 +792,12 @@ Mtbdd::operator+=(const Mtbdd& other)
 Mtbdd
 Mtbdd::operator-(const Mtbdd& other) const
 {
-    LACE_ME;
     return mtbdd_minus(mtbdd, other.mtbdd);
 }
 
 Mtbdd&
 Mtbdd::operator-=(const Mtbdd& other)
 {
-    LACE_ME;
     mtbdd = mtbdd_minus(mtbdd, other.mtbdd);
     return *this;
 }
@@ -994,35 +805,30 @@ Mtbdd::operator-=(const Mtbdd& other)
 Mtbdd
 Mtbdd::MtbddThreshold(double value) const
 {
-    LACE_ME;
     return mtbdd_threshold_double(mtbdd, value);
 }
 
 Mtbdd
 Mtbdd::MtbddStrictThreshold(double value) const
 {
-    LACE_ME;
     return mtbdd_strict_threshold_double(mtbdd, value);
 }
 
 Bdd
 Mtbdd::BddThreshold(double value) const
 {
-    LACE_ME;
     return mtbdd_threshold_double(mtbdd, value);
 }
 
 Bdd
 Mtbdd::BddStrictThreshold(double value) const
 {
-    LACE_ME;
     return mtbdd_strict_threshold_double(mtbdd, value);
 }
 
 Mtbdd
 Mtbdd::Support() const
 {
-    LACE_ME;
     return mtbdd_support(mtbdd);
 }
 
@@ -1035,15 +841,12 @@ Mtbdd::GetMTBDD() const
 Mtbdd
 Mtbdd::Compose(MtbddMap &m) const
 {
-    LACE_ME;
     return mtbdd_compose(mtbdd, m.mtbdd);
 }
 
 Mtbdd
 Mtbdd::Permute(const std::vector<uint32_t>& from, const std::vector<uint32_t>& to) const
 {
-    LACE_ME;
-
     /* Create a map */
     MtbddMap map;
     for (int i=from.size()-1; i>=0; i--) {
@@ -1056,7 +859,6 @@ Mtbdd::Permute(const std::vector<uint32_t>& from, const std::vector<uint32_t>& t
 double
 Mtbdd::SatCount(size_t nvars) const
 {
-    LACE_ME;
     return mtbdd_satcount(mtbdd, nvars);
 }
 
@@ -1069,7 +871,6 @@ Mtbdd::SatCount(const BddSet &variables) const
 size_t
 Mtbdd::NodeCount() const
 {
-    LACE_ME;
     return mtbdd_nodecount(mtbdd);
 }
 
@@ -1127,7 +928,7 @@ MtbddMap::size()
     return mtbdd_map_count(mtbdd);
 }
 
-int
+bool
 MtbddMap::isEmpty()
 {
     return mtbdd_map_isempty(mtbdd);

@@ -244,8 +244,6 @@ int test_shor()
     bool as[] = {1,0,1};
     AMP a;
 
-    LACE_ME;
-
     // <Test qmdd_phi_add>
     // Test inversion
     // (no controls)
@@ -390,9 +388,8 @@ int main()
 {
     // Standard Lace initialization
     int workers = 1;
-    lace_init(workers, 0);
+    lace_start(workers, 0);
     printf("%d worker(s)\n", workers);
-    lace_startup(0, NULL, NULL);
 
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
@@ -403,7 +400,7 @@ int main()
     int res = runtests();
 
     sylvan_quit();
-    lace_exit();
+    lace_stop();
 
     return res;
 }

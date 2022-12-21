@@ -39,7 +39,6 @@ public:
     Bdd(const BDD from) : bdd(from) { sylvan_protect(&bdd); }
     Bdd(const Bdd &from) : bdd(from.bdd) { sylvan_protect(&bdd); }
     Bdd(const uint32_t var) { bdd = sylvan_ithvar(var); sylvan_protect(&bdd); }
-    Bdd(const bool leaf) : bdd(leaf?sylvan_true:sylvan_false) { sylvan_protect(&bdd); }
     ~Bdd() { sylvan_unprotect(&bdd); }
 
     /**
@@ -51,12 +50,12 @@ public:
     /**
      * @brief Returns the Bdd representing "True"
      */
-    static const Bdd bddOne();
+    static Bdd bddOne();
 
     /**
      * @brief Returns the Bdd representing "False"
      */
-    static const Bdd bddZero();
+    static Bdd bddZero();
 
     /**
      * @brief Returns the Bdd representing a cube of variables, according to the given values.
@@ -80,15 +79,15 @@ public:
      */
     static Bdd bddCube(const BddSet &variables, std::vector<uint8_t> values);
 
-    int operator==(const Bdd& other) const;
-    int operator!=(const Bdd& other) const;
+    bool operator==(const Bdd& other) const;
+    bool operator!=(const Bdd& other) const;
     Bdd& operator=(const Bdd& right);
-    int operator<=(const Bdd& other) const;
-    int operator>=(const Bdd& other) const;
-    int operator<(const Bdd& other) const;
-    int operator>(const Bdd& other) const;
+    bool operator<=(const Bdd& other) const;
+    bool operator>=(const Bdd& other) const;
+    bool operator<(const Bdd& other) const;
+    bool operator>(const Bdd& other) const;
     Bdd operator!() const;
-    Bdd  operator~() const;
+    Bdd operator~() const;
     Bdd operator*(const Bdd& other) const;
     Bdd& operator*=(const Bdd& other);
     Bdd operator&(const Bdd& other) const;
@@ -102,36 +101,25 @@ public:
     Bdd operator-(const Bdd& other) const;
     Bdd& operator-=(const Bdd& other);
 
-    Bdd Add(Bdd &y, Bdd *out, Bdd &carry_in_out) const;
-
-    Bdd Sub(Bdd &y, Bdd *out, Bdd &carry_in_out) const;
-
     /**
-     * @brief Sets the BDD to a cube over the variables in x and values in int c
+     * @brief Returns non-zero if this Bdd is bddOne() or bddZero()
      */
-    void setCube(BddSet x, size_t c);
-
-    void SetBdd(BDD x) { bdd = x; };
+    bool isConstant() const;
 
     /**
      * @brief Returns non-zero if this Bdd is bddOne() or bddZero()
      */
-    int isConstant() const;
-
-    /**
-     * @brief Returns non-zero if this Bdd is bddOne() or bddZero()
-     */
-    int isTerminal() const;
+    bool isTerminal() const;
 
     /**
      * @brief Returns non-zero if this Bdd is bddOne()
      */
-    int isOne() const;
+    bool isOne() const;
 
     /**
      * @brief Returns non-zero if this Bdd is bddZero()
      */
-    int isZero() const;
+    bool isZero() const;
 
     /**
      * @brief Returns the top variable index of this Bdd (the variable in the root node)
@@ -201,7 +189,7 @@ public:
     /**
      * @brief Returns whether all elements in f are also in g
      */
-    int Leq(const Bdd& g) const;
+    bool Leq(const Bdd& g) const;
 
     /**
      * @brief Computes the reverse application of a transition relation to this set.
@@ -215,7 +203,6 @@ public:
      * or to take the 'previous' of a set               -->  S
      */
     Bdd RelPrev(const Bdd& relation, const BddSet& cube) const;
-    Bdd RelPrevForall(const Bdd& relation) const;
 
     /**
      * @brief Computes the application of a transition relation to this set.
@@ -262,7 +249,7 @@ public:
     /**
      * @brief Computes the support of a Bdd.
      */
-    BddSet Support() const;
+    Bdd Support() const;
 
     /**
      * @brief Gets the BDD of this Bdd (for C functions)
@@ -337,76 +324,8 @@ public:
      */
     size_t NodeCount() const;
 
-//    // member typedefs provided through inheriting from std::iterator
-//    class iterator: public std::iterator<
-//                        std::input_iterator_tag,   // iterator_category
-//                        uint32_t,                  // value_type
-//                        uint32_t,                  // difference_type
-//                        const uint32_t*,           // pointer
-//                        uint32_t                   // reference
-//                                      >{
-//        thread_local std::vector<uint8_t> *E = nullptr;
-//        std::vector<BDD> S;
-//    public:
-//        explicit iterator(BDD _X, BddSet &V) {
-//            assert (E != nullptr && "iterator is not reentrant");
-//            int c = 0; for (uint32_t v : V) c++;
-//            S.push_back(_X);
-//        }
-//        iterator& operator++() {
-//            X = sylvan_set_next(X); return *this;
-//        }
-//        iterator operator++(int) {
-//            iterator retval = *this; ++(*this); return retval;
-//        }
-//        bool operator==(iterator other) const { return X == other.X; }
-//        bool operator!=(iterator other) const { return X != other.X; }
-//        reference operator*() const { return sylvan_set_first(X); }
-//    };
-//
-//    // member typedefs provided through inheriting from std::iterator
-//    class bdditerator: public std::iterator<
-//                            std::input_iterator_tag,   // iterator_category
-//                            uint32_t,                  // value_type
-//                            uint32_t,                  // difference_type
-//                            const uint32_t*,           // pointer
-//                            uint32_t                   // reference
-//                                          >{
-//            std::vector<BDD> S;
-//        public:
-//            explicit bdditerator(BDD _X) {
-//                S.push_back(_X);
-//            }
-//            void init() {
-//                 BDD t = S.back();
-//                 if (S.size() > 1) {
-//                     switch (t) {
-//                     case sylvan_true:  return;
-//                     case sylvan_false: S.
-//                     }
-//                 } else {
-//
-//                 }
-//            }
-//            bdditerator& operator++() {
-//                X = sylvan_set_next(X);
-//                return *this;
-//            }
-//            bdditerator operator++(int) {
-//                iterator retval = *this; ++(*this); return retval;
-//            }
-//            bool operator==(bdditerator other) const { return X == other.X; }
-//            bool operator!=(bdditerator other) const { return X != other.X; }
-//            reference operator*() const { return sylvan_set_first(X); }
-//    };
-//
-//
-//    bdditerator begin() { return bdditerator(bdd); }
-//    bdditerator end()   { return bdditerator(sylvan_false); }
-
 private:
     BDD bdd;
-
 };
 
 class BddSet
@@ -430,8 +349,6 @@ public:
      * @brief Create a copy of the set <other>.
      */
     BddSet(const BddSet &other) : set(other.set) {}
-
-    BDD GetBDD() const { return set.bdd; }
 
     /**
      * @brief Add the variable <variable> to this set.
@@ -474,6 +391,12 @@ public:
     BddSet Next() const {
         Bdd then = set.Then();
         return BddSet(then);
+    }
+
+    BDD
+    GetBDD() const
+    {
+        return set.GetBDD();
     }
 
     /**
@@ -584,31 +507,18 @@ public:
 class BddMap
 {
     friend class Bdd;
-    BDDMAP bdd;
+    BDD bdd;
     BddMap(const BDD from) : bdd(from) { sylvan_protect(&bdd); }
     BddMap(const Bdd &from) : bdd(from.bdd) { sylvan_protect(&bdd); }
 public:
+    BddMap(const BddMap& from) : bdd(from.bdd) { sylvan_protect(&bdd); }
     BddMap() : bdd(sylvan_map_empty()) { sylvan_protect(&bdd); }
     ~BddMap() { sylvan_unprotect(&bdd); }
 
     BddMap(uint32_t key_variable, const Bdd value);
 
-    // map union:
-    BddMap operator&(const Bdd& other) const;
-    BddMap& operator&=(const Bdd& other);
-    // map minus:
-    BddMap operator/(const Bdd& other) const;
-    BddMap& operator/=(const Bdd& other);
-
-    /**
-     * @brief Makes an adder from the BDDs in the map. Map keys should all match
-     */
     BddMap operator+(const Bdd& other) const;
     BddMap& operator+=(const Bdd& other);
-
-    /**
-     * @brief Makes an subtractor from the BDDs in the map. Map keys should all match
-     */
     BddMap operator-(const Bdd& other) const;
     BddMap& operator-=(const Bdd& other);
 
@@ -630,7 +540,7 @@ public:
     /**
      * @brief Returns non-zero when this map is empty
      */
-    int isEmpty() const;
+    bool isEmpty() const;
 };
 
 class MtbddMap;
@@ -708,8 +618,8 @@ public:
      */
     static Mtbdd mtbddCube(const BddSet &variables, std::vector<uint8_t> values, const Mtbdd &terminal);
 
-    int operator==(const Mtbdd& other) const;
-    int operator!=(const Mtbdd& other) const;
+    bool operator==(const Mtbdd& other) const;
+    bool operator!=(const Mtbdd& other) const;
     Mtbdd& operator=(const Mtbdd& right);
     Mtbdd operator!() const;
     Mtbdd operator~() const;
@@ -725,22 +635,22 @@ public:
     /**
      * @brief Returns non-zero if this Mtbdd is a leaf
      */
-    int isTerminal() const;
+    bool isTerminal() const;
 
     /**
      * @brief Returns non-zero if this Mtbdd is a leaf
      */
-    int isLeaf() const;
+    bool isLeaf() const;
 
     /**
      * @brief Returns non-zero if this Mtbdd is mtbddOne()
      */
-    int isOne() const;
+    bool isOne() const;
 
     /**
      * @brief Returns non-zero if this Mtbdd is mtbddZero()
      */
-    int isZero() const;
+    bool isZero() const;
 
     /**
      * @brief Returns the top variable index of this Mtbdd (the variable in the root node)
@@ -928,7 +838,7 @@ public:
     /**
      * @brief Returns non-zero when this map is empty
      */
-    int isEmpty();
+    bool isEmpty();
 };
 
 class Sylvan {

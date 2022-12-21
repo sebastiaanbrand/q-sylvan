@@ -75,7 +75,6 @@ TASK_IMPL_5(QMDD, qmdd_grover_cnf_iteration, QMDD, qmdd, BDDVAR, n, BDDVAR, k, B
 QMDD
 qmdd_grover_cnf(BDDVAR n, int* oracle, BDDVAR k, BDDVAR clauses, BDDVAR n_answers)
 {
-    LACE_ME;
     // not entirely sure about this, book says R <= ceil(pi/4 * sqrt(N))
     uint32_t R = floor( 3.14159265359/4.0 * sqrt( pow(2,n) / n_answers ) );
     // start with all zero state + ancilla: |000...0>|1>

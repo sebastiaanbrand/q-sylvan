@@ -2,7 +2,6 @@
 
 void sample_bell_state()
 {
-    LACE_ME; // required to run Lace functions
     srand(time(NULL));
 
     // Create |Phi^+>
@@ -24,8 +23,7 @@ int main()
 {
     // Standard Lace initialization
     int workers = 1;
-    lace_init(workers, 0);
-    lace_startup(0, NULL, NULL);
+    lace_start(workers, 0);
 
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
@@ -35,7 +33,6 @@ int main()
     sample_bell_state();
 
     sylvan_quit();
-    lace_exit();
     return 0;
 }
 

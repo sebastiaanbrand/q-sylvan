@@ -16,8 +16,6 @@ int test_x_gate()
     bool x[] = {0};
     bool x3[] = {0, 0, 0};
 
-    LACE_ME;
-
     // Single qubit test
     nqubits = 1;
     x[0] = 0; v0 = qmdd_create_basis_state(nqubits, x);
@@ -93,7 +91,6 @@ int test_h_gate()
     bool x2[] = {0,0};
     AMP a;
 
-    LACE_ME;
 
     // Single qubit test
     nqubits = 1;
@@ -215,7 +212,6 @@ int test_phase_gates()
     bool x2[] = {0, 0};
     AMP a;
 
-    LACE_ME;
 
     // simple 2 qubit test
     nqubits = 2;
@@ -347,7 +343,6 @@ int test_cx_gate()
     bool x2[] = {0,0};
     AMP a;
 
-    LACE_ME;
 
     // Test Bell state
     nqubits = 2;
@@ -430,7 +425,6 @@ int test_cz_gate()
     bool x2[] = {0, 0};
     AMP a;
 
-    LACE_ME;
 
     // 2 qubit graph state
     nqubits = 2;
@@ -469,7 +463,6 @@ int test_ccz_gate()
     bool x3[] = {0,0,0};
     AMP a, aRef;
 
-    LACE_ME;
 
     // 3 qubit test
     nqubits = 3;
@@ -531,7 +524,6 @@ int test_multi_cgate()
     BDDVAR nqubits;
     QMDD qTest, qRef, qInit, matrix;
 
-    LACE_ME;
 
     uint32_t test_gates[] = {GATEID_X, GATEID_H, GATEID_Z, GATEID_sqrtX};
 
@@ -621,8 +613,7 @@ int test_multi_cgate()
 }
 
 int test_tensor_product()
-{
-    LACE_ME; 
+{ 
 
     QMDD mTest, mRef, mX, mY, mZ, mH;
 
@@ -687,9 +678,8 @@ int test_with(int wgt_backend, int norm_strat)
 {
     // Standard Lace initialization
     int workers = 1;
-    lace_init(workers, 0);
+    lace_start(workers, 0);
     printf("%d worker(s), ", workers);
-    lace_startup(0, NULL, NULL);
 
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
@@ -704,7 +694,7 @@ int test_with(int wgt_backend, int norm_strat)
     int res = runtests();
 
     sylvan_quit();
-    lace_exit();
+    lace_stop();
 
     return res;
 }

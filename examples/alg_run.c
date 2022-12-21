@@ -276,8 +276,7 @@ int main(int argc, char **argv)
     t_start = wctime();
 
     /* Init Lace + Sylvan */
-    lace_init(workers, 0);
-    lace_startup(0, NULL, NULL);
+    lace_start(workers, 0);
     sylvan_set_sizes(min_tablesize, max_tablesize, min_cachesize, max_cachesize);
     sylvan_init_package();
     qsylvan_init_simulator(wgt_tab_size, tolerance, wgt_table_type, wgt_norm_strat);
@@ -313,7 +312,7 @@ int main(int argc, char **argv)
 
     /* Cleanup */
     sylvan_quit();
-    lace_exit();
+    lace_stop();
 
     return 0;   
 }

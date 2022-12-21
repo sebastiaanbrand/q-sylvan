@@ -63,8 +63,6 @@ QMDD
 qmdd_run_random_circuit(BDDVAR nqubits, uint64_t ngates, double cgate_ratio, uint64_t rseed)
 {
     srand(rseed);
-
-    LACE_ME;
     
     BDDVAR c, t;
     double r;

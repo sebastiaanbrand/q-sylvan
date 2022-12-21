@@ -53,8 +53,6 @@ inverse_mod(uint64_t a, uint64_t N) {
 QMDD 
 qmdd_phi_add(QMDD qmdd, BDDVAR first, BDDVAR last, BDDVAR c1, BDDVAR c2, bool* a) 
 {
-    LACE_ME;
-
     QMDD res = qmdd;
 
     int k;
@@ -77,8 +75,6 @@ qmdd_phi_add_inv(QMDD qmdd, BDDVAR first, BDDVAR last, BDDVAR c1, BDDVAR c2, boo
 {
     // These are all phase gates, so they'll all commute, so this is the exact
     // same function als qmdd_phi_add() but with inversed angles.
-    LACE_ME;
-
     QMDD res = qmdd;
 
     int k;
@@ -98,9 +94,7 @@ qmdd_phi_add_inv(QMDD qmdd, BDDVAR first, BDDVAR last, BDDVAR c1, BDDVAR c2, boo
 
 QMDD
 qmdd_phi_add_mod(QMDD qmdd, BDDVAR c1, BDDVAR c2, uint64_t a, uint64_t N)
-{
-    LACE_ME;
-    // clear cache (this function is called with different a, and cached results
+{    // clear cache (this function is called with different a, and cached results
     // are not parameterized on a)
     sylvan_clear_cache();
     shor_set_globals(a, N); // set bitvalues of a/N (N says the same though)
@@ -143,9 +137,7 @@ qmdd_phi_add_mod(QMDD qmdd, BDDVAR c1, BDDVAR c2, uint64_t a, uint64_t N)
 QMDD
 qmdd_phi_add_mod_inv(QMDD qmdd, BDDVAR c1, BDDVAR c2, uint64_t a, uint64_t N)
 {
-    // Inverse of function above
-    LACE_ME;
-    // clear cache (this function is called with different a, and cached results
+    // Inverse of function above    // clear cache (this function is called with different a, and cached results
     // are not parameterized on a)
     sylvan_clear_cache();
     shor_set_globals(a, N); // set bitvalues of a/N (N says the same though)
@@ -232,8 +224,6 @@ qmdd_cmult_inv(QMDD qmdd, uint64_t a, uint64_t N)
 QMDD
 qmdd_shor_ua(QMDD qmdd,  uint64_t a, uint64_t N)
 {
-    LACE_ME;
-
     // 1. controlled Cmult(a)
     qmdd = qmdd_cmult(qmdd, a, N);
 
@@ -279,8 +269,6 @@ shor_period_finding(uint64_t a, uint64_t N)
         new_a = new_a % N;
         as[i] = new_a;
     }
-
-    LACE_ME;
 
     int m_outcomes[2*shor_n];
     int m_outcome;

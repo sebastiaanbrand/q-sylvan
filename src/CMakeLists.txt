@@ -1,5 +1,8 @@
-set(SOURCES
-    lace.c
+add_library(qsylvan STATIC)
+add_library(qsylvan::sylvan ALIAS qsylvan)
+
+target_sources(qsylvan
+  PRIVATE
     sha2.c
     qsylvan_gates.c
     qsylvan_simulator.c
@@ -10,6 +13,7 @@ set(SOURCES
     sylvan_edge_weights.c
     sylvan_edge_weights_complex.c
     sylvan_gmp.c
+    sylvan_hash.c
     sylvan_ldd.c
     sylvan_mt.c
     sylvan_mtbdd.c
@@ -18,10 +22,8 @@ set(SOURCES
     sylvan_sl.c
     sylvan_stats.c
     sylvan_table.c
-)
-
-set(HEADERS
-    lace.h
+    sylvan_zdd.c
+  PUBLIC
     sylvan.h
     qsylvan.h
     qsylvan_gates.h
@@ -35,6 +37,7 @@ set(HEADERS
     sylvan_edge_weights.h
     sylvan_edge_weights_complex.h
     sylvan_gmp.h
+    sylvan_hash.h
     sylvan_int.h
     sylvan_ldd.h
     sylvan_ldd_int.h
@@ -45,26 +48,24 @@ set(HEADERS
     sylvan_stats.h
     sylvan_table.h
     sylvan_tls.h
+    sylvan_zdd.h
+    sylvan_zdd_int.h
 )
 
 add_subdirectory(edge_weight_storage)
-
-option(BUILD_SHARED_LIBS "Enable/disable creation of shared libraries" ON)
-option(BUILD_STATIC_LIBS "Enable/disable creation of static libraries" ON)
-
-add_library(qsylvan ${SOURCES})
+set_target_properties(qsylvan PROPERTIES VERSION ${sylvan_VERSION} SOVERSION ${sylvan_VERSION_MAJOR})
+target_compile_features(qsylvan PUBLIC c_std_11 cxx_std_11)
+target_compile_options(qsylvan PRIVATE -Wall -Wextra -Werror -fno-strict-aliasing -Wno-deprecated)
+target_include_directories(qsylvan PUBLIC ${CMAKE_CURRENT_LIST_DIR})
+target_link_libraries(qsylvan PUBLIC m pthread lace edge_weight_storage)
 
 find_package(GMP REQUIRED)
+target_sources(qsylvan PRIVATE sylvan_gmp.c PUBLIC sylvan_gmp.h)
+target_include_directories(qsylvan PRIVATE ${GMP_INCLUDE_DIR})
+target_link_libraries(qsylvan PUBLIC ${GMP_LIBRARIES})
 
-include_directories(${GMP_INCLUDE_DIR})
-
-target_link_libraries(qsylvan m pthread ${GMP_LIBRARIES} edge_weight_storage)
-
-if(UNIX AND NOT APPLE)
-    target_link_libraries(qsylvan rt)
-endif()
-
-option(SYLVAN_STATS "Collect statistics" OFF)
+# Do we want to collect BDD statistics?
+option(SYLVAN_STATS "Let Sylvan collect statistics at runtime" OFF)
 if(SYLVAN_STATS)
     set_target_properties(qsylvan PROPERTIES COMPILE_DEFINITIONS "SYLVAN_STATS")
 endif()

@@ -17,7 +17,7 @@ bool *qmdd_grover_ones_flag(BDDVAR nbits);
  * the QMDD.
  */
 QMDD qmdd_grover(BDDVAR n, bool* flag);
-#define qmdd_grover_iteration(qmdd,n,oracle) (CALL(qmdd_grover_iteration,qmdd,n,oracle))
+#define qmdd_grover_iteration(qmdd,n,oracle) (RUN(qmdd_grover_iteration,qmdd,n,oracle))
 TASK_DECL_3(QMDD, qmdd_grover_iteration, QMDD, BDDVAR, bool*);
 
 /**
