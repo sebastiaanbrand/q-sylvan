@@ -12,6 +12,7 @@ Q-Sylvan extends the parallel decision diagram library [Sylvan](https://github.c
 Q-Sylvan requires the following libraries: `popt` and `GMP`. On Ubuntu it should be possible to install these with
 - `sudo apt-get install libpopt-dev`
 - `sudo apt-get install libgmp-dev`
+- `sudo apt install cmake`
 
 
 ### Compiling the code
