@@ -24,6 +24,8 @@ After downloading or cloning the repository, from the repository folder the code
 
 Test can be run with `make test`.
 
+Another build can be run after removal of the build folder with `rmdir -rf build`.
+
 Installing Q-Sylvan as a shared library is possible with `make install`. However because currently all of Sylvan's functionality is retained in Q-Sylvan, Sylvan header files might clash if another version of Sylvan (i.e. other than 1.4.0) is also installed.
 
 
