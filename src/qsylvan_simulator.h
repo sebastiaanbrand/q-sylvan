@@ -1,3 +1,12 @@
+
+/**
+*
+*  This code is created by Sebastiaan Brand based on the earlier developed MTBDD method by Tom van Dijk.
+*
+*  It is currently not used in the QSylvan top-layer, and its unit tests.
+*
+*/
+
 #ifndef QSYLVAN_SIMULATOR_H
 #define QSYLVAN_SIMULATOR_H
 

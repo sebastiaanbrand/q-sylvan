@@ -101,7 +101,7 @@ int test_complex_operations()
     return 0;
 }
 
-int test_basis_state_creation()
+int test_basis_state_creation() // RVD: Start with conversion
 {
     bool x[] = {0};
     
