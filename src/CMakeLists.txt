@@ -59,6 +59,18 @@ target_compile_options(qsylvan PRIVATE -Wall -Wextra -Werror -fno-strict-aliasin
 target_include_directories(qsylvan PUBLIC ${CMAKE_CURRENT_LIST_DIR})
 target_link_libraries(qsylvan PUBLIC m pthread lace edge_weight_storage)
 
+option(SYLVAN_USE_MMAP "Let Sylvan use mmap to allocate (virtual) memory" ON)
+if(SYLVAN_USE_MMAP)
+    include(CheckSymbolExists)
+    check_symbol_exists(mmap "sys/mman.h" HAVE_MMAP)
+    if(NOT HAVE_MMAP)
+        message(WARNING " mmap not found: disabling mmap support")
+        set(SYLVAN_USE_MMAP OFF)
+    else()
+        set_target_properties(qsylvan PROPERTIES COMPILE_DEFINITIONS "SYLVAN_USE_MMAP")
+    endif()
+endif()
+
 find_package(GMP REQUIRED)
 target_sources(qsylvan PRIVATE sylvan_gmp.c PUBLIC sylvan_gmp.h)
 target_include_directories(qsylvan PRIVATE ${GMP_INCLUDE_DIR})
