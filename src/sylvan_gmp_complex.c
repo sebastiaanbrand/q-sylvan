@@ -1,6 +1,5 @@
 /*
- * Copyright 2011-2016 Formal Methods and Tools, University of Twente
- * Copyright 2016-2017 Tom van Dijk, Johannes Kepler University Linz
+ * Copyright 2023 System Verification Lab, LIACS, Leiden University
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,16 +14,18 @@
  * limitations under the License.
  */
 
+// TODO: works on the leaves with identical morphology, so no matrix multiplications et cetera.
+
 #include <sylvan_int.h>
-#include <sylvan_gmp.h>
+#include <sylvan_gmp_complex.h>
 
 #include <math.h>
 #include <string.h>
 
-static uint32_t gmp_type;
+static MP_COMPLEX gmp_complex_type; // was uint32_t
 
 /**
- * helper function for hash
+ * helper function for hash (skip)
  */
 #ifndef rotl64
 static inline uint64_t
@@ -34,45 +35,50 @@ rotl64(uint64_t x, int8_t r)
 }
 #endif
 
+// Done
 static uint64_t
 gmp_hash(const uint64_t v, const uint64_t seed)
 {
-    /* Hash the mpq in pointer v 
-     * A simpler way would be to hash the result of mpq_get_d.
+    /* Hash the mpc in pointer v  // TODO: strange language? 
+     * A simpler way would be to hash the result of mpc_get_d.
      * We just hash on the contents of the memory */
     
-    mpq_ptr x = (mpq_ptr)(size_t)v;
+    mpc_ptr x = (mpc_ptr)(size_t)v; // x = var(v)
 
     const uint64_t prime = 1099511628211;
     uint64_t hash = seed;
     mp_limb_t *limbs;
 
-    // hash "numerator" limbs
-    limbs = x[0]._mp_num._mp_d;
-    for (int i=0; i<abs(x[0]._mp_num._mp_size); i++) {
+    // hash "real" limbs
+    limbs = x[0].real._mp_d;
+    for (int i=0; i<abs(x[0].real._mp_size); i++) {
         hash = hash ^ limbs[i];
-        hash = rotl64(hash, 47);
+        hash = rotl64(hash, 47); // TODO: 47?
         hash = hash * prime;
     }
 
-    // hash "denominator" limbs
-    limbs = x[0]._mp_den._mp_d;
-    for (int i=0; i<abs(x[0]._mp_den._mp_size); i++) {
+    // hash "imag" limbs
+    limbs = x[0].imag._mp_d;
+    for (int i=0; i<abs(x[0].imag._mp_size); i++) {
         hash = hash ^ limbs[i];
-        hash = rotl64(hash, 31);
+        hash = rotl64(hash, 31); // TODO: 31?
         hash = hash * prime;
     }
 
     return hash ^ (hash >> 32);
 }
 
+// Done
 static int
 gmp_equals(const uint64_t left, const uint64_t right)
 {
-    /* This function is called by the unique table when comparing a new
+    /* This function is called by the unique table when comparing a new  // TODO: unique table?
        leaf with an existing leaf */
-    mpq_ptr x = (mpq_ptr)(size_t)left;
-    mpq_ptr y = (mpq_ptr)(size_t)right;
+    mpc_ptr x = (mpc_ptr)(size_t)left;
+    mpc_ptr y = (mpc_ptr)(size_t)right;
+
+    mpf_eq(x->real._mp_d, y->real._mp_d, x->real._mp_size); // TODO: mp_size correct (should be number of bits)
+    mpf_eq(x->imag._mp_d, y->imag._mp_d, x->imag._mp_size); // 
 
     /* Just compare x and y */
     return mpq_equal(x, y) ? 1 : 0;
@@ -147,27 +153,38 @@ gmp_read_binary(FILE* in, uint64_t *val)
  * Initialize gmp custom leaves
  */
 void
-gmp_init() // TODO: make terminal type independent
+gmp_init(leaf_type)
 {
-    /* Register custom leaf */
-    gmp_type = sylvan_mt_create_type();
-    sylvan_mt_set_hash(gmp_type, gmp_hash);
-    sylvan_mt_set_equals(gmp_type, gmp_equals);
-    sylvan_mt_set_create(gmp_type, gmp_create);
-    sylvan_mt_set_destroy(gmp_type, gmp_destroy);
-    sylvan_mt_set_to_str(gmp_type, gmp_to_str);
-    sylvan_mt_set_write_binary(gmp_type, gmp_write_binary);
-    sylvan_mt_set_read_binary(gmp_type, gmp_read_binary);
+    if (leaf_type == rational) {
+        gmp_type = sylvan_mt_create_type();
+        sylvan_mt_set_hash(gmp_type, gmp_hash);
+        sylvan_mt_set_equals(gmp_type, gmp_equals);
+        sylvan_mt_set_create(gmp_type, gmp_create);
+        sylvan_mt_set_destroy(gmp_type, gmp_destroy);
+        sylvan_mt_set_to_str(gmp_type, gmp_to_str);
+        sylvan_mt_set_write_binary(gmp_type, gmp_write_binary);
+        sylvan_mt_set_read_binary(gmp_type, gmp_read_binary);
+    } else if (leaf_type == complex) {
+        /* Register custom leaf */
+        gmp_complex_type = sylvan_mt_create_type();
+        sylvan_mt_set_hash(gmp_complex_type, gmp_complex_hash); // gmp
+        sylvan_mt_set_equals(gmp_complex_type, gmp_complex_equals);
+        sylvan_mt_set_create(gmp_complex_type, gmp_create);
+        sylvan_mt_set_destroy(gmp_complex_type, gmp_destroy);
+        sylvan_mt_set_to_str(gmp_complex_type, gmp_to_str);
+        sylvan_mt_set_write_binary(gmp_complex_type, gmp_write_binary);
+        sylvan_mt_set_read_binary(gmp_complex_type, gmp_read_binary);
+    }
 }
 
 /**
- * Create GMP mpq leaf
+ * Create GMP mpc leaf
  */
 MTBDD
-mtbdd_gmp(mpq_t val)
+mtbdd_gmp(mpc_t val)
 {
     mpq_canonicalize(val);
-    return mtbdd_makeleaf(gmp_type, (size_t)val);
+    return mtbdd_makeleaf(gmp_complex_type, (size_t)val);
 }
 
 /**
@@ -578,6 +595,66 @@ TASK_IMPL_2(MTBDD, gmp_op_strict_threshold, MTBDD*, pa, MTBDD*, pb)
 
     return mtbdd_invalid;
 }
+
+
+
+
+
+// TODO in another file
+
+/**
+ * Operation "times" for two mpc MTBDDs (leafs are complex numbers).
+ * One of the parameters can be a BDD, then it is interpreted as a filter.
+ * For partial functions, domain is intersection
+ */
+TASK_IMPL_2(MTBDD, gmp_op_times, MTBDD*, pa, MTBDD*, pb)
+{
+    MTBDD a = *pa, b = *pb;
+
+    /* Check for partial functions and for Boolean (filter) */
+    if (a == mtbdd_false || b == mtbdd_false) return mtbdd_false;
+
+    /* If one of Boolean, interpret as filter */
+    if (a == mtbdd_true) return b;
+    if (b == mtbdd_true) return a;
+
+    /* Handle multiplication of leaves */
+    if (mtbdd_isleaf(a) && mtbdd_isleaf(b)) {
+        assert(mtbdd_gettype(a) == gmp_type && mtbdd_gettype(b) == gmp_type);
+
+        mpc_ptr ma = (mpc_ptr)mtbdd_getvalue(a);
+        mpc_ptr mb = (mpc_ptr)mtbdd_getvalue(b);
+
+        // compute result
+        mpf_t mres[6];
+        mpf_init(mres);
+        mpf_mul(mres[0], ma->real, mb->real); // TODO naming vars
+        mpf_mul(mres[1], ma->real, mb->imag);
+        mpf_mul(mres[2], ma->imag, mb->real);
+        mpf_mul(mres[3], ma->imag, mb->imag);
+
+        mpf_min(mres[4], mres[0], mres[3]); // (a + ib)(c + id) = ac-bd + i(bc+ad)
+        mpf_plus(mres[5], mres[1], mres[2]);
+
+        MTBDD res = mtbdd_gmp(mres); // TODO how to allocate memory?
+        for(int i=0; i<6; i++)
+            mpq_clear(mres[i]);
+        return res; // node in decision diagram
+    }
+
+    /* Commutative, so make "a" the lowest for better cache performance */
+    if (a < b) {
+        *pa = b;
+        *pb = a;
+    }
+
+    return mtbdd_invalid;
+}
+
+
+
+
+
 
 /**
  * Multiply <a> and <b>, and abstract variables <vars> using summation.

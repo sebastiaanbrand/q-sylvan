@@ -23,6 +23,30 @@ extern "C" {
 
 /******************************<Initialization>********************************/
 
+/**
+ * TODO: description of params.
+ * 
+ * This could be a constructor of the QSylvan class "QSimulator()".
+ * 
+*/
+
+/*
+class QSimulator()
+{
+    size_t weight_table_size = DEFAULT_WEIGHT_TABLE_SIZE; 
+    double weight_table_tolerance = DEFAULT_TABLE_TOLERANCE; 
+    int edge_weight_backend = DEFAULT_WEIGHT_BACKEND;
+    int norm_strategy = DEFAULT_NORM_STRATEGY;
+
+    QSimulator(size_t weight_table_size, double weight_table_tolerance, int edge_weight_backend, int norm_strategy)
+    {
+        qsylvan_init_simulator(weight_table_size, weight_table_tolerance, edge_weight_backend, norm_strategy);
+        qsylvan_init_defaults(size_t wgt_tab_size);
+    }
+
+}
+*/
+
 void qsylvan_init_simulator(size_t wgt_tab_size, double wgt_tab_tolerance, int edge_weigth_backend, int norm_strat);
 void qsylvan_init_defaults(size_t wgt_tab_size);
 
@@ -58,6 +82,7 @@ QMDD qmdd_create_basis_state(BDDVAR n, bool* x);
  * @return A QMDD encoding of I \tensor I \tensor ... \tensor I
  */
 QMDD qmdd_create_all_identity_matrix(BDDVAR n);
+
 /**
  * Creates a QMDD matrix which applies gate U to qubit t and I to all others.
  * 

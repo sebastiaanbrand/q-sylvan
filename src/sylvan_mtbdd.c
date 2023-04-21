@@ -416,7 +416,18 @@ sylvan_init_mtbdd()
 }
 
 /**
- * Primitives
+ *  Primitives
+ */
+
+/** 
+ *  mtbdd_makeleaf()
+ * 
+ *  Create an endnode with value of given type.
+ * 
+ *  type:   type of the terminal value, 1 = integer, 2 = ...
+ *  value:  value of the terminal node
+ * 
+ *  return: index to node
  */
 MTBDD
 mtbdd_makeleaf(uint32_t type, uint64_t value)
@@ -462,6 +473,17 @@ _mtbdd_makenode_exit(void)
     exit(1);
 }
 
+/** 
+ *  mtbdd_makenode()
+ * 
+ *  Create a new node with type mtbddnode.
+ *
+ *  var:    integer, index i of xi
+ *  low:    index of low node
+ *  high:   index of high node
+ * 
+ *  return: index to node
+ */
 MTBDD
 _mtbdd_makenode(uint32_t var, MTBDD low, MTBDD high)
 {
@@ -722,7 +744,7 @@ TASK_IMPL_4(MTBDD, mtbdd_union_cube, MTBDD, mtbdd, MTBDD, vars, uint8_t*, cube, 
  */
 TASK_IMPL_3(MTBDD, mtbdd_apply, MTBDD, a, MTBDD, b, mtbdd_apply_op, op)
 {
-    /* Check terminal case */
+    /* Check terminal case: a and b are leaves except for a=0 or b=0 */
     MTBDD result = WRAP(op, &a, &b);
     if (result != mtbdd_invalid) return result;
 
@@ -868,8 +890,7 @@ TASK_IMPL_5(MTBDD, mtbdd_applyp, MTBDD, a, MTBDD, b, size_t, p, mtbdd_applyp_op,
 
 /**
  * Apply a unary operation <op> to <dd>.
- */
-TASK_IMPL_3(MTBDD, mtbdd_uapply, MTBDD, dd, mtbdd_uapply_op, op, size_t, param)
+ */TASK_IMPL_3(MTBDD, mtbdd_uapply, MTBDD, dd, mtbdd_uapply_op, op, size_t, param)
 {
     /* Maybe perform garbage collection */
     sylvan_gc_test();
@@ -1125,7 +1146,7 @@ TASK_IMPL_2(MTBDD, mtbdd_op_plus, MTBDD*, pa, MTBDD*, pb)
             return mtbdd_double(*(double*)(&val_a) + *(double*)(&val_b));
         } else if (mtbddnode_gettype(na) == 2 && mtbddnode_gettype(nb) == 2) {
             // both fraction
-            int64_t nom_a = (int32_t)(val_a>>32);
+            int64_t nom_a = (int32_t)(val_a>>32);  //TODO: no gmp here?
             int64_t nom_b = (int32_t)(val_b>>32);
             uint64_t denom_a = val_a&0xffffffff;
             uint64_t denom_b = val_b&0xffffffff;

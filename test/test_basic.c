@@ -185,6 +185,11 @@ test_bdd()
     return 0;
 }
 
+/**
+ * cube = x1 and x2 and x3 = 1 (so only x1 = x2 = x3 = 1) 
+ * 
+ * clause = x1 or x2 or x3 = 1 (so if one x is 1)
+ */
 int
 test_cube()
 {

@@ -119,7 +119,7 @@ sylvan_get_edge_weight_table_size()
 }
 
 double
-sylvan_edge_weights_tolerance()
+sylvan_edge_weights_tolerance() // accuracy, eps
 {
     return wgt_store_get_tol();
 }
