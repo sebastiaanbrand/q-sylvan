@@ -197,13 +197,13 @@ uint32_t mtbdd_gettype(MTBDD leaf);
 uint64_t mtbdd_getvalue(MTBDD leaf);
 
 /**
- * Return the variable field of the given internal node.
+ * Return the variable field (index of variable?) of the given internal (non terminal?) node.
  */
 uint32_t mtbdd_getvar(MTBDD node);
 
 /**
- * Follow the low/false edge of the given internal node.
- * Also takes complement edges into account.
+ * Follow (what is followed?) the low/false edge of the given internal node.
+ * Also takes complement edges (what is a complement edge?) into account.
  */
 MTBDD mtbdd_getlow(MTBDD node);
 

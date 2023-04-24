@@ -63,37 +63,71 @@ test_mtbdd_makenodes_and_leafs()
     //   2/ if v is non-terminal, index(v) = i, fv = xi'.f_low(v) + xi.f_high(v)
     //
 
-    // Build up from bottom, so you can connect the returning index to the upper layer nodes.
+    // Built test-MTBDD up from bottom, so you can connect the returning index to the upper layer nodes.
 
-    // Make terminals (=leafs) - layer 2 (bottom layer)
-    uint32_t vartype = 1; // boolean
+    // Make terminals (=leafs) - layer 3 (bottom layer)
+    uint32_t vartype = 1;    // boolean
     uint64_t value_low = 0; 
     uint64_t value_high = 1;
 
-    MTBDD index_leaf_low_low   = mtbdd_makeleaf(vartype, value_low);
-    MTBDD index_leaf_low_high  = mtbdd_makeleaf(vartype, value_high);
-    MTBDD index_leaf_high_low  = mtbdd_makeleaf(vartype, value_low);
-    MTBDD index_leaf_high_high = mtbdd_makeleaf(vartype, value_high);
+    MTBDD index_leaf_00 = mtbdd_makeleaf(vartype, value_low);
+    MTBDD index_leaf_01 = mtbdd_makeleaf(vartype, value_high);
+    MTBDD index_leaf_10 = mtbdd_makeleaf(vartype, value_low);
+    MTBDD index_leaf_11 = mtbdd_makeleaf(vartype, value_high);
 
     // Make non terminal nodes - layer 2 - variable x2
     uint32_t index_x2 = 2;
-    MTBDD index_x1_low  = mtbdd_makenode(index_x2, index_leaf_low_low, index_leaf_low_high);
-    MTBDD index_x1_high = mtbdd_makenode(index_x2, index_leaf_high_low, index_leaf_high_high);
+    MTBDD index_x1_low  = mtbdd_makenode(index_x2, index_leaf_00, index_leaf_01);
+    MTBDD index_x1_high = mtbdd_makenode(index_x2, index_leaf_10, index_leaf_11);
 
     // Make root node (= non terminal node) - layer 1 (top or root layer) - variable x1
     uint32_t index_x1 = 1;
-    MTBDD index_root = mtbdd_makenode(index_x1, index_x1_low, index_x1_high);
-    printf("%ld", index_root);
+    MTBDD index_root_node = mtbdd_makenode(index_x1, index_x1_low, index_x1_high);
+    //printf("%ld", index_root_node);
 
-    // Test leaf values
-    test_assert(mtbdd_getvalue(index_leaf_low_low) == value_low);
-    test_assert(mtbdd_getvalue(index_leaf_low_high) == value_high);
-    test_assert(mtbdd_getvalue(index_leaf_high_low) == value_low);
-    test_assert(mtbdd_getvalue(index_leaf_high_high) == value_high);
+    // Test primitive functions //
 
-    // Test primitive functions
+    // - test leaf values
+    test_assert(mtbdd_getvalue(index_leaf_00) == value_low);
+    test_assert(mtbdd_getvalue(index_leaf_01) == value_high);
+    test_assert(mtbdd_getvalue(index_leaf_10) == value_low);
+    test_assert(mtbdd_getvalue(index_leaf_11) == value_high);
 
-    // Test path length
+    // - test isleaf on terminals
+    test_assert(mtbdd_isleaf(index_leaf_00) == (int)1); // (int)1 == true, TODO: make boolean!
+    test_assert(mtbdd_isleaf(index_leaf_01) == (int)1);
+    test_assert(mtbdd_isleaf(index_leaf_10) == (int)1);
+    test_assert(mtbdd_isleaf(index_leaf_11) == (int)1);
+
+    // - test isleaf on non terminals
+    test_assert(mtbdd_isleaf(index_x1) == (int)0);
+    test_assert(mtbdd_isleaf(index_x2) == (int)0);
+    test_assert(mtbdd_isleaf(index_root_node) == (int)0);
+
+// <- all okay
+
+    // - test getlow/high of a node
+    test_assert(mtbdd_getlow(index_root_node) == index_x1_low);
+    test_assert(mtbdd_gethigh(index_root_node) == index_x1_high);
+
+// <- above fails ...
+
+return 0;
+
+    // - test get type/value of terminals
+    test_assert(mtbdd_gettype(index_leaf_00) == vartype);  // leaf, type is boolean 
+    test_assert(mtbdd_getvalue(index_leaf_01) == 1);       // leaf, should be 1
+
+    // - test get type/value of non terminals
+    test_assert(mtbdd_gettype(index_x1_low) == 1);  // not a leaf, 
+    test_assert(mtbdd_getvalue(index_x1_low) == 0); // not a leaf, TODO: what to return if no value?
+    
+    // - test get var of non terminals
+    test_assert(mtbdd_getvar(index_x1_low) == index_x2);
+    test_assert(mtbdd_getvar(index_x1_high) == index_x2);
+    test_assert(mtbdd_getvar(index_root_node) == index_x1);
+
+    // Test path length //
 
     // Test apply method
 
@@ -121,14 +155,15 @@ test_mtbdd_apply_function()
 
 TASK_0(int, runtests)
 {
-    // we are not testing garbage collection
+    // We are not testing garbage collection
     sylvan_gc_disable();
 
     // Test 1
-    printf("Testing mtbdd makenode and ithvar.\n");
+    printf("Testing mtbdd makenode and ithvar.\n"); // TODO: does not work?
     if (test_mtbdd_makenode_ithvar()) return 1;
 
     // Test 2
+    if (test_mtbdd_makenodes_and_leafs()) return 1;
 
     return 0;
 }
