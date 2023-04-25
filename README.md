@@ -22,7 +22,9 @@ After downloading or cloning the repository, from the repository folder the code
 3. `cmake ..`
 4. `make`
 
-Test can be run with `make test`. For output on failure use 'ctest -output-on-failure'.
+Test can be run with `make test`. 
+
+For output on failure use `ctest -output-on-failure`.
 
 Another build can be run after removal of the build folder with `rm -rdf build`.
 
