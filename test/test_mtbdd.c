@@ -66,32 +66,69 @@ test_mtbdd_makenodes_and_leafs()
     // Built test-MTBDD up from bottom, so you can connect the returning index to the upper layer nodes.
 
     // Make terminals (=leafs) - layer 3 (bottom layer)
-    uint32_t vartype = 1;    // boolean
-    uint64_t value_low = 0; 
-    uint64_t value_high = 1;
+    uint32_t terminal_type = 0;  // terminal has integer type
 
-    MTBDD index_leaf_00 = mtbdd_makeleaf(vartype, value_low);
-    MTBDD index_leaf_01 = mtbdd_makeleaf(vartype, value_high);
-    MTBDD index_leaf_10 = mtbdd_makeleaf(vartype, value_low);
-    MTBDD index_leaf_11 = mtbdd_makeleaf(vartype, value_high);
+    uint64_t value_low_00  = 0; 
+    uint64_t value_high_01 = 1;
+    uint64_t value_low_10  = 0;
+    uint64_t value_high_11 = 1;
 
-    // Make non terminal nodes - layer 2 - variable x2
+    MTBDD index_leaf_00 = mtbdd_makeleaf(terminal_type, value_low_00);
+    MTBDD index_leaf_01 = mtbdd_makeleaf(terminal_type, value_high_01);
+    MTBDD index_leaf_10 = mtbdd_makeleaf(terminal_type, value_low_10);
+    MTBDD index_leaf_11 = mtbdd_makeleaf(terminal_type, value_high_11);
+
+    printf("index_leaf_00 = %ld \n", index_leaf_00);
+    printf("index_leaf_01 = %ld \n", index_leaf_01);
+    printf("index_leaf_10 = %ld \n", index_leaf_10);
+    printf("index_leaf_11 = %ld \n", index_leaf_11);
+
+    // - test identical terminals have the same index
+    test_assert(index_leaf_00 == index_leaf_10); 
+    test_assert(index_leaf_01 == index_leaf_11);
+
+    // Make non terminal nodes - layer 2 - variable x2 //
     uint32_t index_x2 = 2;
     MTBDD index_x1_low  = mtbdd_makenode(index_x2, index_leaf_00, index_leaf_01);
     MTBDD index_x1_high = mtbdd_makenode(index_x2, index_leaf_10, index_leaf_11);
 
+    printf("index_x1_low  = %ld \n", index_x1_low);
+    printf("index_x1_high = %ld \n", index_x1_high);
+
+    // - test reduction result of makenode function
+    test_assert(index_x1_low == index_x1_high);
+
+    // Now with different leaf values
+    value_low_00  = 0; 
+    value_high_01 = 1;
+    value_low_10  = 2;
+    value_high_11 = 3;
+
+    index_leaf_10 = mtbdd_makeleaf(terminal_type, value_low_10);
+    index_leaf_11 = mtbdd_makeleaf(terminal_type, value_high_11);
+
+    printf("index_leaf_00 = %ld \n", index_leaf_00);
+    printf("index_leaf_01 = %ld \n", index_leaf_01);
+    printf("index_leaf_10 = %ld \n", index_leaf_10);
+    printf("index_leaf_11 = %ld \n", index_leaf_11);
+
+    // - test different terminals have different indices
+    test_assert(index_leaf_00 != index_leaf_10); 
+    test_assert(index_leaf_01 != index_leaf_11);
+
     // Make root node (= non terminal node) - layer 1 (top or root layer) - variable x1
     uint32_t index_x1 = 1;
     MTBDD index_root_node = mtbdd_makenode(index_x1, index_x1_low, index_x1_high);
-    //printf("%ld", index_root_node);
+
+    printf("index_root_node = %ld \n", index_root_node);
 
     // Test primitive functions //
 
     // - test leaf values
-    test_assert(mtbdd_getvalue(index_leaf_00) == value_low);
-    test_assert(mtbdd_getvalue(index_leaf_01) == value_high);
-    test_assert(mtbdd_getvalue(index_leaf_10) == value_low);
-    test_assert(mtbdd_getvalue(index_leaf_11) == value_high);
+    test_assert(mtbdd_getvalue(index_leaf_00) == value_low_00);
+    test_assert(mtbdd_getvalue(index_leaf_01) == value_high_01);
+    test_assert(mtbdd_getvalue(index_leaf_10) == value_low_10);
+    test_assert(mtbdd_getvalue(index_leaf_11) == value_high_11);
 
     // - test isleaf on terminals
     test_assert(mtbdd_isleaf(index_leaf_00) == (int)1); // (int)1 == true, TODO: make boolean!
@@ -104,28 +141,39 @@ test_mtbdd_makenodes_and_leafs()
     test_assert(mtbdd_isleaf(index_x2) == (int)0);
     test_assert(mtbdd_isleaf(index_root_node) == (int)0);
 
-// <- all okay
+// <- above all okay
 
     // - test getlow/high of a node
+
+    printf("test: getlow/high of a node \n");
+    printf("getlow(index_root_node = %ld) = %ld == index_x1_low = %ld \n", index_root_node, mtbdd_getlow(index_root_node), index_x1_low);
+    
     test_assert(mtbdd_getlow(index_root_node) == index_x1_low);
     test_assert(mtbdd_gethigh(index_root_node) == index_x1_high);
 
 // <- above fails ...
 
-return 0;
-
     // - test get type/value of terminals
-    test_assert(mtbdd_gettype(index_leaf_00) == vartype);  // leaf, type is boolean 
-    test_assert(mtbdd_getvalue(index_leaf_01) == 1);       // leaf, should be 1
+    test_assert(mtbdd_gettype(index_leaf_00) == terminal_type);  // leaf, should be integer 
+    test_assert(mtbdd_getvalue(index_leaf_01) == 1);             // leaf, should be 1
+
+// <- above works
 
     // - test get type/value of non terminals
+
+    printf("gettype(index_x1_low)  = %d \n", mtbdd_gettype(index_x1_low));
+    printf("getvalue(index_x1_low) = %ld \n", mtbdd_getvalue(index_x1_low));
+
     test_assert(mtbdd_gettype(index_x1_low) == 1);  // not a leaf, 
     test_assert(mtbdd_getvalue(index_x1_low) == 0); // not a leaf, TODO: what to return if no value?
-    
+
     // - test get var of non terminals
     test_assert(mtbdd_getvar(index_x1_low) == index_x2);
     test_assert(mtbdd_getvar(index_x1_high) == index_x2);
     test_assert(mtbdd_getvar(index_root_node) == index_x1);
+
+// <- above fails ...
+
 
     // Test path length //
 
@@ -159,7 +207,7 @@ TASK_0(int, runtests)
     sylvan_gc_disable();
 
     // Test 1
-    printf("Testing mtbdd makenode and ithvar.\n"); // TODO: does not work?
+    printf("Testing mtbdd makenode and ithvar.\n"); // TODO: print does not work?
     if (test_mtbdd_makenode_ithvar()) return 1;
 
     // Test 2

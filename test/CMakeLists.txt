@@ -31,7 +31,6 @@ add_test(test_mtbdd test_mtbdd)
 add_test(test_cxx test_cxx)
 add_test(test_zdd test_zdd)
 
-
 # test_qmdd_normalization
 add_executable(test_qmdd_normalization test_qmdd_normalization.c)
 target_link_libraries(test_qmdd_normalization qsylvan)
