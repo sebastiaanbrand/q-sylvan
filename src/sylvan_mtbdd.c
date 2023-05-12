@@ -604,6 +604,20 @@ mtbdd_fraction(int64_t nom, uint64_t denom)
     return mtbdd_makeleaf(2, (nom<<32)|denom);
 }
 
+MTBDD
+mtbdd_complex_double(complex_double_t value)
+{
+    uint32_t terminal_type = 3; // Custom type for complex double
+    return mtbdd_makeleaf(terminal_type, *(uint64_t*)&value);
+}
+
+MTBDD
+mtbdd_complex_mpc(complex_mpc_t value)
+{
+    uint32_t terminal_type = 4; // Custom type for complex mpc
+    return mtbdd_makeleaf(terminal_type, *(uint64_t*)&value);
+}
+
 /**
  * Create a MTBDD cube representing the conjunction of variables in their positive or negative
  * form depending on whether the cube[idx] equals 0 (negative), 1 (positive) or 2 (any).

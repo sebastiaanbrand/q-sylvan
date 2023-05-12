@@ -66,8 +66,9 @@ test_mtbdd_makenodes_and_leafs_boolean_terminals()
     //
     // The above diagram will be reduced while building up, and should result in:
     //
-    //                      x1
-    //               0             1
+    //                     x1
+    //
+    //                  0      1
     //
 
     // Make terminals (=leafs) - layer 3 (bottom layer)
@@ -205,6 +206,95 @@ test_mtbdd_makenodes_and_leafs_integer_terminals()
     return 0;
 }
 
+int
+test_mtbdd_makenodes_and_leafs_real_terminals()
+{
+    //
+    // From: Bryant, MTBDD 1986
+    //
+    // f = f(x1,x2), f: Boolean -> Boolean, f = x1 <op> f(x2) + !x1 <op> f(x2)
+    //
+    //                      x1
+    //             x2                  x2
+    //
+    //        0.25      0.25     0.75     -0.25
+    //
+    //
+    // Built test-MTBDD up from bottom, so you can connect the returning index to the upper layer nodes.
+    //
+    // The above diagram will be reduced while building up, and should result in:
+    //
+    //                      x1
+    //                              x2
+    //
+    //            0.25          0.75      -0.25
+    //
+
+    // Make terminals (=leafs)
+    //uint32_t terminal_type = 2;  // terminal has real type
+
+    // Set the terminal leafs
+    double value_low_00  =  0.25;
+    double value_high_01 =  0.25;
+    double value_low_10  =  0.75;
+    double value_high_11 = -0.25;
+
+    MTBDD index_leaf_00 = mtbdd_double(/*terminal_type,*/ value_low_00);
+    MTBDD index_leaf_01 = mtbdd_double(/*terminal_type,*/ value_high_01);
+    MTBDD index_leaf_10 = mtbdd_double(/*terminal_type,*/ value_low_10);
+    MTBDD index_leaf_11 = mtbdd_double(/*terminal_type,*/ value_high_11);
+
+    printf("index_leaf_00 = %ld \n", index_leaf_00);
+    printf("index_leaf_01 = %ld \n", index_leaf_01);
+    printf("index_leaf_10 = %ld \n", index_leaf_10);
+    printf("index_leaf_11 = %ld \n", index_leaf_11);
+
+    // Different terminals should have different indices
+    test_assert(index_leaf_00 == index_leaf_10); 
+    test_assert(index_leaf_01 != index_leaf_11);
+
+    // Make non-terminal nodes - middle layer, so variable x2
+    uint32_t index_x2 = 2;
+    MTBDD index_x1_low  = mtbdd_makenode(index_x2, index_leaf_00, index_leaf_01);
+    MTBDD index_x1_high = mtbdd_makenode(index_x2, index_leaf_10, index_leaf_11);
+
+    printf("index_x1_low  = %ld \n", index_x1_low);
+    printf("index_x1_high = %ld \n", index_x1_high);
+
+    // The indices of x1 should be different
+    test_assert(index_x1_low != index_x1_high);
+    test_assert(index_x1_low == index_leaf_00);
+
+    // Make root node (= non terminal node) - top layer, so variable x1
+    uint32_t index_x1 = 1;
+    MTBDD index_root_node = mtbdd_makenode(index_x1, index_x1_low, index_x1_high);
+
+    printf("index_root_node = %ld \n", index_root_node);
+
+    // The index of root should be the indices of x1
+    test_assert(index_root_node != index_x1_low);
+    test_assert(index_root_node != index_x1_high);
+
+    // Check the leaf values
+    test_assert(mtbdd_getvalue(index_leaf_00) == value_low_00);
+    test_assert(mtbdd_getvalue(index_leaf_01) == value_high_01);
+    test_assert(mtbdd_getvalue(index_leaf_10) == value_low_10);
+    test_assert(mtbdd_getvalue(index_leaf_11) == value_high_11);
+
+    // Check of node type being leaf of terminals
+    test_assert(mtbdd_isleaf(index_leaf_00) == (int)1); // (int)1 == true, TODO: make boolean!
+    test_assert(mtbdd_isleaf(index_leaf_01) == (int)1);
+    test_assert(mtbdd_isleaf(index_leaf_10) == (int)1);
+    test_assert(mtbdd_isleaf(index_leaf_11) == (int)1);
+
+    // Check of node type being non-terminal
+    test_assert(mtbdd_isleaf(index_x1) == (int)0);
+    test_assert(mtbdd_isleaf(index_x2) == (int)0);
+    test_assert(mtbdd_isleaf(index_root_node) == (int)0);
+
+    return 0;
+}
+
 // <- above all okay
 /*
     // - test getlow/high of a node
@@ -282,6 +372,9 @@ TASK_0(int, runtests)
     printf("Testing mtbdd makeleaf, makenode, leaf type integer {0,1,2,3}.\n");
     if (test_mtbdd_makenodes_and_leafs_integer_terminals()) return 1;
 
+    // Test 4
+    printf("Testing mtbdd makeleaf, makenode, leaf type real {0.25,0.25,0.75,-0.25}.\n");
+    if (test_mtbdd_makenodes_and_leafs_real_terminals()) return 1;
 
     return 0;
 }

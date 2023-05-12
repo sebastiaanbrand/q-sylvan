@@ -32,9 +32,9 @@
  * Type "0" is the Integer type. 
  * Type "1" is the Real type.
  * Type "2" is the Fraction type, consisting of two 32-bit integers (numerator and denominator).
- * Type "3" is custom with the GMP Library?
  * 
- * TODO: Type "4" is the Complex number type, implemented with the MPC Library.
+ * TODO: Type "3" is custom: Complex number with doubles
+ * TODO: Type "4" is custom: Complex number implemented with the MPC Library.
  * 
  * For non-Boolean MTBDDs, mtbdd_false is used for partial functions, i.e. mtbdd_false
  * indicates that the function is not defined for a certain input.
@@ -239,7 +239,7 @@ mtbdd_not(MTBDD dd)
 /**
  * Create an Integer leaf with the given value.
  */
-MTBDD mtbdd_int64(int64_t value);
+MTBDD mtbdd_int64(int64_t value); // TODO: naming, should be mtbdd_make_int64_leaf()
 
 /**
  * Create a Real leaf with the given value.
@@ -250,6 +250,28 @@ MTBDD mtbdd_double(double value);
  * Create a Fraction leaf with the given numerator and denominator.
  */
 MTBDD mtbdd_fraction(int64_t numer, uint64_t denom);
+
+/**
+ * Make a Complex double leaf with the given real and imaginary parts
+*/
+typedef struct complex_double_s {
+    double real;
+    double imag;
+} complex_double_t;
+
+MTBDD
+mtbdd_complex_double(complex_double_t value);
+
+/**
+ * Make a Complex MPC library leaf with the given real and imaginary parts
+*/
+typedef complex_double_t mpc; // TODO: change to official MPC library typedef later!
+typedef struct complex_mpc_s {
+    mpc complex;
+} complex_mpc_t;
+
+MTBDD
+mtbdd_complex_mpc(complex_mpc_t value);
 
 /**
  * Obtain the value of an Integer leaf.
