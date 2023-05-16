@@ -250,7 +250,7 @@ test_mtbdd_makenodes_and_leafs_real_terminals()
     printf("index_leaf_11 = %ld \n", index_leaf_11);
 
     // Different terminals should have different indices
-    test_assert(index_leaf_00 == index_leaf_10); 
+    test_assert(index_leaf_00 == index_leaf_01); 
     test_assert(index_leaf_01 != index_leaf_11);
 
     // Make non-terminal nodes - middle layer, so variable x2
@@ -264,6 +264,7 @@ test_mtbdd_makenodes_and_leafs_real_terminals()
     // The indices of x1 should be different
     test_assert(index_x1_low != index_x1_high);
     test_assert(index_x1_low == index_leaf_00);
+    test_assert(index_x1_low == index_leaf_01);
 
     // Make root node (= non terminal node) - top layer, so variable x1
     uint32_t index_x1 = 1;
@@ -276,10 +277,10 @@ test_mtbdd_makenodes_and_leafs_real_terminals()
     test_assert(index_root_node != index_x1_high);
 
     // Check the leaf values
-    test_assert(mtbdd_getvalue(index_leaf_00) == value_low_00);
-    test_assert(mtbdd_getvalue(index_leaf_01) == value_high_01);
-    test_assert(mtbdd_getvalue(index_leaf_10) == value_low_10);
-    test_assert(mtbdd_getvalue(index_leaf_11) == value_high_11);
+    test_assert(mtbdd_getdouble(index_leaf_00) == value_low_00);
+    test_assert(mtbdd_getdouble(index_leaf_01) == value_high_01);
+    test_assert(mtbdd_getdouble(index_leaf_10) == value_low_10);
+    test_assert(mtbdd_getdouble(index_leaf_11) == value_high_11);
 
     // Check of node type being leaf of terminals
     test_assert(mtbdd_isleaf(index_leaf_00) == (int)1); // (int)1 == true, TODO: make boolean!
@@ -287,9 +288,13 @@ test_mtbdd_makenodes_and_leafs_real_terminals()
     test_assert(mtbdd_isleaf(index_leaf_10) == (int)1);
     test_assert(mtbdd_isleaf(index_leaf_11) == (int)1);
 
+    printf("index_x1_low    = %d \n", mtbdd_isleaf(index_x1_low));
+    printf("index_x1_high   = %d \n", mtbdd_isleaf(index_x1_high));
+    printf("index_root_node = %d \n", mtbdd_isleaf(index_root_node));
+
     // Check of node type being non-terminal
-    test_assert(mtbdd_isleaf(index_x1) == (int)0);
-    test_assert(mtbdd_isleaf(index_x2) == (int)0);
+    test_assert(mtbdd_isleaf(index_x1_low) == (int)1); // This should be identical with index_leaf_0x
+    test_assert(mtbdd_isleaf(index_x1_high) == (int)0);
     test_assert(mtbdd_isleaf(index_root_node) == (int)0);
 
     return 0;

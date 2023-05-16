@@ -194,7 +194,7 @@ uint32_t mtbdd_gettype(MTBDD leaf);
 /**
  * Return the <value> field of the given leaf.
  */
-uint64_t mtbdd_getvalue(MTBDD leaf);
+uint64_t mtbdd_getvalue(MTBDD leaf); // TODO: Only for unsigned int64 or pointer
 
 /**
  * Return the variable field (index of variable?) of the given internal (non terminal?) node.
@@ -276,7 +276,7 @@ mtbdd_complex_mpc(complex_mpc_t value);
 /**
  * Obtain the value of an Integer leaf.
  */
-int64_t mtbdd_getint64(MTBDD terminal);
+int64_t mtbdd_getint64(MTBDD terminal); // TODO: this is only > 0
 
 /**
  * Obtain the value of a Real leaf.
