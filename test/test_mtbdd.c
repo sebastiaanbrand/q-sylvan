@@ -344,16 +344,70 @@ test_mtbdd_makenodes_and_leafs_real_terminals()
 }
 */
 
-int
-test_mtbdd_matrix_multiplication()
-{
-    return 0;
-}
-
 
 int
 test_mtbdd_apply_function()
 {
+    //
+    // MTBDD dd1 =
+    //
+    //              x1
+    //
+    //       x2             x2
+    //
+    //  0.25    0.75    0.35    0.65
+    //
+    //
+    // MTBDD dd2 = 
+    //
+    //              x1
+    //
+    //        x2            x2
+    //
+    //  0.75    0.25    0.65    0.35
+    //
+    //
+
+    MTBDD dd1, dd2;
+
+    
+
+    mtbdd_apply(dd1, dd2, plus);
+
+    return 0;
+}
+
+int
+test_mtbdd_matrix_multiplication()
+{
+    // 
+    //  K . L = M
+    //
+    //  K = (1.0  2.0)   L = (1.0  0.5)   M = (1.0 x 1.0 + 2.0 x 0.5  1.0 x 1.0 + 2.0 x 1.0)
+    //      (2.0  1.0)       (0.5  1.0)       (2.0 x 1.0 + 1.0 x 1.0  2.0 x 0.5 + 1.0 x 1.0)
+    //
+    //  M = (2.0  3.0)
+    //      (2.0  2.0)
+    //
+
+    return 0;
+}
+
+int
+test_mtbdd_matrix_kronecker_multiplication()
+{
+    //
+    //  K (x) L = M
+    //
+    //  K = (1.0  2.0)   L = (1.0  0.5)   M = (1.0 x L  2.0 x L)
+    //      (2.0  1.0)       (0.5  1.0)       (2.0 x L  1.0 x L)
+    //
+    //  M = (1.0 0.5 2.0 1.0)
+    //      (0.5 1.0 1.0 2.0)
+    //      (2.0 1.0 1.0 0.5)
+    //      (1.0 2.0 0.5 1.0)
+    //
+
     return 0;
 }
 
