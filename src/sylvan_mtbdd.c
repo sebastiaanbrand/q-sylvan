@@ -1309,6 +1309,8 @@ TASK_IMPL_2(MTBDD, mtbdd_op_times, MTBDD*, pa, MTBDD*, pb)
  */
 TASK_IMPL_2(MTBDD, mtbdd_op_min, MTBDD*, pa, MTBDD*, pb)
 {
+    printf("1\n");
+
     MTBDD a = *pa, b = *pb;
     if (a == mtbdd_true) return b;
     if (b == mtbdd_true) return a;
@@ -1320,6 +1322,8 @@ TASK_IMPL_2(MTBDD, mtbdd_op_min, MTBDD*, pa, MTBDD*, pb)
 
     mtbddnode_t na = MTBDD_GETNODE(a);
     mtbddnode_t nb = MTBDD_GETNODE(b);
+
+    printf("2\n");
 
     if (mtbddnode_isleaf(na) && mtbddnode_isleaf(nb)) {
         uint64_t val_a = mtbddnode_getvalue(na);
@@ -1333,6 +1337,9 @@ TASK_IMPL_2(MTBDD, mtbdd_op_min, MTBDD*, pa, MTBDD*, pb)
             // both double
             double va = *(double*)&val_a;
             double vb = *(double*)&val_b;
+
+            printf("3  %lf  %lf \n", va, vb);
+
             return va < vb ? a : b;
         } else if (mtbddnode_gettype(na) == 2 && mtbddnode_gettype(nb) == 2) {
             // both fraction
@@ -2443,7 +2450,7 @@ TASK_IMPL_1(MTBDD, mtbdd_minimum, MTBDD, a)
         nom_h *= denom_l/c;
         result = nom_l < nom_h ? low : high;
     } else {
-        assert(0); // failure
+        assert(0); // failure TODO: how to handle custom types?
     }
 
     /* Store in cache */
