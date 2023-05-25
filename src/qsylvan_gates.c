@@ -5,6 +5,7 @@
 static long double Pi;    // set value of global Pi
 
 uint64_t gates[n_predef_gates+256+256+1000][4];
+gate_id_t inv_gate_ids[n_predef_gates+256+256+1000];
 
 /********************** <dynamic custom rotation gates> ***********************/
 
@@ -96,54 +97,67 @@ qmdd_gates_init()
     k = GATEID_I;
     gates[k][0] = AADD_ONE;  gates[k][1] = AADD_ZERO;
     gates[k][2] = AADD_ZERO; gates[k][3] = AADD_ONE;
+    inv_gate_ids[GATEID_I] = GATEID_I;
 
     k = GATEID_X;
     gates[k][0] = AADD_ZERO; gates[k][1] = AADD_ONE;
     gates[k][2] = AADD_ONE;  gates[k][3] = AADD_ZERO;
+    inv_gate_ids[GATEID_X] = GATEID_X;
 
     k = GATEID_Y;
     gates[k][0] = AADD_ZERO; gates[k][1] = weight_lookup(cmake(0.0, -1.0));
     gates[k][2] = weight_lookup(cmake(0.0, 1.0));  gates[k][3] = AADD_ZERO;
+    inv_gate_ids[GATEID_Y] = GATEID_Y;
 
     k = GATEID_Z;
     gates[k][0] = AADD_ONE;  gates[k][1] = AADD_ZERO;
     gates[k][2] = AADD_ZERO; gates[k][3] = AADD_MIN_ONE;
+    inv_gate_ids[GATEID_Z] = GATEID_Z;
 
     k = GATEID_H;
     gates[k][0] = gates[k][1] = gates[k][2] = weight_lookup(cmake(1.0/flt_sqrt(2.0),0));
     gates[k][3] = weight_lookup(cmake(-1.0/flt_sqrt(2.0),0));
+    inv_gate_ids[GATEID_H] = GATEID_H;
 
     k = GATEID_S;
     gates[k][0] = AADD_ONE;  gates[k][1] = AADD_ZERO;
     gates[k][2] = AADD_ZERO; gates[k][3] = weight_lookup(cmake(0.0, 1.0));
+    inv_gate_ids[GATEID_S] = GATEID_Sdag;
 
     k = GATEID_Sdag;
     gates[k][0] = AADD_ONE;  gates[k][1] = AADD_ZERO;
     gates[k][2] = AADD_ZERO; gates[k][3] = weight_lookup(cmake(0.0, -1.0));
+    inv_gate_ids[GATEID_Sdag] = GATEID_S;
 
     k = GATEID_T;
     gates[k][0] = AADD_ONE;  gates[k][1] = AADD_ZERO;
     gates[k][2] = AADD_ZERO; gates[k][3] = weight_lookup(cmake(1.0/flt_sqrt(2.0), 1.0/flt_sqrt(2.0)));
+    inv_gate_ids[GATEID_T] = GATEID_Tdag;
 
     k = GATEID_Tdag;
     gates[k][0] = AADD_ONE;  gates[k][1] = AADD_ZERO;
     gates[k][2] = AADD_ZERO; gates[k][3] = weight_lookup(cmake(1.0/flt_sqrt(2.0), -1.0/flt_sqrt(2.0)));
+    inv_gate_ids[GATEID_Tdag] = GATEID_T;
 
     k = GATEID_sqrtX;
     gates[k][0] = weight_lookup(cmake(0.5, 0.5)); gates[k][1] = weight_lookup(cmake(0.5,-0.5));
     gates[k][2] = weight_lookup(cmake(0.5,-0.5)); gates[k][3] = weight_lookup(cmake(0.5, 0.5));
+    inv_gate_ids[GATEID_sqrtX] = GATEID_sqrtXdag;
 
     k = GATEID_sqrtXdag;
     gates[k][0] = weight_lookup(cmake(0.5,-0.5)); gates[k][1] = weight_lookup(cmake(0.5, 0.5));
     gates[k][2] = weight_lookup(cmake(0.5, 0.5)); gates[k][3] = weight_lookup(cmake(0.5,-0.5));
+    inv_gate_ids[GATEID_sqrtXdag] = GATEID_sqrtX;
 
     k = GATEID_sqrtY;
     gates[k][0] = weight_lookup(cmake(0.5, 0.5)); gates[k][1] = weight_lookup(cmake(-0.5,-0.5));
     gates[k][2] = weight_lookup(cmake(0.5, 0.5)); gates[k][3] = weight_lookup(cmake(0.5, 0.5));
+    inv_gate_ids[GATEID_sqrtY] = GATEID_sqrtYdag;
 
     k = GATEID_sqrtYdag;
     gates[k][0] = weight_lookup(cmake(0.5,-0.5)); gates[k][1] = weight_lookup(cmake(0.5,-0.5));
     gates[k][2] = weight_lookup(cmake(-0.5,0.5)); gates[k][3] = weight_lookup(cmake(0.5,-0.5));
+    inv_gate_ids[GATEID_sqrtYdag] = GATEID_sqrtY;
 
     qmdd_phase_gates_init(255);
 
@@ -172,5 +186,8 @@ qmdd_phase_gates_init(int n)
         gate_id = GATEID_Rk_dag(k);
         gates[gate_id][0] = AADD_ONE;  gates[gate_id][1] = AADD_ZERO;
         gates[gate_id][2] = AADD_ZERO; gates[gate_id][3] = weight_lookup(cartesian);
+
+        inv_gate_ids[GATEID_Rk(k)] = GATEID_Rk_dag(k);
+        inv_gate_ids[GATEID_Rk_dag(k)] = GATEID_Rk(k);
     }
 }

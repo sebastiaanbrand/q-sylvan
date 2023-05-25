@@ -551,6 +551,34 @@ int test_controlled_range_gate()
     return 0;
 }
 
+int test_inverse_gate_ids()
+{
+    test_assert(inv_gate_ids[GATEID_I] == GATEID_I);
+    test_assert(inv_gate_ids[GATEID_X] == GATEID_X);
+    test_assert(inv_gate_ids[GATEID_Y] == GATEID_Y);
+    test_assert(inv_gate_ids[GATEID_Z] == GATEID_Z);
+    test_assert(inv_gate_ids[GATEID_H] == GATEID_H);
+    test_assert(inv_gate_ids[GATEID_S] == GATEID_Sdag);
+    test_assert(inv_gate_ids[GATEID_Sdag] == GATEID_S);
+    test_assert(inv_gate_ids[GATEID_T] == GATEID_Tdag);
+    test_assert(inv_gate_ids[GATEID_Tdag] == GATEID_T);
+    test_assert(inv_gate_ids[GATEID_sqrtX] == GATEID_sqrtXdag);
+    test_assert(inv_gate_ids[GATEID_sqrtXdag] == GATEID_sqrtX);
+    test_assert(inv_gate_ids[GATEID_sqrtY] == GATEID_sqrtYdag);
+    test_assert(inv_gate_ids[GATEID_sqrtYdag] == GATEID_sqrtY);
+
+    for (int k = 0; k <= 255; k++) {
+        test_assert(inv_gate_ids[GATEID_Rk(k)] == GATEID_Rk_dag(k));
+        test_assert(inv_gate_ids[GATEID_Rk_dag(k)] == GATEID_Rk(k));
+    }
+
+    // TODO: add inverese gates for Rx, Ry, Rx
+
+    if(VERBOSE) printf("inverse gate ids:          ok\n");
+    return 0;
+}
+
+
 int run_qmdd_tests()
 {
     // we are not testing garbage collection
@@ -565,6 +593,7 @@ int run_qmdd_tests()
     if (test_cz_gate()) return 1;
     if (test_controlled_range_gate()) return 1;
     if (test_ccz_gate()) return 1;
+    if (test_inverse_gate_ids()) return 1;
 
     return 0;
 }
