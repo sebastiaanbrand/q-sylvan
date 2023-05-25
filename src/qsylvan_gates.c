@@ -14,13 +14,16 @@ uint32_t next_custom_id; // set to 0 in init
 uint32_t
 get_custom_gate_id()
 {
-    next_custom_id++;
-    if (next_custom_id >= num_dynamic_gates) {
+    if (next_custom_id + 2 >= num_dynamic_gates) {
         // max custom gates used, reset ID counter to 0 and clear opcache
         next_custom_id = 0;
         sylvan_clear_cache();
     }
-    return num_static_gates + next_custom_id; // index offset by num_static_gates
+
+    uint32_t res = next_custom_id + 1;
+    next_custom_id += 2; // reserve next id for inverse of returned gateid
+
+    return num_static_gates + res; // index offset by num_static_gates
 }
 
 uint32_t
@@ -34,8 +37,14 @@ GATEID_Rz(fl_t a)
     AMP u00, u11;
     u00 = weight_lookup(cmake_angle(-theta_over_2, 1));
     u11 = weight_lookup(cmake_angle(theta_over_2, 1));
-    gates[gate_id][0] = u00;    gates[gate_id][1] = AADD_ZERO;
-    gates[gate_id][2] = AADD_ZERO; gates[gate_id][3] = u11;
+    gates[gate_id][0] = u00;        gates[gate_id][1] = AADD_ZERO;
+    gates[gate_id][2] = AADD_ZERO;  gates[gate_id][3] = u11;
+
+    // also store the inverse of this gate (gate_id + 1 is reserved for this)
+    gates[gate_id+1][0] = wgt_ccj(u00); gates[gate_id+1][1] = AADD_ZERO;
+    gates[gate_id+1][2] = AADD_ZERO;    gates[gate_id+1][3] = wgt_ccj(u11);
+    inv_gate_ids[gate_id] = gate_id+1;
+    inv_gate_ids[gate_id+1] = gate_id;
 
     // return (temporary) gate_id for this gate
     return gate_id;
@@ -57,6 +66,12 @@ GATEID_Rx(fl_t a)
     gates[gate_id][0] = u00; gates[gate_id][1] = u01;
     gates[gate_id][2] = u10; gates[gate_id][3] = u11;
 
+    // also store the inverse of this gate (gate_id + 1 is reserved for this)
+    gates[gate_id+1][0] = wgt_ccj(u00); gates[gate_id+1][1] = wgt_ccj(u10);
+    gates[gate_id+1][2] = wgt_ccj(u01); gates[gate_id+1][3] = wgt_ccj(u11);
+    inv_gate_ids[gate_id] = gate_id+1;
+    inv_gate_ids[gate_id+1] = gate_id;
+
     // return (temporary) gate_id for this gate
     return gate_id;
 }
@@ -76,6 +91,12 @@ GATEID_Ry(fl_t a)
     u11 = weight_lookup(cmake(flt_cos(theta_over_2),  0.0));
     gates[gate_id][0] = u00; gates[gate_id][1] = u01;
     gates[gate_id][2] = u10; gates[gate_id][3] = u11;
+
+    // also store the inverse of this gate (gate_id + 1 is reserved for this)
+    gates[gate_id+1][0] = wgt_ccj(u00); gates[gate_id+1][1] = wgt_ccj(u10);
+    gates[gate_id+1][2] = wgt_ccj(u01); gates[gate_id+1][3] = wgt_ccj(u11);
+    inv_gate_ids[gate_id] = gate_id+1;
+    inv_gate_ids[gate_id+1] = gate_id;
 
     // return (temporary) gate_id for this gate
     return gate_id;

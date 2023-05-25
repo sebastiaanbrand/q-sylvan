@@ -287,6 +287,7 @@ int test_pauli_rotation_gates()
 {
     QMDD qInit, qTest, qRef;
     BDDVAR nqubits, t;
+    uint32_t tmp_gateid;
 
     // Rz rotations
     nqubits = 3, t = 1;
@@ -294,36 +295,69 @@ int test_pauli_rotation_gates()
     qInit = qmdd_gate(qInit, GATEID_H, t);
 
     // I gate
+    tmp_gateid = GATEID_Rz(1.0);
     qRef  = qmdd_gate(qInit, GATEID_I, t);
-    qTest = qmdd_gate(qInit, GATEID_Rz(1.0), t);
+    qTest = qmdd_gate(qInit, tmp_gateid, t);
     qTest = qmdd_remove_global_phase(qTest);
     test_assert(aadd_equivalent(qRef, qTest, nqubits, false, false));
     test_assert(aadd_equivalent(qRef, qTest, nqubits, true, false));
     test_assert(qTest == qRef);
+    // inverse
+    qTest = qmdd_gate(qTest, inv_gate_ids[tmp_gateid], t);
+    qTest = qmdd_remove_global_phase(qTest);
+    test_assert(qTest == qInit);
 
     // Z gate
+    tmp_gateid = GATEID_Rz(0.5);
     qRef  = qmdd_gate(qInit, GATEID_Z, t);
-    qTest = qmdd_gate(qInit, GATEID_Rz(0.5), t);
+    qTest = qmdd_gate(qInit, tmp_gateid, t);
     qTest = qmdd_remove_global_phase(qTest);
     test_assert(aadd_equivalent(qRef, qTest, nqubits, false, false));
     test_assert(aadd_equivalent(qRef, qTest, nqubits, true, false));
     test_assert(qTest == qRef);
+    // inverse
+    qTest = qmdd_gate(qTest, inv_gate_ids[tmp_gateid], t);
+    qTest = qmdd_remove_global_phase(qTest);
+    test_assert(qTest == qInit);
 
     // S gate
+    tmp_gateid = GATEID_Rz(0.25);
     qRef  = qmdd_gate(qInit, GATEID_S, t);
-    qTest = qmdd_gate(qInit, GATEID_Rz(0.25), t);
+    qTest = qmdd_gate(qInit, tmp_gateid, t);
     qTest = qmdd_remove_global_phase(qTest);
     test_assert(aadd_equivalent(qRef, qTest, nqubits, false, false));
     test_assert(aadd_equivalent(qRef, qTest, nqubits, true, false));
     test_assert(qTest == qRef);
+    // inverse
+    qTest = qmdd_gate(qTest, inv_gate_ids[tmp_gateid], t);
+    qTest = qmdd_remove_global_phase(qTest);
+    test_assert(qTest == qInit);
 
     // T gate
+    tmp_gateid = GATEID_Rz(0.125);
     qRef  = qmdd_gate(qInit, GATEID_T, t);
-    qTest = qmdd_gate(qInit, GATEID_Rz(0.125), t);
+    qTest = qmdd_gate(qInit, tmp_gateid, t);
     qTest = qmdd_remove_global_phase(qTest);
     test_assert(aadd_equivalent(qRef, qTest, nqubits, false, false));
     test_assert(aadd_equivalent(qRef, qTest, nqubits, true, false));
     test_assert(qTest == qRef);
+    // inverse
+    qTest = qmdd_gate(qTest, inv_gate_ids[tmp_gateid], t);
+    qTest = qmdd_remove_global_phase(qTest);
+    test_assert(qTest == qInit);
+
+    // T^dag gate
+    tmp_gateid = GATEID_Rz(-0.125);
+    qRef  = qmdd_gate(qInit, GATEID_Tdag, t);
+    qTest = qmdd_gate(qInit, tmp_gateid, t);
+    qTest = qmdd_remove_global_phase(qTest);
+    test_assert(aadd_equivalent(qRef, qTest, nqubits, false, false));
+    test_assert(aadd_equivalent(qRef, qTest, nqubits, true, false));
+    test_assert(qTest == qRef);
+    // inverse
+    qTest = qmdd_gate(qTest, inv_gate_ids[tmp_gateid], t);
+    qTest = qmdd_remove_global_phase(qTest);
+    test_assert(qTest == qInit);
 
 
     // Rx rotations
@@ -331,29 +365,58 @@ int test_pauli_rotation_gates()
     qInit = qmdd_create_all_zero_state(nqubits);
 
     // I gate
+    tmp_gateid = GATEID_Rx(1.0);
     qRef  = qmdd_gate(qInit, GATEID_I, t);
-    qTest = qmdd_gate(qInit, GATEID_Rx(1.0), t);
+    qTest = qmdd_gate(qInit, tmp_gateid, t);
     qTest = qmdd_remove_global_phase(qTest);
     test_assert(aadd_equivalent(qRef, qTest, nqubits, false, false));
     test_assert(aadd_equivalent(qRef, qTest, nqubits, true, false));
     test_assert(qTest == qRef);
+    // inverse
+    qTest = qmdd_gate(qTest, inv_gate_ids[tmp_gateid], t);
+    qTest = qmdd_remove_global_phase(qTest);
+    test_assert(qTest == qInit);
 
     // X gate
+    tmp_gateid = GATEID_Rx(0.5);
     qRef  = qmdd_gate(qInit, GATEID_X, t);
-    qTest = qmdd_gate(qInit, GATEID_Rx(0.5), t);
+    qTest = qmdd_gate(qInit, tmp_gateid, t);
     qTest = qmdd_remove_global_phase(qTest);
     test_assert(aadd_equivalent(qRef, qTest, nqubits, false, false));
     test_assert(aadd_equivalent(qRef, qTest, nqubits, true, false));
     test_assert(qTest == qRef);
+    // inverse
+    qTest = qmdd_gate(qTest, inv_gate_ids[tmp_gateid], t);
+    qTest = qmdd_remove_global_phase(qTest);
+    test_assert(qTest == qInit);
 
     // sqrt(X) gate
+    tmp_gateid = GATEID_Rx(0.25);
     qRef  = qmdd_gate(qInit, GATEID_sqrtX, t);
-    qTest = qmdd_gate(qInit, GATEID_Rx(0.25), t);
+    qTest = qmdd_gate(qInit, tmp_gateid, t);
     qRef  = qmdd_remove_global_phase(qRef);
     qTest = qmdd_remove_global_phase(qTest);
     test_assert(aadd_equivalent(qRef, qTest, nqubits, false, false));
     test_assert(aadd_equivalent(qRef, qTest, nqubits, true, false));
     test_assert(qTest == qRef);
+    // inverse
+    qTest = qmdd_gate(qTest, inv_gate_ids[tmp_gateid], t);
+    qTest = qmdd_remove_global_phase(qTest);
+    test_assert(qTest == qInit);
+
+    // sqrt(X)^dag gate
+    tmp_gateid = GATEID_Rx(-0.25);
+    qRef  = qmdd_gate(qInit, GATEID_sqrtXdag, t);
+    qTest = qmdd_gate(qInit, tmp_gateid, t);
+    qRef  = qmdd_remove_global_phase(qRef);
+    qTest = qmdd_remove_global_phase(qTest);
+    test_assert(aadd_equivalent(qRef, qTest, nqubits, false, false));
+    test_assert(aadd_equivalent(qRef, qTest, nqubits, true, false));
+    test_assert(qTest == qRef);
+    // inverse
+    qTest = qmdd_gate(qTest, inv_gate_ids[tmp_gateid], t);
+    qTest = qmdd_remove_global_phase(qTest);
+    test_assert(qTest == qInit);
 
 
     // Ry rotations
@@ -362,39 +425,59 @@ int test_pauli_rotation_gates()
     qInit = qmdd_gate(qInit, GATEID_H, t);
 
     // I gate
+    tmp_gateid = GATEID_Ry(1.0);
     qRef  = qmdd_gate(qInit, GATEID_I, t);
-    qTest = qmdd_gate(qInit, GATEID_Ry(1.0), t);
+    qTest = qmdd_gate(qInit, tmp_gateid, t);
     qTest = qmdd_remove_global_phase(qTest);
     test_assert(aadd_equivalent(qRef, qTest, nqubits, false, false));
     test_assert(aadd_equivalent(qRef, qTest, nqubits, true, false));
     test_assert(qTest == qRef);
+    // inverse
+    qTest = qmdd_gate(qTest, inv_gate_ids[tmp_gateid], t);
+    qTest = qmdd_remove_global_phase(qTest);
+    test_assert(qTest == qInit);
 
     // Y gate
+    tmp_gateid = GATEID_Ry(0.5);
     qRef  = qmdd_gate(qInit, GATEID_Y, t);
-    qTest = qmdd_gate(qInit, GATEID_Ry(0.5), t);
+    qTest = qmdd_gate(qInit, tmp_gateid, t);
     qRef  = qmdd_remove_global_phase(qRef);
     qTest = qmdd_remove_global_phase(qTest);
     test_assert(aadd_equivalent(qRef, qTest, nqubits, false, false));
     test_assert(aadd_equivalent(qRef, qTest, nqubits, true, false));
     test_assert(qTest == qRef);
+    // inverse
+    qTest = qmdd_gate(qTest, inv_gate_ids[tmp_gateid], t);
+    qTest = qmdd_remove_global_phase(qTest);
+    test_assert(qTest == qInit);
 
     // sqrt(Y) gate
+    tmp_gateid = GATEID_Ry(0.25);
     qRef  = qmdd_gate(qInit, GATEID_sqrtY, t);
-    qTest = qmdd_gate(qInit, GATEID_Ry(0.25), t);
+    qTest = qmdd_gate(qInit, tmp_gateid, t);
     qRef  = qmdd_remove_global_phase(qRef);
     qTest = qmdd_remove_global_phase(qTest);
     test_assert(aadd_equivalent(qRef, qTest, nqubits, false, false));
     test_assert(aadd_equivalent(qRef, qTest, nqubits, true, false));
     test_assert(qTest == qRef);
+    // inverse
+    qTest = qmdd_gate(qTest, inv_gate_ids[tmp_gateid], t);
+    qTest = qmdd_remove_global_phase(qTest);
+    test_assert(qTest == qInit);
 
     // sqrt(Y)^dag gate
+    tmp_gateid = GATEID_Ry(-0.25);
     qRef  = qmdd_gate(qInit, GATEID_sqrtYdag, t);
-    qTest = qmdd_gate(qInit, GATEID_Ry(-0.25), t);
+    qTest = qmdd_gate(qInit, tmp_gateid, t);
     qRef  = qmdd_remove_global_phase(qRef);
     qTest = qmdd_remove_global_phase(qTest);
     test_assert(aadd_equivalent(qRef, qTest, nqubits, false, false));
     test_assert(aadd_equivalent(qRef, qTest, nqubits, true, false));
     test_assert(qTest == qRef);
+    // inverse
+    qTest = qmdd_gate(qTest, inv_gate_ids[tmp_gateid], t);
+    qTest = qmdd_remove_global_phase(qTest);
+    test_assert(qTest == qInit);
 
 
     if(VERBOSE) printf("qmdd Rx, Ry, Rz gates:     ok\n");
@@ -572,7 +655,7 @@ int test_inverse_gate_ids()
         test_assert(inv_gate_ids[GATEID_Rk_dag(k)] == GATEID_Rk(k));
     }
 
-    // TODO: add inverese gates for Rx, Ry, Rx
+    // Inverses of Rx, Ry, and Rz are tested in test_pauli_rotation_gates()
 
     if(VERBOSE) printf("inverse gate ids:          ok\n");
     return 0;
