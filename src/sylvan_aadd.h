@@ -138,11 +138,20 @@ void aadd_set_caching_granularity(int granularity);
 AADD_WGT aadd_getvalue(AADD a, bool* path);
 
 /**
+ * Given an AADD representing a vector `a`, return AADD representing `-a`.
+*/
+#define aadd_neg(a) (aadd_bundle(AADD_TARGET(a), wgt_neg(AADD_WEIGHT(a))))
+
+/**
  * Recursive implementation of vector addition.
  */
 #define aadd_plus(a,b) (RUN(aadd_plus,a,b))
 TASK_DECL_2(AADD, aadd_plus, AADD, AADD);
 
+/**
+ * Vector subtraction (uses aadd_plus(a,-b))
+*/
+#define aadd_minus(a,b) (RUN(aadd_plus,a,aadd_neg(b)))
 
 /* Computes Mat * |vec> (Wrapper function) */
 #define aadd_matvec_mult(mat,vec,nvars) (RUN(aadd_matvec_mult,mat,vec,nvars))

@@ -172,7 +172,7 @@ int test_vector_addition()
     AMP a;
     BDDVAR nqubits;
 
-    // Single qubit test
+    // Single qubit test for plus
     x[0] = 0; q0 = qmdd_create_basis_state(1, x);
     x[0] = 1; q1 = qmdd_create_basis_state(1, x);
     q00 = aadd_plus(q0, q0);
@@ -207,7 +207,33 @@ int test_vector_addition()
     test_assert(q001 == q100);
     test_assert(!qmdd_is_unitvector(q001, 1));
 
-    
+    // Single qubit test for neg
+    x[0] = 0; q0 = qmdd_create_basis_state(1, x);
+    x[0] = 1; q1 = qmdd_create_basis_state(1, x);
+    q0 = aadd_neg(q0);
+    q1 = aadd_neg(q1);
+
+    x[0] = 0; a = aadd_getvalue(q0, x); test_assert(a == AADD_MIN_ONE);
+    x[0] = 1; a = aadd_getvalue(q0, x); test_assert(a == AADD_ZERO);
+    x[0] = 0; a = aadd_getvalue(q1, x); test_assert(a == AADD_ZERO);
+    x[0] = 1; a = aadd_getvalue(q1, x); test_assert(a == AADD_MIN_ONE);
+
+    // Single qubit test for minus
+    x[0] = 0; q0 = qmdd_create_basis_state(1, x);
+    x[0] = 1; q1 = qmdd_create_basis_state(1, x);
+    q00 = aadd_minus(q0, q0);
+    q01 = aadd_minus(q0, q1);
+    q10 = aadd_minus(q1, q0);
+    q11 = aadd_minus(q1, q1);
+
+    x[0] = 0; a = aadd_getvalue(q00, x); test_assert(a == AADD_ZERO);
+    x[0] = 1; a = aadd_getvalue(q00, x); test_assert(a == AADD_ZERO);
+    x[0] = 0; a = aadd_getvalue(q01, x); test_assert(a == AADD_ONE);
+    x[0] = 1; a = aadd_getvalue(q01, x); test_assert(a == AADD_MIN_ONE);
+    x[0] = 0; a = aadd_getvalue(q10, x); test_assert(a == AADD_MIN_ONE);
+    x[0] = 1; a = aadd_getvalue(q10, x); test_assert(a == AADD_ONE);
+    x[0] = 0; a = aadd_getvalue(q11, x); test_assert(a == AADD_ZERO);
+    x[0] = 1; a = aadd_getvalue(q11, x); test_assert(a == AADD_ZERO);
 
     // 4 qubit test
     nqubits = 4;
@@ -326,7 +352,7 @@ int test_vector_addition()
     test_assert(q001 == q100);
     test_assert(!qmdd_is_unitvector(q001, 4));
 
-    if(VERBOSE) printf("qmdd vector addition:     ok\n");
+    if(VERBOSE) printf("qmdd vector add/subract:  ok\n");
     return 0;
 }
 
