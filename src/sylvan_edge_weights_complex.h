@@ -16,6 +16,7 @@ void init_complex_one_zero(void *wgt_store);
 
 void weight_complex_abs(complex_t *a);
 void weight_complex_neg(complex_t *a);
+void weight_complex_ccj(complex_t *a);
 void weight_complex_sqr(complex_t *a);
 void weight_complex_add(complex_t *a, complex_t *b);
 void weight_complex_sub(complex_t *a, complex_t *b);

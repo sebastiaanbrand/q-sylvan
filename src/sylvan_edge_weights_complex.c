@@ -96,6 +96,12 @@ weight_complex_neg(complex_t *a)
 }
 
 void
+weight_complex_ccj(complex_t *a)
+{
+    a->i = -(a->i);
+}
+
+void
 weight_complex_sqr(complex_t *a)
 {
     weight_complex_mul(a, a);

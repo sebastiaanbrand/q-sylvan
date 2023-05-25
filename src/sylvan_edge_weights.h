@@ -110,6 +110,7 @@ void wgt_set_inverse_chaching(bool on);
 /* Arithmetic operations on AADD_WGT's */
 AADD_WGT wgt_abs(AADD_WGT a); // returns |a|
 AADD_WGT wgt_neg(AADD_WGT a); // returns -a
+AADD_WGT wgt_ccj(AADD_WGT a); // returns complex conjucate of a
 AADD_WGT wgt_add(AADD_WGT a, AADD_WGT b); // returns a + b
 AADD_WGT wgt_sub(AADD_WGT a, AADD_WGT b); // returns a - b
 AADD_WGT wgt_mul(AADD_WGT a, AADD_WGT b); // returns a * b

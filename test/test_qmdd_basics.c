@@ -57,6 +57,14 @@ int test_complex_operations()
     test_assert(index1 == index4);  test_assert(weight_eq(&val1, &val4));
     test_assert(index2 == index3);  test_assert(weight_eq(&val2, &val3));
 
+    // wgt_ccj
+    ref1 = cmake(0.3, 4.2);         index1 = weight_lookup(ref1);   weight_value(index1, &val1);
+    ref2 = cmake(0.3, -4.2);        index2 = weight_lookup(ref2);   weight_value(index2, &val2);
+    index3 = wgt_ccj(index1);       weight_value(index3, &val3);
+    index4 = wgt_ccj(index2);       weight_value(index4, &val4);
+    test_assert(index1 == index4);  test_assert(weight_eq(&val1, &val4));
+    test_assert(index2 == index3);  test_assert(weight_eq(&val2, &val3));
+
     // wgt_add
     ref1 = cmake(5.2, 1.0);         index1 = weight_lookup(ref1);   weight_value(index1, &val1);
     ref2 = cmake(-0.3,7.0);         index2 = weight_lookup(ref2);   weight_value(index2, &val2);

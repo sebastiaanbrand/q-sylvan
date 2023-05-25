@@ -34,6 +34,7 @@ void (*init_one_zero)();
 /* Arithmetic operations on edge weights */
 void (*weight_abs)(); // a <-- |a|
 void (*weight_neg)(); // a <-- -a
+void (*weight_ccj)(); // a <-- complex conjugate of a
 void (*weight_sqr)(); // a <-- a^2
 void (*weight_add)(); // a <-- a + b
 void (*weight_sub)(); // a <-- a - b
@@ -76,6 +77,7 @@ void init_edge_weight_functions(edge_weight_type_t edge_weight_type)
         init_one_zero       = &init_complex_one_zero;
         weight_abs          = &weight_complex_abs;
         weight_neg          = &weight_complex_neg;
+        weight_ccj          = &weight_complex_ccj;
         weight_sqr          = &weight_complex_sqr;
         weight_add          = &weight_complex_add;
         weight_sub          = &weight_complex_sub;
@@ -383,6 +385,23 @@ wgt_neg(AADD_WGT a)
     free(w);
 
     return res; 
+}
+
+AADD_WGT
+wgt_ccj(AADD_WGT a)
+{
+    // special cases
+    if (a == AADD_ZERO || a == AADD_ONE || a == AADD_MIN_ONE) return a;
+
+    AADD_WGT res;
+
+    weight_t w = weight_malloc();
+    weight_value(a, w);
+    weight_ccj(w);
+    res = weight_lookup_ptr(w);
+    free(w);
+
+    return res;
 }
 
 AADD_WGT
