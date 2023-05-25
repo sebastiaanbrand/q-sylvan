@@ -750,7 +750,7 @@ int run_qmdd_tests()
     return 0;
 }
 
-int test_with(int amps_backend, int norm_strat) 
+int test_with(bool it_ref, int amps_backend, int norm_strat) 
 {
     // Standard Lace initialization
     int workers = 1;
@@ -762,8 +762,9 @@ int test_with(int amps_backend, int norm_strat)
     sylvan_init_package();
     qsylvan_init_simulator(1LL<<11, -1, amps_backend, norm_strat);
     qmdd_set_testing_mode(true); // turn on internal sanity tests
+    qsylvan_set_iterative_refinement(it_ref);
 
-    printf("amps backend = %d, norm strategy = %d:\n", amps_backend, norm_strat);
+    printf("it_ref = %d, amps backend = %d, norm strategy = %d:\n", it_ref, amps_backend, norm_strat);
     int res = run_qmdd_tests();
 
     sylvan_quit();
@@ -773,9 +774,11 @@ int test_with(int amps_backend, int norm_strat)
 
 int runtests()
 {
-    for (int backend = 0; backend < n_backends; backend++) {
-        for (int norm_strat = 0; norm_strat < n_norm_strategies; norm_strat++) {
-            if (test_with(backend, norm_strat)) return 1;
+    for (int it_ref = 0; it_ref <= 1; it_ref++) {
+        for (int backend = 0; backend < n_backends; backend++) {
+            for (int norm_strat = 0; norm_strat < n_norm_strategies; norm_strat++) {
+                if (test_with((bool)it_ref, backend, norm_strat)) return 1;
+            }
         }
     }
     return 0;

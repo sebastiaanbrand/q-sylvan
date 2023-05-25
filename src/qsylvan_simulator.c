@@ -5,6 +5,7 @@
 
 static bool testing_mode = 0; // turns on/off (expensive) sanity checks
 static int granularity = 1; // operation cache access granularity
+static bool iterative_refinement = 0; // can reduce rounding errors after gates
 
 
 /***************<Helper functions for chaching QMDD operations>****************/
@@ -55,6 +56,12 @@ void
 qsylvan_init_defaults(size_t wgt_tab_size)
 {
     qsylvan_init_simulator(wgt_tab_size, -1, COMP_HASHMAP, NORM_LOW);
+}
+
+void
+qsylvan_set_iterative_refinement(bool on)
+{
+    iterative_refinement = on;
 }
 
 /*****************************</Initialization>********************************/
@@ -339,11 +346,39 @@ qmdd_do_before_gate(QMDD* qmdd)
     qmdd_stats_log(*qmdd);
 }
 
+static QMDD
+qmdd_refine_result(QMDD input, QMDD res, gate_id_t gate, BDDVAR* cs, BDDVAR t, bool range)
+{
+    if (iterative_refinement) {
+        // TODO: protect DDs from GC
+        if (cs == NULL) {
+            // Single qubit gate
+            QMDD r = aadd_minus(input, qmdd_gate_rec(res, inv_gate_ids[gate], t));
+            QMDD d = qmdd_gate_rec(r, gate, t);
+            res = aadd_plus(res, d);
+        }
+        else if (!range) {
+            // Regular controlled gate
+            QMDD r = aadd_minus(input, qmdd_cgate_rec(res, inv_gate_ids[gate], cs, t));
+            QMDD d = qmdd_cgate_rec(r, gate, cs, t);
+            res = aadd_plus(res, d);
+        }
+        else {
+            // Gate controlled on range
+            QMDD r = aadd_minus(input, qmdd_cgate_range_rec(res, inv_gate_ids[gate], cs[0], cs[1], t));
+            QMDD d = qmdd_cgate_range_rec(r, gate, cs[0], cs[1], t);
+            res = aadd_plus(res, d);
+        }
+    }
+    return res;
+}
+
 /* Wrapper for applying a single qubit gate. */
 TASK_IMPL_3(QMDD, qmdd_gate, QMDD, qmdd, gate_id_t, gate, BDDVAR, target)
 {
     qmdd_do_before_gate(&qmdd);
-    return qmdd_gate_rec(qmdd, gate, target);
+    QMDD res = qmdd_gate_rec(qmdd, gate, target);
+    return qmdd_refine_result(qmdd, res, gate, NULL, target, false);
 }
 
 /* Wrapper for applying a controlled gate with 1 control qubit. */
@@ -351,7 +386,8 @@ TASK_IMPL_4(QMDD, qmdd_cgate, QMDD, qmdd, gate_id_t, gate, BDDVAR, c, BDDVAR, t)
 {
     qmdd_do_before_gate(&qmdd);
     BDDVAR cs[4] = {c, AADD_INVALID_VAR, AADD_INVALID_VAR, AADD_INVALID_VAR};
-    return qmdd_cgate_rec(qmdd, gate, cs, t);
+    QMDD res = qmdd_cgate_rec(qmdd, gate, cs, t);
+    return qmdd_refine_result(qmdd, res, gate, cs, t, false);
 }
 
 /* Wrapper for applying a controlled gate with 2 control qubits. */
@@ -359,7 +395,8 @@ TASK_IMPL_5(QMDD, qmdd_cgate2, QMDD, qmdd, gate_id_t, gate, BDDVAR, c1, BDDVAR, 
 {
     qmdd_do_before_gate(&qmdd);
     BDDVAR cs[4] = {c1, c2, AADD_INVALID_VAR, AADD_INVALID_VAR};
-    return qmdd_cgate_rec(qmdd, gate, cs, t);
+    QMDD res = qmdd_cgate_rec(qmdd, gate, cs, t);
+    return qmdd_refine_result(qmdd, res, gate, cs, t, false);
 }
 
 /* Wrapper for applying a controlled gate with 3 control qubits. */
@@ -367,14 +404,17 @@ TASK_IMPL_6(QMDD, qmdd_cgate3, QMDD, qmdd, gate_id_t, gate, BDDVAR, c1, BDDVAR, 
 {
     qmdd_do_before_gate(&qmdd);
     BDDVAR cs[4] = {c1, c2, c3, AADD_INVALID_VAR}; // last pos is a buffer
-    return qmdd_cgate_rec(qmdd, gate, cs, t);
+    QMDD res = qmdd_cgate_rec(qmdd, gate, cs, t);
+    return qmdd_refine_result(qmdd, res, gate, cs, t, false);
 }
 
 /* Wrapper for applying a controlled gate where the controls are a range. */
 TASK_IMPL_5(QMDD, qmdd_cgate_range, QMDD, qmdd, gate_id_t, gate, BDDVAR, c_first, BDDVAR, c_last, BDDVAR, t)
 {
     qmdd_do_before_gate(&qmdd);
-    return qmdd_cgate_range_rec(qmdd,gate,c_first,c_last,t);
+    BDDVAR cs[2] = {c_first, c_last};
+    QMDD res = qmdd_cgate_range_rec(qmdd,gate,c_first,c_last,t);
+    return qmdd_refine_result(qmdd, res, gate, cs, t, true);
 }
 
 TASK_IMPL_3(QMDD, qmdd_gate_rec, QMDD, q, gate_id_t, gate, BDDVAR, target)
