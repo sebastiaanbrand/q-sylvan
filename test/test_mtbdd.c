@@ -373,15 +373,10 @@ test_mtbdd_arithmic_functions()
     MTBDD dd_plus, dd_minus, dd_times, dd_min, dd_max;
 
     // Set the terminal leafs
-    double value_low_00  = 0.25;
-    double value_high_01 = 0.75;
-    double value_low_10  = 0.35;
-    double value_high_11 = 0.65;
-
-    MTBDD index_leaf_00 = mtbdd_double(value_low_00);
-    MTBDD index_leaf_01 = mtbdd_double(value_high_01);
-    MTBDD index_leaf_10 = mtbdd_double(value_low_10);
-    MTBDD index_leaf_11 = mtbdd_double(value_high_11);
+    MTBDD index_leaf_00 = mtbdd_double(0.25);
+    MTBDD index_leaf_01 = mtbdd_double(0.75);
+    MTBDD index_leaf_10 = mtbdd_double(0.35);
+    MTBDD index_leaf_11 = mtbdd_double(0.65);
 
     printf("index_leaf_00 = %ld \n", index_leaf_00);
     printf("index_leaf_01 = %ld \n", index_leaf_01);
@@ -403,10 +398,9 @@ test_mtbdd_arithmic_functions()
     printf("index_root_node = %ld \n", index_root_node);
 
     dd1 = index_root_node;
-    dd2 = index_root_node;
 
     // Compute a + b
-    dd_plus = mtbdd_plus(dd1, dd2);
+    dd_plus = mtbdd_plus(dd1, dd1);
     printf("dd_plus = %ld \n", dd_plus);
     printf("terminal 00 = %lf \n", mtbdd_getdouble(mtbdd_getlow(mtbdd_getlow(dd_plus))));
     printf("terminal 01 = %lf \n", mtbdd_getdouble(mtbdd_gethigh(mtbdd_getlow(dd_plus))));
@@ -419,7 +413,7 @@ test_mtbdd_arithmic_functions()
     assert(mtbdd_getdouble(mtbdd_gethigh(mtbdd_gethigh(dd_plus))) == 1.3);
 
     // Compute a - b
-    dd_minus = mtbdd_minus(dd1, dd2);
+    dd_minus = mtbdd_minus(dd1, dd1);
     printf("dd_minus = %ld \n", dd_minus);
     printf("terminal 00 = %lf \n", mtbdd_getdouble(mtbdd_getlow(mtbdd_getlow(dd_minus))));
     printf("terminal 01 = %lf \n", mtbdd_getdouble(mtbdd_gethigh(mtbdd_getlow(dd_minus))));
@@ -432,7 +426,7 @@ test_mtbdd_arithmic_functions()
     assert(mtbdd_getdouble(mtbdd_gethigh(mtbdd_gethigh(dd_minus))) == 0.0);
 
     // Compute a * b
-    dd_times = mtbdd_times(dd1, dd2);
+    dd_times = mtbdd_times(dd1, dd1);
     printf("dd_times = %ld \n", dd_times);
     printf("terminal 00 = %lf \n", mtbdd_getdouble(mtbdd_getlow(mtbdd_getlow(dd_times))));
     printf("terminal 01 = %lf \n", mtbdd_getdouble(mtbdd_gethigh(mtbdd_getlow(dd_times))));
@@ -441,12 +435,12 @@ test_mtbdd_arithmic_functions()
 
     assert(mtbdd_getdouble(mtbdd_getlow(mtbdd_getlow(dd_times)))   == 0.0625);
     assert(mtbdd_getdouble(mtbdd_gethigh(mtbdd_getlow(dd_times)))  == 0.5625);
-    //assert(mtbdd_getdouble(mtbdd_getlow(mtbdd_gethigh(dd_times)))  == 0.1225);
-    //assert(mtbdd_getdouble(mtbdd_gethigh(mtbdd_gethigh(dd_times))) == 0.4225);
+    //assert(mtbdd_getdouble(mtbdd_getlow(mtbdd_gethigh(dd_times)))  == 0.1225); // Failure!?
+    //assert(mtbdd_getdouble(mtbdd_gethigh(mtbdd_gethigh(dd_times))) == 0.4225); // Failure!?
 
     // Compute min(a, b)
-    dd_min = mtbdd_min(dd1, dd2);
-    assert(dd_min == dd1);         // because dd1 = dd2, no minimum of the terminals?
+    dd_min = mtbdd_min(dd1, dd1);
+    assert(dd_min == dd1);         // because dd1 = dd1, no minimum of the terminals determined?
 
     // Define dd2 different from dd1
     index_leaf_00 = mtbdd_double(0.75);
@@ -471,60 +465,137 @@ test_mtbdd_arithmic_functions()
     dd_min = mtbdd_min(dd1, dd2);
     printf("dd_min = %ld \n", dd_min);
     printf("isleaf = %d \n", mtbddnode_isleaf(MTBDD_GETNODE(dd_min)));
-    assert(mtbddnode_isleaf(MTBDD_GETNODE(dd_min)) == 0);
-
     printf("type = %d \n", mtbddnode_gettype(MTBDD_GETNODE(mtbdd_getlow(mtbdd_getlow(dd_min)))));
     printf("terminal 00 = %lf \n", mtbdd_getdouble(mtbdd_getlow(mtbdd_getlow(dd_min))));
-    printf("terminal 00 = %lf \n", mtbdd_getdouble(mtbdd_getlow(dd_min)));
-    printf("terminal 00 = %lf \n", mtbdd_getdouble(mtbdd_gethigh(dd_min)));
-    printf("terminal 00 = %lf \n", mtbdd_getdouble(dd_min));
+    printf("terminal 0x = %lf \n", mtbdd_getdouble(mtbdd_getlow(dd_min)));
+    printf("terminal 1x = %lf \n", mtbdd_getdouble(mtbdd_gethigh(dd_min)));
+    printf("terminal  x = %lf \n", mtbdd_getdouble(dd_min));
 
-
-    // Compute max(a, b)
-    dd_max = mtbdd_max(dd1, dd2);
-    printf("dd_max = %ld \n", dd_max);
-    printf("terminal 00 = %lf \n", mtbdd_getdouble(dd_min));
-
-    //printf("terminal 01 = %lf \n", mtbdd_getdouble(mtbdd_gethigh(mtbdd_getlow(dd_min))));
-    //printf("terminal 10 = %lf \n", mtbdd_getdouble(mtbdd_getlow(mtbdd_gethigh(dd_min))));
-    //printf("terminal 11 = %lf \n", mtbdd_getdouble(mtbdd_gethigh(mtbdd_gethigh(dd_min))));
-
-/*
-    assert(mtbdd_getdouble(mtbdd_getlow(mtbdd_getlow(dd_plus))) == 0.5);
-    assert(mtbdd_getdouble(mtbdd_gethigh(mtbdd_getlow(dd_plus))) == 1.5);
-    assert(mtbdd_getdouble(mtbdd_getlow(mtbdd_gethigh(dd_plus))) == 0.70);
-    assert(mtbdd_getdouble(mtbdd_gethigh(mtbdd_gethigh(dd_plus))) == 1.3);
+    assert(mtbddnode_isleaf(MTBDD_GETNODE(dd_min)) == 0);
+    assert(mtbdd_getdouble(mtbdd_getlow(dd_min))  == 0.25);
+    assert(mtbdd_getdouble(mtbdd_gethigh(dd_min)) == 0.35);
 
     // Compute max(a, b)
     dd_max = mtbdd_max(dd1, dd2);
     printf("dd_max = %ld \n", dd_max);
     printf("terminal 00 = %lf \n", mtbdd_getdouble(mtbdd_getlow(mtbdd_getlow(dd_max))));
-    printf("terminal 01 = %lf \n", mtbdd_getdouble(mtbdd_gethigh(mtbdd_getlow(dd_max))));
-    printf("terminal 10 = %lf \n", mtbdd_getdouble(mtbdd_getlow(mtbdd_gethigh(dd_max))));
-    printf("terminal 11 = %lf \n", mtbdd_getdouble(mtbdd_gethigh(mtbdd_gethigh(dd_max))));
+    printf("terminal 0x = %lf \n", mtbdd_getdouble(mtbdd_getlow(dd_max)));
+    printf("terminal 1x = %lf \n", mtbdd_getdouble(mtbdd_gethigh(dd_max)));
+    printf("terminal  x = %lf \n", mtbdd_getdouble(dd_max));
 
-    assert(mtbdd_getdouble(mtbdd_getlow(mtbdd_getlow(dd_plus))) == 0.5);
-    assert(mtbdd_getdouble(mtbdd_gethigh(mtbdd_getlow(dd_plus))) == 1.5);
-    assert(mtbdd_getdouble(mtbdd_getlow(mtbdd_gethigh(dd_plus))) == 0.70);
-    assert(mtbdd_getdouble(mtbdd_gethigh(mtbdd_gethigh(dd_plus))) == 1.3);
-*/
-/**
- * Binary operation Plus (for MTBDDs of same type)
- * Only for MTBDDs where either all leaves are Boolean, or Integer, or Double. C-types.
- * For Integer/Double MTBDDs, mtbdd_false is interpreted as "0" or "0.0".
- */
-
-// Test candidates
-//TASK_DECL_2(MTBDD, mtbdd_op_plus, MTBDD*, MTBDD*); // GMP version in sylvan_gmp.h/c
-//TASK_DECL_3(MTBDD, mtbdd_abstract_op_plus, MTBDD, MTBDD, int);
-//TASK_IMPL_3(MTBDD, mtbdd_apply, MTBDD, a, MTBDD, b, mtbdd_apply_op, op)
-
-    // Sum of all terminals in the decision diagram
-    //dd_plus = mtbdd_abstract_plus(dd1, sum);
-
-    //dd_plus = mtbdd_apply(dd1, dd2, plus);
+    assert(mtbddnode_isleaf(MTBDD_GETNODE(dd_max)) == 0);
+    assert(mtbdd_getdouble(mtbdd_getlow(dd_max))  == 0.75);
+    assert(mtbdd_getdouble(mtbdd_gethigh(dd_max)) == 0.65);
 
     return 0;
+}
+
+int
+test_mtbdd_abstract_arithmic_functions()
+{
+    //
+    // MTBDD dd1 =
+    //
+    //              x1
+    //
+    //       x2             x2
+    //
+    //  0.25    0.75    0.35    0.65
+    //
+    //
+    // MTBDD dd2 = 
+    //
+    //              x1
+    //
+    //        x2            x2
+    //
+    //  0.75    0.25    0.65    0.35
+    //
+    //
+    //
+
+    MTBDD dd1, dd2;
+    //MTBDD dd_plus, dd_minus, dd_times, dd_min, dd_max;
+
+    // Set the terminal leafs
+    MTBDD index_leaf_00 = mtbdd_double(0.25);
+    MTBDD index_leaf_01 = mtbdd_double(0.75);
+    MTBDD index_leaf_10 = mtbdd_double(0.35);
+    MTBDD index_leaf_11 = mtbdd_double(0.65);
+
+    printf("index_leaf_00 = %ld \n", index_leaf_00);
+    printf("index_leaf_01 = %ld \n", index_leaf_01);
+    printf("index_leaf_10 = %ld \n", index_leaf_10);
+    printf("index_leaf_11 = %ld \n", index_leaf_11);
+
+    // Make non-terminal nodes - middle layer, so variable x2
+    uint32_t index_x2 = 2;
+    MTBDD index_x1_low  = mtbdd_makenode(index_x2, index_leaf_00, index_leaf_01);
+    MTBDD index_x1_high = mtbdd_makenode(index_x2, index_leaf_10, index_leaf_11);
+
+    printf("index_x1_low  = %ld \n", index_x1_low);
+    printf("index_x1_high = %ld \n", index_x1_high);
+
+    // Make root node (= non terminal node) - top layer, so variable x1
+    uint32_t index_x1 = 1;
+    MTBDD index_root_node = mtbdd_makenode(index_x1, index_x1_low, index_x1_high);
+
+    printf("index_root_node dd1 = %ld \n", index_root_node);
+
+    dd1 = index_root_node;
+
+    // Define dd2 different from dd1
+    index_leaf_00 = mtbdd_double(0.75);
+    index_leaf_01 = mtbdd_double(0.25);
+    index_leaf_10 = mtbdd_double(0.65);
+    index_leaf_11 = mtbdd_double(0.35);
+
+    // Make non-terminal nodes - middle layer, so variable x2
+    index_x2 = 2;
+    index_x1_low  = mtbdd_makenode(index_x2, index_leaf_00, index_leaf_01);
+    index_x1_high = mtbdd_makenode(index_x2, index_leaf_10, index_leaf_11);
+
+    printf("index_x1_low  = %ld \n", index_x1_low);
+    printf("index_x1_high = %ld \n", index_x1_high);
+
+    // Make root node (= non terminal node) - top layer, so variable x1
+    index_x1 = 1;
+    index_root_node = mtbdd_makenode(index_x1, index_x1_low, index_x1_high);
+
+    printf("index_root_node dd2 = %ld \n", index_root_node);
+
+    dd2 = index_root_node;
+
+    printf("%ld %ld \n", dd1, dd2); // Dummy to use dd1, dd2
+
+/*
+    // Compute abstract_plus
+    MTBDD sum = 0;
+    MTBDD dd_plus = mtbdd_abstract_plus(dd1, sum); // Failure!? Does not return in expected time, hanging ...
+    printf("abstract_plus of dd1 = %ld %ld\n", dd_plus, sum);
+
+    sum = 0;
+    dd_plus = mtbdd_abstract_plus(dd2, sum);       // Failure!? Does not return in expected time, hanging ...
+    printf("abstract_plus of dd2 = %ld %ld\n", dd_plus, sum);
+*/
+
+    return 0;
+
+    // Compute abstract_min
+
+    // Compute abstract_times
+
+    // Compute abstract_min(a, b)   
+
+    // Invent index_to_winning_terminal = mtbdd_minimum_path_and_index(dd_in, dd_out, operator) - 
+    // - return index so terminal type independent
+    // - operator could be minimum or maximum
+    //
+    // Make wrapper to reduce operator argument in function
+    //
+    // mtbdd_and_abstract_plus(dd1, dd2, v = x2) equivalent with P(A,B), Pr(A) = sum b el B Pr(A|B=b), b = x2
+    //
+
 }
 
 int
@@ -588,6 +659,10 @@ TASK_0(int, runtests)
     // Test 5
     printf("Testing mtbdd arithmic functions.\n");
     if (test_mtbdd_arithmic_functions()) return 1;
+
+    // Test 6
+    printf("Testing mtbdd abstract arithmic functions.\n");
+    if (test_mtbdd_abstract_arithmic_functions()) return 1;
 
     return 0;
 }
