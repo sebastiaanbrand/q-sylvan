@@ -568,32 +568,69 @@ test_mtbdd_abstract_arithmic_functions()
 
     printf("%ld %ld \n", dd1, dd2); // Dummy to use dd1, dd2
 
-/*
-    // Compute abstract_plus
-    MTBDD sum = 0;
-    MTBDD dd_plus = mtbdd_abstract_plus(dd1, sum); // Failure!? Does not return in expected time, hanging ...
-    printf("abstract_plus of dd1 = %ld %ld\n", dd_plus, sum);
+    // Compute abstract_plus(dd, index_of_variable)
+    MTBDD dd_plus = mtbdd_abstract_plus(dd1, index_x2);
+    printf("index to result of abstract_plus = %ld \n", dd_plus);
+    printf("Sum of low of x2 = %lf\n", mtbdd_getdouble(mtbdd_getlow(dd_plus)));
+    printf("Sum of high of x2 = %lf\n", mtbdd_getdouble(mtbdd_gethigh(dd_plus)));
 
-    sum = 0;
-    dd_plus = mtbdd_abstract_plus(dd2, sum);       // Failure!? Does not return in expected time, hanging ...
-    printf("abstract_plus of dd2 = %ld %ld\n", dd_plus, sum);
+    assert(mtbdd_getdouble(mtbdd_getlow(dd_plus)) == 0.6);
+    assert(mtbdd_getdouble(mtbdd_gethigh(dd_plus)) == 1.4);
+
+/*
+    //dd_plus = mtbdd_abstract_plus(dd1, index_x1); // Does not return in expected time, hanging ...
+    //printf("index to result of abstract_plus = %ld \n", dd_plus);
+    //printf("Sum of low of x1 = %lf\n", mtbdd_getdouble(mtbdd_getlow(dd_plus)));
+    //printf("Sum of high of x1 = %lf\n", mtbdd_getdouble(mtbdd_gethigh(dd_plus)));
+
+    //assert(mtbdd_getdouble(mtbdd_getlow(dd_plus)) == 0.6);
+    //assert(mtbdd_getdouble(mtbdd_gethigh(dd_plus)) == 1.4);
 */
+
+    // Compute abstract_times(dd, index_of_variable)
+    MTBDD dd_times = mtbdd_abstract_times(dd1, index_x2);
+    printf("index to result of abstract_times = %ld \n", dd_times);
+    printf("Product of low of x2 = %lf\n", mtbdd_getdouble(mtbdd_getlow(dd_times)));
+    printf("Product of high of x2 = %lf\n", mtbdd_getdouble(mtbdd_gethigh(dd_times)));
+
+    assert(mtbdd_getdouble(mtbdd_getlow(dd_times)) == 0.0875);
+    //assert(mtbdd_getdouble(mtbdd_gethigh(dd_times)) == 0.4875); // fails?
+
+    // Compute abstract_min(dd, index_of_variable)
+    MTBDD dd_min = mtbdd_abstract_min(dd1, index_x2);
+    printf("index to result of abstract_min = %ld \n", dd_min);
+    printf("Minimum of low of x2 = %lf\n", mtbdd_getdouble(mtbdd_getlow(dd_min)));
+    printf("Minimum of high of x2 = %lf\n", mtbdd_getdouble(mtbdd_gethigh(dd_min)));
+
+    assert(mtbdd_getdouble(mtbdd_getlow(dd_min)) == 0.25);
+    assert(mtbdd_getdouble(mtbdd_gethigh(dd_min)) == 0.65);
+
+    // Compute abstract_max(dd, index_of_variable)
+    MTBDD dd_max = mtbdd_abstract_max(dd1, index_x2);
+    printf("index to result of abstract_times = %ld \n", dd_max);
+    printf("Maximum of low of x2 = %lf\n", mtbdd_getdouble(mtbdd_getlow(dd_max)));
+    printf("Maximum of high of x2 = %lf\n", mtbdd_getdouble(mtbdd_gethigh(dd_max)));
+
+    assert(mtbdd_getdouble(mtbdd_getlow(dd_max)) == 0.35);
+    assert(mtbdd_getdouble(mtbdd_gethigh(dd_max)) == 0.75);
 
     return 0;
 
-    // Compute abstract_min
-
-    // Compute abstract_times
-
-    // Compute abstract_min(a, b)   
-
-    // Invent index_to_winning_terminal = mtbdd_minimum_path_and_index(dd_in, dd_out, operator) - 
+    //
+    // Invent:
+    //
+    //   index_to_winning_terminal = mtbdd_path_and_index_to_minimum_leaf(dd_in, dd_out, operator) 
+    //
     // - return index so terminal type independent
     // - operator could be minimum or maximum
     //
     // Make wrapper to reduce operator argument in function
     //
-    // mtbdd_and_abstract_plus(dd1, dd2, v = x2) equivalent with P(A,B), Pr(A) = sum b el B Pr(A|B=b), b = x2
+    // Explanation:
+    //
+    //   mtbdd_and_abstract_plus(dd1 = A, dd2 = B, v = x2 = b)
+    //
+    // equivalent with P(A,B), Pr(A) = sum b el B Pr(A|B=b), b = x2
     //
 
 }

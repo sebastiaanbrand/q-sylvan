@@ -1040,7 +1040,7 @@ TASK_IMPL_3(MTBDD, mtbdd_abstract_op_max, MTBDD, a, MTBDD, b, int, k)
  */
 TASK_IMPL_3(MTBDD, mtbdd_abstract, MTBDD, a, MTBDD, v, mtbdd_abstract_op, op)
 {
-    printf("call to mtbdd_abstract_op");
+    printf("call to mtbdd_abstract_op \n");
 
     /* Check terminal case */
     if (a == mtbdd_false) return mtbdd_false;
