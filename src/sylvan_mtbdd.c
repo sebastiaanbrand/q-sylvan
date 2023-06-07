@@ -490,6 +490,15 @@ _mtbdd_makenode(uint32_t var, MTBDD low, MTBDD high)
     // Normalization to keep canonicity
     // low will have no mark
 
+    // TODO: check if selfreference happens (== cyclic graph): 
+    // v_low = mtbdd_getvar(low)
+    // v_high = mtbdd_getvar(high)
+    // v < v_low and v < v_high
+    // -> rise assert()? No, always release mode, assert will not work.
+    // -> printf();
+    //    _mtbdd_makenode_exit();
+    //
+
     MTBDD result = low & mtbdd_complement;
     low ^= result;
     high ^= result;
