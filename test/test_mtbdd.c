@@ -689,7 +689,7 @@ int
 test_mtbdd_and_abstract_functions()
 {
     //
-    //  Take MTBDD dd =
+    //  Take MTBDD mm =
     //
     //                           x0
     //                      0          1
@@ -697,86 +697,34 @@ test_mtbdd_and_abstract_functions()
     //
     //               x2                      x2
     //
-    //    v1 = 0.25    v2 = 0.75   w1 = 0.35   w2 = 0.65
+    //    m1 = 0.25    m2 = 0.75   m3 = 0.35   m4 = 0.65
     //
-    //  f(x1,x2) = v1 . |x1 . |x2 + v2 . |x1 . x2 + w1 . x1 . |x2 + w2 . x1 . x2
-    //
-    //
-    //  Vector v and w addition:
-    //
-    //      v + w = (v1 v2)T + (w1 w2)T = (v1 + w1  v2 + w2)T
-    //
-    //  f(x2) = (v1 + w1).|x2.(|x1 + x1) + (v2 + w2).x2.(|x1 + x1)
-    //        = (v1 + w1).|x2 + (v2 + w2).x2
-    //
-    //  Remove x2 by setting var_set = {2}
-    //
-    //  Resulted in MTBDD = mtbdd_abstract_plus(dd, var_set):
-    //
-    //                        x0
-    //                   0          1
-    //                        x1
-    //
-    //          v1 + w1 = 0.6    v2 + w2 = 1.4
+    //    m(x1,x2) = m1 . |x1 . |x2 + m2 . |x1 . x2 + m3 . x1 . |x2 + m4 . x1 . x2
     //
     //
-    //  Vector element v and w addition:
+    //  Take MTBDD yy = 
     //
-    //  f(x1) = (v1 + v2).|x1.(|x2 + x2) + (w1 + w2).x1.(|x2 + x2)
-    //        = (v1 + v2).|x1 + (w1 + w2).x1
+    //                           x0
+    //                      0          1
+    //                           x1
     //
-    //  Remove x1 by setting var_set = {1}
+    //                      v1         v2
     //
-    //  Resulted MTBDD = mtbdd_abstract_plus(dd, var_set):
+    //    v(x1) = v1 . |x1 + v2 . x1
     //
-    //                        x0
-    //                   0          1
-    //                        x2
+    //  AND operation: 
     //
-    //          v1 + v2 = 1.0    w1 + w2 = 1.0
+    //  h(x1,x2) = m(x1,x2) . v(x1)
+    //           = m1 . v1 . |x1 . |x2 + m1 . v2 . |x1 . x1 . |x2 + m2 . v1 . |x1 . x2 + m2 . v2 . |x1 . x1 . x2 + ...
+    //           = m1 . v1 . |x1 . |x2 + m2 . v1 . |x1 . x2 + m3 . v2 . x1 . |x2 + m4 . v2 . x1 . x2
     //
+    //  h(x1)    = (m1 . v1 + m2 . v1) . |x1 + (m3 . v2 + m4 . v2) . x1, after elimination of x2  
     //
-    //  All vector elements v and w addition:
+    //  So, M v = h(x1), matrix multiplication of 2 x 2 . 1 x 2
     //
-    //  f() = f(x1) = f(x2) = v1 + v2 + w1 + w2 = v1 + w1 + v2 + w2
-    //
-    //  Remove x1 and x2 by setting var_set = {1,2} or {2,1}
-    //
-    //  Resulted MTBDD = mtbdd_abstract_plus(dd, var_set):
-    //
-    //                        x0
-    //                   0          1
-    //
-    //          v1 + v2 + w1 + w2 = 2.0
+    //  h(x1) = mtbdd_and_abstract( m(x1,x2), v(x1), var_set = {2} )
     //
 
-    //
-    // MTBDD dd1 =
-    //
-    //              x1
-    //
-    //       x2             x2
-    //
-    //  0.25    0.75    0.35    0.65
-    //
-    //
-    // MTBDD var_set = used for the variable x1 and x2
-    //
-    //              x1
-    //           0
-    //              x2
-    //           0     1
-    //
-    //  Resulted MTBDD = mtbdd_abstract_<operator>(dd1, var_set) ?:
-    //
-    //              x1
-    //
-    //          1.0    1.0
-    //
-    //              x2
-    //
-    //          0.6    1.4
-    //
  /*
     MTBDD dd1, dd2, var_set;
     //MTBDD dd_plus, dd_minus, dd_times, dd_min, dd_max;
