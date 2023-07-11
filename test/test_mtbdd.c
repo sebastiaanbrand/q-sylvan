@@ -491,7 +491,7 @@ test_mtbdd_arithmic_functions()
 }
 
 int
-test_mtbdd_abstract_arithmic_functions()
+test_mtbdd_abstract_plus_function_1()
 {
     //
     //  Take MTBDD dd =
@@ -502,10 +502,11 @@ test_mtbdd_abstract_arithmic_functions()
     //
     //               x2                      x2
     //
-    //    v1 = 0.25    v2 = 0.75   w1 = 0.35   w2 = 0.65
+    //    v1 = 0.25    v2 = 0.75   w1 = 0.35   w2 = 0.75
     //
     //  f(x1,x2) = v1 . |x1 . |x2 + v2 . |x1 . x2 + w1 . x1 . |x2 + w2 . x1 . x2
     //
+
     //
     //  Vector v and w addition:
     //
@@ -514,56 +515,27 @@ test_mtbdd_abstract_arithmic_functions()
     //  f(x2) = (v1 + w1).|x2.(|x1 + x1) + (v2 + w2).x2.(|x1 + x1)
     //        = (v1 + w1).|x2 + (v2 + w2).x2
     //
-    //  Remove x2 by setting var_set = {2}
+    //  Remove x1 by setting var_set = {1}
     //
     //  Resulted in MTBDD = mtbdd_abstract_plus(dd, var_set):
     //
     //                        x0
     //                   0          1
-    //                        x1
-    //
-    //          v1 + w1 = 0.6    v2 + w2 = 1.4
-    //
-    //
-    //  Vector element v and w addition:
-    //
-    //  f(x1) = (v1 + v2).|x1.(|x2 + x2) + (w1 + w2).x1.(|x2 + x2)
-    //        = (v1 + v2).|x1 + (w1 + w2).x1
-    //
-    //  Remove x1 by setting var_set = {1}
-    //
-    //  Resulted MTBDD = mtbdd_abstract_plus(dd, var_set):
-    //
-    //                        x0
-    //                   0          1
     //                        x2
     //
-    //          v1 + v2 = 1.0    w1 + w2 = 1.0
+    //          v1 + w1 = 0.6    v2 + w2 = 1.5
     //
-    //
-    //  All vector elements v and w addition:
-    //
-    //  f() = f(x1) = f(x2) = v1 + v2 + w1 + w2 = v1 + w1 + v2 + w2
-    //
-    //  Remove x1 and x2 by setting var_set = {1,2} or {2,1}
-    //
-    //  Resulted MTBDD = mtbdd_abstract_plus(dd, var_set):
-    //
-    //                        x0
-    //                   0          1
-    //
-    //          v1 + v2 + w1 + w2 = 2.0
-    //
+
+    //// Create decision diagram
 
     // Make f(x1,x2) as multi terminal binairy decision diagram dd
     MTBDD dd, var_set;
-    //MTBDD dd_plus, dd_minus, dd_times, dd_min, dd_max;
 
     // Set the terminal leafs
     MTBDD index_leaf_00 = mtbdd_double(0.25);
     MTBDD index_leaf_01 = mtbdd_double(0.75);
     MTBDD index_leaf_10 = mtbdd_double(0.35);
-    MTBDD index_leaf_11 = mtbdd_double(0.65);
+    MTBDD index_leaf_11 = mtbdd_double(0.75);
 
     printf("index_leaf_00 = %ld \n", index_leaf_00);
     printf("index_leaf_01 = %ld \n", index_leaf_01);
@@ -586,11 +558,13 @@ test_mtbdd_abstract_arithmic_functions()
 
     dd = index_x0;
 
+    ////  Vector v and w addition:
+
     // Prepare variable set to be removed from the dd with length = 1
     size_t length_var_set = 1;
     uint32_t var[length_var_set];
     var[0] = 1;
-    if (length_var_set > 1) var[1] = 1;
+    //if (length_var_set > 1) var[1] = 2;
     uint32_t var_[length_var_set];
 
     // Test the mtbdd var_set to array and reverse function
@@ -603,11 +577,247 @@ test_mtbdd_abstract_arithmic_functions()
 
     // Compute abstract_plus(dd, var_set)
     MTBDD dd_plus = mtbdd_abstract_plus(dd, var_set);
-    printf("index to result of abstract_plus = %ld \n", dd_plus);
 
+    // Print dd_plus
+    FILE *out = fopen("..//Testing//Temporary//output_dd_plus_1.txt", "w");
+    mtbdd_fprintdot(out, dd_plus);
+    fclose(out);
+
+    // Print all kinds of gets
+    printf("dd_plus       = %ld\n", dd_plus);
+    printf("getnumer      = %d \n", mtbdd_getnumer(dd_plus));
+    printf("getdouble     = %lf\n", mtbdd_getdouble(dd_plus));
+    printf("getvalue      = %ld\n", mtbdd_getvalue(dd_plus));
     printf("getlow        = %ld\n", mtbdd_getlow(dd_plus));
     printf("gethigh       = %ld\n", mtbdd_gethigh(dd_plus));
     printf("getvar        = %d \n", mtbdd_getvar(dd_plus));  // index_x2 (index_x0)
+
+    printf("getlow(low)   00 = %lf\n", mtbdd_getdouble( mtbdd_getlow(dd_plus)));
+    printf("getlow(high)  10 = %lf\n", mtbdd_getdouble( mtbdd_gethigh(dd_plus)));
+
+    assert(mtbdd_getdouble(mtbdd_getlow(dd_plus))  == 0.6);
+    assert(mtbdd_getdouble(mtbdd_gethigh(dd_plus)) == 1.5);
+
+    return 0;
+
+}
+
+int
+test_mtbdd_abstract_plus_function_2()
+{
+    //
+    //  Take MTBDD dd =
+    //
+    //                           x0
+    //                      0          1
+    //                           x1
+    //
+    //               x2                      x2
+    //
+    //    v1 = 0.25    v2 = 0.75   w1 = 0.35   w2 = 0.75
+    //
+    //  f(x1,x2) = v1 . |x1 . |x2 + v2 . |x1 . x2 + w1 . x1 . |x2 + w2 . x1 . x2
+    //
+
+    //
+    //  Vector element v and w addition:
+    //
+    //  f(x1) = (v1 + v2).|x1.(|x2 + x2) + (w1 + w2).x1.(|x2 + x2)
+    //        = (v1 + v2).|x1 + (w1 + w2).x1
+    //
+    //  Remove x2 by setting var_set = {2}
+    //
+    //  Resulted MTBDD = mtbdd_abstract_plus(dd, var_set):
+    //
+    //                        x0
+    //                   0          1
+    //                        x1
+    //
+    //          v1 + v2 = 1.0    w1 + w2 = 1.1
+    //
+
+    //// Create decision diagram
+
+    // Make f(x1,x2) as multi terminal binairy decision diagram dd
+    MTBDD dd, var_set;
+    //MTBDD dd_plus, dd_minus, dd_times, dd_min, dd_max;
+
+    // Set the terminal leafs
+    MTBDD index_leaf_00 = mtbdd_double(0.25);
+    MTBDD index_leaf_01 = mtbdd_double(0.75);
+    MTBDD index_leaf_10 = mtbdd_double(0.35);
+    MTBDD index_leaf_11 = mtbdd_double(0.75);
+
+    printf("index_leaf_00 = %ld \n", index_leaf_00);
+    printf("index_leaf_01 = %ld \n", index_leaf_01);
+    printf("index_leaf_10 = %ld \n", index_leaf_10);
+    printf("index_leaf_11 = %ld \n", index_leaf_11);
+
+    // Make non-terminal nodes - middle layer, so variable x2
+    uint32_t index_x2 = 2;
+    MTBDD index_x0_low  = mtbdd_makenode(index_x2, index_leaf_00, index_leaf_01);
+    MTBDD index_x0_high = mtbdd_makenode(index_x2, index_leaf_10, index_leaf_11);
+
+    printf("index_x0_low  = %ld \n", index_x0_low);
+    printf("index_x0_high = %ld \n", index_x0_high);
+
+    // Make root node (= non terminal node) - top layer, so variable x1
+    uint32_t index_x1 = 1;
+    MTBDD index_x0 = mtbdd_makenode(index_x1, index_x0_low, index_x0_high);
+
+    printf("index_x0 = %ld \n", index_x0);
+
+    dd = index_x0;
+
+    ////  Vector element v and w addition:
+
+    // Prepare variable set to be removed from the dd with length = 1
+    size_t length_var_set = 1;
+    uint32_t var[length_var_set];
+    var[0] = 2;
+    //if (length_var_set > 1) var[1] = 2;
+    uint32_t var_[length_var_set];
+    
+    // Test the mtbdd var_set to array and reverse function
+    var_set = mtbdd_set_from_array(var, length_var_set);
+    mtbdd_set_to_array(var_set, var_);
+
+    assert(mtbdd_set_count(var_set) == length_var_set);
+    assert(var[0] == var_[0]);
+    if (length_var_set > 1) assert(var[1] == var_[1]);
+
+    // Compute abstract_plus(dd, var_set)
+    MTBDD dd_plus = mtbdd_abstract_plus(dd, var_set);
+
+    // Print dd_plus
+    FILE *out = fopen("..//Testing//Temporary//output_dd_plus_2.txt", "w");
+    mtbdd_fprintdot(out, dd_plus);
+    fclose(out);
+
+    // Print all kinds of gets
+    printf("dd_plus       = %ld\n", dd_plus);
+    printf("getnumer      = %d \n", mtbdd_getnumer(dd_plus));
+    printf("getdouble     = %lf\n", mtbdd_getdouble(dd_plus));
+    printf("getvalue      = %ld\n", mtbdd_getvalue(dd_plus));
+    printf("getlow        = %ld\n", mtbdd_getlow(dd_plus));
+    printf("gethigh       = %ld\n", mtbdd_gethigh(dd_plus));
+    printf("getvar        = %d \n", mtbdd_getvar(dd_plus));  // index_x1 (index_x0)
+
+    printf("getlow(low)   00 = %lf\n", mtbdd_getdouble( mtbdd_getlow(dd_plus)));
+    printf("getlow(high)  10 = %lf\n", mtbdd_getdouble( mtbdd_gethigh(dd_plus)));
+
+    assert(mtbdd_getdouble(mtbdd_getlow(dd_plus))  == 1.0);
+    assert(mtbdd_getdouble(mtbdd_gethigh(dd_plus)) == 1.1);
+
+    return 0;
+}
+
+int
+test_mtbdd_abstract_plus_function_3()
+{
+    //
+    //  Take MTBDD dd =
+    //
+    //                           x0
+    //                      0          1
+    //                           x1
+    //
+    //               x2                      x2
+    //
+    //    v1 = 0.25    v2 = 0.75   w1 = 0.35   w2 = 0.75
+    //
+    //  f(x1,x2) = v1 . |x1 . |x2 + v2 . |x1 . x2 + w1 . x1 . |x2 + w2 . x1 . x2
+    //
+
+    //
+    //  All vector elements v and w addition:
+    //
+    //  f() = f(x1) = f(x2) = v1 + v2 + w1 + w2 = v1 + w1 + v2 + w2
+    //
+    //  Remove x1 and x2 by setting var_set = {1,2} or {2,1}
+    //
+    //  Resulted MTBDD = mtbdd_abstract_plus(dd, var_set):
+    //
+    //                        x0
+    //                   0          1
+    //
+    //          v1 + v2 + w1 + w2 = 2.1
+    //
+
+    //// Create decision diagram
+
+    // Make f(x1,x2) as multi terminal binairy decision diagram dd
+    MTBDD dd, var_set;
+
+    // Set the terminal leafs
+    MTBDD index_leaf_00 = mtbdd_double(0.25);
+    MTBDD index_leaf_01 = mtbdd_double(0.75);
+    MTBDD index_leaf_10 = mtbdd_double(0.35);
+    MTBDD index_leaf_11 = mtbdd_double(0.75);
+
+    printf("index_leaf_00 = %ld \n", index_leaf_00);
+    printf("index_leaf_01 = %ld \n", index_leaf_01);
+    printf("index_leaf_10 = %ld \n", index_leaf_10);
+    printf("index_leaf_11 = %ld \n", index_leaf_11);
+
+    // Make non-terminal nodes - middle layer, so variable x2
+    uint32_t index_x2 = 2;
+    MTBDD index_x0_low  = mtbdd_makenode(index_x2, index_leaf_00, index_leaf_01);
+    MTBDD index_x0_high = mtbdd_makenode(index_x2, index_leaf_10, index_leaf_11);
+
+    printf("index_x0_low  = %ld \n", index_x0_low);
+    printf("index_x0_high = %ld \n", index_x0_high);
+
+    // Make root node (= non terminal node) - top layer, so variable x1
+    uint32_t index_x1 = 1;
+    MTBDD index_x0 = mtbdd_makenode(index_x1, index_x0_low, index_x0_high);
+
+    printf("index_x0 = %ld \n", index_x0);
+
+    dd = index_x0;
+
+    ////  All vector elements v and w addition:
+
+    // Prepare variable set to be removed from the dd with length = 2
+    size_t length_var_set = 2;
+    uint32_t var[length_var_set];
+    var[0] = 1;
+    if (length_var_set > 1) var[1] = 2;
+    
+    // Test the mtbdd var_set to array and reverse function
+    uint32_t var_[length_var_set];
+    var_set = mtbdd_set_from_array(var, length_var_set);
+    mtbdd_set_to_array(var_set, var_);
+
+    assert(mtbdd_set_count(var_set) == length_var_set);
+    assert(var[0] == var_[0]);
+    if (length_var_set > 1) assert(var[1] == var_[1]);
+
+    // Compute abstract_plus(dd, var_set)
+    MTBDD dd_plus = mtbdd_abstract_plus(dd, var_set);
+
+    // Print dd_plus
+    FILE *out = fopen("..//Testing//Temporary//output_dd_plus_3.txt", "w");
+    mtbdd_fprintdot(out, dd_plus);
+    fclose(out);
+
+    // Print all kinds of gets
+    printf("dd_plus       = %ld\n", dd_plus);
+    printf("getnumer      = %d \n", mtbdd_getnumer(dd_plus));
+    printf("getdouble     = %lf\n", mtbdd_getdouble(dd_plus));
+    printf("getvalue      = %ld\n", mtbdd_getvalue(dd_plus));
+    printf("getlow        = %ld\n", mtbdd_getlow(dd_plus));
+    printf("gethigh       = %ld\n", mtbdd_gethigh(dd_plus));
+    printf("getvar        = %d \n", mtbdd_getvar(dd_plus));  // index_x0
+
+    printf("getlow(low)   00 = %lf\n", mtbdd_getdouble( mtbdd_getlow(dd_plus)));
+    printf("getlow(high)  10 = %lf\n", mtbdd_getdouble( mtbdd_gethigh(dd_plus)));
+
+    assert(mtbdd_getdouble(dd_plus)  == 2.1);
+
+    return 0;
+}
+
 
 /*
     printf("getlow(low)   00 = %ld\n", mtbdd_getlow(mtbdd_getlow(dd_plus)));
@@ -615,16 +825,16 @@ test_mtbdd_abstract_arithmic_functions()
     printf("getlow(high)  10 = %ld\n", mtbdd_getlow(mtbdd_gethigh(dd_plus)));
     printf("gethigh(high) 11 = %ld\n", mtbdd_gethigh(mtbdd_gethigh(dd_plus)));
 */
-    printf("getlow(low)   00 = %lf\n", mtbdd_getdouble(/*mtbdd_getlow(*/mtbdd_getlow(dd_plus)));
+    //printf("getlow(low)   00 = %lf\n", mtbdd_getdouble(/*mtbdd_getlow(*/mtbdd_getlow(dd_plus)));
     //printf("gethigh(low)  01 = %lf\n", mtbdd_getdouble(mtbdd_gethigh(mtbdd_getlow(dd_plus))));
-    printf("getlow(high)  10 = %lf\n", mtbdd_getdouble(/*mtbdd_getlow(*/mtbdd_gethigh(dd_plus)));
+    //printf("getlow(high)  10 = %lf\n", mtbdd_getdouble(/*mtbdd_getlow(*/mtbdd_gethigh(dd_plus)));
     //printf("gethigh(high) 11 = %lf\n", mtbdd_getdouble(mtbdd_gethigh(mtbdd_gethigh(dd_plus))));
 
     //printf("getlow  = %lf\n", mtbdd_getdouble(mtbdd_getlow(dd_plus)));
     //printf("gethigh = %lf\n", mtbdd_getdouble(mtbdd_gethigh(dd_plus)));
 
     //assert(mtbdd_getdouble(mtbdd_getlow(dd_plus)) == 0.6);
-    //assert(mtbdd_getdouble(mtbdd_gethigh(dd_plus)) == 1.4);
+    //assert(mtbdd_getdouble(mtbdd_gethigh(dd_plus)) == 1.5);
 
 /*
     //dd_plus = mtbdd_abstract_plus(dd1, index_x1); // Does not return in expected time, hanging ...
@@ -663,7 +873,7 @@ test_mtbdd_abstract_arithmic_functions()
     assert(mtbdd_getdouble(mtbdd_getlow(dd_max)) == 0.35);
     assert(mtbdd_getdouble(mtbdd_gethigh(dd_max)) == 0.75);
 */
-    return 0;
+//  return 0;
 
     //
     // Invent:
@@ -682,7 +892,7 @@ test_mtbdd_abstract_arithmic_functions()
     // Equivalent with P(A,B), Pr(A) = sum b el B Pr(A|B=b), b = x2
     //
 
-}
+//}
 
 
 int
@@ -867,7 +1077,9 @@ TASK_0(int, runtests)
 
     // Test 6
     printf("\nTesting mtbdd abstract arithmic functions.\n");
-    if (test_mtbdd_abstract_arithmic_functions()) return 1;
+    if (test_mtbdd_abstract_plus_function_1()) return 1;
+    if (test_mtbdd_abstract_plus_function_2()) return 1;
+    //if (test_mtbdd_abstract_plus_function_3()) return 1;
 
     return 0;
 }
