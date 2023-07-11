@@ -579,7 +579,7 @@ test_mtbdd_abstract_plus_function_1()
     MTBDD dd_plus = mtbdd_abstract_plus(dd, var_set);
 
     // Print dd_plus
-    FILE *out = fopen("..//Testing//Temporary//output_dd_plus_1.txt", "w");
+    FILE *out = fopen("..//Testing//Temporary//output_dd_plus_1.dot", "w");
     mtbdd_fprintdot(out, dd_plus);
     fclose(out);
 
@@ -690,7 +690,7 @@ test_mtbdd_abstract_plus_function_2()
     MTBDD dd_plus = mtbdd_abstract_plus(dd, var_set);
 
     // Print dd_plus
-    FILE *out = fopen("..//Testing//Temporary//output_dd_plus_2.txt", "w");
+    FILE *out = fopen("..//Testing//Temporary//output_dd_plus_2.dot", "w");
     mtbdd_fprintdot(out, dd_plus);
     fclose(out);
 
@@ -713,7 +713,7 @@ test_mtbdd_abstract_plus_function_2()
 }
 
 int
-test_mtbdd_abstract_plus_function_3()
+test_mtbdd_abstract_plus_min_max_times_function_3()
 {
     //
     //  Take MTBDD dd =
@@ -797,7 +797,7 @@ test_mtbdd_abstract_plus_function_3()
     MTBDD dd_plus = mtbdd_abstract_plus(dd, var_set);
 
     // Print dd_plus
-    FILE *out = fopen("..//Testing//Temporary//output_dd_plus_3.txt", "w");
+    FILE *out = fopen("..//Testing//Temporary//output_dd_plus_3.dot", "w");
     mtbdd_fprintdot(out, dd_plus);
     fclose(out);
 
@@ -808,91 +808,43 @@ test_mtbdd_abstract_plus_function_3()
     printf("getvalue      = %ld\n", mtbdd_getvalue(dd_plus));
     printf("getlow        = %ld\n", mtbdd_getlow(dd_plus));
     printf("gethigh       = %ld\n", mtbdd_gethigh(dd_plus));
-    printf("getvar        = %d \n", mtbdd_getvar(dd_plus));  // index_x0
-
-    printf("getlow(low)   00 = %lf\n", mtbdd_getdouble( mtbdd_getlow(dd_plus)));
-    printf("getlow(high)  10 = %lf\n", mtbdd_getdouble( mtbdd_gethigh(dd_plus)));
+    printf("getvar        = %d \n", mtbdd_getvar(dd_plus));  // index_x0 undefined
 
     assert(mtbdd_getdouble(dd_plus)  == 2.1);
+
+    // Other operations
+    MTBDD dd_min = mtbdd_abstract_min(dd, var_set);
+    printf("getdouble     = %lf\n", mtbdd_getdouble(dd_min));
+    assert(mtbdd_getdouble(dd_min) == 0.25);
+
+    MTBDD dd_max = mtbdd_abstract_max(dd, var_set);
+    printf("getdouble     = %lf\n", mtbdd_getdouble(dd_max));
+    assert(mtbdd_getdouble(dd_max) == 0.75);
+
+    MTBDD dd_times = mtbdd_abstract_times(dd, var_set);
+    printf("getdouble     = %lf\n", mtbdd_getdouble(dd_times));
+    assert(mtbdd_getdouble(dd_times) == 0.25 * 0.75 * 0.35 * 0.75 );
 
     return 0;
 }
 
 
-/*
-    printf("getlow(low)   00 = %ld\n", mtbdd_getlow(mtbdd_getlow(dd_plus)));
-    printf("gethigh(low)  01 = %ld\n", mtbdd_gethigh(mtbdd_getlow(dd_plus)));
-    printf("getlow(high)  10 = %ld\n", mtbdd_getlow(mtbdd_gethigh(dd_plus)));
-    printf("gethigh(high) 11 = %ld\n", mtbdd_gethigh(mtbdd_gethigh(dd_plus)));
-*/
-    //printf("getlow(low)   00 = %lf\n", mtbdd_getdouble(/*mtbdd_getlow(*/mtbdd_getlow(dd_plus)));
-    //printf("gethigh(low)  01 = %lf\n", mtbdd_getdouble(mtbdd_gethigh(mtbdd_getlow(dd_plus))));
-    //printf("getlow(high)  10 = %lf\n", mtbdd_getdouble(/*mtbdd_getlow(*/mtbdd_gethigh(dd_plus)));
-    //printf("gethigh(high) 11 = %lf\n", mtbdd_getdouble(mtbdd_gethigh(mtbdd_gethigh(dd_plus))));
-
-    //printf("getlow  = %lf\n", mtbdd_getdouble(mtbdd_getlow(dd_plus)));
-    //printf("gethigh = %lf\n", mtbdd_getdouble(mtbdd_gethigh(dd_plus)));
-
-    //assert(mtbdd_getdouble(mtbdd_getlow(dd_plus)) == 0.6);
-    //assert(mtbdd_getdouble(mtbdd_gethigh(dd_plus)) == 1.5);
-
-/*
-    //dd_plus = mtbdd_abstract_plus(dd1, index_x1); // Does not return in expected time, hanging ...
-    //printf("index to result of abstract_plus = %ld \n", dd_plus);
-    //printf("Sum of low of x1 = %lf\n", mtbdd_getdouble(mtbdd_getlow(dd_plus)));
-    //printf("Sum of high of x1 = %lf\n", mtbdd_getdouble(mtbdd_gethigh(dd_plus)));
-
-    //assert(mtbdd_getdouble(mtbdd_getlow(dd_plus)) == 0.6);
-    //assert(mtbdd_getdouble(mtbdd_gethigh(dd_plus)) == 1.4);
-*/
-/*
-    // Compute abstract_times(dd, index_of_variable)
-    MTBDD dd_times = mtbdd_abstract_times(dd1, index_x2);
-    printf("index to result of abstract_times = %ld \n", dd_times);
-    printf("Product of low of x2 = %lf\n", mtbdd_getdouble(mtbdd_getlow(dd_times)));
-    printf("Product of high of x2 = %lf\n", mtbdd_getdouble(mtbdd_gethigh(dd_times)));
-
-    assert(mtbdd_getdouble(mtbdd_getlow(dd_times)) == 0.0875);
-    //assert(mtbdd_getdouble(mtbdd_gethigh(dd_times)) == 0.4875); // fails?
-
-    // Compute abstract_min(dd, index_of_variable)
-    MTBDD dd_min = mtbdd_abstract_min(dd1, index_x2);
-    printf("index to result of abstract_min = %ld \n", dd_min);
-    printf("Minimum of low of x2 = %lf\n", mtbdd_getdouble(mtbdd_getlow(dd_min)));
-    printf("Minimum of high of x2 = %lf\n", mtbdd_getdouble(mtbdd_gethigh(dd_min)));
-
-    assert(mtbdd_getdouble(mtbdd_getlow(dd_min)) == 0.25);
-    assert(mtbdd_getdouble(mtbdd_gethigh(dd_min)) == 0.65);
-
-    // Compute abstract_max(dd, index_of_variable)
-    MTBDD dd_max = mtbdd_abstract_max(dd1, index_x2);
-    printf("index to result of abstract_times = %ld \n", dd_max);
-    printf("Maximum of low of x2 = %lf\n", mtbdd_getdouble(mtbdd_getlow(dd_max)));
-    printf("Maximum of high of x2 = %lf\n", mtbdd_getdouble(mtbdd_gethigh(dd_max)));
-
-    assert(mtbdd_getdouble(mtbdd_getlow(dd_max)) == 0.35);
-    assert(mtbdd_getdouble(mtbdd_gethigh(dd_max)) == 0.75);
-*/
-//  return 0;
-
-    //
-    // Invent:
-    //
-    //   index_to_winning_terminal = mtbdd_path_and_index_to_minimum_leaf(dd_in, dd_out, operator) 
-    //
-    // - return index so terminal type independent
-    // - operator could be minimum or maximum
-    //
-    // Make wrapper to reduce operator argument in function
-    //
-    // Explanation:
-    //
-    //   mtbdd_and_abstract_plus(dd1 = A, dd2 = B, v = x2 = b)
-    //
-    // Equivalent with P(A,B), Pr(A) = sum b el B Pr(A|B=b), b = x2
-    //
-
-//}
+//
+// Invent:
+//
+//   index_to_winning_terminal = mtbdd_path_and_index_to_minimum_leaf(dd_in, dd_out, operator) 
+//
+// - return index so terminal type independent
+// - operator could be minimum or maximum
+//
+// Make wrapper to reduce operator argument in function
+//
+// Explanation:
+//
+//   mtbdd_and_abstract_plus(dd1 = A, dd2 = B, v = x2 = b)
+//
+// Equivalent with P(A,B), Pr(A) = sum b el B Pr(A|B=b), b = x2
+//
 
 
 int
@@ -932,7 +884,7 @@ test_mtbdd_and_abstract_functions()
     //
     //  So, M v = h(x1), matrix multiplication of 2 x 2 . 1 x 2
     //
-    //  h(x1) = mtbdd_and_abstract( m(x1,x2), v(x1), var_set = {2} )
+    //  h(x1) = mtbdd_and_abstract_plus( m(x1,x2), v(x1), var_set = {2} )
     //
 
  /*
@@ -1079,7 +1031,7 @@ TASK_0(int, runtests)
     printf("\nTesting mtbdd abstract arithmic functions.\n");
     if (test_mtbdd_abstract_plus_function_1()) return 1;
     if (test_mtbdd_abstract_plus_function_2()) return 1;
-    //if (test_mtbdd_abstract_plus_function_3()) return 1;
+    if (test_mtbdd_abstract_plus_min_max_times_function_3()) return 1;
 
     return 0;
 }
