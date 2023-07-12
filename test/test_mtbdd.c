@@ -732,7 +732,7 @@ test_mtbdd_abstract_plus_min_max_times_function_3()
     //
     //  All vector elements v and w addition:
     //
-    //  f() = f(x1) = f(x2) = v1 + v2 + w1 + w2 = v1 + w1 + v2 + w2
+    //  h() = f(x1) = f(x2) = v1 + v2 + w1 + w2 = v1 + w1 + v2 + w2
     //
     //  Remove x1 and x2 by setting var_set = {1,2} or {2,1}
     //
@@ -742,6 +742,8 @@ test_mtbdd_abstract_plus_min_max_times_function_3()
     //                   0          1
     //
     //          v1 + v2 + w1 + w2 = 2.1
+    //
+    //   h() = mtbdd_abstract_plus( dd, var_set = {1,2} ) 
     //
 
     //// Create decision diagram
@@ -851,6 +853,11 @@ int
 test_mtbdd_and_abstract_functions()
 {
     //
+    //  Test with a matrix times vector multiplication
+    //  
+    //  M v = (m1 m2) (v1) = (m1.v1 + m2.v2) = w
+    //        (m3 m4) (v2)   (m3.v1 + m4.v2)
+    //
     //  Take MTBDD mm =
     //
     //                           x0
@@ -861,10 +868,10 @@ test_mtbdd_and_abstract_functions()
     //
     //    m1 = 0.25    m2 = 0.75   m3 = 0.35   m4 = 0.65
     //
-    //    m(x1,x2) = m1 . |x1 . |x2 + m2 . |x1 . x2 + m3 . x1 . |x2 + m4 . x1 . x2
+    //    M(x1,x2) = m1 . |x1 . |x2 + m2 . |x1 . x2 + m3 . x1 . |x2 + m4 . x1 . x2
     //
     //
-    //  Take MTBDD yy = 
+    //  Take MTBDD v = 
     //
     //                           x0
     //                      0          1
@@ -876,16 +883,54 @@ test_mtbdd_and_abstract_functions()
     //
     //  AND operation: 
     //
-    //  h(x1,x2) = m(x1,x2) . v(x1)
+    //  w'(x1,x2) = M(x1,x2) . v(x1)
     //           = m1 . v1 . |x1 . |x2 + m1 . v2 . |x1 . x1 . |x2 + m2 . v1 . |x1 . x2 + m2 . v2 . |x1 . x1 . x2 + ...
     //           = m1 . v1 . |x1 . |x2 + m2 . v1 . |x1 . x2 + m3 . v2 . x1 . |x2 + m4 . v2 . x1 . x2
     //
-    //  h(x1)    = (m1 . v1 + m2 . v1) . |x1 + (m3 . v2 + m4 . v2) . x1, after elimination of x2  
+    //  w'(x2)    = (m1 . v1 + m3 . v2) . |x2 + (m2 . v1 + m4 . v2) . x2, after elimination of x1  
     //
-    //  So, M v = h(x1), matrix multiplication of 2 x 2 . 1 x 2
+    //  Exchange m2 with m3 resulting in w(x2):
     //
-    //  h(x1) = mtbdd_and_abstract_plus( m(x1,x2), v(x1), var_set = {2} )
+    //  w(x2)   = (m1 . v1 + m2 . v2) . |x2 + (m3 . v1 + m4 . v2) . x2
     //
+    //  So, M v = h(x1), matrix multiplication of 2 x 2 . 2
+    //
+    //  w(x2) = mtbdd_and_abstract_plus( M(x1,x2), v(x1), var_set = {1} )
+    //
+
+    //// Create decision diagram
+
+    // Make M(x1,x2) as multi terminal binairy decision diagram dd
+    MTBDD mm, v, var_set;
+
+    // Set the terminal leafs
+    MTBDD index_leaf_00 = mtbdd_double(0.25);
+    MTBDD index_leaf_01 = mtbdd_double(0.75);
+    MTBDD index_leaf_10 = mtbdd_double(0.35);
+    MTBDD index_leaf_11 = mtbdd_double(0.75);
+
+    printf("index_leaf_00 = %ld \n", index_leaf_00);
+    printf("index_leaf_01 = %ld \n", index_leaf_01);
+    printf("index_leaf_10 = %ld \n", index_leaf_10);
+    printf("index_leaf_11 = %ld \n", index_leaf_11);
+
+    // Make non-terminal nodes - middle layer, so variable x2
+    uint32_t index_x2 = 2;
+    MTBDD index_x0_low  = mtbdd_makenode(index_x2, index_leaf_00, index_leaf_01);
+    MTBDD index_x0_high = mtbdd_makenode(index_x2, index_leaf_10, index_leaf_11);
+
+    printf("index_x0_low  = %ld \n", index_x0_low);
+    printf("index_x0_high = %ld \n", index_x0_high);
+
+    // Make root node (= non terminal node) - top layer, so variable x1
+    uint32_t index_x1 = 1;
+    MTBDD index_x0 = mtbdd_makenode(index_x1, index_x0_low, index_x0_high);
+
+    printf("index_x0 = %ld \n", index_x0);
+
+    mm = index_x0;
+
+
 
  /*
     MTBDD dd1, dd2, var_set;
