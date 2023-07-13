@@ -850,25 +850,28 @@ test_mtbdd_abstract_plus_min_max_times_function_3()
 
 
 int
-test_mtbdd_and_abstract_functions()
+test_mtbdd_and_abstract_plus_function()
 {
     //
-    //  Test with a matrix times vector multiplication
+    //  Test with a matrix M[row][col] times vector v[row] multiplication
     //  
-    //  M v = (m1 m2) (v1) = (m1.v1 + m2.v2) = w
-    //        (m3 m4) (v2)   (m3.v1 + m4.v2)
+    //  M v = (m00 m01) (v0) = (m00.v0 + m01.v1) = w
+    //        (m10 m11) (v1)   (m10.v0 + m11.v1)
+    //
+    //  Place m10 on leaf_01 and m01 on leaf_10
     //
     //  Take MTBDD mm =
     //
     //                           x0
     //                      0          1
     //                           x1
+    //    col               0          1
+    //                x2                      x2
+    //    row    0          1          0            1
+    //        
+    //       m00 = 0.25  m10 = 0.35   m01 = 0.75   m11 = 0.65
     //
-    //               x2                      x2
-    //
-    //    m1 = 0.25    m2 = 0.75   m3 = 0.35   m4 = 0.65
-    //
-    //    M(x1,x2) = m1 . |x1 . |x2 + m2 . |x1 . x2 + m3 . x1 . |x2 + m4 . x1 . x2
+    //    M(x1,x2) = m00 . |x1 . |x2 + m10 . |x1 . x2 + m01 . x1 . |x2 + m11 . x1 . x2
     //
     //
     //  Take MTBDD v = 
@@ -876,38 +879,48 @@ test_mtbdd_and_abstract_functions()
     //                           x0
     //                      0          1
     //                           x1
+    //    row               0          1
     //
-    //                      v1         v2
+    //                 v0 = 3.0      v1 = 2.0
     //
-    //    v(x1) = v1 . |x1 + v2 . x1
+    //    v(x1) = v0 . |x1 + v1 . x1
     //
     //  AND operation: 
     //
-    //  w'(x1,x2) = M(x1,x2) . v(x1)
-    //           = m1 . v1 . |x1 . |x2 + m1 . v2 . |x1 . x1 . |x2 + m2 . v1 . |x1 . x2 + m2 . v2 . |x1 . x1 . x2 + ...
-    //           = m1 . v1 . |x1 . |x2 + m2 . v1 . |x1 . x2 + m3 . v2 . x1 . |x2 + m4 . v2 . x1 . x2
+    //  w(x1,x2) = M(x1,x2) . v(x1)
+    //           = m00 . v0 . |x1 . |x2 + m00 . v1 . |x1 . x1 . |x2 + m10 . v0 . |x1 . x2 + m10 . v1 . |x1 . x1 . x2 + ...
+    //           = m00 . v0 . |x1 . |x2 + m10 . v0 . |x1 . x2 + m01 . v1 . x1 . |x2 + m11 . v1 . x1 . x2
     //
-    //  w'(x2)    = (m1 . v1 + m3 . v2) . |x2 + (m2 . v1 + m4 . v2) . x2, after elimination of x1  
+    //  w(x2)    = (m00 . v0 + m01 . v1) . |x2 + (m10 . v0 + m11 . v1) . x2, after elimination of x1
     //
-    //  Exchange m2 with m3 resulting in w(x2):
+    //  So, M v = w(x2), matrix multiplication of 2 x 2 . 2
     //
-    //  w(x2)   = (m1 . v1 + m2 . v2) . |x2 + (m3 . v1 + m4 . v2) . x2
+    //  Algorithm:
     //
-    //  So, M v = h(x1), matrix multiplication of 2 x 2 . 2
+    //    w(x2) = mtbdd_and_abstract_plus( M(x1,x2), v(x1), var_set = {1} )
     //
-    //  w(x2) = mtbdd_and_abstract_plus( M(x1,x2), v(x1), var_set = {1} )
+    //  Expected result:
+    //
+    //                   x0
+    //                0      1
+    //                   x2
+    //    row         0      1
+    //
+    //               w0     w1
+    //
+    //
+    //    w0 = 0.25 x 3.0 + 0.75 x 2.0
+    //    w1 = 0.35 x 3.0 + 0.65 x 2.0
     //
 
-    //// Create decision diagram
-
-    // Make M(x1,x2) as multi terminal binairy decision diagram dd
-    MTBDD mm, v, var_set;
+    //// Create decision diagram for M(x1,x2)
+    MTBDD M;
 
     // Set the terminal leafs
     MTBDD index_leaf_00 = mtbdd_double(0.25);
-    MTBDD index_leaf_01 = mtbdd_double(0.75);
-    MTBDD index_leaf_10 = mtbdd_double(0.35);
-    MTBDD index_leaf_11 = mtbdd_double(0.75);
+    MTBDD index_leaf_01 = mtbdd_double(0.35);
+    MTBDD index_leaf_10 = mtbdd_double(0.75);
+    MTBDD index_leaf_11 = mtbdd_double(0.65);
 
     printf("index_leaf_00 = %ld \n", index_leaf_00);
     printf("index_leaf_01 = %ld \n", index_leaf_01);
@@ -928,83 +941,60 @@ test_mtbdd_and_abstract_functions()
 
     printf("index_x0 = %ld \n", index_x0);
 
-    mm = index_x0;
+    M = index_x0;
 
 
-
- /*
-    MTBDD dd1, dd2, var_set;
-    //MTBDD dd_plus, dd_minus, dd_times, dd_min, dd_max;
+    //// Create decision diagram v(x1)
+    MTBDD v;
 
     // Set the terminal leafs
-    MTBDD index_leaf_00 = mtbdd_double(0.25);
-    MTBDD index_leaf_01 = mtbdd_double(0.75);
-    MTBDD index_leaf_10 = mtbdd_double(0.35);
-    MTBDD index_leaf_11 = mtbdd_double(0.65);
+    MTBDD index_leaf_0 = mtbdd_double(3.0);
+    MTBDD index_leaf_1 = mtbdd_double(2.0);
 
-    printf("index_leaf_00 = %ld \n", index_leaf_00);
-    printf("index_leaf_01 = %ld \n", index_leaf_01);
-    printf("index_leaf_10 = %ld \n", index_leaf_10);
-    printf("index_leaf_11 = %ld \n", index_leaf_11);
-
-    // Make non-terminal nodes - middle layer, so variable x2
-    uint32_t index_x2 = 2;
-    MTBDD index_x1_low  = mtbdd_makenode(index_x2, index_leaf_00, index_leaf_01);
-    MTBDD index_x1_high = mtbdd_makenode(index_x2, index_leaf_10, index_leaf_11);
-
-    printf("index_x1_low  = %ld \n", index_x1_low);
-    printf("index_x1_high = %ld \n", index_x1_high);
-
-    // Make root node (= non terminal node) - top layer, so variable x1
-    uint32_t index_x1 = 1;
-    MTBDD index_root_node = mtbdd_makenode(index_x1, index_x1_low, index_x1_high);
-
-    printf("index_root_node dd1 = %ld \n", index_root_node);
-
-    dd1 = index_root_node;
-
-    // Define dd2 different from dd1
-    index_leaf_00 = mtbdd_double(0.75); // TODO change in ground terminal
-    index_leaf_01 = mtbdd_double(0.25);
-    index_leaf_10 = mtbdd_double(0.65);
-    index_leaf_11 = mtbdd_double(0.35);
-
-    // Make non-terminal nodes - middle layer, so variable x2
-    index_x2 = 2;
-    index_x1_low  = mtbdd_makenode(index_x2, index_leaf_00, index_leaf_01);
-    index_x1_high = mtbdd_makenode(index_x2, index_leaf_10, index_leaf_11);
-
-    printf("index_x1_low  = %ld \n", index_x1_low);
-    printf("index_x1_high = %ld \n", index_x1_high);
+    printf("index_leaf_0 = %ld \n", index_leaf_0);
+    printf("index_leaf_1 = %ld \n", index_leaf_1);
 
     // Make root node (= non terminal node) - top layer, so variable x1
     index_x1 = 1;
-    index_root_node = mtbdd_makenode(index_x1, index_x1_low, index_x1_high);
+    index_x0 = mtbdd_makenode(index_x1, index_leaf_0, index_leaf_1);
 
-    printf("index_root_node dd2 = %ld \n", index_root_node);
+    printf("index_x0 = %ld \n", index_x0);
 
-    dd2 = index_root_node;
+    v = index_x0;
 
-    //var_set = index_root_node;
-    //printf("%ld %ld \n", dd1, var_set); // Dummy to use dd1, var_set
 
-    // Prepare variable set with length = 2
+    ////  Calculate w = Matrix x Vector multiplication 2 x 2 . 2
+
+    // Prepare variable set to be removed from the v
     size_t length_var_set = 1;
     uint32_t var[length_var_set];
-    var[0] = 0;
-    if (length_var_set > 1) var[1] = 1; 
-    uint32_t var_[length_var_set];
+    var[0] = 1;
+    
+    // Test the mtbdd var_set to array and reverse function
+    MTBDD var_set = mtbdd_set_from_array(var, length_var_set);
 
-    var_set = mtbdd_set_from_array(var, length_var_set);
-    mtbdd_set_to_array(var_set, var_);
+    // Compute abstract_plus(dd, var_set)
+    MTBDD w = mtbdd_and_abstract_plus(M, v, var_set);
 
-    assert(mtbdd_set_count(var_set) == length_var_set);
-    assert(var[0] == var_[0]);
-    if (length_var_set > 1) assert(var[1] == var_[1]);
+    // Print w
+    FILE *out = fopen("..//Testing//Temporary//output_and_abstract_plus.dot", "w");
+    mtbdd_fprintdot(out, w);
+    fclose(out);
 
-// tests
-    printf("dd1 = %ld, dd2 = %ld, var_set = %ld \n", dd1, dd2, var_set);
-*/
+    // Print all kinds of gets
+    printf("w             = %ld\n", w);
+    printf("getnumer      = %d \n", mtbdd_getnumer(w));
+    printf("getdouble     = %lf\n", mtbdd_getdouble(w));
+    printf("getvalue      = %ld\n", mtbdd_getvalue(w));
+    printf("getlow        = %ld\n", mtbdd_getlow(w));
+    printf("gethigh       = %ld\n", mtbdd_gethigh(w));
+    printf("getvar        = %d \n", mtbdd_getvar(w));
+
+    printf("getdouble(getlow)   0 = %lf\n", mtbdd_getdouble( mtbdd_getlow(w)  ));
+    printf("getdouble(gethigh)  1 = %lf\n", mtbdd_getdouble( mtbdd_gethigh(w) ));
+
+    assert(mtbdd_getdouble(mtbdd_getlow(w))  == 0.25 * 3.0 + 0.75 * 2.0);
+    assert(mtbdd_getdouble(mtbdd_gethigh(w)) == 0.35 * 3.0 + 0.65 * 2.0);
 
     return 0;
 }
@@ -1077,6 +1067,10 @@ TASK_0(int, runtests)
     if (test_mtbdd_abstract_plus_function_1()) return 1;
     if (test_mtbdd_abstract_plus_function_2()) return 1;
     if (test_mtbdd_abstract_plus_min_max_times_function_3()) return 1;
+
+    // Test 7
+    printf("\nTesting mtbdd and abstract arithmic functions.\n");
+    if (test_mtbdd_and_abstract_plus_function()) return 1;
 
     return 0;
 }
