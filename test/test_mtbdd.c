@@ -858,9 +858,9 @@ test_mtbdd_and_abstract_plus_function()
     //  M v = (m00 m01) (v0) = (m00.v0 + m01.v1) = w
     //        (m10 m11) (v1)   (m10.v0 + m11.v1)
     //
-    //  Place m10 on leaf_01 and m01 on leaf_10
+    //  Place m10 on leaf_01 and m01 on leaf_10 for M, and m01 on leaf_01 / m01 on leaf_01 for M_
     //
-    //  Take MTBDD mm =
+    //  Take MTBDD M =
     //
     //                           x0
     //                      0          1
@@ -943,6 +943,36 @@ test_mtbdd_and_abstract_plus_function()
 
     M = index_x0;
 
+    //// Create decision diagram for M_(x1,x2)
+    MTBDD M_;
+
+    // Set the terminal leafs
+    index_leaf_00 = mtbdd_double(0.25);
+    index_leaf_01 = mtbdd_double(0.75);
+    index_leaf_10 = mtbdd_double(0.35);
+    index_leaf_11 = mtbdd_double(0.65);
+
+    printf("index_leaf_00 = %ld \n", index_leaf_00);
+    printf("index_leaf_01 = %ld \n", index_leaf_01);
+    printf("index_leaf_10 = %ld \n", index_leaf_10);
+    printf("index_leaf_11 = %ld \n", index_leaf_11);
+
+    // Make non-terminal nodes - middle layer, so variable x2
+    index_x2 = 2;
+    index_x0_low  = mtbdd_makenode(index_x2, index_leaf_00, index_leaf_01);
+    index_x0_high = mtbdd_makenode(index_x2, index_leaf_10, index_leaf_11);
+
+    printf("index_x0_low  = %ld \n", index_x0_low);
+    printf("index_x0_high = %ld \n", index_x0_high);
+
+    // Make root node (= non terminal node) - top layer, so variable x1
+    index_x1 = 1;
+    index_x0 = mtbdd_makenode(index_x1, index_x0_low, index_x0_high);
+
+    printf("index_x0 = %ld \n", index_x0);
+
+    M_ = index_x0;
+
 
     //// Create decision diagram v(x1)
     MTBDD v;
@@ -963,7 +993,7 @@ test_mtbdd_and_abstract_plus_function()
     v = index_x0;
 
 
-    ////  Calculate w = Matrix x Vector multiplication 2 x 2 . 2
+    //// Calculate M v = w
 
     // Prepare variable set to be removed from the v
     size_t length_var_set = 1;
@@ -977,7 +1007,7 @@ test_mtbdd_and_abstract_plus_function()
     MTBDD w = mtbdd_and_abstract_plus(M, v, var_set);
 
     // Print w
-    FILE *out = fopen("..//Testing//Temporary//output_and_abstract_plus.dot", "w");
+    FILE *out = fopen("..//Testing//Temporary//output_and_abstract_plus_w.dot", "w");
     mtbdd_fprintdot(out, w);
     fclose(out);
 
@@ -993,9 +1023,42 @@ test_mtbdd_and_abstract_plus_function()
     printf("getdouble(getlow)   0 = %lf\n", mtbdd_getdouble( mtbdd_getlow(w)  ));
     printf("getdouble(gethigh)  1 = %lf\n", mtbdd_getdouble( mtbdd_gethigh(w) ));
 
+    double w0 = mtbdd_getdouble(mtbdd_getlow(w));
+    double w1 = mtbdd_getdouble(mtbdd_gethigh(w));
+
     assert(mtbdd_getvar(w) == 2);
-    assert(mtbdd_getdouble(mtbdd_getlow(w))  == 0.25 * 3.0 + 0.75 * 2.0);
-    assert(mtbdd_getdouble(mtbdd_gethigh(w)) == 0.35 * 3.0 + 0.65 * 2.0);
+    assert(w0 == 0.25 * 3.0 + 0.75 * 2.0);
+    assert(w1 == 0.35 * 3.0 + 0.65 * 2.0);
+
+    //// Calculate M M v = M w = w_, the w has a node in x2 not x1, so use M_ because m10 <-> m01 
+
+    // Prepare variable set to be removed from the v
+    var[0] = 2;
+    
+    // Perpare the var_set
+    var_set = mtbdd_set_from_array(var, length_var_set);
+    MTBDD w_ = mtbdd_and_abstract_plus(M_, w, var_set);
+
+    // Print w
+    out = fopen("..//Testing//Temporary//output_and_abstract_plus_mw.dot", "w");
+    mtbdd_fprintdot(out, w_);
+    fclose(out);
+
+    // Print all kinds of gets
+    printf("w             = %ld\n", w_);
+    printf("getnumer      = %d \n", mtbdd_getnumer(w_));
+    printf("getdouble     = %lf\n", mtbdd_getdouble(w_));
+    printf("getvalue      = %ld\n", mtbdd_getvalue(w_));
+    printf("getlow        = %ld\n", mtbdd_getlow(w_));
+    printf("gethigh       = %ld\n", mtbdd_gethigh(w_));
+    printf("getvar        = %d \n", mtbdd_getvar(w_));
+
+    printf("getdouble(getlow)   0 = %lf\n", mtbdd_getdouble( mtbdd_getlow(w_)  ));
+    printf("getdouble(gethigh)  1 = %lf\n", mtbdd_getdouble( mtbdd_gethigh(w_) ));
+
+    assert(mtbdd_getvar(w_) == 1);
+    assert(mtbdd_getdouble(mtbdd_getlow(w_))  == 0.25 * w0 + 0.75 * w1);
+    assert(mtbdd_getdouble(mtbdd_gethigh(w_)) == 0.35 * w0 + 0.65 * w1);
 
     return 0;
 }
