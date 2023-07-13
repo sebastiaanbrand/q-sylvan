@@ -993,6 +993,7 @@ test_mtbdd_and_abstract_plus_function()
     printf("getdouble(getlow)   0 = %lf\n", mtbdd_getdouble( mtbdd_getlow(w)  ));
     printf("getdouble(gethigh)  1 = %lf\n", mtbdd_getdouble( mtbdd_gethigh(w) ));
 
+    assert(mtbdd_getvar(w) == 2);
     assert(mtbdd_getdouble(mtbdd_getlow(w))  == 0.25 * 3.0 + 0.75 * 2.0);
     assert(mtbdd_getdouble(mtbdd_gethigh(w)) == 0.35 * 3.0 + 0.65 * 2.0);
 
