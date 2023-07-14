@@ -1184,9 +1184,33 @@ void mtbdd_refs_spawn(Task *t);
  */
 MTBDD mtbdd_refs_sync(MTBDD mtbdd);
 
-// TODO: matrix multiplication
+/**
+ * // TODO: Matrix multiplication functions
+ * 
+ * Convert a matrix array M[row][col] into a MTBDD.
+ * 
+ * Convert a vector array v[row] into a MTBDD.
+ * 
+ * 
+ * 
+ * 
+*/
+typedef uint32_t VecArr_t; // pointer to struct with array of struct as element. Struct contains complex number.
+typedef uint32_t MatArr_t;
 
-// TODO: Kronecker multiplication
+MTBDD mtbdd_vector_array_to_mtbdd(VecArr_t vec_arr, int n);
+MTBDD mtbdd_matrix_array_to_mtbdd(MatArr_t mat_arr, int n);
+
+MTBDD mtbdd_matvec_mult(MTBDD A, MTBDD v, int n);    // Computes A.v for an 2^n vector and a 2^n x 2^n matrix.
+MTBDD mtbdd_matmat_mult(MTBDD A, MTBDD B, int n);    // Computes A.B for two 2^n x 2^n matrices.
+
+/**
+ * // TODO: Kronecker (or tensor) multiplication
+ * 
+ * 
+*/
+MTBDD mtbdd_vec_kronecker_prod(MTBDD v, MTBDD w, int n_v);    // Computes a \tensor b for two vector QMDDs.
+MTBDD mtbdd_mat_kronecker_prod(MTBDD A, MTBDD B, MTBDD n_A);  // Computes a \tensor b for two matrix QMDDs.
 
 
 #ifdef __cplusplus

@@ -881,7 +881,7 @@ test_mtbdd_and_abstract_plus_function()
     //                           x1
     //    row               0          1
     //
-    //                 v0 = 3.0      v1 = 2.0
+    //                   v0 = 3.0   v1 = 2.0
     //
     //    v(x1) = v0 . |x1 + v1 . x1
     //
@@ -942,6 +942,7 @@ test_mtbdd_and_abstract_plus_function()
     printf("index_x0 = %ld \n", index_x0);
 
     M = index_x0;
+
 
     //// Create decision diagram for M_(x1,x2)
     MTBDD M_;
@@ -1027,8 +1028,9 @@ test_mtbdd_and_abstract_plus_function()
     double w1 = mtbdd_getdouble(mtbdd_gethigh(w));
 
     assert(mtbdd_getvar(w) == 2);
-    assert(w0 == 0.25 * 3.0 + 0.75 * 2.0);
-    assert(w1 == 0.35 * 3.0 + 0.65 * 2.0);
+    test_assert(w0 == 0.25 * 3.0 + 0.75 * 2.0);
+    test_assert(w1 == 0.35 * 3.0 + 0.65 * 2.0);
+
 
     //// Calculate M M v = M w = w_, the w has a node in x2 not x1, so use M_ because m10 <-> m01 
 
@@ -1057,8 +1059,8 @@ test_mtbdd_and_abstract_plus_function()
     printf("getdouble(gethigh)  1 = %lf\n", mtbdd_getdouble( mtbdd_gethigh(w_) ));
 
     assert(mtbdd_getvar(w_) == 1);
-    assert(mtbdd_getdouble(mtbdd_getlow(w_))  == 0.25 * w0 + 0.75 * w1);
-    assert(mtbdd_getdouble(mtbdd_gethigh(w_)) == 0.35 * w0 + 0.65 * w1);
+    test_assert(mtbdd_getdouble(mtbdd_getlow(w_))  == 0.25 * w0 + 0.75 * w1);
+    test_assert(mtbdd_getdouble(mtbdd_gethigh(w_)) == 0.35 * w0 + 0.65 * w1);
 
     return 0;
 }
