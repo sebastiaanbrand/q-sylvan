@@ -416,7 +416,18 @@ sylvan_init_mtbdd()
 }
 
 /**
- * Primitives
+ *  Primitives
+ */
+
+/** 
+ *  mtbdd_makeleaf()
+ * 
+ *  Create an endnode with value of given type.
+ * 
+ *  type:   type of the terminal value, 1 = integer, 2 = ...
+ *  value:  value of the terminal node
+ * 
+ *  return: index to node
  */
 MTBDD
 mtbdd_makeleaf(uint32_t type, uint64_t value)
@@ -462,11 +473,31 @@ _mtbdd_makenode_exit(void)
     exit(1);
 }
 
+/** 
+ *  mtbdd_makenode()
+ * 
+ *  Create a new node with type mtbddnode.
+ *
+ *  var:    integer, index i of xi
+ *  low:    index of low node
+ *  high:   index of high node
+ * 
+ *  return: index to node
+ */
 MTBDD
 _mtbdd_makenode(uint32_t var, MTBDD low, MTBDD high)
 {
     // Normalization to keep canonicity
     // low will have no mark
+
+    // TODO: check if selfreference happens (== cyclic graph): 
+    // v_low = mtbdd_getvar(low)
+    // v_high = mtbdd_getvar(high)
+    // v < v_low and v < v_high
+    // -> rise assert()? No, always release mode, assert will not work.
+    // -> printf();
+    //    _mtbdd_makenode_exit();
+    //
 
     MTBDD result = low & mtbdd_complement;
     low ^= result;
@@ -580,6 +611,20 @@ mtbdd_fraction(int64_t nom, uint64_t denom)
     denom /= c;
     if (nom > 2147483647 || nom < -2147483647 || denom > 4294967295) fprintf(stderr, "mtbdd_fraction: fraction overflow\n");
     return mtbdd_makeleaf(2, (nom<<32)|denom);
+}
+
+MTBDD
+mtbdd_complex_double(complex_double_t value)
+{
+    uint32_t terminal_type = 3; // Custom type for complex double
+    return mtbdd_makeleaf(terminal_type, *(uint64_t*)&value);
+}
+
+MTBDD
+mtbdd_complex_mpc(complex_mpc_t value)
+{
+    uint32_t terminal_type = 4; // Custom type for complex mpc
+    return mtbdd_makeleaf(terminal_type, *(uint64_t*)&value);
 }
 
 /**
@@ -722,7 +767,7 @@ TASK_IMPL_4(MTBDD, mtbdd_union_cube, MTBDD, mtbdd, MTBDD, vars, uint8_t*, cube, 
  */
 TASK_IMPL_3(MTBDD, mtbdd_apply, MTBDD, a, MTBDD, b, mtbdd_apply_op, op)
 {
-    /* Check terminal case */
+    /* Check terminal case: a and b are leaves except for a=0 or b=0 */
     MTBDD result = WRAP(op, &a, &b);
     if (result != mtbdd_invalid) return result;
 
@@ -868,8 +913,7 @@ TASK_IMPL_5(MTBDD, mtbdd_applyp, MTBDD, a, MTBDD, b, size_t, p, mtbdd_applyp_op,
 
 /**
  * Apply a unary operation <op> to <dd>.
- */
-TASK_IMPL_3(MTBDD, mtbdd_uapply, MTBDD, dd, mtbdd_uapply_op, op, size_t, param)
+ */TASK_IMPL_3(MTBDD, mtbdd_uapply, MTBDD, dd, mtbdd_uapply_op, op, size_t, param)
 {
     /* Maybe perform garbage collection */
     sylvan_gc_test();
@@ -1005,6 +1049,8 @@ TASK_IMPL_3(MTBDD, mtbdd_abstract_op_max, MTBDD, a, MTBDD, b, int, k)
  */
 TASK_IMPL_3(MTBDD, mtbdd_abstract, MTBDD, a, MTBDD, v, mtbdd_abstract_op, op)
 {
+    printf("call to mtbdd_abstract_op \n");
+
     /* Check terminal case */
     if (a == mtbdd_false) return mtbdd_false;
     if (a == mtbdd_true) return mtbdd_true;
@@ -1125,7 +1171,7 @@ TASK_IMPL_2(MTBDD, mtbdd_op_plus, MTBDD*, pa, MTBDD*, pb)
             return mtbdd_double(*(double*)(&val_a) + *(double*)(&val_b));
         } else if (mtbddnode_gettype(na) == 2 && mtbddnode_gettype(nb) == 2) {
             // both fraction
-            int64_t nom_a = (int32_t)(val_a>>32);
+            int64_t nom_a = (int32_t)(val_a>>32);  //TODO: no gmp here?
             int64_t nom_b = (int32_t)(val_b>>32);
             uint64_t denom_a = val_a&0xffffffff;
             uint64_t denom_b = val_b&0xffffffff;
@@ -1274,6 +1320,8 @@ TASK_IMPL_2(MTBDD, mtbdd_op_times, MTBDD*, pa, MTBDD*, pb)
  */
 TASK_IMPL_2(MTBDD, mtbdd_op_min, MTBDD*, pa, MTBDD*, pb)
 {
+    printf("1\n");
+
     MTBDD a = *pa, b = *pb;
     if (a == mtbdd_true) return b;
     if (b == mtbdd_true) return a;
@@ -1285,6 +1333,8 @@ TASK_IMPL_2(MTBDD, mtbdd_op_min, MTBDD*, pa, MTBDD*, pb)
 
     mtbddnode_t na = MTBDD_GETNODE(a);
     mtbddnode_t nb = MTBDD_GETNODE(b);
+
+    printf("2\n");
 
     if (mtbddnode_isleaf(na) && mtbddnode_isleaf(nb)) {
         uint64_t val_a = mtbddnode_getvalue(na);
@@ -1298,6 +1348,9 @@ TASK_IMPL_2(MTBDD, mtbdd_op_min, MTBDD*, pa, MTBDD*, pb)
             // both double
             double va = *(double*)&val_a;
             double vb = *(double*)&val_b;
+
+            printf("3  %lf  %lf \n", va, vb);
+
             return va < vb ? a : b;
         } else if (mtbddnode_gettype(na) == 2 && mtbddnode_gettype(nb) == 2) {
             // both fraction
@@ -2408,7 +2461,7 @@ TASK_IMPL_1(MTBDD, mtbdd_minimum, MTBDD, a)
         nom_h *= denom_l/c;
         result = nom_l < nom_h ? low : high;
     } else {
-        assert(0); // failure
+        assert(0); // failure TODO: how to handle custom types?
     }
 
     /* Store in cache */

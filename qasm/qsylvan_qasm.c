@@ -472,7 +472,7 @@ QMDD run_circuit_balance(C_struct c_s, int* measurements, bool* results, int lim
 
 QMDD greedy_run_circuit(C_struct c_s, int* measurements, bool* results, bool experiments)
 {
-    // Inisialise variables
+    // Initialize variables
     LACE_ME;
     Gate gate, best_gate = gate_I;
     bool final, loop = true;

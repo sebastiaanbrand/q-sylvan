@@ -2,11 +2,18 @@
 #include <time.h>
 
 #include "qsylvan.h"
+#include <sylvan.h>
+#include <sylvan_aadd.h>
+#include <sylvan_edge_weights.h>
+
 #include "test_assert.h"
 
 bool VERBOSE = true;
 
-int test_complex_operations()
+typedef uint64_t AMP; // <- this is also defined in qsylvan.h, but that is the QSylvan layer!
+typedef uint64_t QMDD;
+
+int test_complex_operations() // No influence on DD
 {
     complex_t ref1, ref2, ref3, ref4, val1, val2, val3, val4;
     AMP index1, index2, index3, index4;
@@ -106,25 +113,26 @@ int test_basis_state_creation()
     bool x[] = {0};
     
     QMDD q0, q1;
-    x[0] = 0; q0 = qmdd_create_basis_state(1, x);
-    x[0] = 1; q1 = qmdd_create_basis_state(1, x);
-    test_assert(aadd_countnodes(q0) == 2);
+    x[0] = 0; q0 = qmdd_create_basis_state(1, x); // |0>
+    x[0] = 1; q1 = qmdd_create_basis_state(1, x); // |1>
+
+    test_assert(aadd_countnodes(q0) == 2); // Only AADD
     test_assert(aadd_countnodes(q1) == 2);
     test_assert(qmdd_is_unitvector(q0, 1));
     test_assert(qmdd_is_unitvector(q1, 1));
     test_assert(aadd_is_ordered(q0, 1));
     test_assert(aadd_is_ordered(q1, 1));
 
-    AMP a;
+    AMP a; // Index to edge weight
     x[0] = 0; a = aadd_getvalue(q0, x); test_assert(a == AADD_ONE);
     x[0] = 1; a = aadd_getvalue(q0, x); test_assert(a == AADD_ZERO);
     x[0] = 0; a = aadd_getvalue(q1, x); test_assert(a == AADD_ZERO);
     x[0] = 1; a = aadd_getvalue(q1, x); test_assert(a == AADD_ONE);
 
-    QMDD q2, q3;
+    QMDD q2, q3; // Test on 3 qubits + terminal node = 4 in number
     bool x3[] = {0, 0, 0};
-    x3[2] = 0; x3[1] = 0; x3[0] = 0; q2 = qmdd_create_basis_state(3, x3);
-    x3[2] = 1; x3[1] = 0; x3[0] = 1; q3 = qmdd_create_basis_state(3, x3);
+    x3[2] = 0; x3[1] = 0; x3[0] = 0; q2 = qmdd_create_basis_state(3, x3); // |000>
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; q3 = qmdd_create_basis_state(3, x3); // |101>
     test_assert(aadd_countnodes(q2) == 4);
     test_assert(aadd_countnodes(q3) == 4);
     test_assert(qmdd_is_unitvector(q2, 3));
@@ -146,13 +154,11 @@ int test_basis_state_creation()
     x3[2] = 0; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q3, x3); test_assert(a == AADD_ZERO);
     x3[2] = 0; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q3, x3); test_assert(a == AADD_ZERO);
     x3[2] = 1; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q3, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q3, x3); test_assert(a == AADD_ONE);
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q3, x3); test_assert(a == AADD_ONE);  // |101> -> 2^2*1 + 2^1*0 + 2^0*1 = index 5, starts with 0
     x3[2] = 1; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q3, x3); test_assert(a == AADD_ZERO);
     x3[2] = 1; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q3, x3); test_assert(a == AADD_ZERO);
 
-    // TODO: also test node count
-
-    printf("basis state creation:     ok\n");
+    printf("basis state creation aadd:     ok\n");
     return 0;
 }
 

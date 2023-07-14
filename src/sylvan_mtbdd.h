@@ -20,16 +20,22 @@
  * They encode functions on Boolean variables to any domain.
  *
  * Three domains are supported by default: Boolean, Integer and Real.
- * Boolean MTBDDs are identical to BDDs (as supported by the bdd subpackage).
- * Integer MTBDDs are encoded using "int64_t" terminals.
- * Real MTBDDs are encoded using "double" terminals.
+ * 
+ *   Boolean MTBDDs are identical to BDDs (as supported by the bdd subpackage).
+ *   Integer MTBDDs are encoded using "int64_t" terminals.
+ *   Real MTBDDs are encoded using "double" terminals.
  *
  * Labels of Boolean variables of MTBDD nodes are 24-bit integers.
  *
- * Custom terminals are supported.
+ * Custom terminal types are supported.
  *
- * Terminal type "0" is the Integer type, type "1" is the Real type.
- * Type "2" is the Fraction type, consisting of two 32-bit integers (numerator and denominator)
+ * Type "0" is the Integer type. 
+ * Type "1" is the Real type.
+ * Type "2" is the Fraction type, consisting of two 32-bit integers (numerator and denominator).
+ * 
+ * TODO: Type "3" is custom: Complex number with doubles
+ * TODO: Type "4" is custom: Complex number implemented with the MPC Library.
+ * 
  * For non-Boolean MTBDDs, mtbdd_false is used for partial functions, i.e. mtbdd_false
  * indicates that the function is not defined for a certain input.
  */
@@ -44,18 +50,21 @@ extern "C" {
 #endif /* __cplusplus */
 
 /**
- * An MTBDD is a 64-bit value. The low 40 bits are an index into the unique table.
- * The highest 1 bit is the complement edge, indicating negation.
+ * A MTBDD node has a 64-bit unsigned integer type. The low 40 bits are an 
+ * index into an unique table. The highest 1 bit is the complement edge, indicating negation.
  *
  * Currently, negation using complement edges is only implemented for Boolean MTBDDs.
  * For Integer/Real MTBDDs, negation is not well-defined, as "-0" = "0".
  *
  * A MTBDD node has 24 bits for the variable.
+ * 
  * A set of MTBDD variables is represented by the MTBDD of the conjunction of these variables.
+ * 
  * A MTBDDMAP uses special "MAP" nodes in the MTBDD nodes table.
+ * 
  */
 typedef uint64_t MTBDD;
-typedef MTBDD MTBDDMAP;
+typedef uint64_t MTBDDMAP;
 
 /**
  * mtbdd_true and mtbdd_false are the Boolean leaves representing True and False.
@@ -72,13 +81,18 @@ static const MTBDD mtbdd_invalid    = 0xffffffffffffffffLL;
  */
 typedef MTBDD BDD;
 typedef MTBDDMAP BDDMAP;
-typedef MTBDD BDDSET;
+typedef MTBDD BDDSET;        // set of nodes
 typedef uint32_t BDDVAR;
+
+// TODO: can be removed?
 static const MTBDD sylvan_complement = 0x8000000000000000LL;
 static const MTBDD sylvan_false      = 0;
 static const MTBDD sylvan_true       = 0x8000000000000000LL;
 static const MTBDD sylvan_invalid    = 0xffffffffffffffffLL;
-#define sylvan_init_bdd         sylvan_init_mtbdd
+
+
+#define sylvan_init_bdd         sylvan_init_mtbdd // TODO: better mtbdd_init!
+
 #define sylvan_ref              mtbdd_ref
 #define sylvan_deref            mtbdd_deref
 #define sylvan_count_refs       mtbdd_count_refs
@@ -87,12 +101,14 @@ static const MTBDD sylvan_invalid    = 0xffffffffffffffffLL;
 #define sylvan_count_protected  mtbdd_count_protected
 #define sylvan_gc_mark_rec      mtbdd_gc_mark_rec
 #define sylvan_ithvar           mtbdd_ithvar
+
 #define bdd_refs_pushptr        mtbdd_refs_pushptr
 #define bdd_refs_popptr         mtbdd_refs_popptr
 #define bdd_refs_push           mtbdd_refs_push
 #define bdd_refs_pop            mtbdd_refs_pop
 #define bdd_refs_spawn          mtbdd_refs_spawn
 #define bdd_refs_sync           mtbdd_refs_sync
+
 #define sylvan_map_empty        mtbdd_map_empty
 #define sylvan_map_isempty      mtbdd_map_isempty
 #define sylvan_map_key          mtbdd_map_key
@@ -104,6 +120,7 @@ static const MTBDD sylvan_invalid    = 0xffffffffffffffffLL;
 #define sylvan_map_addall       mtbdd_map_addall
 #define sylvan_map_remove       mtbdd_map_remove
 #define sylvan_map_removeall    mtbdd_map_removeall
+
 #define sylvan_set_empty        mtbdd_set_empty
 #define sylvan_set_isempty      mtbdd_set_isempty
 #define sylvan_set_add          mtbdd_set_add
@@ -116,14 +133,18 @@ static const MTBDD sylvan_invalid    = 0xffffffffffffffffLL;
 #define sylvan_set_toarray      mtbdd_set_toarray
 #define sylvan_set_in           mtbdd_set_in
 #define sylvan_set_count        mtbdd_set_count
+
 #define sylvan_test_isset       mtbdd_test_isset
+
 #define sylvan_var              mtbdd_getvar
 #define sylvan_low              mtbdd_getlow
 #define sylvan_high             mtbdd_gethigh
 #define sylvan_makenode         mtbdd_makenode
 #define sylvan_makemapnode      mtbdd_makemapnode
 #define sylvan_support          mtbdd_support
+
 #define sylvan_test_isbdd       mtbdd_test_isvalid
+
 #define sylvan_nodecount        mtbdd_nodecount
 #define sylvan_printdot         mtbdd_printdot
 #define sylvan_fprintdot        mtbdd_fprintdot
@@ -152,7 +173,7 @@ MTBDD mtbdd_makeleaf(uint32_t type, uint64_t value);
 MTBDD _mtbdd_makenode(uint32_t var, MTBDD low, MTBDD high);
 static inline MTBDD mtbdd_makenode(uint32_t var, MTBDD low, MTBDD high)
 {
-    return low == high ? low : _mtbdd_makenode(var, low, high);
+    return low == high ? low : _mtbdd_makenode(var, low, high); // TODO: integrate with basic function! Function call reduction?
 }
 
 /**
@@ -173,16 +194,16 @@ uint32_t mtbdd_gettype(MTBDD leaf);
 /**
  * Return the <value> field of the given leaf.
  */
-uint64_t mtbdd_getvalue(MTBDD leaf);
+uint64_t mtbdd_getvalue(MTBDD leaf); // TODO: Only for unsigned int64 or pointer
 
 /**
- * Return the variable field of the given internal node.
+ * Return the variable field (index of variable?) of the given internal (non terminal?) node.
  */
 uint32_t mtbdd_getvar(MTBDD node);
 
 /**
- * Follow the low/false edge of the given internal node.
- * Also takes complement edges into account.
+ * Follow (what is followed?) the low/false edge of the given internal node.
+ * Also takes complement edges (what is a complement edge?) into account.
  */
 MTBDD mtbdd_getlow(MTBDD node);
 
@@ -218,7 +239,7 @@ mtbdd_not(MTBDD dd)
 /**
  * Create an Integer leaf with the given value.
  */
-MTBDD mtbdd_int64(int64_t value);
+MTBDD mtbdd_int64(int64_t value); // TODO: naming, should be mtbdd_make_int64_leaf()
 
 /**
  * Create a Real leaf with the given value.
@@ -231,9 +252,31 @@ MTBDD mtbdd_double(double value);
 MTBDD mtbdd_fraction(int64_t numer, uint64_t denom);
 
 /**
+ * Make a Complex double leaf with the given real and imaginary parts
+*/
+typedef struct complex_double_s {
+    double real;
+    double imag;
+} complex_double_t;
+
+MTBDD
+mtbdd_complex_double(complex_double_t value);
+
+/**
+ * Make a Complex MPC library leaf with the given real and imaginary parts
+*/
+typedef complex_double_t mpc; // TODO: change to official MPC library typedef later!
+typedef struct complex_mpc_s {
+    mpc complex;
+} complex_mpc_t;
+
+MTBDD
+mtbdd_complex_mpc(complex_mpc_t value);
+
+/**
  * Obtain the value of an Integer leaf.
  */
-int64_t mtbdd_getint64(MTBDD terminal);
+int64_t mtbdd_getint64(MTBDD terminal); // TODO: this is only > 0
 
 /**
  * Obtain the value of a Real leaf.
@@ -267,9 +310,15 @@ MTBDD mtbdd_ithvar(uint32_t var);
  * Functions to manipulate sets of MTBDD variables.
  *
  * A set of variables is represented by a cube/conjunction of (positive) variables.
+ *
+ *  cube = e.g. x1 ^ x3 ^ x4, low edges ignored.
+ * 
+ * index list is here { 1, 3, 4, mtbdd_true}
+ * 
+ * Set is a list of indices of variables.
  */
 static inline MTBDD
-mtbdd_set_empty()
+mtbdd_set_empty() // Terminal indicator
 {
     return mtbdd_true;
 }
@@ -306,15 +355,15 @@ void mtbdd_set_to_array(MTBDD set, uint32_t *arr);
 /**
  * Compute the number of variables in a given set of variables.
  */
-size_t mtbdd_set_count(MTBDD set);
+size_t mtbdd_set_count(MTBDD set); // Same as length
 
 /**
- * Compute the union of <set1> and <set2>
+ * Compute the union of <set1> and <set2> // {1,2,3} union {1,2} = {1,2,3}
  */
 #define mtbdd_set_union(set1, set2) sylvan_and(set1, set2)
 
 /**
- * Remove variables in <set2> from <set1>
+ * Remove variables in <set2> from <set1> // {1,2,3} minus {1,2} = {3}
  */
 #define mtbdd_set_minus(set1, set2) RUN(mtbdd_set_minus, set1, set2)
 TASK_DECL_2(MTBDD, mtbdd_set_minus, MTBDD, MTBDD);
@@ -322,23 +371,23 @@ TASK_DECL_2(MTBDD, mtbdd_set_minus, MTBDD, MTBDD);
 /**
  * Return 1 if <set> contains <var>, 0 otherwise.
  */
-int mtbdd_set_contains(MTBDD set, uint32_t var);
+int mtbdd_set_contains(MTBDD set, uint32_t var); // {1,2,3}, var = 1, return 1
 
 /**
  * Add the variable <var> to <set>.
  */
-MTBDD mtbdd_set_add(MTBDD set, uint32_t var);
+MTBDD mtbdd_set_add(MTBDD set, uint32_t var); // {1,2,3} plus 5 = {1,2,3,5}
 
 /**
  * Remove the variable <var> from <set>.
  */
-MTBDD mtbdd_set_remove(MTBDD set, uint32_t var);
+MTBDD mtbdd_set_remove(MTBDD set, uint32_t var); // {1,2,3} remove 2 = {1,3}
 
 /**
  * Sanity check if the given MTBDD is a conjunction of positive variables,
  * and if all nodes are marked in the nodes table (detects violations after garbage collection).
  */
-void mtbdd_test_isset(MTBDD set);
+void mtbdd_test_isset(MTBDD set); // Not all MTBDD are cubes or clauses, set is a cube or a clause
 
 /**
  * Definitions for backwards compatibility
@@ -356,7 +405,13 @@ void mtbdd_test_isset(MTBDD set);
  * Use cube[idx]==3 for "s=s'" in interleaved variables (matches with next variable)
  * <variables> is the cube of variables (var1 \and var2 \and ... \and varn)
  */
-MTBDD mtbdd_cube(MTBDD variables, uint8_t *cube, MTBDD terminal);
+
+// cube[5] = 0, return !x5; cube[5] = 1, return x5; cube[5] = 2, return x5 + !x5
+MTBDD mtbdd_cube(MTBDD variables, uint8_t *cube, MTBDD terminal); // variables = set = {1, 2, 5}, cube = [*, 1, 1, *, *, 0]  is equal to x1.x2.!x5.
+
+
+// ------------- until here discussed
+
 
 /**
  * Same as mtbdd_cube, but extends <mtbdd> with the assignment <cube> \to <terminal>.
@@ -449,10 +504,11 @@ TASK_DECL_2(MTBDD, mtbdd_op_cmpl, MTBDD, size_t);
 
 /**
  * Binary operation Plus (for MTBDDs of same type)
- * Only for MTBDDs where either all leaves are Boolean, or Integer, or Double.
+ * Only for MTBDDs where either all leaves are Boolean, or Integer, or Double. C-types.
  * For Integer/Double MTBDDs, mtbdd_false is interpreted as "0" or "0.0".
  */
-TASK_DECL_2(MTBDD, mtbdd_op_plus, MTBDD*, MTBDD*);
+// Test candidates
+TASK_DECL_2(MTBDD, mtbdd_op_plus, MTBDD*, MTBDD*); // GMP version in sylvan_gmp.h/c
 TASK_DECL_3(MTBDD, mtbdd_abstract_op_plus, MTBDD, MTBDD, int);
 
 /**
@@ -468,7 +524,8 @@ TASK_DECL_2(MTBDD, mtbdd_op_minus, MTBDD*, MTBDD*);
  * For Integer/Double MTBDD, if either operand is mtbdd_false (not defined),
  * then the result is mtbdd_false (i.e. not defined).
  */
-TASK_DECL_2(MTBDD, mtbdd_op_times, MTBDD*, MTBDD*);
+// Test candidates
+TASK_DECL_2(MTBDD, mtbdd_op_times, MTBDD*, MTBDD*); // Vector x Vector
 TASK_DECL_3(MTBDD, mtbdd_abstract_op_times, MTBDD, MTBDD, int);
 
 /**
@@ -477,7 +534,7 @@ TASK_DECL_3(MTBDD, mtbdd_abstract_op_times, MTBDD, MTBDD, int);
  * For Integer/Double MTBDD, if either operand is mtbdd_false (not defined),
  * then the result is the other operand.
  */
-TASK_DECL_2(MTBDD, mtbdd_op_min, MTBDD*, MTBDD*);
+TASK_DECL_2(MTBDD, mtbdd_op_min, MTBDD*, MTBDD*); // minimum elements of two vectors v1 = (1,2,3), v2 = (5,1,4) -> return (1,1,3)
 TASK_DECL_3(MTBDD, mtbdd_abstract_op_min, MTBDD, MTBDD, int);
 
 /**
@@ -552,12 +609,13 @@ TASK_DECL_3(MTBDD, mtbdd_abstract_op_max, MTBDD, MTBDD, int);
  * <f> must be a Boolean MTBDD (or standard BDD).
  */
 TASK_DECL_3(MTBDD, mtbdd_ite, MTBDD, MTBDD, MTBDD);
-#define mtbdd_ite(f, g, h) RUN(mtbdd_ite, f, g, h);
+#define mtbdd_ite(f, g, h) RUN(mtbdd_ite, f, g, h); // if x1=1 then g else h, g = MTBDD(a.b), h = MTBDD(!a.c)       a.b + !a.c if a = 1 then b else c
 
 /**
  * Multiply <a> and <b>, and abstract variables <vars> using summation.
  * This is similar to the "and_exists" operation in BDDs.
  */
+// Duplicate? No test candidate
 TASK_DECL_3(MTBDD, mtbdd_and_abstract_plus, MTBDD, MTBDD, MTBDD);
 #define mtbdd_and_abstract_plus(a, b, vars) RUN(mtbdd_and_abstract_plus, a, b, vars)
 #define mtbdd_and_exists mtbdd_and_abstract_plus
@@ -581,12 +639,14 @@ TASK_DECL_2(MTBDD, mtbdd_op_strict_threshold_double, MTBDD, size_t)
 /**
  * Convert double to a Boolean MTBDD, translate terminals >= value to 1 and to 0 otherwise;
  */
+// No test candidate [0.3, 2.7] => [0, 1], thres value = 0.5
 TASK_DECL_2(MTBDD, mtbdd_threshold_double, MTBDD, double);
 #define mtbdd_threshold_double(dd, value) RUN(mtbdd_threshold_double, dd, value)
 
 /**
  * Convert double to a Boolean MTBDD, translate terminals > value to 1 and to 0 otherwise;
  */
+// Used for model checker, Storm uses this.
 TASK_DECL_2(MTBDD, mtbdd_strict_threshold_double, MTBDD, double);
 #define mtbdd_strict_threshold_double(dd, value) RUN(mtbdd_strict_threshold_double, dd, value)
 
@@ -594,6 +654,7 @@ TASK_DECL_2(MTBDD, mtbdd_strict_threshold_double, MTBDD, double);
  * For two Double MTBDDs, calculate whether they are equal module some value epsilon
  * i.e. abs(a-b) < e
  */
+// Norm of vector or elements of the vectors a-b?
 TASK_DECL_3(MTBDD, mtbdd_equal_norm_d, MTBDD, MTBDD, double);
 #define mtbdd_equal_norm_d(a, b, epsilon) RUN(mtbdd_equal_norm_d, a, b, epsilon)
 
@@ -602,6 +663,7 @@ TASK_DECL_3(MTBDD, mtbdd_equal_norm_d, MTBDD, MTBDD, double);
  * This version computes the relative difference vs the value in a.
  * i.e. abs((a-b)/a) < e
  */
+// Test candidate, more precision 
 TASK_DECL_3(MTBDD, mtbdd_equal_norm_rel_d, MTBDD, MTBDD, double);
 #define mtbdd_equal_norm_rel_d(a, b, epsilon) RUN(mtbdd_equal_norm_rel_d, a, b, epsilon)
 
@@ -609,6 +671,7 @@ TASK_DECL_3(MTBDD, mtbdd_equal_norm_rel_d, MTBDD, MTBDD, double);
  * For two MTBDDs a, b, return mtbdd_true if all common assignments a(s) <= b(s), mtbdd_false otherwise.
  * For domains not in a / b, assume True.
  */
+// elementswise lower or equal
 TASK_DECL_2(MTBDD, mtbdd_leq, MTBDD, MTBDD);
 #define mtbdd_leq(a, b) RUN(mtbdd_leq, a, b)
 
@@ -636,6 +699,7 @@ TASK_DECL_2(MTBDD, mtbdd_greater, MTBDD, MTBDD);
 /**
  * Calculate the support of a MTBDD, i.e. the cube of all variables that appear in the MTBDD nodes.
  */
+// Get unique vars in MTBDD, no test candidate
 TASK_DECL_1(MTBDD, mtbdd_support, MTBDD);
 #define mtbdd_support(dd) RUN(mtbdd_support, dd)
 
@@ -644,18 +708,21 @@ TASK_DECL_1(MTBDD, mtbdd_support, MTBDD);
  * replace the node by the result of mtbdd_ite(<value>, <low>, <high>).
  * Each <value> in <map> must be a Boolean MTBDD.
  */
+// ???
 TASK_DECL_2(MTBDD, mtbdd_compose, MTBDD, MTBDDMAP);
 #define mtbdd_compose(dd, map) RUN(mtbdd_compose, dd, map)
 
 /**
  * Compute minimal leaf in the MTBDD (for Integer, Double, Rational MTBDDs)
  */
+// Test candidate, get minimal value of terminals, returns a leaf probably, or all paths which leads to the minimum terminal value (could be intersting function to make).
 TASK_DECL_1(MTBDD, mtbdd_minimum, MTBDD);
 #define mtbdd_minimum(dd) RUN(mtbdd_minimum, dd)
 
 /**
  * Compute maximal leaf in the MTBDD (for Integer, Double, Rational MTBDDs)
  */
+// Test candidate, very interesting for quantum circuits! Paths that lead to this max.
 TASK_DECL_1(MTBDD, mtbdd_maximum, MTBDD);
 #define mtbdd_maximum(dd) RUN(mtbdd_maximum, dd)
 
@@ -677,6 +744,7 @@ TASK_DECL_1(MTBDD, mtbdd_maximum, MTBDD);
  *
  * The callback is an optional function that returns 0 when the given terminal node should be skipped.
  */
+// Could be interesting candidate
 typedef int (*mtbdd_enum_filter_cb)(MTBDD);
 MTBDD mtbdd_enum_first(MTBDD dd, MTBDD variables, uint8_t *arr, mtbdd_enum_filter_cb filter_cb);
 MTBDD mtbdd_enum_next(MTBDD dd, MTBDD variables, uint8_t *arr, mtbdd_enum_filter_cb filter_cb);
@@ -700,6 +768,7 @@ MTBDD mtbdd_enum_next(MTBDD dd, MTBDD variables, uint8_t *arr, mtbdd_enum_filter
  *
  * The callback is an optional function that returns 0 when the given terminal node should be skipped.
  */
+// Could be interesting candidate
 MTBDD mtbdd_enum_all_first(MTBDD dd, MTBDD variables, uint8_t *arr, mtbdd_enum_filter_cb filter_cb);
 MTBDD mtbdd_enum_all_next(MTBDD dd, MTBDD variables, uint8_t *arr, mtbdd_enum_filter_cb filter_cb);
 
@@ -710,6 +779,7 @@ MTBDD mtbdd_enum_all_next(MTBDD dd, MTBDD variables, uint8_t *arr, mtbdd_enum_fi
  * VOID_TASK_3(cb, mtbdd_enum_trace_t, trace, MTBDD, leaf, void*, context) { ... do something ... }
  * mtbdd_enum_par(dd, cb, context);
  */
+// Ask Tom
 typedef struct mtbdd_enum_trace {
     struct mtbdd_enum_trace *prev;
     uint32_t var;
@@ -742,6 +812,7 @@ TASK_DECL_3(MTBDD, mtbdd_eval_compose, MTBDD, MTBDD, mtbdd_eval_compose_cb);
  * In Debug mode, this will cause assertion failures instead of returning 0.
  * Returns 1 if all is fine, or 0 otherwise.
  */
+// Test! Sanity check!
 TASK_DECL_1(int, mtbdd_test_isvalid, MTBDD);
 #define mtbdd_test_isvalid(mtbdd) RUN(mtbdd_test_isvalid, mtbdd)
 
@@ -749,6 +820,7 @@ TASK_DECL_1(int, mtbdd_test_isvalid, MTBDD);
  * Write a .dot representation of a given MTBDD
  * The callback function is required for custom terminals.
  */
+// Easy functions for visualization
 void mtbdd_fprintdot(FILE *out, MTBDD mtbdd);
 #define mtbdd_printdot(mtbdd, cb) mtbdd_fprintdot(stdout, mtbdd)
 
@@ -774,6 +846,7 @@ void mtbdd_print_leaf(MTBDD leaf);
  * or to a newly allocated array (with malloc).
  */
 char *mtbdd_leaf_to_str(MTBDD leaf, char *buf, size_t buflen);
+
 
 /**
  * Some debugging functions that generate SHA2 hashes of MTBDDs.
@@ -806,6 +879,7 @@ void mtbdd_getsha(MTBDD dd, char *target);
  *                  return whether to visit children (if not leaf)
  * post_cb callback: given input MTBDD and context
  */
+// Tom?
 LACE_TYPEDEF_CB(int, mtbdd_visit_pre_cb, MTBDD, void*);
 LACE_TYPEDEF_CB(void, mtbdd_visit_post_cb, MTBDD, void*);
 
@@ -840,6 +914,7 @@ VOID_TASK_DECL_4(mtbdd_visit_par, MTBDD, mtbdd_visit_pre_cb, mtbdd_visit_post_cb
  * - call mtbdd_writer_get to obtain the MTBDD identifier as stored in the skiplist
  * - call mtbdd_writer_end to free the skiplist
  */
+// For pauze / resume for long calculations?
 
 /**
  * Write <count> decision diagrams given in <dds> in internal binary form to <file>.
@@ -871,6 +946,7 @@ VOID_TASK_DECL_3(mtbdd_writer_totext, FILE *, MTBDD *, int);
 /**
  * Skeleton typedef for the skiplist
  */
+// Tom ?
 typedef struct sylvan_skiplist *sylvan_skiplist_t;
 
 /**
@@ -939,10 +1015,14 @@ MTBDD mtbdd_reader_get(uint64_t* arr, uint64_t identifier);
  */
 void mtbdd_reader_end(uint64_t *arr);
 
+
+
+
 /**
  * MTBDDMAP, maps uint32_t variables to MTBDDs.
  * A MTBDDMAP node has variable level, low edge going to the next MTBDDMAP, high edge to the mapped MTBDD.
  */
+// Tom? Can be used to speedups?
 static inline MTBDD
 mtbdd_map_empty()
 {
@@ -1004,6 +1084,8 @@ MTBDDMAP mtbdd_map_remove(MTBDDMAP map, uint32_t key);
  */
 MTBDDMAP mtbdd_map_removeall(MTBDDMAP map, MTBDD variables);
 
+
+
 /**
  * Garbage collection
  * Sylvan supplies two default methods to handle references to nodes, but the user
@@ -1029,6 +1111,7 @@ VOID_TASK_DECL_1(mtbdd_gc_mark_rec, MTBDD);
 /**
  * Store the pointer <ptr> in the pointers table.
  */
+// In examples of the quantum circuit file, necessary for correct computations!
 void mtbdd_protect(MTBDD* ptr);
 
 /**
@@ -1044,6 +1127,7 @@ size_t mtbdd_count_protected(void);
 /**
  * Store the MTBDD <dd> in the values table.
  */
+// Tom? Alternative of smart pointer?
 MTBDD mtbdd_ref(MTBDD dd);
 
 /**
@@ -1099,6 +1183,35 @@ void mtbdd_refs_spawn(Task *t);
  * Usage: MTBDD result = mtbdd_refs_sync(SYNC(function));
  */
 MTBDD mtbdd_refs_sync(MTBDD mtbdd);
+
+/**
+ * // TODO: Matrix multiplication functions
+ * 
+ * Convert a matrix array M[row][col] into a MTBDD.
+ * 
+ * Convert a vector array v[row] into a MTBDD.
+ * 
+ * 
+ * 
+ * 
+*/
+typedef uint32_t VecArr_t; // pointer to struct with array of struct as element. Struct contains complex number.
+typedef uint32_t MatArr_t;
+
+MTBDD mtbdd_vector_array_to_mtbdd(VecArr_t vec_arr, int n);
+MTBDD mtbdd_matrix_array_to_mtbdd(MatArr_t mat_arr, int n);
+
+MTBDD mtbdd_matvec_mult(MTBDD A, MTBDD v, int n);    // Computes A.v for an 2^n vector and a 2^n x 2^n matrix.
+MTBDD mtbdd_matmat_mult(MTBDD A, MTBDD B, int n);    // Computes A.B for two 2^n x 2^n matrices.
+
+/**
+ * // TODO: Kronecker (or tensor) multiplication
+ * 
+ * 
+*/
+MTBDD mtbdd_vec_kronecker_prod(MTBDD v, MTBDD w, int n_v);    // Computes a \tensor b for two vector QMDDs.
+MTBDD mtbdd_mat_kronecker_prod(MTBDD A, MTBDD B, MTBDD n_A);  // Computes a \tensor b for two matrix QMDDs.
+
 
 #ifdef __cplusplus
 }

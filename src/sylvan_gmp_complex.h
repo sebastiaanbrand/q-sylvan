@@ -1,6 +1,5 @@
 /*
- * Copyright 2011-2016 Formal Methods and Tools, University of Twente
- * Copyright 2016-2017 Tom van Dijk, Johannes Kepler University Linz
+ * Copyright 2023 System Verification Lab, LIACS, Leiden University
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,12 +12,17 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * 
  */
 
 /**
- * This is an implementation of GMP mpq custom leaves of MTBDDs.
+ * This is an implementation of GMP mpc custom leaves of MTBDDs.
  * 
  * It is build on https://gmplib.org/manual/ version 6.2.1, date 2020-11-14
+ * 
+ * Above is extended with the extension of the GMP with complex numbers for the leaves of MTBDDs.
+ * 
+ * The source code is copied from "sylvan_gmp.h/c" for rational numbers in April 2023.
  * 
  */
 
@@ -34,6 +38,18 @@ extern "C" {
 #endif /* __cplusplus */
 
 /**
+ * Complex number as extension of the gmp library.
+ */
+typedef struct
+{
+  __mpf_struct real;
+  __mpf_struct imag;
+} __mpc_struct;
+typedef __mpc_struct MP_COMPLEX;
+typedef __mpc_struct mpc_t[1];
+typedef __mpc_struct *mpc_ptr;
+
+/**
  * Initialize GMP custom leaves
  */
 void gmp_init(void);
@@ -41,7 +57,7 @@ void gmp_init(void);
 /**
  * Create MPQ leaf
  */
-MTBDD mtbdd_gmp(mpq_t val);
+MTBDD mtbdd_gmp(mpc_t val);
 
 /**
  * Operation "plus" for two mpq MTBDDs
@@ -90,7 +106,7 @@ TASK_DECL_2(MTBDD, gmp_op_abs, MTBDD, size_t);
 /**
  * Compute a + b
  */
-#define gmp_plus(a, b) mtbdd_apply(a, b, TASK(gmp_op_plus))
+#define gmp_complex_plus(a, b) mtbdd_apply(a, b, TASK(gmp_complex_op_plus)) //TODO: not independent of leaf types for mtbdd
 
 /**
  * Compute a + b
@@ -126,6 +142,8 @@ TASK_DECL_2(MTBDD, gmp_op_abs, MTBDD, size_t);
  * Compute abs(a)
  */
 #define gmp_abs(a) mtbdd_uapply(a, TASK(gmp_op_abs), 0);
+
+// TODO: abstract == reduce
 
 /**
  * Abstract the variables in <v> from <a> by taking the sum of all values
@@ -167,6 +185,8 @@ TASK_DECL_3(MTBDD, gmp_and_abstract_max, MTBDD, MTBDD, MTBDD);
  */
 TASK_DECL_2(MTBDD, gmp_op_threshold, MTBDD*, MTBDD*);
 #define gmp_threshold(dd, value) mtbdd_apply(dd, value, TASK(gmp_op_threshold));
+
+// TODO: strict = restrict?
 
 /**
  * Convert to a Boolean MTBDD, translate terminals > value to 1 and to 0 otherwise;

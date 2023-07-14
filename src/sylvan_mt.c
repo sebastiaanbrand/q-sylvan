@@ -160,7 +160,7 @@ sylvan_mt_quit()
 }
 
 void
-sylvan_init_mt()
+sylvan_init_mt() //TODO: here you can define another custom leaf type
 {
     if (mt_initialized) return;
     mt_initialized = 1;
