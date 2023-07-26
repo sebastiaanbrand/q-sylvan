@@ -28,6 +28,8 @@ endmacro(add_example)
 add_example(bell_state bell_state.c)
 # target_sources(bell_state PRIVATE getrss.c getrss.h)
 
+add_example(vqc vqc.c)
+
 add_example(alg_run alg_run.c)
 target_sources(alg_run PRIVATE ${SOURCES})
 
