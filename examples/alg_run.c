@@ -25,7 +25,7 @@ static size_t wgt_tab_size  = 1LL<<23;
 static double tolerance     = 1e-14;
 static int wgt_table_type   = COMP_HASHMAP;
 static int wgt_norm_strat   = NORM_LARGEST;
-static int wgt_inv_caching  = 1; // TODO: actually set inv_caching
+static int wgt_inv_caching  = 1;
 
 static int grover_flag = 1; // 0 = random, 1 = 11..1
 
@@ -233,7 +233,7 @@ run_supremacy()
     double t2 = wctime();
     stats.runtime = t2-t1;
 
-    // don't have a sanity check other than the magnitued of the final qmdd
+    // don't have a sanity check other than the magnitude of the final qmdd
     stats.success = -1;
 
     INFO("Supremacy-%d Time: %f\n", qubits, stats.runtime);
@@ -280,6 +280,7 @@ int main(int argc, char **argv)
     sylvan_set_sizes(min_tablesize, max_tablesize, min_cachesize, max_cachesize);
     sylvan_init_package();
     qsylvan_init_simulator(wgt_tab_size, tolerance, wgt_table_type, wgt_norm_strat);
+    wgt_set_inverse_chaching(wgt_inv_caching);
 
     // e.g. for choosing random 'a' in Shor
     if (rseed == 0) rseed = time(NULL);
@@ -288,6 +289,7 @@ int main(int argc, char **argv)
     /* Print some info */
     INFO("Edge weight normalization: %d\n", wgt_norm_strat);
     INFO("Edge weight tolerance: %.3e\n", tolerance);
+    INFO("Edge weight inverse caching: %d\n", wgt_inv_caching);
     INFO("Workers: %d\n", workers);
     INFO("Random seed: %d\n", rseed);
 
