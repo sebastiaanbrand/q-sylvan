@@ -33,6 +33,7 @@ int main()
     sample_bell_state();
 
     sylvan_quit();
+    lace_stop();
     return 0;
 }
 

@@ -22,6 +22,9 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/")
 # Add the Sylvan library target
 add_subdirectory(src)
 
+# Add the QASM parser
+add_subdirectory(qasm)
+
 if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_SOURCE_DIR)
     # If we are in the root, add some options to build examples/tests
     option(SYLVAN_BUILD_EXAMPLES "Build example tools" ON)

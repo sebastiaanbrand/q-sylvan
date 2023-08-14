@@ -39,7 +39,7 @@ void final_measure(QMDD qmdd, int* measurements, C_struct c_s, bool* results)
     free(p);
 }
 
-TASK_IMPL_1(BDDVAR, get_gate_id, Gate, gate)
+uint32_t get_gate_id(Gate gate)
 {
     // Initialise variables
     BDDVAR gate_id;
@@ -81,16 +81,16 @@ TASK_IMPL_1(BDDVAR, get_gate_id, Gate, gate)
     return gate_id;
 }
 
-TASK_IMPL_4(QMDD, apply_controlled_gate, QMDD, qmdd, Gate, gate, BDDVAR, k, BDDVAR, n)
+QMDD apply_controlled_gate(QMDD qmdd, Gate gate, BDDVAR i, BDDVAR n)
 {
     // Create controlled gate qmdd
-    QMDD qmdd_column = handle_control_matrix(gate, k, n);
+    QMDD qmdd_column = handle_control_matrix(gate, i, n);
     // multiply with vector
     qmdd = aadd_matvec_mult(qmdd_column, qmdd, n);
     return qmdd;
 }
 
-TASK_IMPL_4(QMDD, apply_gate, QMDD, qmdd, Gate, gate, BDDVAR, i, BDDVAR, n)
+QMDD apply_gate(QMDD qmdd, Gate gate, BDDVAR i, BDDVAR n)
 {
     // Get the corresponding Sylvan GATEID of <gate>
     BDDVAR gate_id = get_gate_id(gate);
@@ -109,7 +109,7 @@ TASK_IMPL_4(QMDD, apply_gate, QMDD, qmdd, Gate, gate, BDDVAR, i, BDDVAR, n)
     return qmdd;
 }
 
-TASK_IMPL_3(QMDD, handle_control_matrix, Gate, gate, BDDVAR, k, BDDVAR, n)
+QMDD handle_control_matrix(Gate gate, BDDVAR k, BDDVAR n)
 {
     // Initialise variables
     QMDD qmdd, qmdd_next;
@@ -154,7 +154,7 @@ TASK_IMPL_3(QMDD, handle_control_matrix, Gate, gate, BDDVAR, k, BDDVAR, n)
     return qmdd;
 }
 
-TASK_IMPL_3(QMDD, circuit_swap_matrix, BDDVAR, qubit1, BDDVAR, qubit2, BDDVAR, n)
+QMDD circuit_swap_matrix(BDDVAR qubit1, BDDVAR qubit2, BDDVAR n)
 {
     // Initialise variables
     QMDD qmdd, qmdd_next;
@@ -178,7 +178,7 @@ TASK_IMPL_3(QMDD, circuit_swap_matrix, BDDVAR, qubit1, BDDVAR, qubit2, BDDVAR, n
     return qmdd;
 }
 
-TASK_IMPL_3(bool, is_final_measure, C_struct, c_s, BDDVAR, qubit, BDDVAR, depth)
+bool is_final_measure(C_struct c_s, BDDVAR qubit, uint32_t depth)
 {
     BDDVAR gateid;
     for (BDDVAR i = depth+1; i < c_s.depth; i++) {
@@ -190,7 +190,7 @@ TASK_IMPL_3(bool, is_final_measure, C_struct, c_s, BDDVAR, qubit, BDDVAR, depth)
     return true;
 }
 
-TASK_IMPL_3(bool, check_classical_if, BDDVAR, bits, Gate, gate, bool*, actual_list)
+bool check_classical_if(uint32_t bits, Gate gate, bool* actual_list)
 {
     int actual = 0;
     if (gate.classical_control == -1) {
@@ -236,7 +236,6 @@ void skip(C_struct c_s, BDDVAR* progress, BDDVAR i, bool skip_barrier)
 
 QMDD measure(QMDD qmdd, BDDVAR i, BDDVAR n, bool* result)
 {
-    LACE_ME;
     int temp;
     double *p = malloc(sizeof(double));
     QMDD new_qmdd = qmdd_measure_qubit(qmdd, i, n, &temp, p);
@@ -246,7 +245,6 @@ QMDD measure(QMDD qmdd, BDDVAR i, BDDVAR n, bool* result)
 
 bool check_gate(C_struct c_s, Gate gate, BDDVAR* progress, BDDVAR i, bool* results)
 {
-    LACE_ME;
     bool ctrl_progress = true;
     if (gate.id == gate_ctrl.id || progress[i] >= c_s.depth)
         return false;
@@ -269,7 +267,6 @@ bool check_gate(C_struct c_s, Gate gate, BDDVAR* progress, BDDVAR i, bool* resul
 QMDD greedy(C_struct c_s, QMDD prev_qmdd, BDDVAR* column, int* measurements, bool* results, bool experiments, BDDVAR* n_gates)
 {
     // Inisialise variables
-    LACE_ME;
     Gate gate, best_gate = gate_I;
     bool final, loop = true;
     BDDVAR best_nodecount, curr_nodecount, k = 0;
@@ -347,7 +344,6 @@ QMDD greedy(C_struct c_s, QMDD prev_qmdd, BDDVAR* column, int* measurements, boo
 
 QMDD matmat(C_struct c_s, QMDD vec, BDDVAR* column, int* measurements, bool* results, int limit, bool experiments, BDDVAR* n_gates)
 {
-    LACE_ME;
     Gate gate;
     bool final, satisfied;
     BDDVAR nodecount, j;
@@ -450,7 +446,6 @@ QMDD matmat(C_struct c_s, QMDD vec, BDDVAR* column, int* measurements, bool* res
 QMDD run_circuit_balance(C_struct c_s, int* measurements, bool* results, int limit, bool experiments)
 {
     // Inisialise variables
-    LACE_ME;
     for (BDDVAR i = 0; i < c_s.bits; i++) results[i] = 0;
     for (BDDVAR i = 0; i < c_s.qubits; i++) measurements[i] = -1;
     BDDVAR n_gates = 0, column = 0;
@@ -473,7 +468,6 @@ QMDD run_circuit_balance(C_struct c_s, int* measurements, bool* results, int lim
 QMDD greedy_run_circuit(C_struct c_s, int* measurements, bool* results, bool experiments)
 {
     // Initialize variables
-    LACE_ME;
     Gate gate, best_gate = gate_I;
     bool final, loop = true;
     BDDVAR best_nodecount, curr_nodecount, k = 0;
@@ -546,7 +540,6 @@ QMDD greedy_run_circuit(C_struct c_s, int* measurements, bool* results, bool exp
 QMDD run_circuit_matrix(C_struct c_s, int* measurements, bool* results, int limit, bool experiments)
 {
     // Inisialise variables
-    LACE_ME;
     Gate gate;
     bool final, satisfied, palindrome = false;
     for (BDDVAR i = 0; i < c_s.bits; i++) results[i] = 0;
@@ -666,7 +659,6 @@ QMDD run_circuit_matrix(C_struct c_s, int* measurements, bool* results, int limi
 QMDD run_c_struct(C_struct c_s, int* measurements, bool* results, bool experiments)
 {
     // Inisialise variables
-    LACE_ME;
     Gate gate;
     bool final, satisfied;
     double *p = malloc(sizeof(double));
@@ -818,8 +810,7 @@ int main(int argc, char *argv[])
     start = wctime();
 
     // Standard Lace initialization
-    lace_init(workers, 0);
-    lace_startup(0, NULL, NULL);
+    lace_start(workers, 0);
 
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
@@ -930,7 +921,7 @@ int main(int argc, char *argv[])
     // Free variables
     delete_c_struct(&c_s);
     sylvan_quit();
-    lace_exit();
+    lace_stop();
 
     return 0;
 }
