@@ -6,8 +6,8 @@
 typedef struct gate_info_s {
     char* gate;
     double angle;
-    uint32_t target;
-    uint32_t controls[3];
+    unsigned int target;
+    unsigned int controls[3];
 } gate_info_t;
 
 gate_info_t* parse_qasm_file(char *filepath);
