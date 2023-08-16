@@ -3,6 +3,9 @@
 #include <sstream>
 #include <vector>
 #include <algorithm>
+#include <stdio.h>
+#include <string.h>
+
 #include "simple_parser.h"
 
 /**
@@ -17,7 +20,10 @@ std::vector<std::string> split(std::string to_split, std::string delims)
     std::vector<std::string> result;
     std::size_t index;
     while(to_split.size() > 0) {
-        index = to_split.find_first_of(delims);
+        // remove leading delims and get first non-leading delim
+        while ((index = to_split.find_first_of(delims)) == 0) {
+            to_split = to_split.substr(1);
+        }
         if (index == to_split.npos) {
             result.push_back(to_split);
             return result;
@@ -44,15 +50,23 @@ class QASMParser {
         unsigned int current_line;
 
     public:
-        std::vector<std::pair<std::string, unsigned int>> qregisters;
-        std::vector<std::pair<std::string, unsigned int>> cregisters;
+        typedef std::vector<std::pair<std::string, unsigned int>> registers_t;
+        registers_t qregisters;
+        registers_t cregisters;
+        quantum_op_t* first_op;
+        quantum_op_t* last_op;
 
 
-        gate_info_t* parse(char *filepath)
+        quantum_op_t* parse(char *filepath)
         {
             std::cout << "Parsing file " << std::string(filepath) << std::endl;
-
             std::ifstream infile(filepath);
+
+            // create (blank) initial element for LL which represents the circuit
+            first_op = (quantum_op_t *) malloc(sizeof(quantum_op_t));
+            first_op->type = op_blank;
+            first_op->next = NULL;
+            last_op = first_op;
 
             std::string line;
             current_line = 0;
@@ -70,8 +84,10 @@ class QASMParser {
             for (auto creg : cregisters) {
                 std::cout << creg.first << ", " << creg.second << std::endl;
             }
+            std::cout << "Circuit:" << std::endl;
+            print_quantum_ops(first_op);
 
-            return NULL;
+            return first_op;
         }
 
 
@@ -114,8 +130,8 @@ class QASMParser {
                 parse_gate(line);
                 break;
             case ins_type::measure:
-                std::cout << current_line << ": " << line << std::endl;
                 parse_measurement(line);
+                break;
             default:
                 std::cerr << "Invalid instruction type: " << std::endl;
                 std::cerr << current_line << ": " << line << std::endl;
@@ -140,6 +156,12 @@ class QASMParser {
             }
             else if (token == "creg") {
                 return ins_type::creg;
+            }
+            else if (token == "measure") {
+                return ins_type::measure;
+            }
+            else if (token == "barrier") {
+                return ins_type::barrier;
             }
             else {
                 return ins_type::gate;
@@ -195,21 +217,80 @@ class QASMParser {
 
         void parse_measurement(std::string line)
         {
-            // TODO
+            auto args = split(line, " []");
+            if (args.size() < 7) {
+                std::cerr << "Parsing error on line " << current_line << ": "
+                          << "Expected more arguments to 'measure'" << std::endl;
+                exit(EXIT_FAILURE);
+            }
+            
+            // put measurement info into new quantum_op_t
+            quantum_op_t* op = (quantum_op_t*) malloc(sizeof(quantum_op_t));
+            op->type = op_measurement;
+            strcpy(op->name, "measure");
+            op->target = get_seq_index(qregisters, args[1], stoi(args[2]));
+            op->meas_dest = get_seq_index(cregisters, args[4], stoi(args[5]));
+            op->next = NULL;
+            
+            // append to circuit
+            last_op->next = op;
+            last_op = op;
         }
 
 
-        unsigned int get_sequential_index(std::string reg, unsigned int index)
+        unsigned int get_seq_index(registers_t regs, std::string reg_name, unsigned int index)
         {
-            // TODO
-            return 0;
+            unsigned int offset = 0;
+            for (auto reg : regs) {
+                if (reg.first == reg_name) {
+                    return index + offset;
+                }
+                offset += reg.second;
+            }
+            std::cerr << "Parsing error on line " << current_line << ": "
+                      << "register '" << reg_name << "' undefined" << std::endl;
+            exit(EXIT_FAILURE);
         }
 
 }; // QASMParser
 
 
-gate_info_t* parse_qasm_file(char *filepath)
+quantum_op_t* parse_qasm_file(char *filepath)
 {
     QASMParser parser;
     return parser.parse(filepath);
+}
+
+
+void print_quantum_op(quantum_op_t* op)
+{
+    if (op->type == op_measurement) {
+        printf("measure(q%d) -> c%d", op->target, op->meas_dest);
+    }
+    else if (op->type == op_gate) {
+        printf("%s_%lf(t=%d, c=%d,%d,%d)", op->name, op->angle, op->target, 
+                                           op->controls[0], op->controls[1], 
+                                           op->controls[2]);
+    }
+}
+
+
+void print_quantum_ops(quantum_op_t* head)
+{
+    while (head != NULL) {
+        print_quantum_op(head);
+        printf("\n");
+        head = head->next;
+    }
+}
+
+
+void free_quantum_ops(quantum_op_t* head)
+{
+    quantum_op_t* tmp;
+    while (head != NULL) {
+        tmp = head;
+        head = head->next;
+        free(tmp);
+    }
 }

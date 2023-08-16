@@ -4,5 +4,9 @@
 
 int main(int argc, char *argv[])
 {
-    parse_qasm_file(argv[1]);
+    quantum_op_t* circuit = parse_qasm_file(argv[1]);
+    
+    // TODO: run circuit
+
+    free_quantum_ops(circuit);
 }
