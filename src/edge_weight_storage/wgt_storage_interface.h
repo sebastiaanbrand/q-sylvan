@@ -17,7 +17,7 @@ typedef enum wgt_storage_backend {
 extern void * (*wgt_store_create)(uint64_t size, double tolerance);
 
 // free
-extern void (*wgt_store_free)();
+extern void (*wgt_store_free)(void *wgt_storage);
 
 // find_or_put(void *dbs, complex_t *v, int *ret)
 extern int (*wgt_store_find_or_put)(const void *dbs, const complex_t *v, uint64_t *ret);

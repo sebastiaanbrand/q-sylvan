@@ -62,8 +62,8 @@ static inline complex_t cmake_angle(fl_t theta, fl_t mag)
     c.i = flt_sin(theta) * mag;
     return c;
 }
-static inline complex_t czero() { return cmake(0.0, 0.0); }
-static inline complex_t cone() { return cmake(1.0, 0.0); }
+static inline complex_t czero() { return cmake( 0.0, 0.0); }
+static inline complex_t cone()  { return cmake( 1.0, 0.0); }
 static inline complex_t cmone() { return cmake(-1.0, 0.0); }
 
 static inline complex_t cadd(complex_t a, complex_t b)

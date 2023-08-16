@@ -2,6 +2,7 @@
 #include <time.h>
 
 #include "qsylvan.h"
+#include <sylvan_edge_weights_complex.h>
 #include "test_assert.h"
 
 bool VERBOSE = true;
@@ -105,10 +106,10 @@ int test_h_gate()
     v0 = aadd_matvec_mult(mH, v0, nqubits);
     v1 = aadd_matvec_mult(mH, v1, nqubits);
 
-    x[0] = 1; a = aadd_getvalue(v0, x); test_assert(a == weight_lookup(cmake(1.0/flt_sqrt(2.0),0)));
-    x[0] = 0; a = aadd_getvalue(v0, x); test_assert(a == weight_lookup(cmake(1.0/flt_sqrt(2.0),0)));
-    x[0] = 0; a = aadd_getvalue(v1, x); test_assert(a == weight_lookup(cmake(1.0/flt_sqrt(2.0),0)));
-    x[0] = 1; a = aadd_getvalue(v1, x); test_assert(a == weight_lookup(cmake(-1.0/flt_sqrt(2.0),0)));
+    x[0] = 1; a = aadd_getvalue(v0, x); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
+    x[0] = 0; a = aadd_getvalue(v0, x); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
+    x[0] = 0; a = aadd_getvalue(v1, x); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
+    x[0] = 1; a = aadd_getvalue(v1, x); test_assert(a == complex_lookup(-1.0/flt_sqrt(2.0),0));
 
     // matrix-matrix mult
     mTemp = aadd_matmat_mult(mI, mH, nqubits); test_assert(mTemp == mH);
@@ -148,38 +149,38 @@ int test_h_gate()
     v6 = aadd_matvec_mult(mHH, v6, nqubits); // v6 = |-+>
 
     // v2 = |0+>
-    x2[1] = 0; x2[0] = 0; a = aadd_getvalue(v2, x2); test_assert(a == weight_lookup(cmake(1.0/flt_sqrt(2.0),0)));
-    x2[1] = 0; x2[0] = 1; a = aadd_getvalue(v2, x2); test_assert(a == weight_lookup(cmake(1.0/flt_sqrt(2.0),0)));
+    x2[1] = 0; x2[0] = 0; a = aadd_getvalue(v2, x2); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
+    x2[1] = 0; x2[0] = 1; a = aadd_getvalue(v2, x2); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
     x2[1] = 1; x2[0] = 0; a = aadd_getvalue(v2, x2); test_assert(a == AADD_ZERO);
     x2[1] = 1; x2[0] = 1; a = aadd_getvalue(v2, x2); test_assert(a == AADD_ZERO);
     test_assert(aadd_countnodes(v2) == 2);
 
     // v3 = |0->
-    x2[1] = 0; x2[0] = 0; a = aadd_getvalue(v3, x2); test_assert(a == weight_lookup(cmake(1.0/flt_sqrt(2.0),0)));
-    x2[1] = 0; x2[0] = 1; a = aadd_getvalue(v3, x2); test_assert(a == weight_lookup(cmake(-1.0/flt_sqrt(2.0),0)));
+    x2[1] = 0; x2[0] = 0; a = aadd_getvalue(v3, x2); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
+    x2[1] = 0; x2[0] = 1; a = aadd_getvalue(v3, x2); test_assert(a == complex_lookup(-1.0/flt_sqrt(2.0),0));
     x2[1] = 1; x2[0] = 0; a = aadd_getvalue(v3, x2); test_assert(a == AADD_ZERO);
     x2[1] = 1; x2[0] = 1; a = aadd_getvalue(v3, x2); test_assert(a == AADD_ZERO);
     test_assert(aadd_countnodes(v3) == 3);
 
     // v4 = |+0>
-    x2[1] = 0; x2[0] = 0; a = aadd_getvalue(v4, x2); test_assert(a == weight_lookup(cmake(1.0/flt_sqrt(2.0),0)));
+    x2[1] = 0; x2[0] = 0; a = aadd_getvalue(v4, x2); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
     x2[1] = 0; x2[0] = 1; a = aadd_getvalue(v4, x2); test_assert(a == AADD_ZERO);
-    x2[1] = 1; x2[0] = 0; a = aadd_getvalue(v4, x2); test_assert(a == weight_lookup(cmake(1.0/flt_sqrt(2.0),0)));
+    x2[1] = 1; x2[0] = 0; a = aadd_getvalue(v4, x2); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
     x2[1] = 1; x2[0] = 1; a = aadd_getvalue(v4, x2); test_assert(a == AADD_ZERO);
     test_assert(aadd_countnodes(v4) == 2);
 
     // v5 = |++>
-    x2[1] = 0; x2[0] = 0; a = aadd_getvalue(v5, x2); test_assert(a == weight_lookup(cmake(0.5, 0)));
-    x2[1] = 0; x2[0] = 1; a = aadd_getvalue(v5, x2); test_assert(a == weight_lookup(cmake(0.5, 0)));
-    x2[1] = 1; x2[0] = 0; a = aadd_getvalue(v5, x2); test_assert(a == weight_lookup(cmake(0.5, 0)));
-    x2[1] = 1; x2[0] = 1; a = aadd_getvalue(v5, x2); test_assert(a == weight_lookup(cmake(0.5, 0)));
+    x2[1] = 0; x2[0] = 0; a = aadd_getvalue(v5, x2); test_assert(a == complex_lookup(0.5, 0));
+    x2[1] = 0; x2[0] = 1; a = aadd_getvalue(v5, x2); test_assert(a == complex_lookup(0.5, 0));
+    x2[1] = 1; x2[0] = 0; a = aadd_getvalue(v5, x2); test_assert(a == complex_lookup(0.5, 0));
+    x2[1] = 1; x2[0] = 1; a = aadd_getvalue(v5, x2); test_assert(a == complex_lookup(0.5, 0));
     test_assert(aadd_countnodes(v5) == 1);
 
     // v6 = |-+>
-    x2[1] = 0; x2[0] = 0; a = aadd_getvalue(v6, x2); test_assert(a == weight_lookup(cmake(0.5, 0)));
-    x2[1] = 0; x2[0] = 1; a = aadd_getvalue(v6, x2); test_assert(a == weight_lookup(cmake(0.5, 0)));
-    x2[1] = 1; x2[0] = 0; a = aadd_getvalue(v6, x2); test_assert(a == weight_lookup(cmake(-0.5, 0)));
-    x2[1] = 1; x2[0] = 1; a = aadd_getvalue(v6, x2); test_assert(a == weight_lookup(cmake(-0.5, 0)));
+    x2[1] = 0; x2[0] = 0; a = aadd_getvalue(v6, x2); test_assert(a == complex_lookup(0.5, 0));
+    x2[1] = 0; x2[0] = 1; a = aadd_getvalue(v6, x2); test_assert(a == complex_lookup(0.5, 0));
+    x2[1] = 1; x2[0] = 0; a = aadd_getvalue(v6, x2); test_assert(a == complex_lookup(-0.5, 0));
+    x2[1] = 1; x2[0] = 1; a = aadd_getvalue(v6, x2); test_assert(a == complex_lookup(-0.5, 0));
     test_assert(aadd_countnodes(v6) == 2);
 
     // matrix-matrix mult
@@ -274,37 +275,37 @@ int test_phase_gates()
 
 
     // more matrix-vector mult    
-    x2[1] = 0; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(0.5, 0)));
-    x2[1] = 0; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(0.5, 0)));
-    x2[1] = 1; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(0.5, 0)));
-    x2[1] = 1; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(0.5, 0)));
+    x2[1] = 0; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(0.5, 0));
+    x2[1] = 0; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(0.5, 0));
+    x2[1] = 1; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(0.5, 0));
+    x2[1] = 1; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(0.5, 0));
     test_assert(aadd_countnodes(v0) == 1);
 
     v0 = aadd_matvec_mult(mZ0, v0, nqubits);
 
-    x2[1] = 0; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(0.5, 0)));
-    x2[1] = 0; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(-0.5,0)));
-    x2[1] = 1; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(0.5, 0)));
-    x2[1] = 1; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(-0.5,0)));
+    x2[1] = 0; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(0.5, 0));
+    x2[1] = 0; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(-0.5,0));
+    x2[1] = 1; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(0.5, 0));
+    x2[1] = 1; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(-0.5,0));
     test_assert(aadd_countnodes(v0) == 2);
 
     v0 = aadd_matvec_mult(mZ0, v0, nqubits);
     v0 = aadd_matvec_mult(mZ1, v0, nqubits);
 
-    x2[1] = 0; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(0.5, 0)));
-    x2[1] = 0; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(0.5, 0)));
-    x2[1] = 1; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(-0.5,0)));
-    x2[1] = 1; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(-0.5,0)));
+    x2[1] = 0; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(0.5, 0));
+    x2[1] = 0; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(0.5, 0));
+    x2[1] = 1; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(-0.5,0));
+    x2[1] = 1; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(-0.5,0));
     test_assert(aadd_countnodes(v0) == 2);
 
     v0 = aadd_matvec_mult(mZ1, v0, nqubits);
     v0 = aadd_matvec_mult(mS0, v0, nqubits);
     v0 = aadd_matvec_mult(mS0, v0, nqubits);
 
-    x2[1] = 0; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(0.5, 0)));
-    x2[1] = 0; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(-0.5,0)));
-    x2[1] = 1; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(0.5, 0)));
-    x2[1] = 1; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(-0.5,0)));
+    x2[1] = 0; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(0.5, 0));
+    x2[1] = 0; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(-0.5,0));
+    x2[1] = 1; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(0.5, 0));
+    x2[1] = 1; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(-0.5,0));
     test_assert(aadd_countnodes(v0) == 2);
 
     v0 = aadd_matvec_mult(mZ0, v0, nqubits);
@@ -313,10 +314,10 @@ int test_phase_gates()
     v0 = aadd_matvec_mult(mT1, v0, nqubits);
     v0 = aadd_matvec_mult(mT1, v0, nqubits);
 
-    x2[1] = 0; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(0.5, 0)));
-    x2[1] = 0; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(0.5, 0)));
-    x2[1] = 1; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(-0.5,0)));
-    x2[1] = 1; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(-0.5,0)));
+    x2[1] = 0; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(0.5, 0));
+    x2[1] = 0; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(0.5, 0));
+    x2[1] = 1; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(-0.5,0));
+    x2[1] = 1; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(-0.5,0));
     test_assert(aadd_countnodes(v0) == 2);
 
     v0 = aadd_matvec_mult(mZ1,    v0, nqubits);
@@ -325,10 +326,10 @@ int test_phase_gates()
     v0 = aadd_matvec_mult(mTdag1, v0, nqubits);
     v0 = aadd_matvec_mult(mTdag1, v0, nqubits);
 
-    x2[1] = 0; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(0.5, 0)));
-    x2[1] = 0; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(0.5, 0)));
-    x2[1] = 1; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(-0.5,0)));
-    x2[1] = 1; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(-0.5,0)));
+    x2[1] = 0; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(0.5, 0));
+    x2[1] = 0; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(0.5, 0));
+    x2[1] = 1; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(-0.5,0));
+    x2[1] = 1; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(-0.5,0));
     test_assert(aadd_countnodes(v0) == 2);
     
 
@@ -374,17 +375,17 @@ int test_cx_gate()
 
     // matrix-vector mult
     v0 = aadd_matvec_mult(mH0, v0, nqubits);
-    x2[1] = 0; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(1.0/flt_sqrt(2.0),0)));
-    x2[1] = 0; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(1.0/flt_sqrt(2.0),0)));
+    x2[1] = 0; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
+    x2[1] = 0; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
     x2[1] = 1; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == AADD_ZERO);
     x2[1] = 1; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == AADD_ZERO);
     test_assert(aadd_countnodes(v0) == 2);
 
     v0 = aadd_matvec_mult(mCNOT, v0, nqubits);
-    x2[1] = 0; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(1.0/flt_sqrt(2.0),0)));
+    x2[1] = 0; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
     x2[1] = 0; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == AADD_ZERO);
     x2[1] = 1; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == AADD_ZERO);
-    x2[1] = 1; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(1.0/flt_sqrt(2.0),0)));
+    x2[1] = 1; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
     test_assert(aadd_countnodes(v0) == 4);
 
     // same as above but multiplies H CNOT first before applying to the state
@@ -392,10 +393,10 @@ int test_cx_gate()
     mTemp = aadd_matmat_mult(mCNOT, mH0, nqubits);
     v0 = qmdd_create_all_zero_state(nqubits);
     v0 = aadd_matvec_mult(mTemp, v0, nqubits);
-    x2[1] = 0; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(1.0/flt_sqrt(2.0),0)));
+    x2[1] = 0; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
     x2[1] = 0; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == AADD_ZERO);
     x2[1] = 1; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == AADD_ZERO);
-    x2[1] = 1; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(1.0/flt_sqrt(2.0),0)));
+    x2[1] = 1; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
     test_assert(aadd_countnodes(v0) == 4);
 
     // If we did H0 CNOT |00> instead then the CNOT would not have an effect, 
@@ -405,8 +406,8 @@ int test_cx_gate()
     mTemp = aadd_matmat_mult(mH0, mCNOT, nqubits);
     v0 = qmdd_create_all_zero_state(nqubits);
     v0 = aadd_matvec_mult(mTemp, v0, nqubits);
-    x2[1] = 0; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(1.0/flt_sqrt(2.0),0)));
-    x2[1] = 0; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(1.0/flt_sqrt(2.0),0)));
+    x2[1] = 0; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
+    x2[1] = 0; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
     x2[1] = 1; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == AADD_ZERO);
     x2[1] = 1; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == AADD_ZERO);
     test_assert(aadd_countnodes(v0) == 2);
@@ -436,18 +437,18 @@ int test_cz_gate()
     v0 = aadd_matvec_mult(mH0, v0, nqubits);
     v0 = aadd_matvec_mult(mH1, v0, nqubits);
 
-    x2[1] = 0; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(0.5, 0)));
-    x2[1] = 0; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(0.5, 0)));
-    x2[1] = 1; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(0.5, 0)));
-    x2[1] = 1; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(0.5, 0)));
+    x2[1] = 0; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(0.5, 0));
+    x2[1] = 0; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(0.5, 0));
+    x2[1] = 1; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(0.5, 0));
+    x2[1] = 1; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(0.5, 0));
     test_assert(aadd_countnodes(v0) == 1);
 
     v0 = aadd_matvec_mult(mCZ, v0, nqubits);
 
-    x2[1] = 0; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(0.5, 0)));
-    x2[1] = 0; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(0.5, 0)));
-    x2[1] = 1; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(0.5, 0)));
-    x2[1] = 1; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == weight_lookup(cmake(-0.5,0)));
+    x2[1] = 0; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(0.5, 0));
+    x2[1] = 0; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(0.5, 0));
+    x2[1] = 1; x2[0] = 0; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(0.5, 0));
+    x2[1] = 1; x2[0] = 1; a = aadd_getvalue(v0, x2); test_assert(a == complex_lookup(-0.5,0));
     test_assert(aadd_countnodes(v0) == 3);
 
     // TODO: test with slightly more qubits
