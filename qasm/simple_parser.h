@@ -14,7 +14,7 @@ typedef struct quantum_op_s {
     char name[32];
     double angle;
     int target;
-    int controls[3];
+    int ctrls[3];
     int meas_dest;
     struct quantum_op_s* next;
 } quantum_op_t;

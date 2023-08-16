@@ -41,7 +41,7 @@ class QASMParser {
     private:
         std::vector<std::string> supported_gates = {"id", "x", "y", "z", "h", 
         "s", "sdg", "t", "tdg", "rx", "ry", "rz", "cx", "cy", "cz"};
-        // TODO: p?, cp? u3, u2, u1
+        // TODO: p?, cp? u3, u2, u1, ccx, crz, cu1, cu3
 
         enum ins_type {
             comment, version_def, include, qreg, creg, barrier, measure, gate
@@ -133,9 +133,7 @@ class QASMParser {
                 parse_measurement(line);
                 break;
             default:
-                std::cerr << "Invalid instruction type: " << std::endl;
-                std::cerr << current_line << ": " << line << std::endl;
-                exit(EXIT_FAILURE);
+                parse_error("Unrecognized instruction type");
             }
         }
 
@@ -178,7 +176,7 @@ class QASMParser {
                 }
             }
             std::cerr << "WARNING: expected OPENQASM version 2.0, "
-                    << "got \"" << token << "\" instead" << std::endl;
+                      << "got \"" << token << "\" instead" << std::endl;
         }
 
 
@@ -186,13 +184,10 @@ class QASMParser {
         {
             auto args = split(line, " []");
             if (args[0] != type) {
-                std::cerr << "Parsing error: expected \"" << type << "\", got \""
-                          << args[0] << "\" instead" << std::endl;
-                exit(EXIT_FAILURE);
+                parse_error("Expected '" + type + "', got '" + args[0] + "' instead");
             }
             if (args.size() < 3) {
-                std::cerr << "Parsing error: Expected name[num] after " << type
-                          << ", got \"" << line << "\" instead" << std::endl; 
+                parse_error("Parsing error: Expected reg_name[size]");
             }
 
             if (type == "qreg") {
@@ -202,9 +197,7 @@ class QASMParser {
                 cregisters.push_back({args[1], stoi(args[2])});
             }
             else {
-                std::cerr << "Error: Unexpected register type \"" << type << "\""
-                          << std::endl;
-                exit(EXIT_FAILURE);
+                parse_error("Unexpected register type '" + type + "'");
             }
         }
 
@@ -212,45 +205,52 @@ class QASMParser {
         void parse_gate(std::string line)
         {
             auto args = split(line, " ,[]");
+
+            // remove
             for (auto arg : args) {
                 std::cout << arg << ", ";
             }
             std::cout << std::endl;
+            // /remove
 
-            if (args.size() == 0) {
-                std::cerr << "Parsing error on line " << current_line << std::endl;
+            if (args.size() < 3) {
+                parse_error("Expected reg_name[num] after gate");
             }
 
             // Check if gate (args[0]) is a supported gate
-            std::string gate = args[0];
-            std::transform(gate.begin(), gate.end(), gate.begin(), tolower);
-            if (!is_supported(gate)) {
-                std::cerr << "Parsing error on line " << current_line << std::endl;
-                std::cerr << "Unsuported gate '" << gate << "'" << std::endl;
-                exit(EXIT_FAILURE);
+            std::transform(args[0].begin(), args[0].end(), args[0].begin(), tolower);
+            if (!is_supported(args[0])) {
+                parse_error("Unsuported gate '" + args[0] + "'");
             }
+
+            // put measurement info into new quantum_op_t
+            quantum_op_t* op = (quantum_op_t*) malloc(sizeof(quantum_op_t));
+            strcpy(op->name, args[0].c_str());
+            op->target = get_seq_index(qregisters, args[1], stoi(args[2]));
+            op->ctrls[0] = op->ctrls [1] = op->ctrls[2] = -1;
+
+            if (op->name[0] == 'c') {
+                op->ctrls[0] = 0;
+            }
+
 
             // TODO: finish
 
-            // put measurement info into new quantum_op_t
-            //quantum_op_t* op = (quantum_op_t*) malloc(sizeof(quantum_op_t));
-
-            // single qubit gate
-            if (args.size() == 4) {
-
-            }
-
-
+            // append gate to circuit
+            last_op->next = op;
+            last_op = op;
         }
 
 
         void parse_measurement(std::string line)
         {
             auto args = split(line, " []");
-            if (args.size() < 7) {
-                std::cerr << "Parsing error on line " << current_line << ": "
-                          << "Expected more arguments to 'measure'" << std::endl;
-                exit(EXIT_FAILURE);
+            if (args.size() < 4) {
+                parse_error("Expected more arguments to 'measure'");
+            }
+
+            for (auto arg : args) {
+                std::cout << arg << std::endl;
             }
             
             // put measurement info into new quantum_op_t
@@ -258,10 +258,13 @@ class QASMParser {
             op->type = op_measurement;
             strcpy(op->name, "measure");
             op->target = get_seq_index(qregisters, args[1], stoi(args[2]));
-            op->meas_dest = get_seq_index(cregisters, args[4], stoi(args[5]));
+            op->meas_dest = -1;
+            if (args.size() >= 5) {
+                op->meas_dest = get_seq_index(cregisters, args[4], stoi(args[5]));
+            }
             op->next = NULL;
             
-            // append to circuit
+            // append measurement to circuit
             last_op->next = op;
             last_op = op;
         }
@@ -276,8 +279,7 @@ class QASMParser {
                 }
                 offset += reg.second;
             }
-            std::cerr << "Parsing error on line " << current_line << ": "
-                      << "register '" << reg_name << "' undefined" << std::endl;
+            parse_error("Register '" + reg_name + "' undefined");
             exit(EXIT_FAILURE);
         }
 
@@ -287,6 +289,14 @@ class QASMParser {
                              supported_gates.end(), 
                              gate) 
                     != supported_gates.end();
+        }
+
+
+        void parse_error(std::string error) {
+            std::cout << "Parsing error on line " << current_line << ": ";
+            std::cout << error << std::endl;
+            free_quantum_ops(first_op);
+            exit(EXIT_FAILURE);
         }
 
 }; // QASMParser
@@ -302,12 +312,22 @@ quantum_op_t* parse_qasm_file(char *filepath)
 void print_quantum_op(quantum_op_t* op)
 {
     if (op->type == op_measurement) {
-        printf("measure(q%d) -> c%d", op->target, op->meas_dest);
+        printf("measure(q%d)", op->target); 
+        if (op->meas_dest >= 0) { 
+            printf(" -> c%d", op->meas_dest);
+        }
     }
     else if (op->type == op_gate) {
-        printf("%s_%lf(t=%d, c=%d,%d,%d)", op->name, op->angle, op->target, 
-                                           op->controls[0], op->controls[1], 
-                                           op->controls[2]);
+        printf("%s", op->name);
+        if (op->angle != 0.0) {
+            printf("_%lf", op->angle);
+        }
+        printf("(%d", op->target);
+        if (op->ctrls[0] >= 0) {
+            printf(",c=%d,%d,%d)", op->ctrls[0], op->ctrls[1], op->ctrls[2]);
+        } else {
+            printf(")");
+        }
     }
 }
 
