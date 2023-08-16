@@ -39,9 +39,9 @@ std::vector<std::string> split(std::string to_split, std::string delims)
 class QASMParser {
 
     private:
-        enum gate {
-            I,X,Y,Z,H
-        };
+        std::vector<std::string> supported_gates = {"id", "x", "y", "z", "h", 
+        "s", "sdg", "t", "tdg", "rx", "ry", "rz", "cx", "cy", "cz"};
+        // TODO: p?, cp? u3, u2, u1
 
         enum ins_type {
             comment, version_def, include, qreg, creg, barrier, measure, gate
@@ -76,7 +76,7 @@ class QASMParser {
             }
 
             // temp summary (TODO: remove)
-            std::cout << "Quantum registers:" << std::endl;
+            std::cout << "\n\nQuantum registers:" << std::endl;
             for (auto qreg : qregisters) {
                 std::cout << qreg.first << ", " << qreg.second << std::endl;
             }
@@ -211,7 +211,36 @@ class QASMParser {
 
         void parse_gate(std::string line)
         {
-            // TODO
+            auto args = split(line, " ,[]");
+            for (auto arg : args) {
+                std::cout << arg << ", ";
+            }
+            std::cout << std::endl;
+
+            if (args.size() == 0) {
+                std::cerr << "Parsing error on line " << current_line << std::endl;
+            }
+
+            // Check if gate (args[0]) is a supported gate
+            std::string gate = args[0];
+            std::transform(gate.begin(), gate.end(), gate.begin(), tolower);
+            if (!is_supported(gate)) {
+                std::cerr << "Parsing error on line " << current_line << std::endl;
+                std::cerr << "Unsuported gate '" << gate << "'" << std::endl;
+                exit(EXIT_FAILURE);
+            }
+
+            // TODO: finish
+
+            // put measurement info into new quantum_op_t
+            //quantum_op_t* op = (quantum_op_t*) malloc(sizeof(quantum_op_t));
+
+            // single qubit gate
+            if (args.size() == 4) {
+
+            }
+
+
         }
 
 
@@ -250,6 +279,14 @@ class QASMParser {
             std::cerr << "Parsing error on line " << current_line << ": "
                       << "register '" << reg_name << "' undefined" << std::endl;
             exit(EXIT_FAILURE);
+        }
+
+        bool is_supported(std::string gate)
+        {
+            return std::find(supported_gates.begin(), 
+                             supported_gates.end(), 
+                             gate) 
+                    != supported_gates.end();
         }
 
 }; // QASMParser
