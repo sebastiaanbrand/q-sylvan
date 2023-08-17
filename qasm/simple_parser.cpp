@@ -39,13 +39,19 @@ std::vector<std::string> split(std::string to_split, std::string delims)
 class QASMParser {
 
     private:
-        std::vector<std::string> supported_gates = {"id", "x", "y", "z", "h", 
-        "s", "sdg", "t", "tdg", "rx", "ry", "rz", "cx", "cy", "cz", "ch", "ccx",
-        };
-        // TODO: p?, cp? u3, u2, u1, crz, cu1, cu3
+        // Gates specified in qelib1.inc
+        std::vector<std::string> gelib1_gates = 
+        {"u3", "u2", "u1", "id", "u0", "u", "p", "x", "y", "z", "h", "s", "sdg",
+        "t", "tdg", "rx", "ry", "rz", "sx", "sxdg", // single qubit gates
+        "cx", "cz", "cy", "swap", "ch", "crx", "cry", "crz", "cu1", "cp", "cu3", 
+        "csx", "cu", "rxx", "rzz", // 2 qubit gates
+        "cxx", "cswap", "rccx", // 3 qubit gates
+        "rc3x", "c3x", "c3sqrtx", // 4 qubit gates
+        "c4x"}; // 5 qubit gates
 
         enum ins_type {
-            comment, version_def, include, qreg, creg, barrier, measure, gate
+            comment, version_def, include, qreg, creg, barrier, measure, gate,
+            gate_def, classical_cond, invalid
         };
 
         unsigned int current_line;
@@ -86,7 +92,7 @@ class QASMParser {
                 std::cout << creg.first << ", " << creg.second << std::endl;
             }
             std::cout << "Circuit:" << std::endl;
-            print_quantum_ops(first_op);
+            print_quantum_ops(first_op->next);
 
             return first_op;
         }
@@ -95,15 +101,18 @@ class QASMParser {
         void parse_line(std::string line)
         {
             current_line++;
-            std::stringstream line_ss(line);
-            std::string token;
+            if (line.size() == 0) {
+                return;
+            }
+            auto args = split(line, " \t(");
+            if (args.size() == 0) {
+                return;
+            }
             ins_type instruction_type;
             
 
             // 1. Get type of instruction
-            if (std::getline(line_ss, token, ' ')) {
-                instruction_type = get_instruction_type(token);
-            }
+            instruction_type = get_instruction_type(args[0]);
 
             // 2. Get arguments based on type of instruction
             switch (instruction_type)
@@ -111,7 +120,7 @@ class QASMParser {
             case ins_type::comment:
                 return;
             case ins_type::version_def:
-                parse_version(line_ss);
+                parse_version(line);
                 return;
             case ins_type::include:
                 // Includes are ignored for now
@@ -127,14 +136,17 @@ class QASMParser {
                 parse_reg(line, "creg");
                 break;
             case ins_type::gate:
-                std::cout << current_line << ": " << line << std::endl;
-                parse_gate(line);
+                parse_gate(args[0], line);
                 break;
             case ins_type::measure:
                 parse_measurement(line);
                 break;
+            case ins_type::gate_def:
+                parse_error("Defining custom gates currently unsupported");
+            case ins_type::classical_cond:
+                parse_error("Classical conditioning currently unsupported");
             default:
-                parse_error("Unrecognized instruction type");
+                parse_error("Unsupported instruction type");
             }
         }
 
@@ -162,22 +174,31 @@ class QASMParser {
             else if (token == "barrier") {
                 return ins_type::barrier;
             }
-            else {
+            else if (token == "gate") {
+                return ins_type::gate_def;
+            }
+            else if (is_gate(token)) {
                 return ins_type::gate;
+            }
+            else if (token.substr(0,2) == "if") {
+                return ins_type::classical_cond;
+            }
+            else {
+                return ins_type::invalid;
             }
         }
 
 
-        void parse_version(std::stringstream &args)
+        void parse_version(std::string line)
         {
-            std::string token = "";
-            if (std::getline(args, token, ' ')) {
-                if (token == "2.0;") {
+            auto args = split(line, " \t");
+            if (args.size() > 0) {
+                if (args[1] == "2.0;") {
                     return;
                 }
+                std::cerr << "WARNING: expected OPENQASM version 2.0, "
+                      << "got \"" << args[1] << "\" instead" << std::endl;
             }
-            std::cerr << "WARNING: expected OPENQASM version 2.0, "
-                      << "got \"" << token << "\" instead" << std::endl;
         }
 
 
@@ -203,47 +224,52 @@ class QASMParser {
         }
 
 
-        void parse_gate(std::string line)
+        void parse_gate(std::string name, std::string line)
         {
-            auto args = split(line, " ,[]");
+            auto args = split(line, " ,[]()");
+            if (args.size() == 0) {
+                parse_error("Could not parse line");
+            }
 
-            // remove
+            // for debugging
+            std::cout << current_line << ": " << line << std::endl;
             for (auto arg : args) {
                 std::cout << arg << ", ";
             }
             std::cout << std::endl;
-            // /remove
-
-            if (args.size() < 3) {
-                parse_error("Expected reg_name[num] after gate");
-            }
-
-            // Check if gate (args[0]) is a supported gate
-            std::transform(args[0].begin(), args[0].end(), args[0].begin(), tolower);
-            if (!is_supported(args[0])) {
-                parse_error("Unsuported gate '" + args[0] + "'");
-            }
+            // /for debugging
 
             // put measurement info into new quantum_op_t
             quantum_op_t* op = (quantum_op_t*) malloc(sizeof(quantum_op_t));
-            strcpy(op->name, args[0].c_str());
-            op->target = get_seq_index(qregisters, args[1], stoi(args[2]));
-            op->ctrls[0] = op->ctrls [1] = op->ctrls[2] = -1;
 
-            // handle controlled gates (max 3 controls atm)
-            for (int i = 0; i < 3; i++) {
-                if (op->name[i] == 'c') {
-                    if (args.size() < (3 + 2*i)) {
-                        parse_error("Expected more arguments after controlled-gate");
-                    }
-                    op->ctrls[i] = get_seq_index(qregisters, args[2*i+3], stoi(args[2*i+4]));
-                }
-                else {
-                    break;
+            // single qubit gates with no additional parameters
+            if (name == "id" || name == "x" || name == "y" || name == "z" || 
+                name == "h" || name == "s" || name == "sdg" || name == "t" || 
+                name == "tdg" || name == "sx" || name == "sxdg") {
+                try {
+                    strcpy(op->name, args[0].c_str());
+                    op->target = get_seq_index(qregisters, args[1], stoi(args[2]));
+                    op->ctrls[0] = op->ctrls [1] = op->ctrls[2] = -1;
+                } catch (...) {
+                    parse_error("Error parsing arguments of gate " + name);
                 }
             }
-
-            // TODO: finish
+            // two qubit controlled gates with no additional parameters
+            else if (name == "cx" || name == "cy" || name == "cz" || name == "ch") {
+                try {
+                    strcpy(op->name, (args[0].substr(1).c_str()));
+                    op->target = get_seq_index(qregisters, args[1], stoi(args[2]));
+                    op->ctrls[0] = 3;//get_seq_index(qregisters, args[3], stoi(args[4]));
+                    op->ctrls [1] = op->ctrls[2] = -1;
+                } catch (...) {
+                    parse_error("Error parsing arguments of gate " + name);
+                }
+            }
+            else {
+                parse_error("Gate " + name + " currently unsupported");
+            }
+            // TODO: handle all gates in qelib1.inc
+            
 
             // append gate to circuit
             last_op->next = op;
@@ -288,12 +314,12 @@ class QASMParser {
             exit(EXIT_FAILURE);
         }
 
-        bool is_supported(std::string gate)
+        bool is_gate(std::string gate)
         {
-            return std::find(supported_gates.begin(), 
-                             supported_gates.end(), 
+            return std::find(gelib1_gates.begin(), 
+                             gelib1_gates.end(), 
                              gate) 
-                    != supported_gates.end();
+                    != gelib1_gates.end();
         }
 
 
