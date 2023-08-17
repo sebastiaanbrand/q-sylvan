@@ -40,8 +40,9 @@ class QASMParser {
 
     private:
         std::vector<std::string> supported_gates = {"id", "x", "y", "z", "h", 
-        "s", "sdg", "t", "tdg", "rx", "ry", "rz", "cx", "cy", "cz"};
-        // TODO: p?, cp? u3, u2, u1, ccx, crz, cu1, cu3
+        "s", "sdg", "t", "tdg", "rx", "ry", "rz", "cx", "cy", "cz", "ch", "ccx",
+        };
+        // TODO: p?, cp? u3, u2, u1, crz, cu1, cu3
 
         enum ins_type {
             comment, version_def, include, qreg, creg, barrier, measure, gate
@@ -229,10 +230,18 @@ class QASMParser {
             op->target = get_seq_index(qregisters, args[1], stoi(args[2]));
             op->ctrls[0] = op->ctrls [1] = op->ctrls[2] = -1;
 
-            if (op->name[0] == 'c') {
-                op->ctrls[0] = 0;
+            // handle controlled gates (max 3 controls atm)
+            for (int i = 0; i < 3; i++) {
+                if (op->name[i] == 'c') {
+                    if (args.size() < (3 + 2*i)) {
+                        parse_error("Expected more arguments after controlled-gate");
+                    }
+                    op->ctrls[i] = get_seq_index(qregisters, args[2*i+3], stoi(args[2*i+4]));
+                }
+                else {
+                    break;
+                }
             }
-
 
             // TODO: finish
 
@@ -247,10 +256,6 @@ class QASMParser {
             auto args = split(line, " []");
             if (args.size() < 4) {
                 parse_error("Expected more arguments to 'measure'");
-            }
-
-            for (auto arg : args) {
-                std::cout << arg << std::endl;
             }
             
             // put measurement info into new quantum_op_t

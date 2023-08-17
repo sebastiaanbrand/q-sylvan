@@ -28,9 +28,9 @@ quantum_op_t* parse_qasm_file(char *filepath);
 /**
  * free()'s all quantum_ops from and including 'first'.
 */
-void free_quantum_ops(quantum_op_t* first);
+void free_quantum_ops(quantum_op_t* head);
 
-void print_quantum_ops(quantum_op_t* op);
+void print_quantum_ops(quantum_op_t* head);
 
 
 #ifdef __cplusplus
