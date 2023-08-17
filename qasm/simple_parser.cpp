@@ -7,6 +7,7 @@
 #include <string.h>
 
 #include "simple_parser.h"
+#include "parse_math/eval_expr.hpp"
 
 /**
  * Minor shortcomings of this parser:
