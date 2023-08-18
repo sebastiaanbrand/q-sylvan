@@ -40,6 +40,15 @@ QMDD apply_gate(QMDD state, quantum_op_t* gate)
     else if (strcmp(gate->name, "sxdg") == 0) {
         return qmdd_gate(state, GATEID_sqrtXdag, gate->target);
     }
+    else if (strcmp(gate->name, "rx") == 0) {
+        return qmdd_gate(state, GATEID_Rx(gate->angle), gate->target);
+    }
+    else if (strcmp(gate->name, "ry") == 0) {
+        return qmdd_gate(state, GATEID_Ry(gate->angle), gate->target);
+    }
+    else if (strcmp(gate->name, "rz") == 0) {
+        return qmdd_gate(state, GATEID_Rz(gate->angle), gate->target);
+    }
     else if (strcmp(gate->name, "cx") == 0) {
         return qmdd_cgate(state, GATEID_X, gate->ctrls[0], gate->target);
     }
