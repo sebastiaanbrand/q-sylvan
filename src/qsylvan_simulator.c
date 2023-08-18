@@ -578,8 +578,12 @@ TASK_IMPL_6(QMDD, qmdd_cgate_range_rec, QMDD, q, gate_id_t, gate, BDDVAR, c_firs
 QMDD
 qmdd_circuit_swap(QMDD qmdd, BDDVAR qubit1, BDDVAR qubit2)
 {
-    assert (qubit1 < qubit2);
-    
+    if (qubit1 > qubit2) {
+        BDDVAR tmp = qubit2;
+        qubit2 = qubit1;
+        qubit1 = tmp;
+    }
+
     QMDD res;
 
     // CNOT

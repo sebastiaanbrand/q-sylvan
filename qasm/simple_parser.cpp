@@ -264,7 +264,7 @@ class QASMParser {
             else if (name == "cx" || name == "cy" || name == "cz" || name == "ch" ||
                      name == "csx") {
                 try {
-                    strcpy(op->name, (name.substr(1).c_str()));
+                    strcpy(op->name, name.c_str());
                     op->target = get_seq_index(qregisters, args[3], stoi(args[4]));
                     op->ctrls[0] = get_seq_index(qregisters, args[1], stoi(args[2]));
                 } catch (...) {
@@ -296,7 +296,7 @@ class QASMParser {
             // three-qubit controlled gates with no additional parameters
             else if (name == "ccx") {
                 try {
-                    strcpy(op->name, (name.substr(2).c_str()));
+                    strcpy(op->name, name.c_str());
                     op->target = get_seq_index(qregisters, args[5], stoi(args[6]));
                     op->ctrls[0] = get_seq_index(qregisters, args[1], stoi(args[2]));
                     op->ctrls[1] = get_seq_index(qregisters, args[3], stoi(args[4]));
@@ -307,7 +307,7 @@ class QASMParser {
             // four-qubit controlled gates with no additional parameters
             else if (name == "c3x" || name == "c3sx" || name == "c3sqrtx") {
                 try {
-                    strcpy(op->name, (canonical_gate_name(name).substr(2).c_str()));
+                    strcpy(op->name, canonical_gate_name(name).c_str());
                     op->target = get_seq_index(qregisters, args[7], stoi(args[8]));
                     op->ctrls[0] = get_seq_index(qregisters, args[1], stoi(args[2]));
                     op->ctrls[1] = get_seq_index(qregisters, args[3], stoi(args[4]));

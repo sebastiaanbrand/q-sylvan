@@ -40,6 +40,9 @@ GATEID_Rz(fl_t a)
     return gate_id;
 }
 
+// TODO: GATEID_Phase(fl_t a)
+// TODO: pass actual angle, instead of 'a' s.t. angle = 2pi*a
+
 uint32_t
 GATEID_Rx(fl_t a)
 {
