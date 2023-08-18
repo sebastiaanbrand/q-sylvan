@@ -21,9 +21,9 @@ For single qubit gates on qubit k:
 * `sy q[k];` : &radic;Y gate
 * `sdg q[k];` : S<sup>&dagger;</sup> gate
 * `tdg q[k];` : T<sup>&dagger;</sup> gate
-* `rx(a) q[k];` : Rotation around x-axis with angle 2&pi; &times; a
-* `ry(a) q[k];` : Rotation around y-axis with angle 2&pi; &times; a
-* `rz(a) q[k];` : Rotation around z-axis with angle 2&pi; &times; a
+* `rx(theta) q[k];` : Rotation around x-axis with angle theta
+* `ry(theta) q[k];` : Rotation around y-axis with angle theta
+* `rz(theta) q[k];` : Rotation around z-axis with angle theta
 
 For controlled gates we can prefix a `c` to an existing gate, e.g. for a CX gate:
 * `cx q[c], q[t];` : Controlled X gate on control c and target t<sup>[1](#control_order)</sup>.

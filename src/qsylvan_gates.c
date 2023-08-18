@@ -23,16 +23,15 @@ get_custom_gate_id()
 }
 
 uint32_t
-GATEID_Rz(fl_t a)
+GATEID_Rz(fl_t theta)
 {
     // get gate id for this gate
     uint32_t gate_id = get_custom_gate_id();
 
     // initialize gate
-    double theta_over_2 = Pi * a;
     AMP u00, u11;
-    u00 = weight_lookup(cmake_angle(-theta_over_2, 1));
-    u11 = weight_lookup(cmake_angle(theta_over_2, 1));
+    u00 = weight_lookup(cmake_angle(-theta/2.0, 1));
+    u11 = weight_lookup(cmake_angle(theta/2.0, 1));
     gates[gate_id][0] = u00;    gates[gate_id][1] = AADD_ZERO;
     gates[gate_id][2] = AADD_ZERO; gates[gate_id][3] = u11;
 
@@ -40,22 +39,20 @@ GATEID_Rz(fl_t a)
     return gate_id;
 }
 
-// TODO: GATEID_Phase(fl_t a)
-// TODO: pass actual angle, instead of 'a' s.t. angle = 2pi*a
+// TODO: add GATEID_Phase(fl_t a) (global phase diff with Rz)
 
 uint32_t
-GATEID_Rx(fl_t a)
+GATEID_Rx(fl_t theta)
 {
     // get gate id for this gate
     uint32_t gate_id = get_custom_gate_id();
 
     // initialize gate
-    fl_t theta_over_2 = Pi * a;
     AMP u00, u01, u10, u11;
-    u00 = weight_lookup(cmake(flt_cos(theta_over_2), 0.0));
-    u01 = weight_lookup(cmake(0.0, -flt_sin(theta_over_2)));
-    u10 = weight_lookup(cmake(0.0, -flt_sin(theta_over_2)));
-    u11 = weight_lookup(cmake(flt_cos(theta_over_2), 0.0));
+    u00 = weight_lookup(cmake(flt_cos(theta/2.0), 0.0));
+    u01 = weight_lookup(cmake(0.0, -flt_sin(theta/2.0)));
+    u10 = weight_lookup(cmake(0.0, -flt_sin(theta/2.0)));
+    u11 = weight_lookup(cmake(flt_cos(theta/2.0), 0.0));
     gates[gate_id][0] = u00; gates[gate_id][1] = u01;
     gates[gate_id][2] = u10; gates[gate_id][3] = u11;
 
@@ -64,18 +61,17 @@ GATEID_Rx(fl_t a)
 }
 
 uint32_t
-GATEID_Ry(fl_t a)
+GATEID_Ry(fl_t theta)
 {
     // get gate id for this gate
     uint32_t gate_id = get_custom_gate_id();
 
     // initialize gate
-    fl_t theta_over_2 = Pi * a;
     AMP u00, u01, u10, u11;
-    u00 = weight_lookup(cmake(flt_cos(theta_over_2),  0.0));
-    u01 = weight_lookup(cmake(-flt_sin(theta_over_2), 0.0));
-    u10 = weight_lookup(cmake(flt_sin(theta_over_2),  0.0));
-    u11 = weight_lookup(cmake(flt_cos(theta_over_2),  0.0));
+    u00 = weight_lookup(cmake(flt_cos(theta/2.0),  0.0));
+    u01 = weight_lookup(cmake(-flt_sin(theta/2.0), 0.0));
+    u10 = weight_lookup(cmake(flt_sin(theta/2.0),  0.0));
+    u11 = weight_lookup(cmake(flt_cos(theta/2.0),  0.0));
     gates[gate_id][0] = u00; gates[gate_id][1] = u01;
     gates[gate_id][2] = u10; gates[gate_id][3] = u11;
 

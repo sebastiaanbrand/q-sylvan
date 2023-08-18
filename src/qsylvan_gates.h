@@ -49,26 +49,26 @@ static inline uint32_t GATEID_Rk_dag(int k){ return k + (n_predef_gates+256); };
 // Rx, Ry, Rz. These gate IDs are re-used when a user requires more than 
 // 'num_dynamic_gates' custom gates.
 /**
- * Rotation around x-axis with angle 2pi*a.
+ * Rotation around x-axis with angle theta.
  * NOTE: These gate IDs are dynamic. The returned ID (uint32_t) is only 
  * guaranteed to correspond to the Rx(a) rotation until the next generation of 
  * a custom gate id.
  */
-uint32_t GATEID_Rx(fl_t a);
+uint32_t GATEID_Rx(fl_t theta);
 /**
- * Rotation around y-axis with angle 2pi*a.
+ * Rotation around y-axis with angle theta.
  * NOTE: These gate IDs are dynamic. The returned ID (uint32_t) is only 
  * guaranteed to correspond to the Ry(a) rotation until the next generation of 
  * a custom gate id.
  */
-uint32_t GATEID_Ry(fl_t a);
+uint32_t GATEID_Ry(fl_t theta);
 /**
- * Rotation around z-axis with angle 2pi*a.
+ * Rotation around z-axis with angle theta.
  * NOTE: These gate IDs are dynamic. The returned ID (uint32_t) is only 
- * guaranteed to correspond to the Rz(a) rotation until the next generation of 
+ * guaranteed to correspond to the Rz(theta) rotation until the next generation of 
  * a custom gate id.
  */
-uint32_t GATEID_Rz(fl_t a);
+uint32_t GATEID_Rz(fl_t theta);
 
 
 #endif
