@@ -49,8 +49,8 @@ class QASMParser {
         "t", "tdg", "rx", "ry", "rz", "sx", "sxdg", // single qubit gates
         "cx", "cz", "cy", "swap", "ch", "crx", "cry", "crz", "cu1", "cp", "cu3", 
         "csx", "cu", "rxx", "rzz", // 2 qubit gates
-        "cxx", "cswap", "rccx", // 3 qubit gates
-        "rc3x", "c3x", "c3sqrtx", // 4 qubit gates
+        "ccx", "cswap", "rccx", // 3 qubit gates
+        "rc3x", "c3x", "c3sx", "c3sqrtx", // 4 qubit gates
         "c4x"}; // 5 qubit gates
 
         enum ins_type {
@@ -235,63 +235,100 @@ class QASMParser {
                 parse_error("Could not parse line");
             }
 
-            // for debugging
-            std::cout << current_line << ": " << line << std::endl;
-            for (auto arg : args) {
-                std::cout << arg << ", ";
-            }
-            std::cout << std::endl;
-            // /for debugging
-
             // put measurement info into new quantum_op_t and append to circuit
             quantum_op_t* op = (quantum_op_t*) calloc(1, sizeof(quantum_op_t));
             op->type = op_gate;
             op->next = NULL;
+            op->ctrls[0] = op->ctrls [1] = op->ctrls[2] = -1;
             last_op->next = op;
             last_op = op;
 
-            // single qubit gates with no additional parameters
+            // single-qubit gates with no additional parameters
             if (name == "id" || name == "x" || name == "y" || name == "z" || 
                 name == "h" || name == "s" || name == "sdg" || name == "t" || 
                 name == "tdg" || name == "sx" || name == "sxdg") {
                 try {
                     strcpy(op->name, canonical_gate_name(name).c_str());
                     op->target = get_seq_index(qregisters, args[1], stoi(args[2]));
-                    op->ctrls[0] = op->ctrls [1] = op->ctrls[2] = -1;
                 } catch (...) {
                     parse_error("Error parsing arguments of gate " + name);
                 }
             }
-            // singe qubit gates with a single angle
-            else if (name == "rx" || name == "ry" || name == "rz" || name == "u1" ||
-                     name == "p") {
+            // singe-qubit gates with a single angle
+            else if (name == "rx" || name == "ry" || name == "rz" || name == "u0" ||
+                     name == "u1" || name == "p") {
                 try {
                     strcpy(op->name, canonical_gate_name(name).c_str());
                     op->target = get_seq_index(qregisters, args[2], stoi(args[3]));
-                    std::cout << args[1] << " = "; fflush(stdout);
-                    double res = eval_math_expression(args[1]);
-                    std::cout << res << std::endl;
-                    op->angle = res;
-                    op->ctrls[0] = op->ctrls [1] = op->ctrls[2] = -1;
+                    op->angle = eval_math_expression(args[1]);
                 } catch (...) {
                     parse_error("Error parsing arguments of gate " + name);
                 }
             }
-            // two qubit controlled gates with no additional parameters
-            else if (name == "cx" || name == "cy" || name == "cz" || name == "ch") {
+            // two-qubit controlled gates with no additional parameters
+            else if (name == "cx" || name == "cy" || name == "cz" || name == "ch" ||
+                     name == "csx") {
                 try {
                     strcpy(op->name, (name.substr(1).c_str()));
-                    op->target = get_seq_index(qregisters, args[1], stoi(args[2]));
-                    op->ctrls[0] = 3;//get_seq_index(qregisters, args[3], stoi(args[4]));
-                    op->ctrls [1] = op->ctrls[2] = -1;
+                    op->target = get_seq_index(qregisters, args[3], stoi(args[4]));
+                    op->ctrls[0] = get_seq_index(qregisters, args[1], stoi(args[2]));
+                } catch (...) {
+                    parse_error("Error parsing arguments of gate " + name);
+                }
+            }
+            // other two-qubit gates without additional parameters
+            else if (name == "swap") {
+                try {
+                    strcpy(op->name, name.c_str());
+                    op->target = get_seq_index(qregisters, args[3], stoi(args[4]));
+                    op->ctrls[0] = get_seq_index(qregisters, args[1], stoi(args[2]));
+                } catch (...) {
+                    parse_error("Error parsing arguments of gate " + name);
+                }
+            }
+            // two-qubit controlled gates with single angle
+            else if (name == "crx" || name == "cry" || name == "crz" || name == "cp" ||
+                     name == "cu1") {
+                try {
+                    strcpy(op->name, (canonical_gate_name(name).substr(1).c_str()));
+                    op->target = get_seq_index(qregisters, args[4], stoi(args[5]));
+                    op->ctrls[0] = get_seq_index(qregisters, args[2], stoi(args[3]));
+                    op->angle = eval_math_expression(args[1]);
+                } catch (...) {
+                    parse_error("Error parsing arguments of gate " + name);
+                }
+            }
+            // three-qubit controlled gates with no additional parameters
+            else if (name == "ccx") {
+                try {
+                    strcpy(op->name, (name.substr(2).c_str()));
+                    op->target = get_seq_index(qregisters, args[5], stoi(args[6]));
+                    op->ctrls[0] = get_seq_index(qregisters, args[1], stoi(args[2]));
+                    op->ctrls[1] = get_seq_index(qregisters, args[3], stoi(args[4]));
+                } catch (...) {
+                    parse_error("Error parsing arguments of gate " + name);
+                }
+            }
+            // four-qubit controlled gates with no additional parameters
+            else if (name == "c3x" || name == "c3sx" || name == "c3sqrtx") {
+                try {
+                    strcpy(op->name, (canonical_gate_name(name).substr(2).c_str()));
+                    op->target = get_seq_index(qregisters, args[7], stoi(args[8]));
+                    op->ctrls[0] = get_seq_index(qregisters, args[1], stoi(args[2]));
+                    op->ctrls[1] = get_seq_index(qregisters, args[3], stoi(args[4]));
+                    op->ctrls[2] = get_seq_index(qregisters, args[5], stoi(args[6]));
                 } catch (...) {
                     parse_error("Error parsing arguments of gate " + name);
                 }
             }
             else {
+                std::cout << current_line << ": " << line << std::endl;
+                for (auto arg : args) {
+                    std::cout << arg << ", ";
+                }
+                std::cout << std::endl;
                 parse_error("Gate '" + name + "' currently unsupported");
             }
-            // TODO: handle all gates in qelib1.inc
         }
 
 
@@ -346,8 +383,11 @@ class QASMParser {
 
         std::string canonical_gate_name(std::string name)
         {
-            if (name == "u1" || name == "p") return "rz";
-            else return name;
+            if (name == "u0") return "id";
+            if (name == "u1") return "p";
+            if (name == "cu1") return "cp";
+            if (name == "c3sqrtx") return "c3sx";
+            return name;
         }
 
 
