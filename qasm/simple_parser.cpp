@@ -64,19 +64,22 @@ class QASMParser {
         typedef std::vector<std::pair<std::string, unsigned int>> registers_t;
         registers_t qregisters;
         registers_t cregisters;
-        quantum_op_t* first_op;
-        quantum_op_t* last_op;
+        quantum_circuit_t *circuit;
+        quantum_op_t *first_op;
+        quantum_op_t *last_op;
 
 
-        quantum_op_t* parse(char *filepath)
+        quantum_circuit_t* parse(char *filepath)
         {
             std::cout << "Parsing file " << std::string(filepath) << std::endl;
             std::ifstream infile(filepath);
 
-            // create (blank) initial element for LL which represents the circuit
+            // create (blank) quantum circuit
+            circuit = (quantum_circuit_t *) malloc(sizeof(quantum_circuit_t));
             first_op = (quantum_op_t *) malloc(sizeof(quantum_op_t));
             first_op->type = op_blank;
             first_op->next = NULL;
+            circuit->operations = first_op;
             last_op = first_op;
 
             std::string line;
@@ -86,19 +89,11 @@ class QASMParser {
                 parse_line(line);
             }
 
-            // temp summary (TODO: remove)
-            std::cout << "\n\nQuantum registers:" << std::endl;
-            for (auto qreg : qregisters) {
-                std::cout << qreg.first << ", " << qreg.second << std::endl;
-            }
-            std::cout << "Classical registers:" << std::endl;
-            for (auto creg : cregisters) {
-                std::cout << creg.first << ", " << creg.second << std::endl;
-            }
-            std::cout << "Circuit:" << std::endl;
-            print_quantum_ops(first_op->next);
+            // remove (blank) first operation
+            circuit->operations = circuit->operations->next;
+            free(first_op);
 
-            return first_op;
+            return circuit;
         }
 
 
@@ -394,14 +389,14 @@ class QASMParser {
         void parse_error(std::string error) {
             std::cout << "Parsing error on line " << current_line << ": ";
             std::cout << error << std::endl;
-            free_quantum_ops(first_op);
+            free_quantum_circuit(circuit);
             exit(EXIT_FAILURE);
         }
 
 }; // QASMParser
 
 
-quantum_op_t* parse_qasm_file(char *filepath)
+quantum_circuit_t* parse_qasm_file(char *filepath)
 {
     QASMParser parser;
     return parser.parse(filepath);
@@ -431,22 +426,27 @@ void print_quantum_op(quantum_op_t* op)
 }
 
 
-void print_quantum_ops(quantum_op_t* head)
+void print_quantum_circuit(quantum_circuit_t* circuit)
 {
-    while (head != NULL) {
-        print_quantum_op(head);
+    printf("qreg size: %d\n", circuit->qreg_size);
+    printf("creg size: %d\n", circuit->creg_size);
+    quantum_op_t *op = circuit->operations;
+    while (op != NULL) {
+        print_quantum_op(op);
         printf("\n");
-        head = head->next;
+        op = op->next;
     }
 }
 
 
-void free_quantum_ops(quantum_op_t* head)
+void free_quantum_circuit(quantum_circuit_t* circuit)
 {
+    quantum_op_t* head = circuit->operations;
     quantum_op_t* tmp;
     while (head != NULL) {
         tmp = head;
         head = head->next;
         free(tmp);
     }
+    free(circuit);
 }

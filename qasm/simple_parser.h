@@ -19,18 +19,24 @@ typedef struct quantum_op_s {
     struct quantum_op_s* next;
 } quantum_op_t;
 
+typedef struct quantum_circuit_s {
+    int qreg_size;
+    int creg_size;
+    quantum_op_t *operations;
+} quantum_circuit_t;
+
 /**
  * quantum_op_t is a linked-list where every element is malloc'ed.
  * free_quantum_ops() should be called on this after use.
  */
-quantum_op_t* parse_qasm_file(char *filepath);
+quantum_circuit_t* parse_qasm_file(char *filepath);
 
 /**
  * free()'s all quantum_ops from and including 'first'.
 */
-void free_quantum_ops(quantum_op_t* head);
+void free_quantum_circuit(quantum_circuit_t* circuit);
 
-void print_quantum_ops(quantum_op_t* head);
+void print_quantum_circuit(quantum_circuit_t* circuit);
 
 
 #ifdef __cplusplus
