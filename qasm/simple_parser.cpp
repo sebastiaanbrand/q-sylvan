@@ -13,6 +13,8 @@
  * Minor shortcomings of this parser:
  * 1) Assumes only one instruction per line
  * 2) Ignores includes
+ * 3) Assumes that for given rotation angles (e.g. rz(pi/4)), the expression 
+ *    between the brackets doesn't contain additional brackets.
 */
 
 
@@ -41,7 +43,8 @@ class QASMParser {
 
     private:
         // Gates specified in qelib1.inc
-        std::vector<std::string> gelib1_gates = 
+        // https://github.com/Qiskit/qiskit-terra/blob/main/qiskit/qasm/libs/qelib1.inc
+        std::vector<std::string> qelib1_gates = 
         {"u3", "u2", "u1", "id", "u0", "u", "p", "x", "y", "z", "h", "s", "sdg",
         "t", "tdg", "rx", "ry", "rz", "sx", "sxdg", // single qubit gates
         "cx", "cz", "cy", "swap", "ch", "crx", "cry", "crz", "cu1", "cp", "cu3", 
@@ -113,7 +116,7 @@ class QASMParser {
             
 
             // 1. Get type of instruction
-            instruction_type = get_instruction_type(args[0]);
+            instruction_type = get_instruction_type(&args[0]);
 
             // 2. Get arguments based on type of instruction
             switch (instruction_type)
@@ -152,36 +155,36 @@ class QASMParser {
         }
 
 
-        ins_type get_instruction_type(std::string token)
+        ins_type get_instruction_type(std::string *token)
         {
-            if (token.rfind("//") == 0) {
+            if (token->rfind("//") == 0) {
                 return ins_type::comment;;
             }
-            else if (token == "OPENQASM"){
+            else if (*token == "OPENQASM"){
                 return ins_type::version_def;
             }
-            else if (token == "include") {
+            else if (*token == "include") {
                 return ins_type::include;
             }
-            else if (token == "qreg") {
+            else if (*token == "qreg") {
                 return ins_type::qreg;
             }
-            else if (token == "creg") {
+            else if (*token == "creg") {
                 return ins_type::creg;
             }
-            else if (token == "measure") {
+            else if (*token == "measure") {
                 return ins_type::measure;
             }
-            else if (token == "barrier") {
+            else if (*token == "barrier") {
                 return ins_type::barrier;
             }
-            else if (token == "gate") {
+            else if (*token == "gate") {
                 return ins_type::gate_def;
             }
             else if (is_gate(token)) {
                 return ins_type::gate;
             }
-            else if (token.substr(0,2) == "if") {
+            else if (token->substr(0,2) == "if") {
                 return ins_type::classical_cond;
             }
             else {
@@ -240,16 +243,35 @@ class QASMParser {
             std::cout << std::endl;
             // /for debugging
 
-            // put measurement info into new quantum_op_t
-            quantum_op_t* op = (quantum_op_t*) malloc(sizeof(quantum_op_t));
+            // put measurement info into new quantum_op_t and append to circuit
+            quantum_op_t* op = (quantum_op_t*) calloc(1, sizeof(quantum_op_t));
+            op->type = op_gate;
+            op->next = NULL;
+            last_op->next = op;
+            last_op = op;
 
             // single qubit gates with no additional parameters
             if (name == "id" || name == "x" || name == "y" || name == "z" || 
                 name == "h" || name == "s" || name == "sdg" || name == "t" || 
                 name == "tdg" || name == "sx" || name == "sxdg") {
                 try {
-                    strcpy(op->name, args[0].c_str());
+                    strcpy(op->name, canonical_gate_name(name).c_str());
                     op->target = get_seq_index(qregisters, args[1], stoi(args[2]));
+                    op->ctrls[0] = op->ctrls [1] = op->ctrls[2] = -1;
+                } catch (...) {
+                    parse_error("Error parsing arguments of gate " + name);
+                }
+            }
+            // singe qubit gates with a single angle
+            else if (name == "rx" || name == "ry" || name == "rz" || name == "u1" ||
+                     name == "p") {
+                try {
+                    strcpy(op->name, canonical_gate_name(name).c_str());
+                    op->target = get_seq_index(qregisters, args[2], stoi(args[3]));
+                    std::cout << args[1] << " = "; fflush(stdout);
+                    double res = eval_math_expression(args[1]);
+                    std::cout << res << std::endl;
+                    op->angle = res;
                     op->ctrls[0] = op->ctrls [1] = op->ctrls[2] = -1;
                 } catch (...) {
                     parse_error("Error parsing arguments of gate " + name);
@@ -258,7 +280,7 @@ class QASMParser {
             // two qubit controlled gates with no additional parameters
             else if (name == "cx" || name == "cy" || name == "cz" || name == "ch") {
                 try {
-                    strcpy(op->name, (args[0].substr(1).c_str()));
+                    strcpy(op->name, (name.substr(1).c_str()));
                     op->target = get_seq_index(qregisters, args[1], stoi(args[2]));
                     op->ctrls[0] = 3;//get_seq_index(qregisters, args[3], stoi(args[4]));
                     op->ctrls [1] = op->ctrls[2] = -1;
@@ -267,14 +289,9 @@ class QASMParser {
                 }
             }
             else {
-                parse_error("Gate " + name + " currently unsupported");
+                parse_error("Gate '" + name + "' currently unsupported");
             }
             // TODO: handle all gates in qelib1.inc
-            
-
-            // append gate to circuit
-            last_op->next = op;
-            last_op = op;
         }
 
 
@@ -315,12 +332,22 @@ class QASMParser {
             exit(EXIT_FAILURE);
         }
 
-        bool is_gate(std::string gate)
+
+        bool is_gate(std::string *gate)
         {
-            return std::find(gelib1_gates.begin(), 
-                             gelib1_gates.end(), 
-                             gate) 
-                    != gelib1_gates.end();
+            std::transform(gate->begin(), gate->end(), gate->begin(), tolower);
+            
+            return std::find(qelib1_gates.begin(), 
+                             qelib1_gates.end(), 
+                             *gate) 
+                    != qelib1_gates.end();
+        }
+
+
+        std::string canonical_gate_name(std::string name)
+        {
+            if (name == "u1" || name == "p") return "rz";
+            else return name;
         }
 
 
