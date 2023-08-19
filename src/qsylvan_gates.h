@@ -72,10 +72,18 @@ uint32_t GATEID_Rz(fl_t theta);
 /**
  * Rotation around z-axis with angle theta (but different global phase than Rz)
  * NOTE: These gate IDs are dynamic. The returned ID (uint32_t) is only 
- * guaranteed to correspond to the Rz(theta) rotation until the next generation of 
+ * guaranteed to correspond to the Phase(theta) rotation until the next generation of 
  * a custom gate id.
  */
 uint32_t GATEID_Phase(fl_t theta);
+/**
+ * Generic single-qubit rotation gate with 3 Euler angles.
+ * NOTE: These gate IDs are dynamic. The returned ID (uint32_t) is only 
+ * guaranteed to correspond to the U(theta) rotation until the next generation of 
+ * a custom gate id.
+ */
+uint32_t GATEID_U(fl_t theta, fl_t phi, fl_t lambda);
+
 
 
 #endif

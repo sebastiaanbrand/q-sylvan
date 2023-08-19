@@ -417,8 +417,8 @@ class QASMParser {
             if (name == "u0") return "id";
             if (name == "u1") return "p";
             if (name == "cu1") return "cp";
-            if (name == "u") return "u3";
-            if (name == "cu") return "cu3";
+            if (name == "u3") return "u";
+            if (name == "cu3") return "cu";
             if (name == "c3sqrtx") return "c3sx";
             return name;
         }
