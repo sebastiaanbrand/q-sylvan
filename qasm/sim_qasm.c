@@ -41,13 +41,13 @@ QMDD apply_gate(QMDD state, quantum_op_t* gate)
         return qmdd_gate(state, GATEID_sqrtXdag, gate->target);
     }
     else if (strcmp(gate->name, "rx") == 0) {
-        return qmdd_gate(state, GATEID_Rx(gate->angle), gate->target);
+        return qmdd_gate(state, GATEID_Rx(gate->angle[0]), gate->target);
     }
     else if (strcmp(gate->name, "ry") == 0) {
-        return qmdd_gate(state, GATEID_Ry(gate->angle), gate->target);
+        return qmdd_gate(state, GATEID_Ry(gate->angle[0]), gate->target);
     }
     else if (strcmp(gate->name, "rz") == 0) {
-        return qmdd_gate(state, GATEID_Rz(gate->angle), gate->target);
+        return qmdd_gate(state, GATEID_Rz(gate->angle[0]), gate->target);
     }
     else if (strcmp(gate->name, "cx") == 0) {
         return qmdd_cgate(state, GATEID_X, gate->ctrls[0], gate->target);
@@ -64,6 +64,15 @@ QMDD apply_gate(QMDD state, quantum_op_t* gate)
     else if (strcmp(gate->name, "csx") == 0) {
         return qmdd_cgate(state, GATEID_sqrtX, gate->ctrls[0], gate->target);
     }
+    else if (strcmp(gate->name, "crx") == 0) {
+        return qmdd_cgate(state, GATEID_Rx(gate->angle[0]), gate->ctrls[0], gate->target);
+    }
+    else if (strcmp(gate->name, "cry") == 0) {
+        return qmdd_cgate(state, GATEID_Ry(gate->angle[0]), gate->ctrls[0], gate->target);
+    }
+    else if (strcmp(gate->name, "crz") == 0) {
+        return qmdd_cgate(state, GATEID_Rz(gate->angle[0]), gate->ctrls[0], gate->target);
+    }
     else if (strcmp(gate->name, "ccx") == 0) {
         return qmdd_cgate2(state, GATEID_X, gate->ctrls[0], gate->ctrls[1], gate->target);
     }
@@ -78,7 +87,7 @@ QMDD apply_gate(QMDD state, quantum_op_t* gate)
         return qmdd_circuit_swap(state, gate->target, gate->ctrls[0]);
     }
     else {
-        fprintf(stderr, "Gate '%s' not recognized\n", gate->name);
+        fprintf(stderr, "Gate '%s' currently unsupported\n", gate->name);
         return state;
     }
 }

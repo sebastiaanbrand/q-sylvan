@@ -255,7 +255,30 @@ class QASMParser {
                 try {
                     strcpy(op->name, canonical_gate_name(name).c_str());
                     op->target = get_seq_index(qregisters, args[2], stoi(args[3]));
-                    op->angle = eval_math_expression(args[1]);
+                    op->angle[0] = eval_math_expression(args[1]);
+                } catch (...) {
+                    parse_error("Error parsing arguments of gate " + name);
+                }
+            }
+            // singe-qubit gates with two angles
+            else if (name == "u2") {
+                try {
+                    strcpy(op->name, canonical_gate_name(name).c_str());
+                    op->target = get_seq_index(qregisters, args[3], stoi(args[4]));
+                    op->angle[0] = eval_math_expression(args[1]);
+                    op->angle[1] = eval_math_expression(args[2]);
+                } catch (...) {
+                    parse_error("Error parsing arguments of gate " + name);
+                }
+            }
+            // single-qubit gates with three angles
+            else if (name == "u3" || name == "u") {
+                try {
+                    strcpy(op->name, canonical_gate_name(name).c_str());
+                    op->target = get_seq_index(qregisters, args[4], stoi(args[5]));
+                    op->angle[0] = eval_math_expression(args[1]);
+                    op->angle[1] = eval_math_expression(args[2]);
+                    op->angle[2] = eval_math_expression(args[3]);
                 } catch (...) {
                     parse_error("Error parsing arguments of gate " + name);
                 }
@@ -285,10 +308,23 @@ class QASMParser {
             else if (name == "crx" || name == "cry" || name == "crz" || name == "cp" ||
                      name == "cu1") {
                 try {
-                    strcpy(op->name, (canonical_gate_name(name).substr(1).c_str()));
+                    strcpy(op->name, canonical_gate_name(name).c_str());
                     op->target = get_seq_index(qregisters, args[4], stoi(args[5]));
                     op->ctrls[0] = get_seq_index(qregisters, args[2], stoi(args[3]));
-                    op->angle = eval_math_expression(args[1]);
+                    op->angle[0] = eval_math_expression(args[1]);
+                } catch (...) {
+                    parse_error("Error parsing arguments of gate " + name);
+                }
+            }
+            // two-qubit controlled gates with three angles
+            else if (name == "cu3" || name == "cu") {
+                try {
+                    strcpy(op->name, canonical_gate_name(name).c_str());
+                    op->target = get_seq_index(qregisters, args[6], stoi(args[7]));
+                    op->ctrls[0] = get_seq_index(qregisters, args[4], stoi(args[5]));
+                    op->angle[0] = eval_math_expression(args[1]);
+                    op->angle[1] = eval_math_expression(args[2]);
+                    op->angle[2] = eval_math_expression(args[3]);
                 } catch (...) {
                     parse_error("Error parsing arguments of gate " + name);
                 }
@@ -381,6 +417,8 @@ class QASMParser {
             if (name == "u0") return "id";
             if (name == "u1") return "p";
             if (name == "cu1") return "cp";
+            if (name == "u") return "u3";
+            if (name == "cu") return "cu3";
             if (name == "c3sqrtx") return "c3sx";
             return name;
         }
@@ -413,8 +451,10 @@ void print_quantum_op(quantum_op_t* op)
     }
     else if (op->type == op_gate) {
         printf("%s", op->name);
-        if (op->angle != 0.0) {
-            printf("_%lf", op->angle);
+        for (int i = 0; i < 3; i++) {
+            if (op->angle[i] != 0.0) {
+                printf("_%lf", op->angle[i]);
+            }
         }
         printf("(%d", op->target);
         if (op->ctrls[0] >= 0) {

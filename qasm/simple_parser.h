@@ -12,7 +12,7 @@ typedef enum operation_type {
 typedef struct quantum_op_s {
     operation_type_t type;
     char name[32];
-    double angle;
+    double angle[3];
     int target;
     int ctrls[3];
     int meas_dest;
