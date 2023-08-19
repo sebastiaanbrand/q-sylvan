@@ -328,6 +328,40 @@ int test_pauli_rotation_gates()
     test_assert(qTest == qRef);
 
 
+    // Phase(theta) gate (similar to Rz(theta) but different global phase)
+    nqubits = 3, t = 1;
+    qInit = qmdd_create_all_zero_state(nqubits);
+    qInit = qmdd_gate(qInit, GATEID_H, t);
+
+    // I gate
+    qRef  = qmdd_gate(qInit, GATEID_I, t);
+    qTest = qmdd_gate(qInit, GATEID_Phase(2.0*pi), t);
+    test_assert(aadd_equivalent(qRef, qTest, nqubits, false, false));
+    test_assert(aadd_equivalent(qRef, qTest, nqubits, true, false));
+    test_assert(qTest == qRef);
+
+    // Z gate
+    qRef  = qmdd_gate(qInit, GATEID_Z, t);
+    qTest = qmdd_gate(qInit, GATEID_Phase(pi), t);
+    test_assert(aadd_equivalent(qRef, qTest, nqubits, false, false));
+    test_assert(aadd_equivalent(qRef, qTest, nqubits, true, false));
+    test_assert(qTest == qRef);
+
+    // S gate
+    qRef  = qmdd_gate(qInit, GATEID_S, t);
+    qTest = qmdd_gate(qInit, GATEID_Phase(pi/2.0), t);
+    test_assert(aadd_equivalent(qRef, qTest, nqubits, false, false));
+    test_assert(aadd_equivalent(qRef, qTest, nqubits, true, false));
+    test_assert(qTest == qRef);
+
+    // T gate
+    qRef  = qmdd_gate(qInit, GATEID_T, t);
+    qTest = qmdd_gate(qInit, GATEID_Phase(pi/4.0), t);
+    test_assert(aadd_equivalent(qRef, qTest, nqubits, false, false));
+    test_assert(aadd_equivalent(qRef, qTest, nqubits, true, false));
+    test_assert(qTest == qRef);
+
+
     // Rx rotations
     nqubits = 3, t = 1;
     qInit = qmdd_create_all_zero_state(nqubits);

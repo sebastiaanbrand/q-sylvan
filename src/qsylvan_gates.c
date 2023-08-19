@@ -79,6 +79,22 @@ GATEID_Ry(fl_t theta)
     return gate_id;
 }
 
+uint32_t
+GATEID_Phase(fl_t theta)
+{
+    // get gate id for this gate
+    uint32_t gate_id = get_custom_gate_id();
+
+    // initialize gate
+    AMP u11;
+    u11 = weight_lookup(cmake_angle(theta, 1));
+    gates[gate_id][0] = AADD_ONE;   gates[gate_id][1] = AADD_ZERO;
+    gates[gate_id][2] = AADD_ZERO;  gates[gate_id][3] = u11;
+
+    // return (temporary) gate_id for this gate
+    return gate_id;
+}
+
 /********************* </dynamic custom rotation gates> ***********************/
 
 

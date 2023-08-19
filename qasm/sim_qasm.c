@@ -49,6 +49,9 @@ QMDD apply_gate(QMDD state, quantum_op_t* gate)
     else if (strcmp(gate->name, "rz") == 0) {
         return qmdd_gate(state, GATEID_Rz(gate->angle[0]), gate->target);
     }
+    else if (strcmp(gate->name, "p") == 0) {
+        return qmdd_gate(state, GATEID_Phase(gate->angle[0]), gate->target);
+    }
     else if (strcmp(gate->name, "cx") == 0) {
         return qmdd_cgate(state, GATEID_X, gate->ctrls[0], gate->target);
     }
@@ -72,6 +75,9 @@ QMDD apply_gate(QMDD state, quantum_op_t* gate)
     }
     else if (strcmp(gate->name, "crz") == 0) {
         return qmdd_cgate(state, GATEID_Rz(gate->angle[0]), gate->ctrls[0], gate->target);
+    }
+    else if (strcmp(gate->name, "cp") == 0) {
+        return qmdd_cgate(state, GATEID_Phase(gate->angle[0]), gate->ctrls[0], gate->target);
     }
     else if (strcmp(gate->name, "ccx") == 0) {
         return qmdd_cgate2(state, GATEID_X, gate->ctrls[0], gate->ctrls[1], gate->target);
