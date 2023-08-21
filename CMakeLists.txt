@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.14)
 
-project(qsylvan  # based on sylvan 1.7.1
-    VERSION 1.1.0
+project(qsylvan  # based on sylvan 1.8.0
+    VERSION 1.2.0
     DESCRIPTION "Sylvan, a parallel decision diagram library"
     HOMEPAGE_URL "https://github.com/trolando/sylvan"
     LANGUAGES C CXX
@@ -12,7 +12,7 @@ include(FetchContent)
 FetchContent_Declare(
     lace
     GIT_REPOSITORY https://github.com/trolando/lace.git
-    GIT_TAG        v1.3.1
+    GIT_TAG        v1.4.0
 )
 FetchContent_MakeAvailable(lace)
 

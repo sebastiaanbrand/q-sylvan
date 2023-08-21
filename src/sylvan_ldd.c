@@ -1848,7 +1848,7 @@ lddmc_member_cube(MDD a, uint32_t* values, size_t count)
     while (1) {
         if (a == lddmc_false) return 0;
         if (a == lddmc_true) return 1;
-        assert(count > 0); // size mismatch
+        if (count <= 0) assert(count > 0); // size mismatch
 
         a = lddmc_follow(a, *values);
         values++;
@@ -1862,7 +1862,7 @@ lddmc_member_cube_copy(MDD a, uint32_t* values, int* copy, size_t count)
     while (1) {
         if (a == lddmc_false) return 0;
         if (a == lddmc_true) return 1;
-        assert(count > 0); // size mismatch
+        if (count <= 0) assert(count > 0); // size mismatch
 
         if (*copy) a = lddmc_followcopy(a);
         else a = lddmc_follow(a, *values);
@@ -2449,7 +2449,7 @@ static avl_node_t *lddmc_ser_set = NULL;
 static avl_node_t *lddmc_ser_reversed_set = NULL;
 
 // Start counting (assigning numbers to MDDs) at 2
-static volatile size_t lddmc_ser_counter = 2;
+static size_t lddmc_ser_counter = 2;
 static size_t lddmc_ser_done = 0;
 
 // Given a MDD, assign unique numbers to all nodes

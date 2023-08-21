@@ -841,7 +841,7 @@ qmdd_measure_q0(QMDD qmdd, BDDVAR nvars, int *m, double *p)
     }
 
     // flip a coin
-    float rnd = ((float)rand())/RAND_MAX;
+    float rnd = ((float)rand())/((float)RAND_MAX);
     *m = (rnd < prob_low) ? 0 : 1;
     *p = prob_low;
 
@@ -908,7 +908,7 @@ qmdd_measure_all(QMDD qmdd, BDDVAR n, bool* ms, double *p)
         }
 
         // flip a coin
-        float rnd = ((float)rand())/RAND_MAX;
+        float rnd = ((float)rand())/((float)RAND_MAX);
         ms[k] = (rnd < prob_low) ? 0 : 1;
 
         // Get next edge
@@ -1009,7 +1009,7 @@ qmdd_amp_from_prob(double a)
     complex_t c;
     c.r = flt_sqrt(a);
     c.i = 0;
-    return weight_lookup(c);
+    return weight_lookup(&c);
 }
 
 /**********************</Measurements and probabilities>***********************/

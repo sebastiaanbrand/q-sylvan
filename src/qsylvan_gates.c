@@ -1,5 +1,6 @@
 #include <qsylvan_gates.h>
 #include <sylvan_int.h>
+#include <sylvan_edge_weights_complex.h>
 
 
 static long double Pi;    // set value of global Pi
@@ -30,8 +31,8 @@ GATEID_Rz(fl_t theta)
 
     // initialize gate
     AMP u00, u11;
-    u00 = weight_lookup(cmake_angle(-theta/2.0, 1));
-    u11 = weight_lookup(cmake_angle(theta/2.0, 1));
+    u00 = complex_lookup_angle(-theta/2.0, 1);
+    u11 = complex_lookup_angle(theta/2.0, 1);
     gates[gate_id][0] = u00;    gates[gate_id][1] = AADD_ZERO;
     gates[gate_id][2] = AADD_ZERO; gates[gate_id][3] = u11;
 
@@ -39,7 +40,6 @@ GATEID_Rz(fl_t theta)
     return gate_id;
 }
 
-// TODO: add GATEID_Phase(fl_t a) (global phase diff with Rz)
 
 uint32_t
 GATEID_Rx(fl_t theta)
@@ -49,10 +49,10 @@ GATEID_Rx(fl_t theta)
 
     // initialize gate
     AMP u00, u01, u10, u11;
-    u00 = weight_lookup(cmake(flt_cos(theta/2.0), 0.0));
-    u01 = weight_lookup(cmake(0.0, -flt_sin(theta/2.0)));
-    u10 = weight_lookup(cmake(0.0, -flt_sin(theta/2.0)));
-    u11 = weight_lookup(cmake(flt_cos(theta/2.0), 0.0));
+    u00 = complex_lookup(flt_cos(theta/2.0), 0.0);
+    u01 = complex_lookup(0.0, -flt_sin(theta/2.0));
+    u10 = complex_lookup(0.0, -flt_sin(theta/2.0));
+    u11 = complex_lookup(flt_cos(theta/2.0), 0.0);
     gates[gate_id][0] = u00; gates[gate_id][1] = u01;
     gates[gate_id][2] = u10; gates[gate_id][3] = u11;
 
@@ -68,10 +68,10 @@ GATEID_Ry(fl_t theta)
 
     // initialize gate
     AMP u00, u01, u10, u11;
-    u00 = weight_lookup(cmake(flt_cos(theta/2.0),  0.0));
-    u01 = weight_lookup(cmake(-flt_sin(theta/2.0), 0.0));
-    u10 = weight_lookup(cmake(flt_sin(theta/2.0),  0.0));
-    u11 = weight_lookup(cmake(flt_cos(theta/2.0),  0.0));
+    u00 = complex_lookup(flt_cos(theta/2.0),  0.0);
+    u01 = complex_lookup(-flt_sin(theta/2.0), 0.0);
+    u10 = complex_lookup(flt_sin(theta/2.0),  0.0);
+    u11 = complex_lookup(flt_cos(theta/2.0),  0.0);
     gates[gate_id][0] = u00; gates[gate_id][1] = u01;
     gates[gate_id][2] = u10; gates[gate_id][3] = u11;
 
@@ -87,7 +87,7 @@ GATEID_Phase(fl_t theta)
 
     // initialize gate
     AMP u11;
-    u11 = weight_lookup(cmake_angle(theta, 1));
+    u11 = complex_lookup_angle(theta, 1);
     gates[gate_id][0] = AADD_ONE;   gates[gate_id][1] = AADD_ZERO;
     gates[gate_id][2] = AADD_ZERO;  gates[gate_id][3] = u11;
 
@@ -102,11 +102,15 @@ GATEID_U(fl_t theta, fl_t phi, fl_t lambda)
     uint32_t gate_id = get_custom_gate_id();
 
     // initialize gate
+    complex_t tmp;
     AMP u00, u01, u10, u11;
-    u00 = weight_lookup(                                cmake( flt_cos(theta/2.0), 0));
-    u01 = weight_lookup(cmul(cmake_angle(lambda,1),     cmake(-flt_sin(theta/2.0), 0)));
-    u10 = weight_lookup(cmul(cmake_angle(phi,1),        cmake( flt_sin(theta/2.0), 0)));
-    u11 = weight_lookup(cmul(cmake_angle(phi+lambda,1), cmake( flt_cos(theta/2.0), 0)));
+    u00 = complex_lookup(flt_cos(theta/2.0), 0);
+    tmp = cmul(cmake_angle(lambda,1), cmake(-flt_sin(theta/2.0), 0));
+    u01 = complex_lookup(tmp.r, tmp.i);
+    tmp = cmul(cmake_angle(phi,1), cmake( flt_sin(theta/2.0), 0));
+    u10 = complex_lookup(tmp.r, tmp.i);
+    tmp = cmul(cmake_angle(phi+lambda,1), cmake( flt_cos(theta/2.0), 0));
+    u11 = complex_lookup(tmp.r, tmp.i);
     gates[gate_id][0] = u00; gates[gate_id][1] = u01;
     gates[gate_id][2] = u10; gates[gate_id][3] = u11;
 
@@ -136,48 +140,48 @@ qmdd_gates_init()
     gates[k][2] = AADD_ONE;  gates[k][3] = AADD_ZERO;
 
     k = GATEID_Y;
-    gates[k][0] = AADD_ZERO; gates[k][1] = weight_lookup(cmake(0.0, -1.0));
-    gates[k][2] = weight_lookup(cmake(0.0, 1.0));  gates[k][3] = AADD_ZERO;
+    gates[k][0] = AADD_ZERO; gates[k][1] = complex_lookup(0.0, -1.0);
+    gates[k][2] = complex_lookup(0.0, 1.0);  gates[k][3] = AADD_ZERO;
 
     k = GATEID_Z;
     gates[k][0] = AADD_ONE;  gates[k][1] = AADD_ZERO;
     gates[k][2] = AADD_ZERO; gates[k][3] = AADD_MIN_ONE;
 
     k = GATEID_H;
-    gates[k][0] = gates[k][1] = gates[k][2] = weight_lookup(cmake(1.0/flt_sqrt(2.0),0));
-    gates[k][3] = weight_lookup(cmake(-1.0/flt_sqrt(2.0),0));
+    gates[k][0] = gates[k][1] = gates[k][2] = complex_lookup(1.0/flt_sqrt(2.0),0);
+    gates[k][3] = complex_lookup(-1.0/flt_sqrt(2.0),0);
 
     k = GATEID_S;
     gates[k][0] = AADD_ONE;  gates[k][1] = AADD_ZERO;
-    gates[k][2] = AADD_ZERO; gates[k][3] = weight_lookup(cmake(0.0, 1.0));
+    gates[k][2] = AADD_ZERO; gates[k][3] = complex_lookup(0.0, 1.0);
 
     k = GATEID_Sdag;
     gates[k][0] = AADD_ONE;  gates[k][1] = AADD_ZERO;
-    gates[k][2] = AADD_ZERO; gates[k][3] = weight_lookup(cmake(0.0, -1.0));
+    gates[k][2] = AADD_ZERO; gates[k][3] = complex_lookup(0.0, -1.0);
 
     k = GATEID_T;
     gates[k][0] = AADD_ONE;  gates[k][1] = AADD_ZERO;
-    gates[k][2] = AADD_ZERO; gates[k][3] = weight_lookup(cmake(1.0/flt_sqrt(2.0), 1.0/flt_sqrt(2.0)));
+    gates[k][2] = AADD_ZERO; gates[k][3] = complex_lookup(1.0/flt_sqrt(2.0), 1.0/flt_sqrt(2.0));
 
     k = GATEID_Tdag;
     gates[k][0] = AADD_ONE;  gates[k][1] = AADD_ZERO;
-    gates[k][2] = AADD_ZERO; gates[k][3] = weight_lookup(cmake(1.0/flt_sqrt(2.0), -1.0/flt_sqrt(2.0)));
+    gates[k][2] = AADD_ZERO; gates[k][3] = complex_lookup(1.0/flt_sqrt(2.0), -1.0/flt_sqrt(2.0));
 
     k = GATEID_sqrtX;
-    gates[k][0] = weight_lookup(cmake(0.5, 0.5)); gates[k][1] = weight_lookup(cmake(0.5,-0.5));
-    gates[k][2] = weight_lookup(cmake(0.5,-0.5)); gates[k][3] = weight_lookup(cmake(0.5, 0.5));
+    gates[k][0] = complex_lookup(0.5, 0.5); gates[k][1] = complex_lookup(0.5,-0.5);
+    gates[k][2] = complex_lookup(0.5,-0.5); gates[k][3] = complex_lookup(0.5, 0.5);
 
     k = GATEID_sqrtXdag;
-    gates[k][0] = weight_lookup(cmake(0.5,-0.5)); gates[k][1] = weight_lookup(cmake(0.5, 0.5));
-    gates[k][2] = weight_lookup(cmake(0.5, 0.5)); gates[k][3] = weight_lookup(cmake(0.5,-0.5));
+    gates[k][0] = complex_lookup(0.5,-0.5); gates[k][1] = complex_lookup(0.5, 0.5);
+    gates[k][2] = complex_lookup(0.5, 0.5); gates[k][3] = complex_lookup(0.5,-0.5);
 
     k = GATEID_sqrtY;
-    gates[k][0] = weight_lookup(cmake(0.5, 0.5)); gates[k][1] = weight_lookup(cmake(-0.5,-0.5));
-    gates[k][2] = weight_lookup(cmake(0.5, 0.5)); gates[k][3] = weight_lookup(cmake(0.5, 0.5));
+    gates[k][0] = complex_lookup(0.5, 0.5); gates[k][1] = complex_lookup(-0.5,-0.5);
+    gates[k][2] = complex_lookup(0.5, 0.5); gates[k][3] = complex_lookup(0.5, 0.5);
 
     k = GATEID_sqrtYdag;
-    gates[k][0] = weight_lookup(cmake(0.5,-0.5)); gates[k][1] = weight_lookup(cmake(0.5,-0.5));
-    gates[k][2] = weight_lookup(cmake(-0.5,0.5)); gates[k][3] = weight_lookup(cmake(0.5,-0.5));
+    gates[k][0] = complex_lookup(0.5,-0.5); gates[k][1] = complex_lookup(0.5,-0.5);
+    gates[k][2] = complex_lookup(-0.5,0.5); gates[k][3] = complex_lookup(0.5,-0.5);
 
     qmdd_phase_gates_init(255);
 
@@ -198,13 +202,13 @@ qmdd_phase_gates_init(int n)
         cartesian = cmake_angle(angle, 1);
         gate_id = GATEID_Rk(k);
         gates[gate_id][0] = AADD_ONE;  gates[gate_id][1] = AADD_ZERO;
-        gates[gate_id][2] = AADD_ZERO; gates[gate_id][3] = weight_lookup(cartesian);
+        gates[gate_id][2] = AADD_ZERO; gates[gate_id][3] = weight_lookup(&cartesian);
 
         // backward rotation
         angle = -2*Pi / (fl_t)(1<<k);
         cartesian = cmake_angle(angle, 1);
         gate_id = GATEID_Rk_dag(k);
         gates[gate_id][0] = AADD_ONE;  gates[gate_id][1] = AADD_ZERO;
-        gates[gate_id][2] = AADD_ZERO; gates[gate_id][3] = weight_lookup(cartesian);
+        gates[gate_id][2] = AADD_ZERO; gates[gate_id][3] = weight_lookup(&cartesian);
     }
 }

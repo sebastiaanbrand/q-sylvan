@@ -3,6 +3,7 @@
 #include <time.h>
 
 #include "qsylvan.h"
+#include <sylvan_edge_weights_complex.h>
 #include "test_assert.h"
 
 bool VERBOSE = true;
@@ -93,16 +94,16 @@ int test_cswap_circuit()
     x3[2] = 0; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
     x3[2] = 0; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
     x3[2] = 0; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == weight_lookup(cmake(1.0/flt_sqrt(2.0),0)));
-    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == weight_lookup(cmake(1.0/flt_sqrt(2.0),0)));
+    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
     x3[2] = 1; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
     x3[2] = 1; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
     q = qmdd_ccircuit(q, CIRCID_swap, cs, 1, 2); // control is |+>, expected output: 1/sqrt(2)(|100> + |011>)
     x3[2] = 0; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
     x3[2] = 0; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
     x3[2] = 0; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == weight_lookup(cmake(1.0/flt_sqrt(2.0),0)));
-    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == weight_lookup(cmake(1.0/flt_sqrt(2.0),0)));
+    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
+    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
     x3[2] = 1; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
     x3[2] = 1; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
     x3[2] = 1; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
@@ -115,16 +116,16 @@ int test_cswap_circuit()
     x3[2] = 0; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
     x3[2] = 0; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
     x3[2] = 0; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == weight_lookup(cmake(1.0/flt_sqrt(2.0),0)));
-    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == weight_lookup(cmake(-1.0/flt_sqrt(2.0),0)));
+    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == complex_lookup(-1.0/flt_sqrt(2.0),0));
     x3[2] = 1; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
     x3[2] = 1; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
     q = qmdd_ccircuit(q, CIRCID_swap, cs, 1, 2); // control is |->, expected output: 1/sqrt(2)(|100> - |011>)
     x3[2] = 0; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
     x3[2] = 0; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
     x3[2] = 0; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == weight_lookup(cmake(-1.0/flt_sqrt(2.0),0)));
-    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == weight_lookup(cmake(1.0/flt_sqrt(2.0),0)));
+    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == complex_lookup(-1.0/flt_sqrt(2.0),0));
+    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
     x3[2] = 1; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
     x3[2] = 1; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
     x3[2] = 1; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
@@ -137,16 +138,16 @@ int test_cswap_circuit()
     x3[2] = 0; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
     x3[2] = 0; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
     x3[2] = 0; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == weight_lookup(cmake(1.0/flt_sqrt(2.0),0)));
-    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == weight_lookup(cmake(0,1.0/flt_sqrt(2.0))));
+    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == complex_lookup(0,1.0/flt_sqrt(2.0)));
     x3[2] = 1; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
     x3[2] = 1; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
     q = qmdd_ccircuit(q, CIRCID_swap, cs, 1, 2); // control is |+i>, expected output: 1/sqrt(2)(|100> + i|011>)
     x3[2] = 0; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
     x3[2] = 0; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
     x3[2] = 0; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == weight_lookup(cmake(0,1.0/flt_sqrt(2.0))));
-    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == weight_lookup(cmake(1.0/flt_sqrt(2.0),0)));
+    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == complex_lookup(0,1.0/flt_sqrt(2.0)));
+    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
     x3[2] = 1; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
     x3[2] = 1; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
     x3[2] = 1; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
@@ -348,23 +349,23 @@ int test_measurements()
         q   = qmdd_gate(q, GATEID_H, 0);
         q   = qmdd_gate(q, GATEID_H, 1);
         q   = qmdd_cgate(q,GATEID_Z, 0, 1);
-        x2[1]=0; x2[0]=0; a = aadd_getvalue(q, x2); test_assert(a == weight_lookup(cmake(0.5,0)));
-        x2[1]=0; x2[0]=1; a = aadd_getvalue(q, x2); test_assert(a == weight_lookup(cmake(0.5,0)));
-        x2[1]=1; x2[0]=0; a = aadd_getvalue(q, x2); test_assert(a == weight_lookup(cmake(0.5,0)));
-        x2[1]=1; x2[0]=1; a = aadd_getvalue(q, x2); test_assert(a == weight_lookup(cmake(-0.5,0)));
+        x2[1]=0; x2[0]=0; a = aadd_getvalue(q, x2); test_assert(a == complex_lookup(0.5,0));
+        x2[1]=0; x2[0]=1; a = aadd_getvalue(q, x2); test_assert(a == complex_lookup(0.5,0));
+        x2[1]=1; x2[0]=0; a = aadd_getvalue(q, x2); test_assert(a == complex_lookup(0.5,0));
+        x2[1]=1; x2[0]=1; a = aadd_getvalue(q, x2); test_assert(a == complex_lookup(-0.5,0));
         qPM = qmdd_measure_qubit(q, 0, 2, &m, &prob);
         test_assert(flt_abs(prob - 0.5) < cmap_get_tolerance());
         if (m == 0) { // expect 1/sqrt(2)(|00> + |10>)
-            x2[1]=0; x2[0]=0; a = aadd_getvalue(qPM, x2); test_assert(a == weight_lookup(cmake(1.0/flt_sqrt(2.0),0)));
+            x2[1]=0; x2[0]=0; a = aadd_getvalue(qPM, x2); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
             x2[1]=0; x2[0]=1; a = aadd_getvalue(qPM, x2); test_assert(a == AADD_ZERO);
-            x2[1]=1; x2[0]=0; a = aadd_getvalue(qPM, x2); test_assert(a == weight_lookup(cmake(1.0/flt_sqrt(2.0),0)));
+            x2[1]=1; x2[0]=0; a = aadd_getvalue(qPM, x2); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
             x2[1]=1; x2[0]=1; a = aadd_getvalue(qPM, x2); test_assert(a == AADD_ZERO);
         }
         if (m == 1) { // expect 1/sqrt(2)(|01> - |11>)
             x2[1]=0; x2[0]=0; a = aadd_getvalue(qPM, x2); test_assert(a == AADD_ZERO);
-            x2[1]=0; x2[0]=1; a = aadd_getvalue(qPM, x2); test_assert(a == weight_lookup(cmake(1.0/flt_sqrt(2.0),0)));
+            x2[1]=0; x2[0]=1; a = aadd_getvalue(qPM, x2); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
             x2[1]=1; x2[0]=0; a = aadd_getvalue(qPM, x2); test_assert(a == AADD_ZERO);
-            x2[1]=1; x2[0]=1; a = aadd_getvalue(qPM, x2); test_assert(a == weight_lookup(cmake(-1.0/flt_sqrt(2.0),0)));
+            x2[1]=1; x2[0]=1; a = aadd_getvalue(qPM, x2); test_assert(a == complex_lookup(-1.0/flt_sqrt(2.0),0));
         }
     }
 

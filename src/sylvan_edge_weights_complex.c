@@ -26,10 +26,10 @@ comp_cart_to_polar(fl_t r, fl_t i, fl_t *magnitude, fl_t *angle)
 
 /*****************<Implementation of edge_weights interface>*******************/
 
-weight_t
+complex_t *
 weight_complex_malloc()
 {
-    weight_t res = malloc(sizeof(complex_t));
+    complex_t *res = malloc(sizeof(complex_t));
     return res;
 }
 
@@ -67,9 +67,9 @@ _weight_complex_lookup_ptr(complex_t *a, void *wgt_store)
 }
 
 AADD_WGT
-weight_complex_lookup(complex_t a)
+weight_complex_lookup(complex_t *a)
 {
-    return _weight_complex_lookup_ptr(&a, wgt_storage);
+    return _weight_complex_lookup_ptr(a, wgt_storage);
 }
 
 void
@@ -203,9 +203,9 @@ wgt_complex_norm_L2(AADD_WGT *low, AADD_WGT *high)
     complex_t c_norm = cmake_angle(theta_a, _norm);
 
     // return
-    *low  = weight_complex_lookup(a);
-    *high = weight_complex_lookup(b);
-    return weight_complex_lookup(c_norm);   
+    *low  = weight_complex_lookup(&a);
+    *high = weight_complex_lookup(&b);
+    return weight_complex_lookup(&c_norm);
 }
 
 AADD_WGT
@@ -231,7 +231,8 @@ wgt_complex_get_low_L2normed(AADD_WGT high)
     }
     fl_t a = flt_sqrt(1.0 - mag_b);
 
-    return weight_complex_lookup(cmake(a, 0));
+    complex_t c = cmake(a, 0);
+    return weight_complex_lookup(&c);
 }
 
 void
