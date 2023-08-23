@@ -75,8 +75,8 @@ class QASMParser {
             std::ifstream infile(filepath);
 
             // create (blank) quantum circuit
-            circuit = (quantum_circuit_t *) malloc(sizeof(quantum_circuit_t));
-            first_op = (quantum_op_t *) malloc(sizeof(quantum_op_t));
+            circuit = (quantum_circuit_t *) calloc(1, sizeof(quantum_circuit_t));
+            first_op = (quantum_op_t *) calloc(1, sizeof(quantum_op_t));
             first_op->type = op_blank;
             first_op->next = NULL;
             circuit->operations = first_op;
@@ -213,9 +213,11 @@ class QASMParser {
 
             if (type == "qreg") {
                 qregisters.push_back({args[1], stoi(args[2])});
+                circuit->qreg_size += stoi(args[2]);
             }
             else if (type == "creg") {
                 cregisters.push_back({args[1], stoi(args[2])});
+                circuit->creg_size += stoi(args[2]);
             }
             else {
                 parse_error("Unexpected register type '" + type + "'");
