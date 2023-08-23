@@ -338,6 +338,7 @@ class QASMParser {
                     op->target = get_seq_index(qregisters, args[5], stoi(args[6]));
                     op->ctrls[0] = get_seq_index(qregisters, args[1], stoi(args[2]));
                     op->ctrls[1] = get_seq_index(qregisters, args[3], stoi(args[4]));
+                    sort_controls(op);
                 } catch (...) {
                     parse_error("Error parsing arguments of gate " + name);
                 }
@@ -350,6 +351,7 @@ class QASMParser {
                     op->ctrls[0] = get_seq_index(qregisters, args[1], stoi(args[2]));
                     op->ctrls[1] = get_seq_index(qregisters, args[3], stoi(args[4]));
                     op->ctrls[2] = get_seq_index(qregisters, args[5], stoi(args[6]));
+                    sort_controls(op);
                 } catch (...) {
                     parse_error("Error parsing arguments of gate " + name);
                 }
@@ -414,6 +416,21 @@ class QASMParser {
         }
 
 
+        void sort_controls(quantum_op_t *gate)
+        {
+            std::vector<int> controls;
+            for (int j = 0; j < 3; j++) {
+                if (gate->ctrls[j] != -1) {
+                    controls.push_back(gate->ctrls[j]);
+                }
+            }
+            sort(controls.begin(), controls.end());
+            for (int j = 0; j < controls.size(); j++) {
+                gate->ctrls[j] = controls[j];
+            }
+        }
+
+
         std::string canonical_gate_name(std::string name)
         {
             if (name == "u0") return "id";
@@ -467,6 +484,26 @@ void print_quantum_op(quantum_op_t* op)
     }
 }
 
+void order_cphase_gates(quantum_circuit_t *circuit)
+{
+    // Since for any controlled phase gate (cz, cp, crz) cp(c,t) = c(t,c),
+    // change the order such that c < t
+    quantum_op_t* head = circuit->operations;
+    while (head != NULL) {
+        if (head->type == op_gate) {
+            std::string name = std::string(head->name);
+            if (name == "cz" || name == "cp" || name == "crz") {
+                if (head->ctrls[0] > head->target) {
+                    int tmp = head->target;
+                    head->target = head->ctrls[0];
+                    head->ctrls[0] = tmp;
+                }
+            }
+        }
+        head = head->next;
+    }
+}
+
 
 void reverse_order(quantum_circuit_t *circuit)
 {
@@ -488,6 +525,7 @@ void reverse_order(quantum_circuit_t *circuit)
 
 void optimize_order(quantum_circuit_t *circuit)
 {
+    order_cphase_gates(circuit); // order phase gates before counting
     quantum_op_t* head = circuit->operations;
     int ctrls_below_target = 0;
     int ctrls_above_target = 0;
@@ -503,6 +541,7 @@ void optimize_order(quantum_circuit_t *circuit)
     }
     if (ctrls_below_target > ctrls_above_target) {
         reverse_order(circuit);
+        order_cphase_gates(circuit); // re-order phase gates
     }
 }
 
