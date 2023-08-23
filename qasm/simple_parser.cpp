@@ -38,6 +38,29 @@ std::vector<std::string> split(std::string to_split, std::string delims)
     return result;
 }
 
+void sort_controls(quantum_op_t *gate)
+{
+    std::vector<int> controls;
+    for (int j = 0; j < 3; j++) {
+        if (gate->ctrls[j] != -1) {
+            controls.push_back(gate->ctrls[j]);
+        }
+    }
+    sort(controls.begin(), controls.end());
+    for (int j = 0; j < controls.size(); j++) {
+        gate->ctrls[j] = controls[j];
+    }
+}
+
+
+void sort_targets(quantum_op_t *gate)
+{
+    int t1 = std::min(gate->targets[0], gate->targets[1]);
+    int t2 = std::max(gate->targets[0], gate->targets[1]);
+    gate->targets[0] = t1;
+    gate->targets[1] = t2;
+}
+
 
 class QASMParser {
 
@@ -232,6 +255,7 @@ class QASMParser {
             quantum_op_t* op = (quantum_op_t*) calloc(1, sizeof(quantum_op_t));
             op->type = op_gate;
             op->next = NULL;
+            op->targets[0] = op->targets[1] = -1;
             op->ctrls[0] = op->ctrls [1] = op->ctrls[2] = -1;
             last_op->next = op;
             last_op = op;
@@ -242,7 +266,7 @@ class QASMParser {
                 name == "tdg" || name == "sx" || name == "sxdg") {
                 try {
                     strcpy(op->name, canonical_gate_name(name).c_str());
-                    op->target = get_seq_index(qregisters, args[1], stoi(args[2]));
+                    op->targets[0] = get_seq_index(qregisters, args[1], stoi(args[2]));
                 } catch (...) {
                     parse_error("Error parsing arguments of gate " + name);
                 }
@@ -252,7 +276,7 @@ class QASMParser {
                      name == "u1" || name == "p") {
                 try {
                     strcpy(op->name, canonical_gate_name(name).c_str());
-                    op->target = get_seq_index(qregisters, args[2], stoi(args[3]));
+                    op->targets[0] = get_seq_index(qregisters, args[2], stoi(args[3]));
                     op->angle[0] = eval_math_expression(args[1]);
                 } catch (...) {
                     parse_error("Error parsing arguments of gate " + name);
@@ -262,7 +286,7 @@ class QASMParser {
             else if (name == "u2") {
                 try {
                     strcpy(op->name, canonical_gate_name(name).c_str());
-                    op->target = get_seq_index(qregisters, args[3], stoi(args[4]));
+                    op->targets[0] = get_seq_index(qregisters, args[3], stoi(args[4]));
                     op->angle[0] = eval_math_expression(args[1]);
                     op->angle[1] = eval_math_expression(args[2]);
                 } catch (...) {
@@ -273,7 +297,7 @@ class QASMParser {
             else if (name == "u3" || name == "u") {
                 try {
                     strcpy(op->name, canonical_gate_name(name).c_str());
-                    op->target = get_seq_index(qregisters, args[4], stoi(args[5]));
+                    op->targets[0] = get_seq_index(qregisters, args[4], stoi(args[5]));
                     op->angle[0] = eval_math_expression(args[1]);
                     op->angle[1] = eval_math_expression(args[2]);
                     op->angle[2] = eval_math_expression(args[3]);
@@ -286,7 +310,7 @@ class QASMParser {
                      name == "csx") {
                 try {
                     strcpy(op->name, name.c_str());
-                    op->target = get_seq_index(qregisters, args[3], stoi(args[4]));
+                    op->targets[0] = get_seq_index(qregisters, args[3], stoi(args[4]));
                     op->ctrls[0] = get_seq_index(qregisters, args[1], stoi(args[2]));
                 } catch (...) {
                     parse_error("Error parsing arguments of gate " + name);
@@ -296,18 +320,19 @@ class QASMParser {
             else if (name == "swap") {
                 try {
                     strcpy(op->name, name.c_str());
-                    op->target = get_seq_index(qregisters, args[3], stoi(args[4]));
-                    op->ctrls[0] = get_seq_index(qregisters, args[1], stoi(args[2]));
+                    op->targets[0] = get_seq_index(qregisters, args[3], stoi(args[4]));
+                    op->targets[1] = get_seq_index(qregisters, args[1], stoi(args[2]));
+                    sort_targets(op);
                 } catch (...) {
                     parse_error("Error parsing arguments of gate " + name);
                 }
             }
-            // two-qubit gates with single angle
+            // two-qubit control gates with single angle
             else if (name == "crx" || name == "cry" || name == "crz" || name == "cp" ||
-                     name == "cu1" || name == "rzz" ) {
+                     name == "cu1") {
                 try {
                     strcpy(op->name, canonical_gate_name(name).c_str());
-                    op->target = get_seq_index(qregisters, args[4], stoi(args[5]));
+                    op->targets[0] = get_seq_index(qregisters, args[4], stoi(args[5]));
                     op->ctrls[0] = get_seq_index(qregisters, args[2], stoi(args[3]));
                     op->angle[0] = eval_math_expression(args[1]);
                 } catch (...) {
@@ -318,7 +343,7 @@ class QASMParser {
             else if (name == "cu3" || name == "cu") {
                 try {
                     strcpy(op->name, canonical_gate_name(name).c_str());
-                    op->target = get_seq_index(qregisters, args[6], stoi(args[7]));
+                    op->targets[0] = get_seq_index(qregisters, args[6], stoi(args[7]));
                     op->ctrls[0] = get_seq_index(qregisters, args[4], stoi(args[5]));
                     op->angle[0] = eval_math_expression(args[1]);
                     op->angle[1] = eval_math_expression(args[2]);
@@ -327,11 +352,23 @@ class QASMParser {
                     parse_error("Error parsing arguments of gate " + name);
                 }
             }
+            // other two-qubit gate with two targets and a single angle
+            else if (name == "rzz") {
+                try {
+                    strcpy(op->name, canonical_gate_name(name).c_str());
+                    op->targets[0] = get_seq_index(qregisters, args[4], stoi(args[5]));
+                    op->targets[1] = get_seq_index(qregisters, args[2], stoi(args[3]));
+                    op->angle[0] = eval_math_expression(args[1]);
+                    sort_targets(op);
+                } catch (...) {
+                    parse_error("Error parsing arguments of gate " + name);
+                }
+            }
             // three-qubit controlled gates with no additional parameters
             else if (name == "ccx") {
                 try {
                     strcpy(op->name, name.c_str());
-                    op->target = get_seq_index(qregisters, args[5], stoi(args[6]));
+                    op->targets[0] = get_seq_index(qregisters, args[5], stoi(args[6]));
                     op->ctrls[0] = get_seq_index(qregisters, args[1], stoi(args[2]));
                     op->ctrls[1] = get_seq_index(qregisters, args[3], stoi(args[4]));
                     sort_controls(op);
@@ -343,7 +380,7 @@ class QASMParser {
             else if (name == "c3x" || name == "c3sx" || name == "c3sqrtx") {
                 try {
                     strcpy(op->name, canonical_gate_name(name).c_str());
-                    op->target = get_seq_index(qregisters, args[7], stoi(args[8]));
+                    op->targets[0] = get_seq_index(qregisters, args[7], stoi(args[8]));
                     op->ctrls[0] = get_seq_index(qregisters, args[1], stoi(args[2]));
                     op->ctrls[1] = get_seq_index(qregisters, args[3], stoi(args[4]));
                     op->ctrls[2] = get_seq_index(qregisters, args[5], stoi(args[6]));
@@ -374,7 +411,7 @@ class QASMParser {
             quantum_op_t* op = (quantum_op_t*) malloc(sizeof(quantum_op_t));
             op->type = op_measurement;
             strcpy(op->name, "measure");
-            op->target = get_seq_index(qregisters, args[1], stoi(args[2]));
+            op->targets[0] = get_seq_index(qregisters, args[1], stoi(args[2]));
             op->meas_dest = -1;
             if (args.size() >= 5) {
                 op->meas_dest = get_seq_index(cregisters, args[4], stoi(args[5]));
@@ -441,25 +478,10 @@ quantum_circuit_t* parse_qasm_file(char *filepath)
 }
 
 
-void sort_controls(quantum_op_t *gate)
-{
-    std::vector<int> controls;
-    for (int j = 0; j < 3; j++) {
-        if (gate->ctrls[j] != -1) {
-            controls.push_back(gate->ctrls[j]);
-        }
-    }
-    sort(controls.begin(), controls.end());
-    for (int j = 0; j < controls.size(); j++) {
-        gate->ctrls[j] = controls[j];
-    }
-}
-
-
 void print_quantum_op(quantum_op_t* op)
 {
     if (op->type == op_measurement) {
-        printf("measure(q%d)", op->target); 
+        printf("measure(q%d)", op->targets[0]); 
         if (op->meas_dest >= 0) { 
             printf(" -> c%d", op->meas_dest);
         }
@@ -471,7 +493,7 @@ void print_quantum_op(quantum_op_t* op)
                 printf("_%lf", op->angle[i]);
             }
         }
-        printf("(%d", op->target);
+        printf("(%d", op->targets[0]);
         if (op->ctrls[0] >= 0) {
             printf(",c=%d,%d,%d)", op->ctrls[0], op->ctrls[1], op->ctrls[2]);
         } else {
@@ -488,8 +510,9 @@ quantum_op_t* _get_swap_op(int q1, int q2)
     op->next = NULL;
     op->ctrls[0] = op->ctrls [1] = op->ctrls[2] = -1;
     strcpy(op->name, "swap");
-    op->target = q1;
-    op->ctrls[0] = q2;
+    op->targets[0] = q1;
+    op->targets[1] = q2;
+    sort_targets(op);
     return op;
 }
 
@@ -514,7 +537,7 @@ void insert_required_swaps(quantum_circuit_t *circuit)
             if (head->ctrls[j] == -1) {
                 break;
             }
-            if (head->ctrls[j] > head->target) {
+            if (head->ctrls[j] > head->targets[0]) {
                 should_swap = true;
             }
             if (head->ctrls[j] > head->ctrls[c_index]) {
@@ -525,15 +548,15 @@ void insert_required_swaps(quantum_circuit_t *circuit)
         // If target is not below some controls, swap target with lowest control
         if (should_swap) {
             // swap control and target
-            int tmp = head->target;
-            head->target = head->ctrls[c_index];
+            int tmp = head->targets[0];
+            head->targets[0] = head->ctrls[c_index];
             head->ctrls[c_index] = tmp;
             sort_controls(head);
 
             // insert: prev -> swap1(t,c) -> head -> swap2(t,c) -> next
             quantum_op_t *next = head->next;
-            quantum_op_t *swp1 = _get_swap_op(head->target, head->ctrls[c_index]);
-            quantum_op_t *swp2 = _get_swap_op(head->target, head->ctrls[c_index]);
+            quantum_op_t *swp1 = _get_swap_op(head->targets[0], head->ctrls[c_index]);
+            quantum_op_t *swp2 = _get_swap_op(head->targets[0], head->ctrls[c_index]);
             prev->next = swp1;
             swp1->next = head;
             head->next = swp2;
@@ -558,9 +581,9 @@ void order_cphase_gates(quantum_circuit_t *circuit)
         if (head->type == op_gate) {
             std::string name = std::string(head->name);
             if (name == "cz" || name == "cp" || name == "crz") {
-                if (head->ctrls[0] > head->target) {
-                    int tmp = head->target;
-                    head->target = head->ctrls[0];
+                if (head->ctrls[0] > head->targets[0]) {
+                    int tmp = head->targets[0];
+                    head->targets[0] = head->ctrls[0];
                     head->ctrls[0] = tmp;
                 }
             }
@@ -576,7 +599,7 @@ void reverse_order(quantum_circuit_t *circuit)
     quantum_op_t* head = circuit->operations;
     while (head != NULL) {
         if (head->type == op_gate || head->type == op_measurement) {
-            head->target = (circuit->qreg_size - 1) - head->target;
+            head->targets[0] = (circuit->qreg_size - 1) - head->targets[0];
             for (int j = 0; j < 3; j++) {
                 if (head->ctrls[j] != -1) {
                     head->ctrls[j] = (circuit->qreg_size - 1) - head->ctrls[j];
@@ -596,7 +619,7 @@ void optimize_qubit_order(quantum_circuit_t *circuit)
     int ctrls_above_target = 0;
     while (head != NULL) {
         if (head->type == op_gate && head->ctrls[0] != -1) {
-            if (head->ctrls[0] > head->target) {
+            if (head->ctrls[0] > head->targets[0]) {
                 ctrls_below_target += 1;
             } else {
                 ctrls_above_target += 1;

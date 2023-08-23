@@ -13,7 +13,7 @@ typedef struct quantum_op_s {
     operation_type_t type;
     char name[32];
     double angle[3];
-    int target;
+    int targets[2];
     int ctrls[3];
     int meas_dest;
     struct quantum_op_s* next;
@@ -36,11 +36,6 @@ quantum_circuit_t* parse_qasm_file(char *filepath);
  * Invert qubit order if that yields less controls below target qubits.
 */
 void optimize_qubit_order(quantum_circuit_t *circuit);
-
-/**
- * Sort the control qubits of given gate.
-*/
-void sort_controls(quantum_op_t* gate);
 
 /**
  * free()'s all quantum_ops from and including 'first'.

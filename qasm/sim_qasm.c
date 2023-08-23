@@ -11,102 +11,102 @@ QMDD apply_gate(QMDD state, quantum_op_t* gate)
         return state;
     }
     else if (strcmp(gate->name, "x") == 0) {
-        return qmdd_gate(state, GATEID_X, gate->target);
+        return qmdd_gate(state, GATEID_X, gate->targets[0]);
     }
     else if (strcmp(gate->name, "y") == 0) {
-        return qmdd_gate(state, GATEID_Y, gate->target);
+        return qmdd_gate(state, GATEID_Y, gate->targets[0]);
     }
     else if (strcmp(gate->name, "z") == 0) {
-        return qmdd_gate(state, GATEID_Z, gate->target);
+        return qmdd_gate(state, GATEID_Z, gate->targets[0]);
     }
     else if (strcmp(gate->name, "h") == 0) {
-        return qmdd_gate(state, GATEID_H, gate->target);
+        return qmdd_gate(state, GATEID_H, gate->targets[0]);
     }
     else if (strcmp(gate->name, "s") == 0) {
-        return qmdd_gate(state, GATEID_S, gate->target);
+        return qmdd_gate(state, GATEID_S, gate->targets[0]);
     }
     else if (strcmp(gate->name, "sdg") == 0) {
-        return qmdd_gate(state, GATEID_Sdag, gate->target);
+        return qmdd_gate(state, GATEID_Sdag, gate->targets[0]);
     }
     else if (strcmp(gate->name, "t") == 0) {
-        return qmdd_gate(state, GATEID_T, gate->target);
+        return qmdd_gate(state, GATEID_T, gate->targets[0]);
     }
     else if (strcmp(gate->name, "tdg") == 0) {
-        return qmdd_gate(state, GATEID_Tdag, gate->target);
+        return qmdd_gate(state, GATEID_Tdag, gate->targets[0]);
     }
     else if (strcmp(gate->name, "sx") == 0) {
-        return qmdd_gate(state, GATEID_sqrtX, gate->target);
+        return qmdd_gate(state, GATEID_sqrtX, gate->targets[0]);
     }
     else if (strcmp(gate->name, "sxdg") == 0) {
-        return qmdd_gate(state, GATEID_sqrtXdag, gate->target);
+        return qmdd_gate(state, GATEID_sqrtXdag, gate->targets[0]);
     }
     else if (strcmp(gate->name, "rx") == 0) {
-        return qmdd_gate(state, GATEID_Rx(gate->angle[0]), gate->target);
+        return qmdd_gate(state, GATEID_Rx(gate->angle[0]), gate->targets[0]);
     }
     else if (strcmp(gate->name, "ry") == 0) {
-        return qmdd_gate(state, GATEID_Ry(gate->angle[0]), gate->target);
+        return qmdd_gate(state, GATEID_Ry(gate->angle[0]), gate->targets[0]);
     }
     else if (strcmp(gate->name, "rz") == 0) {
-        return qmdd_gate(state, GATEID_Rz(gate->angle[0]), gate->target);
+        return qmdd_gate(state, GATEID_Rz(gate->angle[0]), gate->targets[0]);
     }
     else if (strcmp(gate->name, "p") == 0) {
-        return qmdd_gate(state, GATEID_Phase(gate->angle[0]), gate->target);
+        return qmdd_gate(state, GATEID_Phase(gate->angle[0]), gate->targets[0]);
     }
     else if (strcmp(gate->name, "u2") == 0) {
         fl_t pi_over_2 = flt_acos(0.0);
-        return qmdd_gate(state, GATEID_U(pi_over_2, gate->angle[0], gate->angle[1]), gate->target);
+        return qmdd_gate(state, GATEID_U(pi_over_2, gate->angle[0], gate->angle[1]), gate->targets[0]);
     }
     else if (strcmp(gate->name, "u") == 0) {
-        return qmdd_gate(state, GATEID_U(gate->angle[0], gate->angle[1], gate->angle[2]), gate->target);
+        return qmdd_gate(state, GATEID_U(gate->angle[0], gate->angle[1], gate->angle[2]), gate->targets[0]);
     }
     else if (strcmp(gate->name, "cx") == 0) {
-        return qmdd_cgate(state, GATEID_X, gate->ctrls[0], gate->target);
+        return qmdd_cgate(state, GATEID_X, gate->ctrls[0], gate->targets[0]);
     }
     else if (strcmp(gate->name, "cy") == 0) {
-        return qmdd_cgate(state, GATEID_Y, gate->ctrls[0], gate->target);
+        return qmdd_cgate(state, GATEID_Y, gate->ctrls[0], gate->targets[0]);
     }
     else if (strcmp(gate->name, "cz") == 0) {
-        return qmdd_cgate(state, GATEID_Z, gate->ctrls[0], gate->target);
+        return qmdd_cgate(state, GATEID_Z, gate->ctrls[0], gate->targets[0]);
     }
     else if (strcmp(gate->name, "ch") == 0) {
-        return qmdd_cgate(state, GATEID_H, gate->ctrls[0], gate->target);
+        return qmdd_cgate(state, GATEID_H, gate->ctrls[0], gate->targets[0]);
     }
     else if (strcmp(gate->name, "csx") == 0) {
-        return qmdd_cgate(state, GATEID_sqrtX, gate->ctrls[0], gate->target);
+        return qmdd_cgate(state, GATEID_sqrtX, gate->ctrls[0], gate->targets[0]);
     }
     else if (strcmp(gate->name, "crx") == 0) {
-        return qmdd_cgate(state, GATEID_Rx(gate->angle[0]), gate->ctrls[0], gate->target);
+        return qmdd_cgate(state, GATEID_Rx(gate->angle[0]), gate->ctrls[0], gate->targets[0]);
     }
     else if (strcmp(gate->name, "cry") == 0) {
-        return qmdd_cgate(state, GATEID_Ry(gate->angle[0]), gate->ctrls[0], gate->target);
+        return qmdd_cgate(state, GATEID_Ry(gate->angle[0]), gate->ctrls[0], gate->targets[0]);
     }
     else if (strcmp(gate->name, "crz") == 0) {
-        return qmdd_cgate(state, GATEID_Rz(gate->angle[0]), gate->ctrls[0], gate->target);
+        return qmdd_cgate(state, GATEID_Rz(gate->angle[0]), gate->ctrls[0], gate->targets[0]);
     }
     else if (strcmp(gate->name, "cp") == 0) {
-        return qmdd_cgate(state, GATEID_Phase(gate->angle[0]), gate->ctrls[0], gate->target);
+        return qmdd_cgate(state, GATEID_Phase(gate->angle[0]), gate->ctrls[0], gate->targets[0]);
     }
     else if (strcmp(gate->name, "cu") == 0) {
-        return qmdd_cgate(state, GATEID_U(gate->angle[0], gate->angle[1], gate->angle[2]), gate->ctrls[0], gate->target);
+        return qmdd_cgate(state, GATEID_U(gate->angle[0], gate->angle[1], gate->angle[2]), gate->ctrls[0], gate->targets[0]);
     }
     else if (strcmp(gate->name, "ccx") == 0) {
-        return qmdd_cgate2(state, GATEID_X, gate->ctrls[0], gate->ctrls[1], gate->target);
+        return qmdd_cgate2(state, GATEID_X, gate->ctrls[0], gate->ctrls[1], gate->targets[0]);
     }
     else if (strcmp(gate->name, "c3x") == 0) {
-        return qmdd_cgate3(state, GATEID_X, gate->ctrls[0], gate->ctrls[1], gate->ctrls[2], gate->target);
+        return qmdd_cgate3(state, GATEID_X, gate->ctrls[0], gate->ctrls[1], gate->ctrls[2], gate->targets[0]);
     }
     else if (strcmp(gate->name, "c3sx") == 0) {
-        return qmdd_cgate3(state, GATEID_sqrtX, gate->ctrls[0], gate->ctrls[1], gate->ctrls[2], gate->target);
+        return qmdd_cgate3(state, GATEID_sqrtX, gate->ctrls[0], gate->ctrls[1], gate->ctrls[2], gate->targets[0]);
     }
     else if (strcmp(gate->name, "swap") == 0) {
         // no native SWAP gates in Q-Sylvan
-        return qmdd_circuit_swap(state, gate->target, gate->ctrls[0]);
+        return qmdd_circuit_swap(state, gate->targets[0], gate->targets[1]);
     }
     else if (strcmp(gate->name, "rzz") == 0 ) {
         // no native RZZ gates in Q-Sylvan
-        state = qmdd_cgate(state, GATEID_X, gate->ctrls[0], gate->target);
-        state = qmdd_gate(state, GATEID_Phase(gate->angle[0]), gate->target);
-        state = qmdd_cgate(state, GATEID_X, gate->ctrls[0], gate->target);
+        state = qmdd_cgate(state, GATEID_X, gate->targets[0], gate->targets[1]);
+        state = qmdd_gate(state, GATEID_Phase(gate->angle[0]), gate->targets[1]);
+        state = qmdd_cgate(state, GATEID_X, gate->targets[0], gate->targets[1]);
         return state;
     }
     else {
