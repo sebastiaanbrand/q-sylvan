@@ -135,7 +135,7 @@ void simulate_circuit(quantum_circuit_t* circuit)
 int main(int argc, char *argv[])
 {
     quantum_circuit_t* circuit = parse_qasm_file(argv[1]);
-    optimize_order(circuit);
+    optimize_qubit_order(circuit);
     //print_quantum_circuit(circuit);
     
     // Standard Lace initialization

@@ -35,7 +35,12 @@ quantum_circuit_t* parse_qasm_file(char *filepath);
 /**
  * Invert qubit order if that yields less controls below target qubits.
 */
-void optimize_order(quantum_circuit_t *circuit);
+void optimize_qubit_order(quantum_circuit_t *circuit);
+
+/**
+ * Sort the control qubits of given gate.
+*/
+void sort_controls(quantum_op_t* gate);
 
 /**
  * free()'s all quantum_ops from and including 'first'.

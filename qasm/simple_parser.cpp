@@ -90,8 +90,8 @@ class QASMParser {
             }
 
             // remove (blank) first operation
-            circuit->operations = circuit->operations->next;
-            free(first_op);
+            //circuit->operations = circuit->operations->next;
+            //free(first_op);
 
             return circuit;
         }
@@ -416,21 +416,6 @@ class QASMParser {
         }
 
 
-        void sort_controls(quantum_op_t *gate)
-        {
-            std::vector<int> controls;
-            for (int j = 0; j < 3; j++) {
-                if (gate->ctrls[j] != -1) {
-                    controls.push_back(gate->ctrls[j]);
-                }
-            }
-            sort(controls.begin(), controls.end());
-            for (int j = 0; j < controls.size(); j++) {
-                gate->ctrls[j] = controls[j];
-            }
-        }
-
-
         std::string canonical_gate_name(std::string name)
         {
             if (name == "u0") return "id";
@@ -460,6 +445,21 @@ quantum_circuit_t* parse_qasm_file(char *filepath)
 }
 
 
+void sort_controls(quantum_op_t *gate)
+{
+    std::vector<int> controls;
+    for (int j = 0; j < 3; j++) {
+        if (gate->ctrls[j] != -1) {
+            controls.push_back(gate->ctrls[j]);
+        }
+    }
+    sort(controls.begin(), controls.end());
+    for (int j = 0; j < controls.size(); j++) {
+        gate->ctrls[j] = controls[j];
+    }
+}
+
+
 void print_quantum_op(quantum_op_t* op)
 {
     if (op->type == op_measurement) {
@@ -483,6 +483,75 @@ void print_quantum_op(quantum_op_t* op)
         }
     }
 }
+
+
+quantum_op_t* _get_swap_op(int q1, int q2)
+{
+    quantum_op_t* op = (quantum_op_t*) calloc(1, sizeof(quantum_op_t));
+    op->type = op_gate;
+    op->next = NULL;
+    op->ctrls[0] = op->ctrls [1] = op->ctrls[2] = -1;
+    strcpy(op->name, "swap");
+    op->target = q1;
+    op->ctrls[0] = q2;
+    return op;
+}
+
+
+void insert_required_swaps(quantum_circuit_t *circuit)
+{
+    // For any controlled gate CU(c,t) with c > t (i.e. c below t in the DD), 
+    // replace CU(c,t) with SWAP(c,t)CU(t,c)SWAP(c,t)
+
+    quantum_op_t* head = circuit->operations->next;
+    quantum_op_t* prev = circuit->operations; // first (blank) op always exists
+    while(head != NULL) {
+        if (head->type != op_gate) {
+            head = head->next;
+            continue;
+        }
+
+        // Check if target is below some controls
+        bool should_swap = false;
+        int c_index = 0;
+        for (int j = 0; j < 3; j++) {
+            if (head->ctrls[j] == -1) {
+                break;
+            }
+            if (head->ctrls[j] > head->target) {
+                should_swap = true;
+            }
+            if (head->ctrls[j] > head->ctrls[c_index]) {
+                c_index = j;
+            }
+        }
+
+        // If target is not below some controls, swap target with lowest control
+        if (should_swap) {
+            // swap control and target
+            int tmp = head->target;
+            head->target = head->ctrls[c_index];
+            head->ctrls[c_index] = tmp;
+            sort_controls(head);
+
+            // insert: prev -> swap1(t,c) -> head -> swap2(t,c) -> next
+            quantum_op_t *next = head->next;
+            quantum_op_t *swp1 = _get_swap_op(head->target, head->ctrls[c_index]);
+            quantum_op_t *swp2 = _get_swap_op(head->target, head->ctrls[c_index]);
+            prev->next = swp1;
+            swp1->next = head;
+            head->next = swp2;
+            swp2->next = next;
+
+            prev = head;
+            head = next;
+        } else {
+            prev = head;
+            head = head->next;
+        }
+    }
+}
+
 
 void order_cphase_gates(quantum_circuit_t *circuit)
 {
@@ -523,7 +592,7 @@ void reverse_order(quantum_circuit_t *circuit)
 }
 
 
-void optimize_order(quantum_circuit_t *circuit)
+void optimize_qubit_order(quantum_circuit_t *circuit)
 {
     order_cphase_gates(circuit); // order phase gates before counting
     quantum_op_t* head = circuit->operations;
@@ -541,8 +610,9 @@ void optimize_order(quantum_circuit_t *circuit)
     }
     if (ctrls_below_target > ctrls_above_target) {
         reverse_order(circuit);
-        order_cphase_gates(circuit); // re-order phase gates
+        order_cphase_gates(circuit); // order phase gates again
     }
+    insert_required_swaps(circuit);
 }
 
 
