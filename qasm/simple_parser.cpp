@@ -468,6 +468,45 @@ void print_quantum_op(quantum_op_t* op)
 }
 
 
+void reverse_order(quantum_circuit_t *circuit)
+{
+    // remap qubit index i to qreg_size-1-i
+    quantum_op_t* head = circuit->operations;
+    while (head != NULL) {
+        if (head->type == op_gate || head->type == op_measurement) {
+            head->target = (circuit->qreg_size - 1) - head->target;
+            for (int j = 0; j < 3; j++) {
+                if (head->ctrls[j] != -1) {
+                    head->ctrls[j] = (circuit->qreg_size - 1) - head->ctrls[j];
+                }
+            }
+        }
+        head = head->next;
+    }
+}
+
+
+void optimize_order(quantum_circuit_t *circuit)
+{
+    quantum_op_t* head = circuit->operations;
+    int ctrls_below_target = 0;
+    int ctrls_above_target = 0;
+    while (head != NULL) {
+        if (head->type == op_gate && head->ctrls[0] != -1) {
+            if (head->ctrls[0] > head->target) {
+                ctrls_below_target += 1;
+            } else {
+                ctrls_above_target += 1;
+            }
+        }
+        head = head->next;
+    }
+    if (ctrls_below_target > ctrls_above_target) {
+        reverse_order(circuit);
+    }
+}
+
+
 void print_quantum_circuit(quantum_circuit_t* circuit)
 {
     printf("qreg size: %d\n", circuit->qreg_size);

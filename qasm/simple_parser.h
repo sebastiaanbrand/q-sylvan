@@ -31,6 +31,12 @@ typedef struct quantum_circuit_s {
  */
 quantum_circuit_t* parse_qasm_file(char *filepath);
 
+
+/**
+ * Invert qubit order if that yields less controls below target qubits.
+*/
+void optimize_order(quantum_circuit_t *circuit);
+
 /**
  * free()'s all quantum_ops from and including 'first'.
 */
