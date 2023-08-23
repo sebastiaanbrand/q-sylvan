@@ -365,12 +365,24 @@ class QASMParser {
                 }
             }
             // three-qubit controlled gates with no additional parameters
-            else if (name == "ccx") {
+            else if (name == "ccx" || name == "rccx") {
                 try {
                     strcpy(op->name, name.c_str());
                     op->targets[0] = get_seq_index(qregisters, args[5], stoi(args[6]));
                     op->ctrls[0] = get_seq_index(qregisters, args[1], stoi(args[2]));
                     op->ctrls[1] = get_seq_index(qregisters, args[3], stoi(args[4]));
+                    sort_controls(op);
+                } catch (...) {
+                    parse_error("Error parsing arguments of gate " + name);
+                }
+            }
+            // other three-qubit gates with no additional parameters
+            else if (name == "cswap") {
+                try {
+                    strcpy(op->name, name.c_str());
+                    op->ctrls[0] = get_seq_index(qregisters, args[1], stoi(args[2]));
+                    op->targets[0] = get_seq_index(qregisters, args[3], stoi(args[4]));
+                    op->targets[1] = get_seq_index(qregisters, args[5], stoi(args[6]));
                     sort_controls(op);
                 } catch (...) {
                     parse_error("Error parsing arguments of gate " + name);

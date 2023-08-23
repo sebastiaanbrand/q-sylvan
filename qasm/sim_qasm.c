@@ -102,6 +102,19 @@ QMDD apply_gate(QMDD state, quantum_op_t* gate)
         // no native SWAP gates in Q-Sylvan
         return qmdd_circuit_swap(state, gate->targets[0], gate->targets[1]);
     }
+    else if (strcmp(gate->name, "cswap") == 0) {
+        // no native CSWAP gates in Q-Sylvan
+        BDDVAR cs[3] = {gate->ctrls[0], AADD_INVALID_VAR, AADD_INVALID_VAR};
+        return qmdd_ccircuit(state, CIRCID_swap, cs, gate->targets[0], gate->targets[1]);
+    }
+    else if (strcmp(gate->name, "rccx") == 0) {
+        // no native RCCX (simplified Toffoli) gates in Q-Sylvan
+        state = qmdd_cgate2(state, GATEID_X, gate->ctrls[0], gate->ctrls[1], gate->targets[0]);
+        state = qmdd_gate(state, GATEID_X, gate->ctrls[1]);
+        state = qmdd_cgate2(state, GATEID_Z, gate->ctrls[0], gate->ctrls[1], gate->targets[0]);
+        state = qmdd_gate(state, GATEID_X, gate->ctrls[1]);
+        return state;
+    }
     else if (strcmp(gate->name, "rzz") == 0 ) {
         // no native RZZ gates in Q-Sylvan
         state = qmdd_cgate(state, GATEID_X, gate->targets[0], gate->targets[1]);
