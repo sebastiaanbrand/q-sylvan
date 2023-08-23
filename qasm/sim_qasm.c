@@ -102,6 +102,13 @@ QMDD apply_gate(QMDD state, quantum_op_t* gate)
         // no native SWAP gates in Q-Sylvan
         return qmdd_circuit_swap(state, gate->target, gate->ctrls[0]);
     }
+    else if (strcmp(gate->name, "rzz") == 0 ) {
+        // no native RZZ gates in Q-Sylvan
+        state = qmdd_cgate(state, GATEID_X, gate->ctrls[0], gate->target);
+        state = qmdd_gate(state, GATEID_Phase(gate->angle[0]), gate->target);
+        state = qmdd_cgate(state, GATEID_X, gate->ctrls[0], gate->target);
+        return state;
+    }
     else {
         fprintf(stderr, "Gate '%s' currently unsupported\n", gate->name);
         return state;

@@ -89,10 +89,6 @@ class QASMParser {
                 parse_line(line);
             }
 
-            // remove (blank) first operation
-            //circuit->operations = circuit->operations->next;
-            //free(first_op);
-
             return circuit;
         }
 
@@ -306,9 +302,9 @@ class QASMParser {
                     parse_error("Error parsing arguments of gate " + name);
                 }
             }
-            // two-qubit controlled gates with single angle
+            // two-qubit gates with single angle
             else if (name == "crx" || name == "cry" || name == "crz" || name == "cp" ||
-                     name == "cu1") {
+                     name == "cu1" || name == "rzz" ) {
                 try {
                     strcpy(op->name, canonical_gate_name(name).c_str());
                     op->target = get_seq_index(qregisters, args[4], stoi(args[5]));
