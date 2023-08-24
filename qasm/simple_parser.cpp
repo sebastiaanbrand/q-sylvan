@@ -55,10 +55,14 @@ void sort_controls(quantum_op_t *gate)
 
 void sort_targets(quantum_op_t *gate)
 {
-    int t1 = std::min(gate->targets[0], gate->targets[1]);
-    int t2 = std::max(gate->targets[0], gate->targets[1]);
-    gate->targets[0] = t1;
-    gate->targets[1] = t2;
+    std::string name = std::string(gate->name);
+    // only sort targets if gate is symmetric (i.e. U(t1,t2) = U(t2,t1))
+    if (name == "swap" || name == "rzz" || name == "rxx") {
+        int t1 = std::min(gate->targets[0], gate->targets[1]);
+        int t2 = std::max(gate->targets[0], gate->targets[1]);
+        gate->targets[0] = t1;
+        gate->targets[1] = t2;
+    }
 }
 
 
@@ -505,12 +509,15 @@ void print_quantum_op(quantum_op_t* op)
                 printf("_%lf", op->angle[i]);
             }
         }
-        printf("(%d", op->targets[0]);
-        if (op->ctrls[0] >= 0) {
-            printf(",c=%d,%d,%d)", op->ctrls[0], op->ctrls[1], op->ctrls[2]);
-        } else {
-            printf(")");
+        printf("(t={%d",op->targets[0]);
+        if (op->targets[1] != -1) {
+            printf(",%d",op->targets[1]);
         }
+        printf("}");
+        if (op->ctrls[0] != -1) {
+            printf(",c={%d,%d,%d}", op->ctrls[0], op->ctrls[1], op->ctrls[2]);
+        }
+        printf(")");
     }
 }
 
@@ -618,6 +625,8 @@ void reverse_order(quantum_circuit_t *circuit)
                 }
             }
         }
+        sort_controls(head);
+        sort_targets(head);
         head = head->next;
     }
 }

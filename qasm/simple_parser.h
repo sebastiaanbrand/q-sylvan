@@ -42,6 +42,7 @@ void optimize_qubit_order(quantum_circuit_t *circuit);
 */
 void free_quantum_circuit(quantum_circuit_t* circuit);
 
+void print_quantum_op(quantum_op_t *op);
 void print_quantum_circuit(quantum_circuit_t* circuit);
 
 
