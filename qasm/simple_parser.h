@@ -22,6 +22,8 @@ typedef struct quantum_op_s {
 typedef struct quantum_circuit_s {
     int qreg_size;
     int creg_size;
+    bool *creg;
+    bool has_intermediate_measurements;
     quantum_op_t *operations;
 } quantum_circuit_t;
 
@@ -44,7 +46,7 @@ void free_quantum_circuit(quantum_circuit_t* circuit);
 
 void print_quantum_op(quantum_op_t *op);
 void print_quantum_circuit(quantum_circuit_t* circuit);
-
+void print_creg(quantum_circuit_t* circuit);
 
 #ifdef __cplusplus
 }

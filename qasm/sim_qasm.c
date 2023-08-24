@@ -129,9 +129,13 @@ QMDD apply_gate(QMDD state, quantum_op_t* gate)
 }
 
 
-QMDD measure(QMDD state, quantum_op_t *measurement)
+QMDD measure(QMDD state, quantum_op_t *meas, quantum_circuit_t* circuit)
 {
-    // TODO
+    double p;
+    int m;
+    printf("measure qubit %d, store result in creg[%d]\n", meas->targets[0], meas->meas_dest);
+    qmdd_measure_qubit(state, meas->targets[0], circuit->qreg_size, &m, &p);
+    circuit->creg[meas->meas_dest] = m;
     return state;
 }
 
@@ -145,10 +149,19 @@ void simulate_circuit(quantum_circuit_t* circuit)
             state = apply_gate(state, op);
         }
         else if (op->type == op_measurement) {
-            state = measure(state, op);
+            if (circuit->has_intermediate_measurements) {
+                state = measure(state, op, circuit);
+            }
+            else {
+                double p;
+                state = qmdd_measure_all(state, circuit->qreg_size, circuit->creg, &p);
+            }
         }
         op = op->next;
     }
+    printf("measurement outcome: ");
+    print_creg(circuit);
+    printf("\n");
 }
 
 

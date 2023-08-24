@@ -65,6 +65,23 @@ void sort_targets(quantum_op_t *gate)
     }
 }
 
+void check_measurements(quantum_circuit_t* circuit)
+{
+    quantum_op_t* head = circuit->operations;
+    bool seen_measurement = false;
+    while(head != NULL) {
+        if (head->type == op_measurement) {
+            seen_measurement = true;
+        }
+        if (head->type == op_gate && seen_measurement) {
+            circuit->has_intermediate_measurements = true;
+            break;
+        }
+        head = head->next;
+    }
+    // TODO: also check if all qubits are measured
+}
+
 
 class QASMParser {
 
@@ -116,6 +133,13 @@ class QASMParser {
                 parse_line(line);
             }
 
+            // if circuit has no intermediate measurements, make sure creg is
+            // large enough to measure all qubits with measure_all
+            check_measurements(circuit);
+            if (!circuit->has_intermediate_measurements) {
+                circuit->creg_size = std::max(circuit->creg_size, circuit->qreg_size);
+            }
+            circuit->creg = (bool *) calloc(circuit->creg_size, sizeof(bool));
             return circuit;
         }
 
@@ -668,6 +692,13 @@ void print_quantum_circuit(quantum_circuit_t* circuit)
     }
 }
 
+void print_creg(quantum_circuit_t* circuit)
+{
+    for (int i = 0; i < circuit->creg_size; i++) {
+        printf("%d", circuit->creg[i]);
+    }
+}
+
 
 void free_quantum_circuit(quantum_circuit_t* circuit)
 {
@@ -678,5 +709,6 @@ void free_quantum_circuit(quantum_circuit_t* circuit)
         head = head->next;
         free(tmp);
     }
+    free(circuit->creg);
     free(circuit);
 }
