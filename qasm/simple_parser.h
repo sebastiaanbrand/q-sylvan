@@ -20,6 +20,7 @@ typedef struct quantum_op_s {
 } quantum_op_t;
 
 typedef struct quantum_circuit_s {
+    char name[200];
     int qreg_size;
     int creg_size;
     bool *creg;

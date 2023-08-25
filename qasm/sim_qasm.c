@@ -1,5 +1,38 @@
+#include <sys/time.h>
+
 #include "qsylvan.h"
 #include "simple_parser.h"
+
+typedef struct stats_s {
+    uint64_t applied_gates;
+    uint64_t max_nodes;
+    uint64_t shots;
+    double simulation_time;
+} stats_t;
+stats_t stats;
+
+
+void fprint_stats(FILE *stream, quantum_circuit_t* circuit)
+{
+    fprintf(stream, "{\n");
+    fprintf(stream, "  \"statistics\": {\n");
+    fprintf(stream, "    \"applied_gates\": %ld\n", stats.applied_gates);
+    fprintf(stream, "    \"benchmark\": %s\n", circuit->name);
+    fprintf(stream, "    \"max_nodes\": %ld\n", stats.max_nodes);
+    fprintf(stream, "    \"n_qubits\": %d\n", circuit->qreg_size);
+    fprintf(stream, "    \"shots\": %ld\n", stats.shots);
+    fprintf(stream, "    \"simulation_time\": %lf\n", stats.simulation_time);
+    fprintf(stream, "  }\n");
+    fprintf(stream, "}\n");
+}
+
+static double
+wctime()
+{
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return (tv.tv_sec + 1E-6 * tv.tv_usec);
+}
 
 
 QMDD apply_gate(QMDD state, quantum_op_t* gate)
@@ -7,7 +40,9 @@ QMDD apply_gate(QMDD state, quantum_op_t* gate)
     // This looks very ugly, but we need some way to match the name of a gate to
     // the GATEID, and since this is C we don't really have easy access to
     // data structures like a dictionary.
+    stats.applied_gates++;
     if (strcmp(gate->name, "id") == 0) {
+        stats.applied_gates--;
         return state;
     }
     else if (strcmp(gate->name, "x") == 0) {
@@ -100,15 +135,18 @@ QMDD apply_gate(QMDD state, quantum_op_t* gate)
     }
     else if (strcmp(gate->name, "swap") == 0) {
         // no native SWAP gates in Q-Sylvan
+        stats.applied_gates += 4;
         return qmdd_circuit_swap(state, gate->targets[0], gate->targets[1]);
     }
     else if (strcmp(gate->name, "cswap") == 0) {
         // no native CSWAP gates in Q-Sylvan
+        stats.applied_gates += 4;
         BDDVAR cs[3] = {gate->ctrls[0], AADD_INVALID_VAR, AADD_INVALID_VAR};
         return qmdd_ccircuit(state, CIRCID_swap, cs, gate->targets[0], gate->targets[1]);
     }
     else if (strcmp(gate->name, "rccx") == 0) {
         // no native RCCX (simplified Toffoli) gates in Q-Sylvan
+        stats.applied_gates += 3;
         state = qmdd_cgate2(state, GATEID_X, gate->ctrls[0], gate->ctrls[1], gate->targets[0]);
         state = qmdd_gate(state, GATEID_X, gate->ctrls[1]);
         state = qmdd_cgate2(state, GATEID_Z, gate->ctrls[0], gate->ctrls[1], gate->targets[0]);
@@ -117,6 +155,7 @@ QMDD apply_gate(QMDD state, quantum_op_t* gate)
     }
     else if (strcmp(gate->name, "rzz") == 0 ) {
         // no native RZZ gates in Q-Sylvan
+        stats.applied_gates += 2;
         state = qmdd_cgate(state, GATEID_X, gate->targets[0], gate->targets[1]);
         state = qmdd_gate(state, GATEID_Phase(gate->angle[0]), gate->targets[1]);
         state = qmdd_cgate(state, GATEID_X, gate->targets[0], gate->targets[1]);
@@ -142,6 +181,7 @@ QMDD measure(QMDD state, quantum_op_t *meas, quantum_circuit_t* circuit)
 
 void simulate_circuit(quantum_circuit_t* circuit)
 {
+    double t_start = wctime();
     QMDD state = qmdd_create_all_zero_state(circuit->qreg_size);
     quantum_op_t *op = circuit->operations;
     while (op != NULL) {
@@ -159,6 +199,8 @@ void simulate_circuit(quantum_circuit_t* circuit)
         }
         op = op->next;
     }
+    stats.simulation_time = wctime() - t_start;
+    stats.shots = 1;
     printf("measurement outcome: ");
     print_creg(circuit);
     printf("\n");
@@ -181,6 +223,7 @@ int main(int argc, char *argv[])
     qsylvan_init_defaults(1LL<<20);
 
     simulate_circuit(circuit);
+    fprint_stats(stdout, circuit);
 
     sylvan_quit();
     lace_stop();
