@@ -3740,3 +3740,320 @@ mtbdd_map_removeall(MTBDDMAP map, MTBDD variables)
         return mtbdd_map_removeall(node_getlow(map, n1), node_gethigh(variables, n2));
     }
 }
+
+
+/** Matrix / vector operations - extension of original API of Tom van Dijk **/
+
+/**
+ * Utility functions:
+ * 
+ * Convert a matrix array M[row][col] into a MTBDD.
+ * 
+ * Convert a vector array v[row] into a MTBDD.
+ * 
+ * Convert a MTBDD into a matrix array.
+ * 
+ * Convert a MTBDD into a vector array.
+ * 
+ * The mode of the conversions refers to how the leafs are 
+ * filled with the array values.
+ * 
+ * This can be row wise (transpose mode) or column wise.
+ * 
+ * Suppose M[row][col] is a matrix:
+ * 
+ *      M[0][0]     M[0][1]
+ *      M[1][0]     M[1][1]
+ * 
+ * The transpose of M[row][col] = M[col][row]
+ * 
+ *      M[0][0]     M[1][0]
+ *      M[0][1]     M[1][1]
+ * 
+ * Then MTBDD is column wise:
+ * 
+ *                          x0
+ *                x1                   x1
+ *          x2         x2        x2          x2
+ *        M[0][0]    M[0][1]   M[1][0]     M[1][1]
+ *
+ * MTBDD is row wise (= transpose):
+ * 
+ *                          x0
+ *                x1                   x1
+ *          x2         x2        x2          x2
+ *        M[0][0]    M[1][0]   M[0][1]     M[1][1]
+ * 
+ */
+
+MTBDD array_vector_to_mtbdd(VecArr_t vec_arr, int n, row_column_mode_t mode)
+{
+    // Dummy code
+    if(vec_arr == 0)
+        return MTBDD_ZERO;
+
+    if(n == 0)
+        return MTBDD_ZERO;
+    
+    if(mode == COLUMN_WISE_MODE)
+        return MTBDD_ZERO;
+
+    return MTBDD_ZERO;
+}
+
+MTBDD array_matrix_to_mtbdd(MatArr_t mat_arr, int n, row_column_mode_t mode)
+{
+    // Dummy code
+    if(mat_arr == 0)
+        return MTBDD_ZERO;
+
+    if(n == 0)
+        return MTBDD_ZERO;
+    
+    if(mode == COLUMN_WISE_MODE)
+        return MTBDD_ZERO;
+
+    return MTBDD_ZERO;
+}
+
+VecArr_t mtbdd_to_vector_array(MTBDD v, int n, row_column_mode_t mode)
+{
+    // Dummy code
+    VecArr_t vec_arr = 0;
+
+    if(v == 0)
+        return vec_arr;
+
+    if(n == 0)
+        return vec_arr;
+    
+    if(mode == COLUMN_WISE_MODE)
+        return vec_arr;
+
+    return vec_arr;
+}
+
+MatArr_t mtbdd_to_matrix_array(MTBDD M, int n, row_column_mode_t mode)
+{
+    // Dummy code
+    MatArr_t mat_arr = 0;
+
+    if(M == 0)
+        return mat_arr;
+
+    if(n == 0)
+        return mat_arr;
+
+    if(mode == COLUMN_WISE_MODE)
+        return mat_arr;
+
+    return mat_arr;
+}
+
+/**
+ * Matrix . Vector multiplication in MTBDD domain
+ * 
+ * Computes M.v = w for a 2^n x 2^n matrix M[row][col], and a 2^n vector v[col].
+ * 
+ * Results in an array of a 2^n vector w[col].
+ * 
+ */
+VecArr_t array_matrix_vector_product(MatArr_t M, VecArr_t v, int n)
+{
+    // Convert to MTBDD
+    MTBDD M_col = array_matrix_to_mtbdd(M, n, COLUMN_WISE_MODE);
+    MTBDD v_row = array_vector_to_mtbdd(v, n, ROW_WISE_MODE);
+
+    // Multiply in MTBDD domain
+    MTBDD w_col = mtbdd_matvec_mult(M_col, v_row, n);
+
+    return mtbdd_to_vector_array(w_col, n, COLUMN_WISE_MODE);
+}
+
+/**
+ * Matrix . Matrix multiplication in MTBDD domain
+ * 
+ * Computes M.V = W for two 2^n x 2^n matrices M[row][col] and V[row][col].
+ * 
+ * Results in an array of a 2^n x 2^n matrix W[row][col]. 
+ * 
+ */
+MatArr_t array_matrix_matrix_product(MatArr_t M1, MatArr_t M2, int n)
+{
+    // Convert to MTBDD
+    MTBDD M1_col = array_matrix_to_mtbdd(M1, n, COLUMN_WISE_MODE);
+    MTBDD M2_row = array_matrix_to_mtbdd(M2, n, ROW_WISE_MODE);
+
+    // Multiply in MTBDD domain
+    MTBDD W_col = mtbdd_matmat_mult(M1_col, M2_row, n);
+
+    return mtbdd_to_matrix_array(W_col, n, COLUMN_WISE_MODE);
+}
+
+/**
+ * 
+ * Util functions for matrix multiplication
+ * 
+ */
+
+MTBDD mtbdd_is_result_in_cache(int f, MTBDD M, MTBDD v)
+{
+    MTBDD result = MTBDD_ZERO;
+
+    if(f == 0 || M == MTBDD_ZERO || v == MTBDD_ZERO)
+        return result;
+
+    return result;
+}
+
+void mtbdd_put_result_in_cache(int f, MTBDD M, MTBDD v, MTBDD result)
+{
+    if(f == 0 || M == MTBDD_ZERO || v == MTBDD_ZERO || result == MTBDD_ZERO)
+        return;
+
+    return;
+}
+
+MTBDD mtbdd_get_matrix_left_upper_half(MTBDD M, int n)
+{
+    if(n==0 || M == MTBDD_ZERO)
+        return MTBDD_ZERO;
+
+    return MTBDD_ZERO;
+}
+
+MTBDD mtbdd_get_matrix_right_upper_half(MTBDD M, int n)
+{
+    if(n==0 || M == MTBDD_ZERO)
+        return MTBDD_ZERO;
+
+    return MTBDD_ZERO;
+}
+
+MTBDD mtbdd_get_matrix_left_lower_half(MTBDD M, int n)
+{
+    if(n==0 || M == MTBDD_ZERO)
+        return MTBDD_ZERO;
+
+    return MTBDD_ZERO;
+}
+
+MTBDD mtbdd_get_matrix_right_lower_half(MTBDD M, int n)
+{
+    if(n==0 || M == MTBDD_ZERO)
+        return MTBDD_ZERO;
+
+    return MTBDD_ZERO;
+}
+
+MTBDD mtbdd_get_vector_upper_half(MTBDD v, int n)
+{
+    if(n==0 || v == MTBDD_ZERO)
+        return MTBDD_ZERO;
+
+    return MTBDD_ZERO;
+}
+
+MTBDD mtbdd_get_vector_lower_half(MTBDD v, int n)
+{
+    if(n==0 || v == MTBDD_ZERO)
+        return MTBDD_ZERO;
+
+    return MTBDD_ZERO;
+}
+
+MTBDD mtbdd_merge_vectors(MTBDD w1, MTBDD w2, row_column_mode_t mode)
+{
+    if(w1 == MTBDD_ZERO || w2 == MTBDD_ZERO || mode == COLUMN_WISE_MODE)
+        return MTBDD_ZERO;
+
+    return MTBDD_ZERO;
+}
+
+/**
+ * Matrix . Vector multiplication in MTBDD domain
+ * 
+ * Computes M.v for an 2^n vector v and a 2^n x 2^n matrix M.
+ * 
+ * The vector is row wise sorted, the matrix is column wise sorted.
+ * 
+ * The resulting vector w is column wise sorted.
+ * 
+ */
+MTBDD mtbdd_matvec_mult(MTBDD M, MTBDD v, int n)
+{
+    MTBDD result = MTBDD_ZERO;
+
+    // Validate input arguments
+    if(n <= 0 || M == MTBDD_ZERO || v == MTBDD_ZERO)
+        return result;
+
+    // Check if result already in cache
+    result = mtbdd_is_result_in_cache(CACHE_MTBDD_MATVEC_MULT, M, v);
+    if(result != MTBDD_ZERO)
+        return result;
+
+    // Calculate M with size 2x2 and v with size 2
+    if(n == 1) {
+
+        result = mtbdd_and_abstract_plus(M, v, 1);
+
+        // Put result in cache
+        mtbdd_put_result_in_cache(CACHE_MTBDD_MATVEC_MULT, M, v, result);
+
+        return result;
+    }
+
+    // Split matrix M in four parts with size 2^(n-1) x 2^(n-1)
+    MTBDD LU = mtbdd_get_matrix_left_upper_half(M, n);
+    MTBDD RU = mtbdd_get_matrix_right_upper_half(M, n);
+    MTBDD LL = mtbdd_get_matrix_left_lower_half(M, n);
+    MTBDD RL = mtbdd_get_matrix_right_lower_half(M, n);
+
+    // Split vector v in two parts with size 2^(n-1)
+    MTBDD y1 = mtbdd_get_vector_upper_half(v, n);
+    MTBDD y2 = mtbdd_get_vector_lower_half(v, n);
+
+    // w1 = LU . y1 + RU . y2
+    MTBDD w1 = mtbdd_plus(mtbdd_matvec_mult(LU, y1, n-1), mtbdd_matvec_mult(RU, y2, n-1));
+
+    // w2 = LL . y1 + RL . y2 
+    MTBDD w2 = mtbdd_plus(mtbdd_matvec_mult(LL, y1, n-1), mtbdd_matvec_mult(RL, y2, n-1));
+
+    result = mtbdd_merge_vectors(w1, w2, COLUMN_WISE_MODE);
+
+    // Put result in cache
+    mtbdd_put_result_in_cache(CACHE_MTBDD_MATVEC_MULT, M, v, result);
+
+    return result;
+}
+
+/*
+ * Matrix . Matrix multiplication in MTBDD domain
+ * 
+ *   Computes A.B for two 2^n x 2^n matrices.
+ * 
+ */
+
+MTBDD mtbdd_matmat_mult(MTBDD M1, MTBDD M2, int n)
+{
+    if(n == 0 || M1 == MTBDD_ZERO || M2 == MTBDD_ZERO)
+        return MTBDD_ZERO;
+
+    return MTBDD_ZERO;
+}
+
+/**
+ * Kronecker multiplication or Tensor product
+ * 
+ * Vector (x) Vector product
+ * 
+ * Matrix (x) Matrix product
+ * 
+ */
+//MTBDD mtbdd_vec_tensor_prod(MTBDD v, MTBDD w, int n)
+//{}
+
+//MTBDD mtbdd_mat_tensor_prod(MTBDD M1, MTBDD M2, int n)
+//{}
+

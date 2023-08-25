@@ -1079,6 +1079,11 @@ test_mtbdd_matrix_multiplication()
     //      (2.0  2.0)
     //
 
+    // K[row][col]
+
+
+
+
     return 0;
 }
 
@@ -1097,6 +1102,10 @@ test_mtbdd_matrix_kronecker_multiplication()
     //      (1.0 2.0 0.5 1.0)
     //
 
+
+
+
+
     return 0;
 }
 
@@ -1109,7 +1118,7 @@ TASK_0(int, runtests)
     sylvan_gc_disable();
 
     // Test 1
-    printf("\nTesting mtbdd makenode and ithvar.\n"); // TODO: print does not work?
+    printf("\nTesting mtbdd makenode and ithvar.\n");
     if (test_mtbdd_makenode_ithvar()) return 1;
 
     // Test 2

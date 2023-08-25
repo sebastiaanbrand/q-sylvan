@@ -1184,33 +1184,141 @@ void mtbdd_refs_spawn(Task *t);
  */
 MTBDD mtbdd_refs_sync(MTBDD mtbdd);
 
+
+/** Matrix / vector operations - extension of original API of Tom van Dijk **/
+
 /**
- * // TODO: Matrix multiplication functions
+ * Utility functions:
  * 
  * Convert a matrix array M[row][col] into a MTBDD.
  * 
  * Convert a vector array v[row] into a MTBDD.
  * 
+ * Convert a MTBDD into a matrix array.
  * 
+ * Convert a MTBDD into a vector array.
  * 
+ * The mode of the conversions refers to how the leafs are 
+ * filled with the array values.
  * 
-*/
+ * This can be row wise (transpose mode) or column wise.
+ * 
+ * Suppose M[row][col] is a matrix:
+ * 
+ *      M[0][0]     M[0][1]
+ *      M[1][0]     M[1][1]
+ * 
+ * The transpose of M[row][col] = M[col][row]
+ * 
+ *      M[0][0]     M[1][0]
+ *      M[0][1]     M[1][1]
+ * 
+ * Then MTBDD is column wise:
+ * 
+ *                          x0
+ *                x1                   x1
+ *          x2         x2        x2          x2
+ *        M[0][0]    M[0][1]   M[1][0]     M[1][1]
+ *
+ * MTBDD is row wise (= transpose):
+ * 
+ *                          x0
+ *                x1                   x1
+ *          x2         x2        x2          x2
+ *        M[0][0]    M[1][0]   M[0][1]     M[1][1]
+ * 
+ */
+
+//#define COLUMN_WISE_MODE 1
+//#define ROW_WISE_MODE 2
+
+typedef enum {
+    COLUMN_WISE_MODE,
+    ROW_WISE_MODE
+} row_column_mode_t;
+
 typedef uint32_t VecArr_t; // pointer to struct with array of struct as element. Struct contains complex number.
 typedef uint32_t MatArr_t;
 
-MTBDD mtbdd_vector_array_to_mtbdd(VecArr_t vec_arr, int n);
-MTBDD mtbdd_matrix_array_to_mtbdd(MatArr_t mat_arr, int n);
+MTBDD array_vector_to_mtbdd(VecArr_t vec_arr, int n, row_column_mode_t mode);
+MTBDD array_matrix_to_mtbdd(MatArr_t mat_arr, int n, row_column_mode_t mode);
 
-MTBDD mtbdd_matvec_mult(MTBDD A, MTBDD v, int n);    // Computes A.v for an 2^n vector and a 2^n x 2^n matrix.
-MTBDD mtbdd_matmat_mult(MTBDD A, MTBDD B, int n);    // Computes A.B for two 2^n x 2^n matrices.
+VecArr_t mtbdd_to_vector_array(MTBDD v, int n, row_column_mode_t mode);
+MatArr_t mtbdd_to_matrix_array(MTBDD M, int n, row_column_mode_t mode);
 
 /**
- * // TODO: Kronecker (or tensor) multiplication
+ * Matrix . Vector multiplication in MTBDD domain
  * 
+ * Computes M.v = w for a 2^n x 2^n matrix M[row][col], and a 2^n vector v[col].
+ * 
+ * Results in an array of a 2^n vector w[col].
+ * 
+ */
+
+VecArr_t array_matrix_vector_product(MatArr_t M, VecArr_t v, int n);
+
+/**
+ * Matrix . Matrix multiplication in MTBDD domain
+ * 
+ * Computes M.V = W for two 2^n x 2^n matrices M[row][col] and V[row][col].
+ * 
+ * Results in an array of a 2^n x 2^n matrix W[row][col].
+ * 
+ */
+
+MatArr_t array_matrix_matrix_product(MatArr_t M, MatArr_t V, int n);
+
+/**
+ * Matrix . Vector multiplication in MTBDD domain
+ * 
+ * Computes M.v for an 2^n vector v and a 2^n x 2^n matrix M.
+ * 
+ * The vector is row wise sorted, the matrix is column wise sorted.
+ * 
+ * The resulting vector w is column wise sorted.
+ * 
+ */
+#define CACHE_MTBDD_MATVEC_MULT 1
+#define MTBDD_ZERO 0
+
+// Utils
+MTBDD mtbdd_is_result_in_cache(int f, MTBDD M, MTBDD v);
+void mtbdd_put_result_in_cache(int f, MTBDD M, MTBDD v, MTBDD result);
+
+MTBDD mtbdd_get_matrix_left_upper_half(MTBDD M, int n);
+MTBDD mtbdd_get_matrix_right_upper_half(MTBDD M, int n);
+MTBDD mtbdd_get_matrix_left_lower_half(MTBDD M, int n);
+MTBDD mtbdd_get_matrix_right_lower_half(MTBDD M, int n);
+
+MTBDD mtbdd_get_vector_upper_half(MTBDD v, int n);
+MTBDD mtbdd_get_vector_lower_half(MTBDD v, int n);
+
+MTBDD mtbdd_merge_vectors(MTBDD w1, MTBDD w2, row_column_mode_t mode);
+
+// Function
+MTBDD mtbdd_matvec_mult(MTBDD M, MTBDD v, int n);
+
+/*
+ * Matrix . Matrix multiplication in MTBDD domain
+ * 
+ *   Computes A.B for two 2^n x 2^n matrices.
  * 
 */
-MTBDD mtbdd_vec_kronecker_prod(MTBDD v, MTBDD w, int n_v);    // Computes a \tensor b for two vector QMDDs.
-MTBDD mtbdd_mat_kronecker_prod(MTBDD A, MTBDD B, MTBDD n_A);  // Computes a \tensor b for two matrix QMDDs.
+
+MTBDD mtbdd_matmat_mult(MTBDD M1, MTBDD M2, int n);
+
+/**
+ * Kronecker multiplication or Tensor product
+ * 
+ * Vector (x) Vector product
+ * 
+ * Matrix (x) Matrix product
+ * 
+*/
+MTBDD mtbdd_vec_tensor_prod(MTBDD v, MTBDD w, int n);
+
+MTBDD mtbdd_mat_tensor_prod(MTBDD M1, MTBDD M2, int n);
+
 
 
 #ifdef __cplusplus
