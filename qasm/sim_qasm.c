@@ -86,10 +86,12 @@ stats_t stats;
 void fprint_stats(FILE *stream, quantum_circuit_t* circuit)
 {
     fprintf(stream, "{\n");
+    fprintf(stream, "  \"measurement_results\": {\n");
+    fprintf(stream, "    \""); fprint_creg(stream, circuit); fprintf(stream, "\": 1\n");
+    fprintf(stream, "  },\n");
     fprintf(stream, "  \"statistics\": {\n");
     fprintf(stream, "    \"applied_gates\": %ld,\n", stats.applied_gates);
     fprintf(stream, "    \"benchmark\": \"%s\",\n", circuit->name);
-    fprintf(stream, "    \"creg\": \""); fprint_creg(stream, circuit); fprintf(stream, "\",\n");
     fprintf(stream, "    \"final_nodes\": %ld,\n", stats.final_nodes);
     fprintf(stream, "    \"max_nodes\": %ld,\n", stats.max_nodes);
     fprintf(stream, "    \"n_qubits\": %d,\n", circuit->qreg_size);
