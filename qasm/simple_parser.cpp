@@ -695,10 +695,10 @@ void print_quantum_circuit(quantum_circuit_t* circuit)
     }
 }
 
-void print_creg(quantum_circuit_t* circuit)
+void fprint_creg(FILE *stream, quantum_circuit_t* circuit)
 {
     for (int i = 0; i < circuit->creg_size; i++) {
-        printf("%d", circuit->creg[i]);
+        fprintf(stream, "%d", circuit->creg[i]);
     }
 }
 

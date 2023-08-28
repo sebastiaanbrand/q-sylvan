@@ -47,7 +47,7 @@ void free_quantum_circuit(quantum_circuit_t* circuit);
 
 void print_quantum_op(quantum_op_t *op);
 void print_quantum_circuit(quantum_circuit_t* circuit);
-void print_creg(quantum_circuit_t* circuit);
+void fprint_creg(FILE *stream, quantum_circuit_t* circuit);
 
 #ifdef __cplusplus
 }
