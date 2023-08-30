@@ -384,7 +384,7 @@ class QASMParser {
                 }
             }
             // other two-qubit gate with two targets and a single angle
-            else if (name == "rzz") {
+            else if (name == "rzz" || name == "rxx") {
                 try {
                     strcpy(op->name, canonical_gate_name(name).c_str());
                     op->targets[0] = get_seq_index(qregisters, args[4], stoi(args[5]));

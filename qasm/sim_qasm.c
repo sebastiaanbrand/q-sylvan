@@ -240,6 +240,18 @@ QMDD apply_gate(QMDD state, quantum_op_t* gate)
         state = qmdd_cgate(state, GATEID_X, gate->targets[0], gate->targets[1]);
         return state;
     }
+    else if (strcmp(gate->name, "rxx") == 0) {
+        // no native RXX gates in Q-Sylvan
+        fl_t pi = flt_acos(0.0) * 2;
+        stats.applied_gates += 6;
+        state = qmdd_gate(state, GATEID_U(pi/2.0, gate->angle[0], 0), gate->targets[0]);
+        state = qmdd_gate(state, GATEID_H, gate->targets[1]);
+        state = qmdd_cgate(state, GATEID_X, gate->targets[0], gate->targets[1]);
+        state = qmdd_gate(state, GATEID_Phase(-(gate->angle[0])), gate->targets[1]);
+        state = qmdd_cgate(state, GATEID_X, gate->targets[0], gate->targets[1]);
+        state = qmdd_gate(state, GATEID_H, gate->targets[1]);
+        state = qmdd_gate(state, GATEID_U(pi/2.0, -pi, pi-gate->angle[0]), gate->targets[0]);
+    }
     else {
         fprintf(stderr, "Gate '%s' currently unsupported\n", gate->name);
         return state;
