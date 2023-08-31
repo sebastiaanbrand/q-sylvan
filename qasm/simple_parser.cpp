@@ -117,6 +117,7 @@ class QASMParser {
         {
             std::string path = std::string(filepath);
             std::string filename = path.substr(path.find_last_of("/\\") + 1);
+            std::string circname = filename.substr(0, filename.find_last_of("."));
             std::cout << "Parsing file " << path << std::endl;
             std::ifstream infile(filepath);
 
@@ -127,7 +128,7 @@ class QASMParser {
             first_op->next = NULL;
             circuit->operations = first_op;
             last_op = first_op;
-            strcpy(circuit->name, filename.c_str());
+            strcpy(circuit->name, circname.c_str());
 
             std::string line;
             current_line = 0;
