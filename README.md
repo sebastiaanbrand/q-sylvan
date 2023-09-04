@@ -67,11 +67,11 @@ x q[0];
 measure q[0]->c[0];
 measure q[1]->c[1];
 ```
-This code can be found in [`qasm/circuits/bell_state.qasm`](qasm/circuits/bell_state.qasm) and can be run with `./build/qasm/sim_qasm qasm/circuits/bell_state.qasm` . A more complete set of supported QASM statements can be found [here](docs/documentation/qasm_interface.md).
+This code can be found in [`qasm/circuits/bell_state.qasm`](qasm/circuits/bell_state.qasm) and can be run with `./build/qasm/sim_qasm qasm/circuits/bell_state.qasm`. All gates specified in [qelib1.inc](https://github.com/Qiskit/qiskit-terra/blob/main/qiskit/qasm/libs/qelib1.inc) are supported, as well as measurements. Custom definitions of gates and classical conditioning are currently not supported.
 
 
 ## Documentation
-A more complete documentation of the C interface can be found [here](docs/documentation/c_interface.md), and of the QASM interface [here](docs/documentation/qasm_interface.md).
+A more complete documentation of the C interface can be found [here](docs/documentation/c_interface.md).
 
 
 ## Acknowledgements
