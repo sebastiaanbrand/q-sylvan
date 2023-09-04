@@ -118,7 +118,6 @@ class QASMParser {
             std::string path = std::string(filepath);
             std::string filename = path.substr(path.find_last_of("/\\") + 1);
             std::string circname = filename.substr(0, filename.find_last_of("."));
-            std::cout << "Parsing file " << path << std::endl;
             std::ifstream infile(filepath);
 
             // create (blank) quantum circuit
@@ -446,7 +445,7 @@ class QASMParser {
 
         void parse_measurement(std::string line)
         {
-            auto args = split(line, " []");
+            auto args = split(line, " []->");
             if (args.size() < 4) {
                 parse_error("Expected more arguments to 'measure'");
             }
@@ -457,8 +456,8 @@ class QASMParser {
             strcpy(op->name, "measure");
             op->targets[0] = get_seq_index(qregisters, args[1], stoi(args[2]));
             op->meas_dest = -1;
-            if (args.size() >= 5) {
-                op->meas_dest = get_seq_index(cregisters, args[4], stoi(args[5]));
+            if (args.size() >= 4) {
+                op->meas_dest = get_seq_index(cregisters, args[3], stoi(args[4]));
             }
             op->next = NULL;
             

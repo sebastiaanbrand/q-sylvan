@@ -9,8 +9,7 @@ Q-Sylvan extends the parallel decision diagram library [Sylvan](https://github.c
 ## Installation
 
 ### Dependencies
-Q-Sylvan requires the following libraries: `popt` and `GMP`. On Ubuntu it should be possible to install these with
-- `sudo apt-get install libpopt-dev`
+Q-Sylvan requires the`GMP` library (and Cmake for compilation). On Ubuntu it should be possible to install these with
 - `sudo apt-get install libgmp-dev`
 - `sudo apt-get install cmake`
 
@@ -53,6 +52,7 @@ This code can be found in [`examples/bell_state.c`](examples/bell_state.c) and a
 ### QASM interface
 ```C
 OPENQASM 2.0;
+include "qelib1.inc";
 
 // 2 qubit quantum register and 2 bit classical register
 qreg q[2];
@@ -67,7 +67,7 @@ x q[0];
 measure q[0]->c[0];
 measure q[1]->c[1];
 ```
-This code can be found in [`qasm/circuits/bell_state.qasm`](qasm/circuits/bell_state.qasm) and can be run with `./qasm/qsylvan_qasm ../qasm/circuits/bell_state.qasm -r=100` from the `build/` directory. A more complete set of supported QASM statements can be found [here](docs/documentation/qasm_interface.md).
+This code can be found in [`qasm/circuits/bell_state.qasm`](qasm/circuits/bell_state.qasm) and can be run with `./build/qasm/sim_qasm qasm/circuits/bell_state.qasm` . A more complete set of supported QASM statements can be found [here](docs/documentation/qasm_interface.md).
 
 
 ## Documentation
