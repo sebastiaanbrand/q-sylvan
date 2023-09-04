@@ -193,6 +193,11 @@ QMDD qmdd_measure_all(QMDD qmdd, BDDVAR n, bool* ms, double *p);
 TASK_DECL_3(double, qmdd_unnormed_prob, QMDD, BDDVAR, BDDVAR);
 
 /**
+ * Given a state vector as QMDD, get its (L2) norm.
+ */
+#define qmdd_get_norm(qmdd, nvars) (RUN(qmdd_unnormed_prob,qmdd,0,nvars))
+
+/**
  * Get amplitude of given basis state.
  * 
  * @param qmdd A QMDD encoding some quantum state |psi>.

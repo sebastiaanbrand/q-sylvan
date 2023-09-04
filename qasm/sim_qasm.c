@@ -73,12 +73,16 @@ static struct argp argp = { options, parse_opt, "<qasm_file>", 0, 0, 0, 0 };
 /*********************</Arguments (configured via argp)>***********************/
 
 
+// NOTE: If there are only measurements at the end of the circuit, 'final_nodes' 
+// and 'norm' will contain the node count and the norm of the state QMDD before
+// the measurements.
 typedef struct stats_s {
     uint64_t applied_gates;
     uint64_t final_nodes;
     uint64_t max_nodes;
     uint64_t shots;
     double simulation_time;
+    double norm;
 } stats_t;
 stats_t stats;
 
@@ -95,6 +99,7 @@ void fprint_stats(FILE *stream, quantum_circuit_t* circuit)
     fprintf(stream, "    \"final_nodes\": %ld,\n", stats.final_nodes);
     fprintf(stream, "    \"max_nodes\": %ld,\n", stats.max_nodes);
     fprintf(stream, "    \"n_qubits\": %d,\n", circuit->qreg_size);
+    fprintf(stream, "    \"norm\": %.5e,\n", stats.norm);
     fprintf(stream, "    \"seed\": %d,\n", rseed);
     fprintf(stream, "    \"shots\": %ld,\n", stats.shots);
     fprintf(stream, "    \"simulation_time\": %lf,\n", stats.simulation_time);
@@ -285,7 +290,8 @@ void simulate_circuit(quantum_circuit_t* circuit)
             }
             else {
                 double p;
-                state = qmdd_measure_all(state, circuit->qreg_size, circuit->creg, &p);
+                // don't set state = post measurement state
+                qmdd_measure_all(state, circuit->qreg_size, circuit->creg, &p);
             }
         }
         if (count_nodes) {
@@ -297,6 +303,7 @@ void simulate_circuit(quantum_circuit_t* circuit)
     stats.simulation_time = wctime() - t_start;
     stats.shots = 1;
     stats.final_nodes = aadd_countnodes(state);
+    stats.norm = qmdd_get_norm(state, circuit->qreg_size);
 }
 
 

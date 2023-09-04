@@ -123,6 +123,8 @@ int test_basis_state_creation()
     test_assert(qmdd_is_unitvector(q1, 1));
     test_assert(aadd_is_ordered(q0, 1));
     test_assert(aadd_is_ordered(q1, 1));
+    test_assert(fabs(qmdd_get_norm(q0, 1) - 1.0) < 1e-14);
+    test_assert(qmdd_get_norm(q0, 1) == 1.0);
 
     AMP a; // Index to edge weight
     x[0] = 0; a = aadd_getvalue(q0, x); test_assert(a == AADD_ONE);
@@ -140,6 +142,10 @@ int test_basis_state_creation()
     test_assert(qmdd_is_unitvector(q3, 3));
     test_assert(aadd_is_ordered(q2, 3));
     test_assert(aadd_is_ordered(q3, 3));
+    test_assert(fabs(qmdd_get_norm(q2, 3) - 1.0) < 1e-14);
+    test_assert(qmdd_get_norm(q2, 3) == 1.0);
+    test_assert(fabs(qmdd_get_norm(q3, 3) - 1.0) < 1e-14);
+    test_assert(qmdd_get_norm(q3, 3) == 1.0);
 
     x3[2] = 0; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q2, x3); test_assert(a == AADD_ONE);
     x3[2] = 0; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q2, x3); test_assert(a == AADD_ZERO);
@@ -206,7 +212,7 @@ int test_vector_addition()
     test_assert(q001 == q100);
     test_assert(!qmdd_is_unitvector(q001, 1));
 
-    
+
 
     // 4 qubit test
     nqubits = 4;

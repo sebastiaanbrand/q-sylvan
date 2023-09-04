@@ -480,6 +480,7 @@ int test_QFT()
     x3[2]=1; x3[1]=1; x3[0]=1; a = aadd_getvalue(q3, x3); weight_value(a, &c); cref = cmake(-2.5000000000000017e-01,-2.5000000000000000e-01); test_assert(weight_approx_eq(&c, &cref));
     test_assert(qmdd_is_unitvector(q3, 3));
     test_assert(aadd_is_ordered(q3, 3));
+    test_assert(fabs(qmdd_get_norm(q3, 3) - 1.0) < 1e-14);
 
     // inverse QFT
     q3 = qmdd_circuit(q3, CIRCID_reverse_range, 0, 2);
@@ -487,6 +488,7 @@ int test_QFT()
     test_assert(aadd_equivalent(q3, qref3, 3, false, false));
     test_assert(aadd_equivalent(q3, qref3, 3, true, false));
     test_assert(q3 == qref3);
+    test_assert(fabs(qmdd_get_norm(q3, 3) - 1.0) < 1e-14);
 
     // 5 qubit QFT
     bool x5[] = {0,1,1,0,1};
@@ -530,6 +532,7 @@ int test_QFT()
     x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=0; a = aadd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(1.4698445030241994e-01,9.8211869798387752e-02);   test_assert(weight_approx_eq(&c, &cref));
     x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=1; a = aadd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(-1.4698445030241994e-01,-9.8211869798387752e-02); test_assert(weight_approx_eq(&c, &cref));
     test_assert(qmdd_is_unitvector(q5, 5));
+    test_assert(fabs(qmdd_get_norm(q5, 5) - 1.0) < 1e-14);
 
     // inverse QFT
     q5 = qmdd_circuit(q5, CIRCID_reverse_range, 0, 4);
@@ -537,6 +540,7 @@ int test_QFT()
     test_assert(aadd_equivalent(q5, qref5, 5, false, false));
     test_assert(aadd_equivalent(q5, qref5, 5, true, false));
     test_assert(q5 == qref5);
+    test_assert(fabs(qmdd_get_norm(q5, 5) - 1.0) < 1e-14);
     
     
     if(VERBOSE) printf("qmdd QFT:                  ok\n");
@@ -554,6 +558,8 @@ int test_5qubit_circuit()
     // 5 qubit state
     qref = qmdd_create_basis_state(n_qubits, x5);
     q    = qmdd_create_basis_state(n_qubits, x5);
+    test_assert(fabs(qmdd_get_norm(q, n_qubits) - 1.0) < 1e-14);
+    test_assert(qmdd_get_norm(q, n_qubits) == 1.0);
 
     // 32 gates 
     q = qmdd_cgate(q, GATEID_Z, 1, 2);       q = qmdd_gate(q, GATEID_X, 2);       test_assert(qmdd_is_unitvector(q, 5));
@@ -574,6 +580,7 @@ int test_5qubit_circuit()
     q = qmdd_cgate(q, GATEID_Z, 1, 2);       q = qmdd_gate(q, GATEID_Z, 1);       test_assert(qmdd_is_unitvector(q, 5));
     node_count = aadd_countnodes(q);
     if (test_measure_random_state(q, n_qubits)) return 1;
+    test_assert(fabs(qmdd_get_norm(q, n_qubits) - 1.0) < 1e-14);
 
     // inverse
     q = qmdd_gate(q, GATEID_Z, 1);           q = qmdd_cgate(q, GATEID_Z, 1, 2);   test_assert(qmdd_is_unitvector(q, 5));
@@ -614,6 +621,8 @@ int test_10qubit_circuit()
     // 10 qubit state
     qref = qmdd_create_basis_state(10, x10);
     q    = qmdd_create_basis_state(10, x10);
+    test_assert(fabs(qmdd_get_norm(q, 10) - 1.0) < 1e-14);
+    test_assert(qmdd_get_norm(q, 10) == 1.0);
 
     // 30 random* Clifford gates            *chosen by a fair dice roll
     q = qmdd_cgate(q, GATEID_X, 1, 3);       q = qmdd_gate(q, GATEID_H, 0);       test_assert(qmdd_is_unitvector(q, 10));
@@ -633,6 +642,7 @@ int test_10qubit_circuit()
     q = qmdd_gate(q, GATEID_X, 6);           q = qmdd_gate(q, GATEID_X, 1);       test_assert(qmdd_is_unitvector(q, 10));
     node_count = aadd_countnodes(q);
     if (test_measure_random_state(q, 10)) return 1;
+    test_assert(fabs(qmdd_get_norm(q, 10) - 1.0) < 1e-14);
 
     // inverse
     q = qmdd_gate(q, GATEID_X, 1);           q = qmdd_gate(q, GATEID_X, 6);       test_assert(qmdd_is_unitvector(q, 10));
@@ -668,6 +678,8 @@ int test_20qubit_circuit()
     // 20 qubit state
     qref = qmdd_create_basis_state(20, x20);
     q    = qmdd_create_basis_state(20, x20);
+    test_assert(fabs(qmdd_get_norm(q, 20) - 1.0) < 1e-14);
+    test_assert(qmdd_get_norm(q, 20) == 1.0);
 
     // 100 gates
     q = qmdd_cgate(q, GATEID_Z, 4, 18);      q = qmdd_gate(q, GATEID_H, 16);          q = qmdd_cgate(q, GATEID_X, 1, 12);      q = qmdd_gate(q, GATEID_Z, 4);
@@ -697,6 +709,7 @@ int test_20qubit_circuit()
     q = qmdd_cgate(q, GATEID_X, 5, 19);      q = qmdd_cgate(q, GATEID_Z, 3, 18);      q = qmdd_cgate(q, GATEID_X, 5, 8);       q = qmdd_cgate(q, GATEID_Z, 14, 18);
     node_count = aadd_countnodes(q);
     if (test_measure_random_state(q, 20)) return 1;
+    test_assert(fabs(qmdd_get_norm(q, 20) - 1.0) < 1e-14);
 
     // inverse
     q = qmdd_cgate(q, GATEID_Z, 14, 18);     q = qmdd_cgate(q, GATEID_X, 5, 8);       q = qmdd_cgate(q, GATEID_Z, 3, 18);      q = qmdd_cgate(q, GATEID_X, 5, 19);
