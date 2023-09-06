@@ -27,8 +27,6 @@ For output on failure use `ctest -output-on-failure`.
 
 Another build can be run after removal of the build folder with `rm -rdf build`.
 
-Installing Q-Sylvan as a shared library is possible with `make install`. However because currently all of Sylvan's functionality is retained in Q-Sylvan, Sylvan header files might clash if another version of Sylvan (i.e. other than 1.4.0) is also installed.
-
 
 ## Example usage
 The following code snippets are a toy example for creating the [Bell state](https://en.wikipedia.org/wiki/Bell_state) `|Phi^+> = 1/sqrt(2) (|01> + |10>)`, first in the C interface, and secondly in the QASM interface.
