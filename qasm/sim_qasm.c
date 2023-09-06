@@ -256,6 +256,7 @@ QMDD apply_gate(QMDD state, quantum_op_t* gate)
         state = qmdd_cgate(state, GATEID_X, gate->targets[0], gate->targets[1]);
         state = qmdd_gate(state, GATEID_H, gate->targets[1]);
         state = qmdd_gate(state, GATEID_U(pi/2.0, -pi, pi-gate->angle[0]), gate->targets[0]);
+        return state;
     }
     else {
         fprintf(stderr, "Gate '%s' currently unsupported\n", gate->name);
