@@ -1237,14 +1237,14 @@ typedef enum {
     ROW_WISE_MODE
 } row_column_mode_t;
 
-typedef uint32_t VecArr_t; // pointer to struct with array of struct as element. Struct contains complex number.
-typedef uint32_t MatArr_t;
+typedef float VecArr_t; // pointer to struct with array of struct as element. Struct contains complex number.
+typedef float MatArr_t;
 
-MTBDD array_vector_to_mtbdd(VecArr_t vec_arr, int n, row_column_mode_t mode);
-MTBDD array_matrix_to_mtbdd(MatArr_t mat_arr, int n, row_column_mode_t mode);
+MTBDD array_vector_to_mtbdd(VecArr_t *v_arr, int n, row_column_mode_t mode);
+MTBDD array_matrix_to_mtbdd(MatArr_t **M_arr, int n, row_column_mode_t mode);
 
-VecArr_t mtbdd_to_vector_array(MTBDD v, int n, row_column_mode_t mode);
-MatArr_t mtbdd_to_matrix_array(MTBDD M, int n, row_column_mode_t mode);
+void mtbdd_to_vector_array(MTBDD v, int n, row_column_mode_t mode, VecArr_t *w);
+void mtbdd_to_matrix_array(MTBDD M, int n, row_column_mode_t mode, MatArr_t **W);
 
 /**
  * Matrix . Vector multiplication in MTBDD domain
@@ -1255,7 +1255,7 @@ MatArr_t mtbdd_to_matrix_array(MTBDD M, int n, row_column_mode_t mode);
  * 
  */
 
-VecArr_t array_matrix_vector_product(MatArr_t M, VecArr_t v, int n);
+void array_matrix_vector_product(MatArr_t **M_arr, VecArr_t *v_arr, int n, VecArr_t *w);
 
 /**
  * Matrix . Matrix multiplication in MTBDD domain
@@ -1266,7 +1266,7 @@ VecArr_t array_matrix_vector_product(MatArr_t M, VecArr_t v, int n);
  * 
  */
 
-MatArr_t array_matrix_matrix_product(MatArr_t M, MatArr_t V, int n);
+void array_matrix_matrix_product(MatArr_t **M, MatArr_t **V, int n, MatArr_t **W);
 
 /**
  * Matrix . Vector multiplication in MTBDD domain

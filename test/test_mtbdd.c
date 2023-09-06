@@ -1067,22 +1067,79 @@ test_mtbdd_and_abstract_plus_function()
 
 
 int
-test_mtbdd_matrix_multiplication()
+test_mtbdd_matrix_vector_multiplication()
 {
     // 
-    //  K . L = M
-    //
-    //  K = (1.0  2.0)   L = (1.0  0.5)   M = (1.0 x 1.0 + 2.0 x 0.5  1.0 x 1.0 + 2.0 x 1.0)
-    //      (2.0  1.0)       (0.5  1.0)       (2.0 x 1.0 + 1.0 x 1.0  2.0 x 0.5 + 1.0 x 1.0)
-    //
-    //  M = (2.0  3.0)
-    //      (2.0  2.0)
+    //  M . v = w, M: 2 x 2, v: 2 x 1 (n_row x n_col)
     //
 
-    // K[row][col]
+    int n = 1;
 
+    VecArr_t v_arr[2^n];
+    v_arr[0] = 1.1; v_arr[1] = -2.2;
+    MTBDD v = array_vector_to_mtbdd(v_arr, n, ROW_WISE_MODE);
 
+    // Declare and initialize two dimensional array with dynamic size
+    MatArr_t **M_arr = (MatArr_t **)malloc(2^n * sizeof(MatArr_t **));
+    for(int i=0; i < (2^n); i++) 
+        M_arr[i] = (MatArr_t *)malloc(2^n * sizeof(MatArr_t *));
 
+    M_arr[0][0] = -2.2; M_arr[0][1] =  1.2;
+    M_arr[1][0] =  2.4; M_arr[1][1] = -1.4;
+    MTBDD M = array_matrix_to_mtbdd(M_arr, n, COLUMN_WISE_MODE);
+
+    MTBDD product = mtbdd_matvec_mult(M, v, n);
+
+    MatArr_t w_arr[2];
+    mtbdd_to_vector_array(product, n, COLUMN_WISE_MODE, w_arr);
+
+    test_assert(w_arr[0] == M_arr[0][0] * v_arr[0] + M_arr[0][1] * v_arr[1]);
+    test_assert(w_arr[1] == M_arr[1][0] * v_arr[0] + M_arr[1][1] * v_arr[1]);
+
+    return 0;
+}
+
+int
+test_mtbdd_matrix_matrix_multiplication()
+{
+    // 
+    //  K . M = W, M: 2 x 2, L: 2 x 2, W: 2 x 2
+    //
+
+    int n = 1;
+
+    // Declare and initialize two dimensional array with dynamic size
+    MatArr_t **K_arr = (MatArr_t **)malloc(2^n * sizeof(MatArr_t **));
+    for(int i=0; i < (2^n); i++) 
+        K_arr[i] = (MatArr_t *)malloc(2^n * sizeof(MatArr_t *));
+
+    K_arr[0][0] =  1.1; K_arr[0][1] = 1.2; 
+    K_arr[1][0] = -2.2; K_arr[1][1] = 3.3;
+    MTBDD K = array_matrix_to_mtbdd(K_arr, n, ROW_WISE_MODE);
+
+    // Declare and initialize two dimensional array with dynamic size
+    MatArr_t **M_arr = (MatArr_t **)malloc(2^n * sizeof(MatArr_t **));
+    for(int i=0; i < (2^n); i++) 
+        M_arr[i] = (MatArr_t *)malloc(2^n * sizeof(MatArr_t *));
+
+    M_arr[0][0] = -2.2; M_arr[0][1] =  1.2;
+    M_arr[1][0] =  2.4; M_arr[1][1] = -1.4;
+    MTBDD M = array_matrix_to_mtbdd(M_arr, n, COLUMN_WISE_MODE);
+
+    MTBDD product = mtbdd_matvec_mult(K, M, n);
+
+    // Declare and initialize two dimensional array with dynamic size
+    MatArr_t **W_arr = (MatArr_t **)malloc(2^n * sizeof(MatArr_t **));
+    for(int i=0; i < (2^n); i++) 
+        M_arr[i] = (MatArr_t *)malloc(2^n * sizeof(MatArr_t *));
+
+    mtbdd_to_matrix_array(product, n, COLUMN_WISE_MODE, W_arr);
+
+    test_assert(W_arr[0][0] == M_arr[0][0] * K_arr[0][0] + M_arr[0][1] * K_arr[1][0]);
+    test_assert(W_arr[0][1] == M_arr[0][0] * K_arr[0][1] + M_arr[0][1] * K_arr[1][1]);
+
+    test_assert(W_arr[1][0] == M_arr[1][0] * K_arr[0][0] + M_arr[1][1] * K_arr[1][0]);
+    test_assert(W_arr[1][1] == M_arr[1][0] * K_arr[0][1] + M_arr[1][1] * K_arr[1][1]);
 
     return 0;
 }

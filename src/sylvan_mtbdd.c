@@ -3786,10 +3786,10 @@ mtbdd_map_removeall(MTBDDMAP map, MTBDD variables)
  * 
  */
 
-MTBDD array_vector_to_mtbdd(VecArr_t vec_arr, int n, row_column_mode_t mode)
+MTBDD array_vector_to_mtbdd(VecArr_t *v_arr, int n, row_column_mode_t mode)
 {
     // Dummy code
-    if(vec_arr == 0)
+    if(v_arr[0] == 0)
         return MTBDD_ZERO;
 
     if(n == 0)
@@ -3801,10 +3801,10 @@ MTBDD array_vector_to_mtbdd(VecArr_t vec_arr, int n, row_column_mode_t mode)
     return MTBDD_ZERO;
 }
 
-MTBDD array_matrix_to_mtbdd(MatArr_t mat_arr, int n, row_column_mode_t mode)
+MTBDD array_matrix_to_mtbdd(MatArr_t **M_arr, int n, row_column_mode_t mode)
 {
     // Dummy code
-    if(mat_arr == 0)
+    if(M_arr[0][0] == 0)
         return MTBDD_ZERO;
 
     if(n == 0)
@@ -3816,38 +3816,38 @@ MTBDD array_matrix_to_mtbdd(MatArr_t mat_arr, int n, row_column_mode_t mode)
     return MTBDD_ZERO;
 }
 
-VecArr_t mtbdd_to_vector_array(MTBDD v, int n, row_column_mode_t mode)
+void mtbdd_to_vector_array(MTBDD v, int n, row_column_mode_t mode, VecArr_t *w)
 {
     // Dummy code
-    VecArr_t vec_arr = 0;
+    w[0] = 0;
 
     if(v == 0)
-        return vec_arr;
+        return;
 
     if(n == 0)
-        return vec_arr;
+        return;
     
     if(mode == COLUMN_WISE_MODE)
-        return vec_arr;
+        return;
 
-    return vec_arr;
+    return;
 }
 
-MatArr_t mtbdd_to_matrix_array(MTBDD M, int n, row_column_mode_t mode)
+void mtbdd_to_matrix_array(MTBDD M, int n, row_column_mode_t mode, MatArr_t **W)
 {
     // Dummy code
-    MatArr_t mat_arr = 0;
+    W[0][0] = 0;
 
     if(M == 0)
-        return mat_arr;
+        return;
 
     if(n == 0)
-        return mat_arr;
+        return;
 
     if(mode == COLUMN_WISE_MODE)
-        return mat_arr;
+        return;
 
-    return mat_arr;
+    return;
 }
 
 /**
@@ -3858,7 +3858,7 @@ MatArr_t mtbdd_to_matrix_array(MTBDD M, int n, row_column_mode_t mode)
  * Results in an array of a 2^n vector w[col].
  * 
  */
-VecArr_t array_matrix_vector_product(MatArr_t M, VecArr_t v, int n)
+void array_matrix_vector_product(MatArr_t **M, VecArr_t *v, int n, VecArr_t *w)
 {
     // Convert to MTBDD
     MTBDD M_col = array_matrix_to_mtbdd(M, n, COLUMN_WISE_MODE);
@@ -3867,7 +3867,9 @@ VecArr_t array_matrix_vector_product(MatArr_t M, VecArr_t v, int n)
     // Multiply in MTBDD domain
     MTBDD w_col = mtbdd_matvec_mult(M_col, v_row, n);
 
-    return mtbdd_to_vector_array(w_col, n, COLUMN_WISE_MODE);
+    mtbdd_to_vector_array(w_col, n, COLUMN_WISE_MODE, w);
+
+    return;
 }
 
 /**
@@ -3878,7 +3880,7 @@ VecArr_t array_matrix_vector_product(MatArr_t M, VecArr_t v, int n)
  * Results in an array of a 2^n x 2^n matrix W[row][col]. 
  * 
  */
-MatArr_t array_matrix_matrix_product(MatArr_t M1, MatArr_t M2, int n)
+void array_matrix_matrix_product(MatArr_t **M1, MatArr_t **M2, int n, MatArr_t **W)
 {
     // Convert to MTBDD
     MTBDD M1_col = array_matrix_to_mtbdd(M1, n, COLUMN_WISE_MODE);
@@ -3887,7 +3889,9 @@ MatArr_t array_matrix_matrix_product(MatArr_t M1, MatArr_t M2, int n)
     // Multiply in MTBDD domain
     MTBDD W_col = mtbdd_matmat_mult(M1_col, M2_row, n);
 
-    return mtbdd_to_matrix_array(W_col, n, COLUMN_WISE_MODE);
+    mtbdd_to_matrix_array(W_col, n, COLUMN_WISE_MODE, W);
+    
+    return;
 }
 
 /**
