@@ -1070,7 +1070,7 @@ int
 test_mtbdd_matrix_vector_multiplication()
 {
     // 
-    //  M . v = w, M: 2 x 2, v: 2 x 1 (n_row x n_col)
+    //  M . v = w, M: 2^n x 2^n, v: 2^n x 1 (n_row x n_col)
     //
 
     int n = 1;
@@ -1096,6 +1096,12 @@ test_mtbdd_matrix_vector_multiplication()
     test_assert(w_arr[0] == M_arr[0][0] * v_arr[0] + M_arr[0][1] * v_arr[1]);
     test_assert(w_arr[1] == M_arr[1][0] * v_arr[0] + M_arr[1][1] * v_arr[1]);
 
+    // free all mallocs
+    for(int i=0; i < (2^n); i++) 
+        free(M_arr[i]);
+
+    free(M_arr);
+
     return 0;
 }
 
@@ -1103,7 +1109,7 @@ int
 test_mtbdd_matrix_matrix_multiplication()
 {
     // 
-    //  K . M = W, M: 2 x 2, L: 2 x 2, W: 2 x 2
+    //  K . M = W, M: 2^n x 2^n, L: 2^n x 2^n, W: 2^n x 2^n
     //
 
     int n = 1;
@@ -1140,6 +1146,17 @@ test_mtbdd_matrix_matrix_multiplication()
 
     test_assert(W_arr[1][0] == M_arr[1][0] * K_arr[0][0] + M_arr[1][1] * K_arr[1][0]);
     test_assert(W_arr[1][1] == M_arr[1][0] * K_arr[0][1] + M_arr[1][1] * K_arr[1][1]);
+
+    // free all mallocs
+    for(int i=0; i < (2^n); i++) {
+        free(K_arr[i]);
+        free(M_arr[i]);
+        free(W_arr[i]);
+    }
+
+    free(K_arr);
+    free(M_arr);
+    free(W_arr);
 
     return 0;
 }

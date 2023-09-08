@@ -25,6 +25,8 @@
 #include <sylvan_sl.h>
 #include <sha2.h>
 
+#include <sylvan_cache.h>
+
 /* Primitives */
 int
 mtbdd_isleaf(MTBDD bdd)
@@ -3900,20 +3902,25 @@ void array_matrix_matrix_product(MatArr_t **M1, MatArr_t **M2, int n, MatArr_t *
  * 
  */
 
-MTBDD mtbdd_is_result_in_cache(int f, MTBDD M, MTBDD v)
+MTBDD mtbdd_is_result_in_cache(int function, MTBDD M, MTBDD v)
 {
     MTBDD result = MTBDD_ZERO;
 
-    if(f == 0 || M == MTBDD_ZERO || v == MTBDD_ZERO)
+    if(function == 0 || M == MTBDD_ZERO || v == MTBDD_ZERO)
         return result;
 
-    return result;
+    if(cache_get(function, M, v, &result))
+        return result;
+
+    return MTBDD_ZERO;
 }
 
-void mtbdd_put_result_in_cache(int f, MTBDD M, MTBDD v, MTBDD result)
+void mtbdd_put_result_in_cache(int function, MTBDD M, MTBDD v, MTBDD result)
 {
-    if(f == 0 || M == MTBDD_ZERO || v == MTBDD_ZERO || result == MTBDD_ZERO)
+    if(function == 0 || M == MTBDD_ZERO || v == MTBDD_ZERO || result == MTBDD_ZERO)
         return;
+
+    cache_put(function, M, v, result);
 
     return;
 }
@@ -3968,10 +3975,11 @@ MTBDD mtbdd_get_vector_lower_half(MTBDD v, int n)
 
 MTBDD mtbdd_merge_vectors(MTBDD w1, MTBDD w2, row_column_mode_t mode)
 {
-    if(w1 == MTBDD_ZERO || w2 == MTBDD_ZERO || mode == COLUMN_WISE_MODE)
+    if(w1 == MTBDD_ZERO || w2 == MTBDD_ZERO || mode == COLUMN_WISE_MODE) // TODO: mode?
         return MTBDD_ZERO;
 
-    return MTBDD_ZERO;
+    // x0 - low = w1 and x0 - high = w2
+    return mtbdd_makenode(0, w1, w2);
 }
 
 /**
