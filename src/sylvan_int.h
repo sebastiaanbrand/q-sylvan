@@ -100,6 +100,7 @@ static const uint64_t CACHE_MTBDD_LESS              = (53LL<<40);
 static const uint64_t CACHE_MTBDD_GEQ               = (54LL<<40);
 static const uint64_t CACHE_MTBDD_GREATER           = (55LL<<40);
 static const uint64_t CACHE_MTBDD_EVAL_COMPOSE      = (56LL<<40);
+static const uint64_t CACHE_MTBDD_TENSOR            = (57LL<<40);
 
 // AADD operations
 static const uint64_t CACHE_AADD_PLUS               = (60LL<<40);

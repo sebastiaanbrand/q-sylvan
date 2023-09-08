@@ -4069,3 +4069,43 @@ MTBDD mtbdd_matmat_mult(MTBDD M1, MTBDD M2, int n)
 //MTBDD mtbdd_mat_tensor_prod(MTBDD M1, MTBDD M2, int n)
 //{}
 
+/**
+ * Tensor product (same function for matrix or vector MTBDDs)
+ * TODO: this function should be a Lace TASK so that it can be parallelized.
+ */
+MTBDD mtbdd_tensor_prod(MTBDD a, MTBDD b, int leaf_var_a)
+{
+    mtbddnode_t na = MTBDD_GETNODE(a);
+    mtbddnode_t nb = MTBDD_GETNODE(b);
+
+    // If both are leaves, multiply their values
+    if (mtbddnode_isleaf(na) && mtbddnode_isleaf(nb)) {
+        return RUN(mtbdd_op_times, &a, &b);
+    }
+
+    // Check cache
+    MTBDD result;
+    if (cache_get3(CACHE_MTBDD_TENSOR, a, b, (uint64_t) leaf_var_a, &result)) {
+        return result;
+    }
+
+    MTBDD low, high;
+    BDDVAR var;
+    // Recurse over A first (A \tensor B != B \tensor A)
+    if (!mtbddnode_isleaf(na)) {
+        low  = mtbdd_tensor_prod(mtbddnode_getlow(na), b, leaf_var_a);
+        high = mtbdd_tensor_prod(mtbddnode_gethigh(na), b, leaf_var_a);
+        var  = mtbddnode_getvariable(na);
+    }
+    else { // A is a leaf and B is not
+        low  = mtbdd_tensor_prod(a, mtbddnode_getlow(nb), leaf_var_a);
+        high = mtbdd_tensor_prod(a, mtbddnode_gethigh(nb), leaf_var_a);
+        var  = mtbddnode_getvariable(nb) + leaf_var_a; // vars in B are offset by the depth of A
+    }
+    result = mtbdd_makenode(var, low, high);
+
+    // Cache put
+    cache_put3(CACHE_MTBDD_TENSOR, a, b, (uint64_t) leaf_var_a, result);
+
+    return result;
+}
