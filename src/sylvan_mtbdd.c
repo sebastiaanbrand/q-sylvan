@@ -3846,8 +3846,38 @@ void mtbdd_to_matrix_array(MTBDD M, int n, row_column_mode_t mode, MatArr_t **W)
     if(n == 0)
         return;
 
-    if(mode == COLUMN_WISE_MODE)
+    if(mode == COLUMN_WISE_MODE) {
+
+        for(int row=0; row < (2^n); row++) {
+
+           MTBDD node = M;
+
+            // Traverse through M from root to row
+            for(int bit=n; bit > 0; bit--) {
+
+                if((row & (2^bit)) == 0)
+                    node = mtbdd_getlow(node);
+                else
+                    node = mtbdd_gethigh(node);
+            }
+
+            for(int column=0; column < (2^n); column++) {
+
+                // Traverse through M from node to column
+                for(int bit=n; bit > 0; bit--) {
+
+                    if((column & (2^bit)) == 0)
+                        node = mtbdd_getlow(node);
+                    else
+                        node = mtbdd_gethigh(node);
+                }
+
+                W[row][column] = mtbdd_getdouble(node);
+            }
+        }
+
         return;
+    }
 
     return;
 }
@@ -4005,7 +4035,7 @@ MTBDD mtbdd_matvec_mult(MTBDD M, MTBDD v, int n)
     if(result != MTBDD_ZERO)
         return result;
 
-    // Calculate M with size 2x2 and v with size 2
+    // Calculate M with size 2^1 x 2^1 and v with size 2^1
     if(n == 1) {
 
         result = mtbdd_and_abstract_plus(M, v, 1);

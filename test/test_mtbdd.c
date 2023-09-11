@@ -1167,23 +1167,25 @@ test_mtbdd_matrix_kronecker_multiplication()
     //
     //  K (x) L = M
     //
-    //  K = (1.0  2.0)   L = (1.0  0.5)   M = (1.0 x L  2.0 x L)
+    //  K = (1.0  3.0)   L = (1.0  0.5)   M = (1.0 x L  3.0 x L)
     //      (2.0  1.0)       (0.5  1.0)       (2.0 x L  1.0 x L)
     //
-    //  M = (1.0 0.5 2.0 1.0)
-    //      (0.5 1.0 1.0 2.0)
+    //  M = (1.0 0.5 3.0 1.5)
+    //      (0.5 1.0 1.5 3.0)
     //      (2.0 1.0 1.0 0.5)
     //      (1.0 2.0 0.5 1.0)
     //
 
     MTBDD K, L, M;
-    K = mtbdd_makenode(0, mtbdd_makenode(1, mtbdd_double(1.0), mtbdd_double(2.0)),
+    // Fill both dd's column wise oriented
+    K = mtbdd_makenode(0, mtbdd_makenode(1, mtbdd_double(1.0), mtbdd_double(3.0)),
                           mtbdd_makenode(1, mtbdd_double(2.0), mtbdd_double(1.0)));
     L = mtbdd_makenode(0, mtbdd_makenode(1, mtbdd_double(1.0), mtbdd_double(0.5)),
                           mtbdd_makenode(1, mtbdd_double(0.5), mtbdd_double(1.0)));
     
-    M = mtbdd_tensor_prod(K, L, 2);
-
+    M = mtbdd_tensor_prod(K, L, 2); 
+    
+    // Read out column wise
     MTBDD M0000 = mtbdd_getlow(mtbdd_getlow(mtbdd_getlow(mtbdd_getlow(M))));
     test_assert(mtbdd_isleaf(M0000));
     test_assert(mtbdd_getdouble(M0000) == 1.0);
@@ -1199,16 +1201,16 @@ test_mtbdd_matrix_kronecker_multiplication()
 
     MTBDD M0100 = mtbdd_getlow(mtbdd_getlow(mtbdd_gethigh(mtbdd_getlow(M))));
     test_assert(mtbdd_isleaf(M0100));
-    test_assert(mtbdd_getdouble(M0100) == 2.0);
+    test_assert(mtbdd_getdouble(M0100) == 3.0);
     MTBDD M0101 = mtbdd_gethigh(mtbdd_getlow(mtbdd_gethigh(mtbdd_getlow(M))));
     test_assert(mtbdd_isleaf(M0101));
-    test_assert(mtbdd_getdouble(M0101) == 1.0);
+    test_assert(mtbdd_getdouble(M0101) == 1.5);
     MTBDD M0110 = mtbdd_getlow(mtbdd_gethigh(mtbdd_gethigh(mtbdd_getlow(M))));
     test_assert(mtbdd_isleaf(M0110));
-    test_assert(mtbdd_getdouble(M0110) == 1.0);
+    test_assert(mtbdd_getdouble(M0110) == 1.5);
     MTBDD M0111 = mtbdd_gethigh(mtbdd_gethigh(mtbdd_gethigh(mtbdd_getlow(M))));
     test_assert(mtbdd_isleaf(M0111));
-    test_assert(mtbdd_getdouble(M0111) == 2.0);
+    test_assert(mtbdd_getdouble(M0111) == 3.0);
 
     MTBDD M1000 = mtbdd_getlow(mtbdd_getlow(mtbdd_getlow(mtbdd_gethigh(M))));
     test_assert(mtbdd_isleaf(M1000));
@@ -1269,20 +1271,20 @@ TASK_0(int, runtests)
 
     // Test 6
     printf("\nTesting mtbdd abstract arithmic functions.\n");
-    //if (test_mtbdd_abstract_plus_function_1()) return 1;
-    //if (test_mtbdd_abstract_plus_function_2()) return 1;
-    //if (test_mtbdd_abstract_plus_min_max_times_function_3()) return 1;
-    // temporarily commented out because they give a segmentation fault
+    if (test_mtbdd_abstract_plus_function_1()) return 1;
+    if (test_mtbdd_abstract_plus_function_2()) return 1;
+    if (test_mtbdd_abstract_plus_min_max_times_function_3()) return 1;
 
     // Test 7
     printf("\nTesting mtbdd and abstract arithmic functions.\n");
-    //if (test_mtbdd_and_abstract_plus_function()) return 1;
-    // temporarily commented out because they give a segmentation fault
+    if (test_mtbdd_and_abstract_plus_function()) return 1;
 
     // Test 8
     printf("\nTesting mtbdd linear algebra fuctions\n");
+    //if (test_mtbdd_matrix_vector_multiplication()) return 1;
+    //if (test_mtbdd_matrix_matrix_multiplication()) return 1;
     if (test_mtbdd_matrix_kronecker_multiplication()) return 1;
-
+    
     return 0;
 }
 
