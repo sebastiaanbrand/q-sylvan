@@ -293,6 +293,7 @@ void simulate_circuit(quantum_circuit_t* circuit)
                 double p;
                 // don't set state = post measurement state
                 qmdd_measure_all(state, circuit->qreg_size, circuit->creg, &p);
+                break;
             }
         }
         if (count_nodes) {
