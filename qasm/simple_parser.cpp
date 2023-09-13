@@ -38,6 +38,7 @@ std::vector<std::string> split(std::string to_split, std::string delims)
     return result;
 }
 
+
 void sort_controls(quantum_op_t *gate)
 {
     std::vector<int> controls;
@@ -57,13 +58,14 @@ void sort_targets(quantum_op_t *gate)
 {
     std::string name = std::string(gate->name);
     // only sort targets if gate is symmetric (i.e. U(t1,t2) = U(t2,t1))
-    if (name == "swap" || name == "rzz" || name == "rxx") {
+    if (name == "swap" || name == "rzz" || name == "rxx" || name == "cswap") {
         int t1 = std::min(gate->targets[0], gate->targets[1]);
         int t2 = std::max(gate->targets[0], gate->targets[1]);
         gate->targets[0] = t1;
         gate->targets[1] = t2;
     }
 }
+
 
 void check_measurements(quantum_circuit_t* circuit)
 {
@@ -414,7 +416,7 @@ class QASMParser {
                     op->ctrls[0] = get_seq_index(qregisters, args[1], stoi(args[2]));
                     op->targets[0] = get_seq_index(qregisters, args[3], stoi(args[4]));
                     op->targets[1] = get_seq_index(qregisters, args[5], stoi(args[6]));
-                    sort_controls(op);
+                    sort_targets(op);
                 } catch (...) {
                     parse_error("Error parsing arguments of gate " + name);
                 }
@@ -597,18 +599,19 @@ void insert_required_swaps(quantum_circuit_t *circuit)
             int tmp = head->targets[0];
             head->targets[0] = head->ctrls[c_index];
             head->ctrls[c_index] = tmp;
-            sort_controls(head);
 
             // insert: prev -> swap1(t,c) -> head -> swap2(t,c) -> next
             quantum_op_t *next = head->next;
             quantum_op_t *swp1 = _get_swap_op(head->targets[0], head->ctrls[c_index]);
             quantum_op_t *swp2 = _get_swap_op(head->targets[0], head->ctrls[c_index]);
+            sort_controls(head);
+            sort_targets(head);
             prev->next = swp1;
             swp1->next = head;
             head->next = swp2;
             swp2->next = next;
 
-            prev = head;
+            prev = swp2;
             head = next;
         } else {
             prev = head;
