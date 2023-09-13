@@ -1240,6 +1240,10 @@ typedef enum {
 typedef float VecArr_t; // pointer to struct with array of struct as element. Struct contains complex number.
 typedef float MatArr_t;
 
+int allocate_array_matrix(MatArr_t ***W_arr, int n);
+int free_array_matrix(MatArr_t **W_arr, int n);
+int print_array_matrix(MatArr_t **W_arr, int n);
+
 MTBDD array_vector_to_mtbdd(VecArr_t *v_arr, int n, row_column_mode_t mode);
 MTBDD array_matrix_to_mtbdd(MatArr_t **M_arr, int n, row_column_mode_t mode);
 

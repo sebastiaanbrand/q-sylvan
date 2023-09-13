@@ -3747,6 +3747,64 @@ mtbdd_map_removeall(MTBDDMAP map, MTBDD variables)
 /** Matrix / vector operations - extension of original API of Tom van Dijk **/
 
 /**
+ * Util functions for dynamically allocation of memory for arrays
+ */
+
+int
+allocate_array_matrix(MatArr_t ***W_arr, int n)
+{
+    if(n < 0)
+        return 1;
+
+    *W_arr = (MatArr_t **)malloc((1 << n) * sizeof(MatArr_t *)); // row pointers
+
+    if(*W_arr == NULL)
+        return 2;
+
+    for(int i=0; i < (1 << n); i++) {
+
+        (*W_arr)[i] = (MatArr_t *)malloc((1 << n) * sizeof(MatArr_t)); // all elements
+
+        if((*W_arr)[i] == NULL)
+            return 3;
+
+        for(int j=0; j < (1 << n); j++)
+            (*W_arr)[i][j] = 0.0;
+    }
+
+    return 0;
+}
+
+int
+free_array_matrix(MatArr_t **W_arr, int n)
+{
+    if(n<0)
+        return 1;
+
+    // free all mallocs
+    for(int i=0; i < (1 << n); i++) {
+        free(W_arr[i]);
+    }
+
+    free(W_arr);
+
+    return 0;
+}
+
+int
+print_array_matrix(MatArr_t **W_arr, int n)
+{
+    if(n<0)
+        return 1;
+
+    for(int row=0; row < (1 << n); row++)
+        for(int column=0; column < (1 << n); column++)
+            printf("W_arr[%d][%d] = %lf\n", row, column, W_arr[row][column]);
+
+    return 0;
+}
+
+/**
  * Utility functions:
  * 
  * Convert a matrix array M[row][col] into a MTBDD.
@@ -3848,28 +3906,64 @@ void mtbdd_to_matrix_array(MTBDD M, int n, row_column_mode_t mode, MatArr_t **W)
 
     if(mode == COLUMN_WISE_MODE) {
 
-        for(int row=0; row < (2^n); row++) {
+        //
+        // The leaf can be reached by the composite row * 2^n + column
+        //
+        // Example: 
+        //
+        //   row = 3, column = 5, n = 3. 
+        //
+        // That corresponds to a matrix of 2^3 x 2^3 = 8 x 8, or in C: "MatArr_t W[8][8]". 
+        //
+        // The row and column index = {0,1,..,7} = {0, ..., ((2^3)-1)}, W[row][column].
+        //
+        //  W[3][5] = W[011][100] = M[011100]
+        //
+        // By starting traversing through M from the root, first go to node 011. That is 2^3 deep.
+        //
+        // Under this node you find a mtbdd with depth 2^3 with leafs corresponding to W[][column].
+        //
+        // So, traversing further on with node[100] = getlow(getlow(gethigh(node))) you reach the leaf
+        //
+        // with as value equal to W[3][5].
+        //
+        //  W[3][5] = W[011][100] = leaf(node[100]) = leaf(M[011100])
+        //
 
-           MTBDD node = M;
+        for(int row=0; row < (1 << n); row++) {
 
-            // Traverse through M from root to row
-            for(int bit=n; bit > 0; bit--) {
+            MTBDD node = M;
 
-                if((row & (2^bit)) == 0)
+            // Traverse through M from root to row node
+            for(int bit=(n-1); bit >= 0; bit--) {
+
+                if((row & (1 << bit)) == 0) {
                     node = mtbdd_getlow(node);
-                else
+                    printf("row=%d getlow()\n", row);
+                }
+                else {
                     node = mtbdd_gethigh(node);
+                    printf("row=%d gethigh()\n", row);
+                }
             }
 
-            for(int column=0; column < (2^n); column++) {
+            MTBDD row_node = node;
 
-                // Traverse through M from node to column
-                for(int bit=n; bit > 0; bit--) {
+            for(int column=0; column < (1 << n); column++) {
 
-                    if((column & (2^bit)) == 0)
+                node = row_node;
+
+                // Traverse through M from node to column node
+                for(int bit=(n-1); bit >= 0; bit--) {
+
+                    if((column & (1 << bit)) == 0) {
                         node = mtbdd_getlow(node);
-                    else
+                        printf("column=%d getlow()\n", column);
+                    }
+                    else {
                         node = mtbdd_gethigh(node);
+                        printf("column=%d gethigh()\n", column);
+                    }
                 }
 
                 W[row][column] = mtbdd_getdouble(node);
@@ -4103,7 +4197,7 @@ MTBDD mtbdd_matmat_mult(MTBDD M1, MTBDD M2, int n)
  * Tensor product (same function for matrix or vector MTBDDs)
  * TODO: this function should be a Lace TASK so that it can be parallelized.
  */
-MTBDD mtbdd_tensor_prod(MTBDD a, MTBDD b, int leaf_var_a)
+MTBDD mtbdd_tensor_prod(MTBDD a, MTBDD b, int leaf_var_a) // leaf_var_a == n
 {
     mtbddnode_t na = MTBDD_GETNODE(a);
     mtbddnode_t nb = MTBDD_GETNODE(b);
