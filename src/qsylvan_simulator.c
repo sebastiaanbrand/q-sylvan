@@ -46,15 +46,15 @@ GATE_OPID_64(uint32_t gateid, BDDVAR a, BDDVAR b, BDDVAR c, BDDVAR d, BDDVAR e)
 /******************************<Initialization>********************************/
 
 void
-qsylvan_init_simulator(size_t wgt_tab_size, double wgt_tab_tolerance, int edge_weigth_backend, int norm_strat)
+qsylvan_init_simulator(size_t min_tablesize, size_t max_tablesize, double wgt_tab_tolerance, int edge_weigth_backend, int norm_strat)
 {
-    sylvan_init_aadd(wgt_tab_size, wgt_tab_tolerance, edge_weigth_backend, norm_strat, &qmdd_gates_init);
+    sylvan_init_aadd(min_tablesize, max_tablesize, wgt_tab_tolerance, edge_weigth_backend, norm_strat, &qmdd_gates_init);
 }
 
 void
 qsylvan_init_defaults(size_t wgt_tab_size)
 {
-    qsylvan_init_simulator(wgt_tab_size, -1, COMP_HASHMAP, NORM_LOW);
+    qsylvan_init_simulator(wgt_tab_size, wgt_tab_size, -1, COMP_HASHMAP, NORM_LOW);
 }
 
 /*****************************</Initialization>********************************/

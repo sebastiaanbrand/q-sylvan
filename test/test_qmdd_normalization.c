@@ -192,7 +192,7 @@ int test_wgt_norm_L2()
 
 int runtests() 
 {
-    sylvan_init_edge_weights(1LL<<11, -1, WGT_COMPLEX_128, COMP_HASHMAP);
+    sylvan_init_edge_weights(1LL<<11, 1LL<<11, -1, WGT_COMPLEX_128, COMP_HASHMAP);
 
     // test amp normalization
     if (test_wgt_norm_L2()) return 1;

@@ -105,7 +105,7 @@ int test_complex_operations() // No influence on DD
     index4=wgt_div(index1, index2); weight_value(index4, &val4);
     test_assert(index3 == index4);  test_assert(weight_eq(&val3, &val4));
 
-    if(VERBOSE) printf("complex operations:       ok\n");
+    if(VERBOSE) printf("complex operations:            ok\n");
     return 0;
 }
 
@@ -331,7 +331,7 @@ int test_vector_addition()
     test_assert(q001 == q100);
     test_assert(!qmdd_is_unitvector(q001, 4));
 
-    if(VERBOSE) printf("qmdd vector addition:     ok\n");
+    if(VERBOSE) printf("qmdd vector addition:          ok\n");
     return 0;
 }
 
@@ -348,7 +348,7 @@ int run_qmdd_tests()
     return 0;
 }
 
-int test_with(int amps_backend, int norm_strat) 
+int test_with(int wgt_backend, int norm_strat, int wgt_indx_bits) 
 {
     // Standard Lace initialization
     int workers = 1;
@@ -358,10 +358,12 @@ int test_with(int amps_backend, int norm_strat)
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    qsylvan_init_simulator(1LL<<11, -1, amps_backend, norm_strat);
+    qsylvan_init_simulator(1LL<<wgt_indx_bits, 1LL<<wgt_indx_bits, -1, 
+                           wgt_backend, norm_strat);
     qmdd_set_testing_mode(true); // turn on internal sanity tests
 
-    printf("amps backend = %d, norm strategy = %d:\n", amps_backend, norm_strat);
+    printf("wgt backend = %d, norm strat = %d, wgt indx bits = %d:\n", 
+            wgt_backend, norm_strat, wgt_indx_bits);
     int res = run_qmdd_tests();
 
     sylvan_quit();
@@ -374,7 +376,11 @@ int runtests()
 {
     for (int backend = 0; backend < n_backends; backend++) {
         for (int norm_strat = 0; norm_strat < n_norm_strategies; norm_strat++) {
-            if (test_with(backend, norm_strat)) return 1;
+            if (test_with(backend, norm_strat, 11)) return 1;
+            if (backend == COMP_HASHMAP) {
+                // test with edge wgt index > 23 bits
+                if (test_with(backend, norm_strat, 24)) return 1;
+            }
         }
     }
     return 0;

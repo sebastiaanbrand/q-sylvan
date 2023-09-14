@@ -119,8 +119,8 @@ TASK_DECL_1(AADD, _fill_new_wgt_table, AADD);
  *   of edge table. This can be used to reinitialize edge weight table values 
  *   outside of any AADD. Can be NULL.
  */
-void sylvan_init_aadd(size_t wgt_tab_size, double wgt_tab_tolerance, int edge_weigth_backend, int norm_strat, void *init_wgt_tab_entries);
-void sylvan_init_aadd_defaults(size_t wgt_tab_size);
+void sylvan_init_aadd(size_t min_wgt_tablesize, size_t max_wgt_tablesize, double wgt_tab_tolerance, int edge_weigth_backend, int norm_strat, void *init_wgt_tab_entries);
+void sylvan_init_aadd_defaults(size_t min_wgt_tablesize, size_t max_wgt_tablesize);
 void aadd_set_caching_granularity(int granularity);
 
 /*****************************</Initialization>********************************/

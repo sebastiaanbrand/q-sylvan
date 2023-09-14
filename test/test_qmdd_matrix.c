@@ -675,7 +675,7 @@ int runtests()
     return 0;
 }
 
-int test_with(int wgt_backend, int norm_strat) 
+int test_with(int wgt_backend, int norm_strat, int wgt_indx_bits) 
 {
     // Standard Lace initialization
     int workers = 1;
@@ -687,11 +687,13 @@ int test_with(int wgt_backend, int norm_strat)
     sylvan_init_package();
     double tolerance = -1; // default
     if (norm_strat == NORM_L2) tolerance = 1e-13;
-    qsylvan_init_simulator(1LL<<11, tolerance, wgt_backend, norm_strat);
+    qsylvan_init_simulator(1LL<<wgt_indx_bits, 1LL<<wgt_indx_bits, tolerance,
+                           wgt_backend, norm_strat);
     qmdd_set_testing_mode(true); // turn on internal sanity tests
     aadd_set_auto_gc_wgt_table(false); // no auto gc of ctable yet for mult operations
 
-    printf("weigth backend = %d, norm strategy = %d:\n", wgt_backend, norm_strat);
+    printf("wgt backend = %d, norm strat = %d, wgt indx bits = %d:\n", 
+            wgt_backend, norm_strat, wgt_indx_bits);
     int res = runtests();
 
     sylvan_quit();
@@ -702,10 +704,13 @@ int test_with(int wgt_backend, int norm_strat)
 
 int main()
 {
-    // TODO: run tests with different normalization strategies
     for (int backend = 0; backend < n_backends; backend++) {
         for (int norm_strat = 0; norm_strat < n_norm_strategies; norm_strat++) {
-            if (test_with(backend, norm_strat)) return 1;
+            if (test_with(backend, norm_strat, 11)) return 1;
+            if (backend == COMP_HASHMAP) {
+                // test with edge wgt index > 23 bits
+                if (test_with(backend, norm_strat, 24)) return 1;
+            }
         }
     }
     return 0;

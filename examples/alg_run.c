@@ -279,7 +279,7 @@ int main(int argc, char **argv)
     lace_start(workers, 0);
     sylvan_set_sizes(min_tablesize, max_tablesize, min_cachesize, max_cachesize);
     sylvan_init_package();
-    qsylvan_init_simulator(wgt_tab_size, tolerance, wgt_table_type, wgt_norm_strat);
+    qsylvan_init_simulator(wgt_tab_size, wgt_tab_size, tolerance, wgt_table_type, wgt_norm_strat);
     wgt_set_inverse_chaching(wgt_inv_caching);
 
     // e.g. for choosing random 'a' in Shor
