@@ -324,7 +324,7 @@ int main(int argc, char *argv[])
     // Simple Sylvan initialization
     sylvan_set_sizes(min_tablesize, max_tablesize, min_cachesize, max_cachesize);
     sylvan_init_package();
-    qsylvan_init_simulator(wgt_tab_size, tolerance, COMP_HASHMAP, wgt_norm_strat);
+    qsylvan_init_simulator(wgt_tab_size, wgt_tab_size, tolerance, COMP_HASHMAP, wgt_norm_strat);
 
     simulate_circuit(circuit);
 

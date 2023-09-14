@@ -28,7 +28,7 @@ extern void *wgt_storage_new;
 
 /**********************<Managing the edge weight table>************************/
 
-extern void sylvan_init_edge_weights(size_t size, double tol, edge_weight_type_t edge_weight_type, wgt_storage_backend_t backend);
+extern void sylvan_init_edge_weights(size_t min_tablesize, size_t max_tablesize, double tol, edge_weight_type_t edge_weight_type, wgt_storage_backend_t backend);
 extern void init_edge_weight_functions(edge_weight_type_t edge_weight_type);
 extern void init_edge_weight_storage(size_t size, double tol, wgt_storage_backend_t backend, void **wgt_store);
 extern void (*init_wgt_table_entries)(); // set by sylvan_init_aadd

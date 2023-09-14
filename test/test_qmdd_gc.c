@@ -47,7 +47,7 @@ int test_with(int wgt_backend, int norm_strat, int wgt_indx_bits)
     uint64_t wgt_tab_size = 1LL<<wgt_indx_bits;
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    qsylvan_init_simulator(wgt_tab_size, tol, wgt_backend, norm_strat);
+    qsylvan_init_simulator(wgt_tab_size, wgt_tab_size, tol, wgt_backend, norm_strat);
     qmdd_set_testing_mode(true); // turn on internal sanity tests
 
     printf("wgt backend = %d, norm strat = %d, wgt indx bits = %d:\n", 

@@ -47,7 +47,7 @@ class QSimulator()
 }
 */
 
-void qsylvan_init_simulator(size_t wgt_tab_size, double wgt_tab_tolerance, int edge_weigth_backend, int norm_strat);
+void qsylvan_init_simulator(size_t min_tablesize, size_t max_tablesize, double wgt_tab_tolerance, int edge_weigth_backend, int norm_strat);
 void qsylvan_init_defaults(size_t wgt_tab_size);
 
 /*****************************</Initialization>********************************/

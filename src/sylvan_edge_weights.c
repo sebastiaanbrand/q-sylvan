@@ -16,9 +16,7 @@ AADD_WGT AADD_IMG;
 AADD_WGT AADD_MIN_IMG;
 AADD_WGT AADD_SQRT_TWO;
 
-/**********************<Managing the edge weight table>************************/
-
-void sylvan_init_edge_weights(size_t size, double tol, edge_weight_type_t edge_weight_type, wgt_storage_backend_t backend);
+void sylvan_init_edge_weights(size_t min_tablesize, size_t max_tablesize, double tol, edge_weight_type_t edge_weight_type, wgt_storage_backend_t backend);
 void init_edge_weight_functions(edge_weight_type_t edge_weight_type);
 void init_edge_weight_storage(size_t size, double tol, wgt_storage_backend_t backend, void **wgt_store);
 void (*init_wgt_table_entries)(); // set by sylvan_init_aadd
@@ -58,11 +56,16 @@ static const double default_tolerance = 1e-14;
 static double tolerance;
 static wgt_storage_backend_t wgt_backend;
 size_t table_size;
+size_t min_tablesize;
+size_t max_tablesize;
 
-void sylvan_init_edge_weights(size_t size, double tol, edge_weight_type_t edge_weight_type, wgt_storage_backend_t backend)
+void sylvan_init_edge_weights(size_t _min_tablesize, size_t _max_tablesize, double tol,
+                              edge_weight_type_t edge_weight_type, wgt_storage_backend_t backend)
 {
+    min_tablesize = _min_tablesize;
+    max_tablesize = _max_tablesize;
     init_edge_weight_functions(edge_weight_type);
-    init_edge_weight_storage(size, tol, backend, &wgt_storage);
+    init_edge_weight_storage(min_tablesize, tol, backend, &wgt_storage);
     init_edge_weight_storage_gc();
 }
 

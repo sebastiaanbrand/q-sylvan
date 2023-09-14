@@ -815,7 +815,7 @@ int main(int argc, char *argv[])
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    qsylvan_init_simulator(1LL<<23, -1, COMP_HASHMAP, wgt_norm_strat);
+    qsylvan_init_simulator(1LL<<23, 1LL<<23, -1, COMP_HASHMAP, wgt_norm_strat);
     qmdd_set_testing_mode(true); // turn on internal sanity tests
 
     // Create a circuit struct representing the QASM circuit in the given file
