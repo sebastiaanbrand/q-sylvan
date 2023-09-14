@@ -450,9 +450,10 @@ sylvan_init_aadd(size_t wgt_tab_size, double wgt_tab_tolerance, int edge_weigth_
     aadd_initialized = 1;
 
     int index_size = (int) ceil(log2(wgt_tab_size));
-    if (edge_weigth_backend == REAL_TUPLES_HASHMAP) index_size = index_size*2;
+    if (edge_weigth_backend == REAL_TUPLES_HASHMAP || edge_weigth_backend == REAL_TREE)
+        index_size = index_size*2;
     if (index_size > 33) {
-        printf("max edge weight storage size is 2^33 (2^16 when using REAL_TUPLES_HASHMAP)\n");
+        printf("max edge weight storage size is 2^33 (2^16 when using storing r and i seperately)\n");
         exit(1);
     }
     if (index_size > 23) larger_wgt_indices = true;
