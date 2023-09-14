@@ -55,9 +55,9 @@ weight_fprint_f 		weight_fprint;
 static const double default_tolerance = 1e-14;
 static double tolerance;
 static wgt_storage_backend_t wgt_backend;
-size_t table_size;
-size_t min_tablesize;
-size_t max_tablesize;
+size_t table_size; // current
+size_t min_tablesize; // initial
+size_t max_tablesize; // maximum
 
 void sylvan_init_edge_weights(size_t _min_tablesize, size_t _max_tablesize, double tol,
                               edge_weight_type_t edge_weight_type, wgt_storage_backend_t backend)
@@ -188,7 +188,11 @@ void wgt_table_gc_inc_entries_estimate()
 void
 wgt_table_gc_init_new(void (*init_wgt_table_entries)())
 {
-    // init new (empty) edge weight storage
+    // init new (empty) edge weight storage (double previous size if under max_size)
+    table_size = 2*table_size;
+    if (table_size > max_tablesize) {
+        table_size = max_tablesize;
+    }
     init_edge_weight_storage(table_size, tolerance, wgt_backend, &wgt_storage_new);
 
     // reset estimate entries counters

@@ -4,6 +4,10 @@
 #include "test_assert.h"
 #include "../examples/grover.h"
 
+uint64_t min_wgt_tablesize = 1LL<<14;
+uint64_t max_wgt_tablesize = 1LL<<17;
+
+
 int test_grover_gc()
 {
     int qubits = 8;
@@ -34,7 +38,38 @@ int run_qmdd_tests()
 }
 
 
-int test_with(int wgt_backend, int norm_strat, int wgt_indx_bits) 
+int test_table_size_increase() 
+{
+    // Standard Lace initialization
+    int workers = 1;
+    lace_start(workers, 0);
+
+    // Initialize Q-Sylvan with tolerance 0 (this creates larger QMDDs such that
+    // garbage collection of the edge weight table is triggered earlier)
+    double tol = 0;
+    sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
+    sylvan_init_package();
+    qsylvan_init_simulator(min_wgt_tablesize, max_wgt_tablesize, -1, COMP_HASHMAP, NORM_LARGEST);
+    qmdd_set_testing_mode(true); // turn on internal sanity tests
+
+    // check that wgt_tablesize doubles after gc, but not beyond max_wgt_tablesize
+    uint64_t wgt_tablesize = min_wgt_tablesize;
+    for (int i = 0; i < 10; i++) {
+        test_assert(sylvan_get_edge_weight_table_size() == wgt_tablesize);
+        aadd_gc_wgt_table();
+        wgt_tablesize = 2*wgt_tablesize;
+        if (wgt_tablesize > max_wgt_tablesize) {
+            wgt_tablesize = max_wgt_tablesize;
+        }
+    }
+
+    sylvan_quit();
+    lace_stop();
+    return 0;
+}
+
+
+int test_with(int wgt_backend, int norm_strat) 
 {
     // Standard Lace initialization
     int workers = 1;
@@ -44,14 +79,12 @@ int test_with(int wgt_backend, int norm_strat, int wgt_indx_bits)
     // Initialize Q-Sylvan with tolerance 0 (this creates larger QMDDs such that
     // garbage collection of the edge weight table is triggered earlier)
     double tol = 0;
-    uint64_t wgt_tab_size = 1LL<<wgt_indx_bits;
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    qsylvan_init_simulator(wgt_tab_size, wgt_tab_size, tol, wgt_backend, norm_strat);
+    qsylvan_init_simulator(min_wgt_tablesize, max_wgt_tablesize, tol, wgt_backend, norm_strat);
     qmdd_set_testing_mode(true); // turn on internal sanity tests
 
-    printf("wgt backend = %d, norm strat = %d, wgt indx bits = %d:\n", 
-            wgt_backend, norm_strat, wgt_indx_bits);
+    printf("wgt backend = %d, norm strat = %d:\n", wgt_backend, norm_strat);
     int res = run_qmdd_tests();
 
     sylvan_quit();
@@ -63,12 +96,9 @@ int runtests()
 {
     int backend = COMP_HASHMAP;
     for (int norm_strat = 0; norm_strat < n_norm_strategies; norm_strat++) {
-        if (test_with(backend, norm_strat, 15)) return 1;
-        if (backend == COMP_HASHMAP) {
-            // test with edge wgt index > 23 bits
-            if (test_with(backend, norm_strat, 24)) return 1;
-        }
+        if (test_with(backend, norm_strat)) return 1;
     }
+    if (test_table_size_increase()) return 1;
     return 0;
 }
 
