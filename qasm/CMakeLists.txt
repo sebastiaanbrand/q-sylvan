@@ -8,6 +8,7 @@
 #target_link_libraries(qsylvan_qasm qsylvan popt)
 
 # allow the parser to be included in other places as a library
+# (without compiling eval_expr.cpp again)
 add_library(qsylvan_qasm_parser)
 target_sources(qsylvan_qasm_parser 
     PRIVATE
@@ -16,6 +17,6 @@ target_sources(qsylvan_qasm_parser
     PUBLIC 
         simple_parser.h)
 
-add_executable(sim_qasm sim_qasm.c simple_parser.cpp parse_math/eval_expr.cpp)
-target_link_libraries(sim_qasm qsylvan)
+add_executable(sim_qasm sim_qasm.c)
+target_link_libraries(sim_qasm qsylvan qsylvan_qasm_parser)
 
