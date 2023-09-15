@@ -1233,19 +1233,21 @@ MTBDD mtbdd_refs_sync(MTBDD mtbdd);
 //#define ROW_WISE_MODE 2
 
 typedef enum {
-    COLUMN_WISE_MODE,
-    ROW_WISE_MODE
+    COLUMN_WISE_MODE,                       // f(r0,r1,c0,c1) = W[r0r1][c0c1], r,c ={ 0 | 1 }
+    ROW_WISE_MODE,                          // f(c0,c1,r0,r1) = W[r0r1][c0c1], r,c ={ 0 | 1 }
+    ALTERNATE_COLUMN_FIRST_WISE_MODE,       // f(c0,r0,c1,r1) = W[r0r1][c0c1], r,c ={ 0 | 1 }
+    ALTERNATE_ROW_FIRST_WISE_MODE           // f(r0,r0,c1,r1) = W[r0r1][c0c1], r,c ={ 0 | 1 }
 } row_column_mode_t;
 
 typedef float VecArr_t; // pointer to struct with array of struct as element. Struct contains complex number.
 typedef float MatArr_t;
 
-int allocate_array_matrix(MatArr_t ***W_arr, int n);
-int free_array_matrix(MatArr_t **W_arr, int n);
-int print_array_matrix(MatArr_t **W_arr, int n);
+int allocate_matrix_array(MatArr_t ***W_arr, int n);
+int free_matrix_array(MatArr_t **W_arr, int n);
+int print_matrix_array(MatArr_t **W_arr, int n);
 
-MTBDD array_vector_to_mtbdd(VecArr_t *v_arr, int n, row_column_mode_t mode);
-MTBDD array_matrix_to_mtbdd(MatArr_t **M_arr, int n, row_column_mode_t mode);
+MTBDD vector_array_to_mtbdd(VecArr_t *v_arr, int n, row_column_mode_t mode);
+MTBDD matrix_array_to_mtbdd(MatArr_t **M_arr, int n, row_column_mode_t mode);
 
 void mtbdd_to_vector_array(MTBDD v, int n, row_column_mode_t mode, VecArr_t *w);
 void mtbdd_to_matrix_array(MTBDD M, int n, row_column_mode_t mode, MatArr_t **W);

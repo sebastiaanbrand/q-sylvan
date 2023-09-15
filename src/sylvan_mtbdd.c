@@ -3751,7 +3751,7 @@ mtbdd_map_removeall(MTBDDMAP map, MTBDD variables)
  */
 
 int
-allocate_array_matrix(MatArr_t ***W_arr, int n)
+allocate_matrix_array(MatArr_t ***W_arr, int n)
 {
     if(n < 0)
         return 1;
@@ -3776,7 +3776,7 @@ allocate_array_matrix(MatArr_t ***W_arr, int n)
 }
 
 int
-free_array_matrix(MatArr_t **W_arr, int n)
+free_matrix_array(MatArr_t **W_arr, int n)
 {
     if(n<0)
         return 1;
@@ -3792,7 +3792,7 @@ free_array_matrix(MatArr_t **W_arr, int n)
 }
 
 int
-print_array_matrix(MatArr_t **W_arr, int n)
+print_matrix_array(MatArr_t **W_arr, int n)
 {
     if(n<0)
         return 1;
@@ -3846,7 +3846,7 @@ print_array_matrix(MatArr_t **W_arr, int n)
  * 
  */
 
-MTBDD array_vector_to_mtbdd(VecArr_t *v_arr, int n, row_column_mode_t mode)
+MTBDD vector_array_to_mtbdd(VecArr_t *v_arr, int n, row_column_mode_t mode)
 {
     // Dummy code
     if(v_arr[0] == 0)
@@ -3861,17 +3861,31 @@ MTBDD array_vector_to_mtbdd(VecArr_t *v_arr, int n, row_column_mode_t mode)
     return MTBDD_ZERO;
 }
 
-MTBDD array_matrix_to_mtbdd(MatArr_t **M_arr, int n, row_column_mode_t mode)
+MTBDD matrix_array_to_mtbdd(MatArr_t **M_arr, int n, row_column_mode_t mode)
 {
-    // Dummy code
-    if(M_arr[0][0] == 0)
+    if(n < 0)
         return MTBDD_ZERO;
 
-    if(n == 0)
-        return MTBDD_ZERO;
-    
-    if(mode == COLUMN_WISE_MODE)
-        return MTBDD_ZERO;
+    if(n == 0) 
+        return mtbdd_makenode(0, mtbdd_double(M_arr[0][0]), mtbdd_double(M_arr[0][0]));
+
+    if(n == 1 && (mode == COLUMN_WISE_MODE || mode == ALTERNATE_COLUMN_FIRST_WISE_MODE)) {
+
+        MTBDD column0 = mtbdd_makenode(1, mtbdd_double(M_arr[0][0]), mtbdd_double(M_arr[1][0]));
+        MTBDD column1 = mtbdd_makenode(1, mtbdd_double(M_arr[0][1]), mtbdd_double(M_arr[1][1]));
+
+        return mtbdd_makenode(0, column0, column1);
+    }
+
+    if(n == 1 && (mode == ROW_WISE_MODE || mode == ALTERNATE_ROW_FIRST_WISE_MODE)) {
+
+        MTBDD row0 = mtbdd_makenode(1, mtbdd_double(M_arr[0][0]), mtbdd_double(M_arr[0][0]));
+        MTBDD row1 = mtbdd_makenode(1, mtbdd_double(M_arr[1][0]), mtbdd_double(M_arr[1][1]));
+
+        return mtbdd_makenode(0, row0, row1);
+    }
+
+    // TODO: if n > 1 
 
     return MTBDD_ZERO;
 }
@@ -3893,84 +3907,150 @@ void mtbdd_to_vector_array(MTBDD v, int n, row_column_mode_t mode, VecArr_t *w)
     return;
 }
 
-void mtbdd_to_matrix_array(MTBDD M, int n, row_column_mode_t mode, MatArr_t **W)
+void mtbdd_to_matrix_array(MTBDD M, int n, row_column_mode_t mode, MatArr_t **W) // TODO: refactor to make more compact
 {
-    // Dummy code
-    W[0][0] = 0;
+    //
+    // The leaf can be reached by the composite row * 2^n + column
+    //
+    // Example: 
+    //
+    //   row = 3, column = 5, n = 3. 
+    //
+    // That corresponds to a matrix of 2^3 x 2^3 = 8 x 8, or in C: "MatArr_t W[8][8]". 
+    //
+    // The row and column index = {0,1,..,7} = {0, ..., ((2^3)-1)}, W[row][column].
+    //
+    //  W[3][5] = W[011][100] = M[011100]
+    //
+    // By starting traversing through M from the root, first go to node 011. That is 2^3 deep.
+    //
+    // Under this node you find a mtbdd with depth 2^3 with leafs corresponding to W[][column].
+    //
+    // So, traversing further on with node[100] = getlow(getlow(gethigh(node))) you reach the leaf
+    //
+    // with as value equal to W[3][5].
+    //
+    //  W[3][5] = W[011][100] = leaf(node[100]) = leaf(M[011100])
+    //
 
     if(M == 0)
         return;
 
-    if(n == 0)
+    if(n <= 0)
         return;
 
-    if(mode == COLUMN_WISE_MODE) {
+    // f(c0,r0,c1,r1) = W[r0r1][c0c1]
+    if(mode == ALTERNATE_COLUMN_FIRST_WISE_MODE || mode == ALTERNATE_ROW_FIRST_WISE_MODE) {
 
-        //
-        // The leaf can be reached by the composite row * 2^n + column
-        //
-        // Example: 
-        //
-        //   row = 3, column = 5, n = 3. 
-        //
-        // That corresponds to a matrix of 2^3 x 2^3 = 8 x 8, or in C: "MatArr_t W[8][8]". 
-        //
-        // The row and column index = {0,1,..,7} = {0, ..., ((2^3)-1)}, W[row][column].
-        //
-        //  W[3][5] = W[011][100] = M[011100]
-        //
-        // By starting traversing through M from the root, first go to node 011. That is 2^3 deep.
-        //
-        // Under this node you find a mtbdd with depth 2^3 with leafs corresponding to W[][column].
-        //
-        // So, traversing further on with node[100] = getlow(getlow(gethigh(node))) you reach the leaf
-        //
-        // with as value equal to W[3][5].
-        //
-        //  W[3][5] = W[011][100] = leaf(node[100]) = leaf(M[011100])
-        //
-
-        for(int row=0; row < (1 << n); row++) {
-
+        for(int index=0; index < (1 << (2 * n)); index++) {
+            
             MTBDD node = M;
+            
+            bool turn_for_column = true;
 
-            // Traverse through M from root to row node
-            for(int bit=(n-1); bit >= 0; bit--) {
+            int row = 0;
+            int column = 0;
 
-                if((row & (1 << bit)) == 0) {
+            int bit_row = (1 << (n-1)) - 1;
+            int bit_column = (1 << (n-1)) - 1;
+
+            for(int bit=((2 * n) - 1); bit >= 0; bit--) {
+
+                if((index & (1 << bit)) == 0) {
+
                     node = mtbdd_getlow(node);
-                    printf("row=%d getlow()\n", row);
+
+                    if(turn_for_column) {
+                        column += (0 << bit_column); // can be removed
+                        bit_column -= 1;
+                        turn_for_column = false;
+                    }
+
+                    else {
+                        row += (0 << bit_row); // can be removed
+                        bit_row -= 1;
+                        turn_for_column = true;
+                    }
+
+                    printf("index = %d, getlow -> bit=%d, row=%d, column=%d\n", index, bit, row, column);
+
                 }
                 else {
+
                     node = mtbdd_gethigh(node);
-                    printf("row=%d gethigh()\n", row);
-                }
-            }
 
-            MTBDD row_node = node;
-
-            for(int column=0; column < (1 << n); column++) {
-
-                node = row_node;
-
-                // Traverse through M from node to column node
-                for(int bit=(n-1); bit >= 0; bit--) {
-
-                    if((column & (1 << bit)) == 0) {
-                        node = mtbdd_getlow(node);
-                        printf("column=%d getlow()\n", column);
+                    if(turn_for_column) {
+                        column += (1 << bit_column);
+                        bit_column -= 1;
+                        turn_for_column = false;
                     }
+
                     else {
-                        node = mtbdd_gethigh(node);
-                        printf("column=%d gethigh()\n", column);
+                        row += (1 << bit_row);
+                        bit_row -= 1;
+                        turn_for_column = true;
                     }
-                }
 
-                W[row][column] = mtbdd_getdouble(node);
+                    printf("index = %d, gethigh -> bit=%d, row=%d, column=%d\n", index, bit, row, column);
+
+                }
             }
+
+            printf("row=%d, column=%d\n", row, column);
+
+            if(mode == ALTERNATE_COLUMN_FIRST_WISE_MODE)
+                W[row][column] = mtbdd_getdouble(node);
+
+            if(mode == ALTERNATE_ROW_FIRST_WISE_MODE)
+                W[column][row] = mtbdd_getdouble(node);
         }
 
         return;
+    }
+
+    // f(r0,r1,c0,c1) or f(c0,c1,r0,r1) 
+    for(int row=0; row < (1 << n); row++) {
+
+        MTBDD node = M;
+
+        // Traverse through M from root to row node
+        for(int bit=(n-1); bit >= 0; bit--) {
+
+            if((row & (1 << bit)) == 0) {
+                node = mtbdd_getlow(node);
+                printf("row=%d getlow()\n", row);
+            }
+            else {
+                node = mtbdd_gethigh(node);
+                printf("row=%d gethigh()\n", row);
+            }
+        }
+
+        MTBDD row_node = node;
+
+        for(int column=0; column < (1 << n); column++) {
+
+            node = row_node;
+
+            // Traverse through M from node to column node
+            for(int bit=(n-1); bit >= 0; bit--) {
+
+                if((column & (1 << bit)) == 0) {
+                    node = mtbdd_getlow(node);
+                    printf("column=%d getlow()\n", column);
+                }
+                else {
+                    node = mtbdd_gethigh(node);
+                    printf("column=%d gethigh()\n", column);
+                }
+            }
+
+            if(mode == COLUMN_WISE_MODE)
+                W[row][column] = mtbdd_getdouble(node);
+
+            if(mode == ROW_WISE_MODE)
+                W[column][row] = mtbdd_getdouble(node);
+        }
     }
 
     return;
@@ -3987,8 +4067,8 @@ void mtbdd_to_matrix_array(MTBDD M, int n, row_column_mode_t mode, MatArr_t **W)
 void array_matrix_vector_product(MatArr_t **M, VecArr_t *v, int n, VecArr_t *w)
 {
     // Convert to MTBDD
-    MTBDD M_col = array_matrix_to_mtbdd(M, n, COLUMN_WISE_MODE);
-    MTBDD v_row = array_vector_to_mtbdd(v, n, ROW_WISE_MODE);
+    MTBDD M_col = matrix_array_to_mtbdd(M, n, COLUMN_WISE_MODE);
+    MTBDD v_row = vector_array_to_mtbdd(v, n, ROW_WISE_MODE);
 
     // Multiply in MTBDD domain
     MTBDD w_col = mtbdd_matvec_mult(M_col, v_row, n);
@@ -4009,8 +4089,8 @@ void array_matrix_vector_product(MatArr_t **M, VecArr_t *v, int n, VecArr_t *w)
 void array_matrix_matrix_product(MatArr_t **M1, MatArr_t **M2, int n, MatArr_t **W)
 {
     // Convert to MTBDD
-    MTBDD M1_col = array_matrix_to_mtbdd(M1, n, COLUMN_WISE_MODE);
-    MTBDD M2_row = array_matrix_to_mtbdd(M2, n, ROW_WISE_MODE);
+    MTBDD M1_col = matrix_array_to_mtbdd(M1, n, COLUMN_WISE_MODE);
+    MTBDD M2_row = matrix_array_to_mtbdd(M2, n, ROW_WISE_MODE);
 
     // Multiply in MTBDD domain
     MTBDD W_col = mtbdd_matmat_mult(M1_col, M2_row, n);

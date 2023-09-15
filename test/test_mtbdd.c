@@ -1067,101 +1067,6 @@ test_mtbdd_and_abstract_plus_function()
 
 
 int
-test_mtbdd_matrix_vector_multiplication()
-{
-    // 
-    //  M . v = w, M: 2^n x 2^n, v: 2^n x 1 (n_row x n_col)
-    //
-
-    int n = 1;
-
-    VecArr_t v_arr[(1 << n)];
-    v_arr[0] = 1.1; v_arr[1] = -2.2;
-    MTBDD v = array_vector_to_mtbdd(v_arr, n, ROW_WISE_MODE);
-
-    // Declare and initialize two dimensional array with dynamic size
-    MatArr_t **M_arr = (MatArr_t **)malloc((1 << n) * sizeof(MatArr_t **));
-    for(int i=0; i < (1 << n); i++) 
-        M_arr[i] = (MatArr_t *)malloc((1 << n) * sizeof(MatArr_t *));
-
-    M_arr[0][0] = -2.2; M_arr[0][1] =  1.2;
-    M_arr[1][0] =  2.4; M_arr[1][1] = -1.4;
-    MTBDD M = array_matrix_to_mtbdd(M_arr, n, COLUMN_WISE_MODE);
-
-    MTBDD product = mtbdd_matvec_mult(M, v, n);
-
-    MatArr_t w_arr[2];
-    mtbdd_to_vector_array(product, n, COLUMN_WISE_MODE, w_arr);
-
-    test_assert(w_arr[0] == M_arr[0][0] * v_arr[0] + M_arr[0][1] * v_arr[1]);
-    test_assert(w_arr[1] == M_arr[1][0] * v_arr[0] + M_arr[1][1] * v_arr[1]);
-
-    // free all mallocs
-    for(int i=0; i < (1 << n); i++) 
-        free(M_arr[i]);
-
-    free(M_arr);
-
-    return 0;
-}
-
-int
-test_mtbdd_matrix_matrix_multiplication()
-{
-    // 
-    //  K . M = W, M: 2^n x 2^n, L: 2^n x 2^n, W: 2^n x 2^n
-    //
-
-    int n = 1;
-
-    // Declare and initialize two dimensional array with dynamic size
-    MatArr_t **K_arr = (MatArr_t **)malloc((1 << n) * sizeof(MatArr_t **));
-    for(int i=0; i < (1 << n); i++) 
-        K_arr[i] = (MatArr_t *)malloc((1 << n) * sizeof(MatArr_t *));
-
-    K_arr[0][0] =  1.1; K_arr[0][1] = 1.2; 
-    K_arr[1][0] = -2.2; K_arr[1][1] = 3.3;
-    MTBDD K = array_matrix_to_mtbdd(K_arr, n, ROW_WISE_MODE);
-
-    // Declare and initialize two dimensional array with dynamic size
-    MatArr_t **M_arr = (MatArr_t **)malloc((1 << n) * sizeof(MatArr_t **));
-    for(int i=0; i < (1 << n); i++) 
-        M_arr[i] = (MatArr_t *)malloc((1 << n) * sizeof(MatArr_t *));
-
-    M_arr[0][0] = -2.2; M_arr[0][1] =  1.2;
-    M_arr[1][0] =  2.4; M_arr[1][1] = -1.4;
-    MTBDD M = array_matrix_to_mtbdd(M_arr, n, COLUMN_WISE_MODE);
-
-    MTBDD product = mtbdd_matvec_mult(K, M, n);
-
-    // Declare and initialize two dimensional array with dynamic size
-    MatArr_t **W_arr = (MatArr_t **)malloc((1 << n) * sizeof(MatArr_t **));
-    for(int i=0; i < (1 << n); i++) 
-        W_arr[i] = (MatArr_t *)malloc((1 << n) * sizeof(MatArr_t *));
-
-    mtbdd_to_matrix_array(product, n, COLUMN_WISE_MODE, W_arr);
-
-    test_assert(W_arr[0][0] == M_arr[0][0] * K_arr[0][0] + M_arr[0][1] * K_arr[1][0]);
-    test_assert(W_arr[0][1] == M_arr[0][0] * K_arr[0][1] + M_arr[0][1] * K_arr[1][1]);
-
-    test_assert(W_arr[1][0] == M_arr[1][0] * K_arr[0][0] + M_arr[1][1] * K_arr[1][0]);
-    test_assert(W_arr[1][1] == M_arr[1][0] * K_arr[0][1] + M_arr[1][1] * K_arr[1][1]);
-
-    // free all mallocs
-    for(int i=0; i < (1 << n); i++) {
-        free(K_arr[i]);
-        free(M_arr[i]);
-        free(W_arr[i]);
-    }
-
-    free(K_arr);
-    free(M_arr);
-    free(W_arr);
-
-    return 0;
-}
-
-int
 test_mtbdd_matrix_kronecker_multiplication()
 {
     //
@@ -1263,39 +1168,159 @@ test_mtbdd_to_matrix_array()
     // Fill both dd's column wise oriented
     K = mtbdd_makenode(0, mtbdd_makenode(1, mtbdd_double(1.0), mtbdd_double(3.0)),
                           mtbdd_makenode(1, mtbdd_double(2.0), mtbdd_double(1.0)));
+
+    MatArr_t **K_arr = NULL;
+    test_assert(allocate_matrix_array(&K_arr, 1) == 0);
+
+    mtbdd_to_matrix_array(K, 1, ALTERNATE_ROW_FIRST_WISE_MODE, K_arr);
+
+    print_matrix_array(K_arr, 1);
+
+    test_assert(K_arr[0][0] == 1.0);
+    test_assert(K_arr[0][1] == 3.0);
+    test_assert(K_arr[1][0] == 2.0);
+    test_assert(K_arr[1][1] == 1.0);
+
+    free_matrix_array(K_arr, 1);
+
     L = mtbdd_makenode(0, mtbdd_makenode(1, mtbdd_double(1.0), mtbdd_double(0.5)),
                           mtbdd_makenode(1, mtbdd_double(0.5), mtbdd_double(1.0)));
 
     M = mtbdd_tensor_prod(K, L, n);
 
     MatArr_t **W_arr = NULL;
-    test_assert(allocate_array_matrix(&W_arr, n) == 0);
+    test_assert(allocate_matrix_array(&W_arr, n) == 0);
 
     mtbdd_to_matrix_array(M, n, COLUMN_WISE_MODE, W_arr);
 
-    print_array_matrix(W_arr, n);
+    print_matrix_array(W_arr, n);
 
-    test_assert(W_arr[0][0] == 1.0);
+    test_assert(W_arr[0][0] == 1.0); // Right Down
     test_assert(W_arr[0][1] == 0.5);
     test_assert(W_arr[0][2] == 0.5);
     test_assert(W_arr[0][3] == 1.0);
-    test_assert(W_arr[1][0] == 3.0);
+
+    test_assert(W_arr[1][0] == 3.0); // Right Up
     test_assert(W_arr[1][1] == 1.5);
     test_assert(W_arr[1][2] == 1.5);
     test_assert(W_arr[1][3] == 3.0);
-    test_assert(W_arr[2][0] == 2.0);
+    
+    test_assert(W_arr[2][0] == 2.0); // Left Down
     test_assert(W_arr[2][1] == 1.0);
     test_assert(W_arr[2][2] == 1.0);
     test_assert(W_arr[2][3] == 2.0);
-    test_assert(W_arr[3][0] == 1.0);
+    
+    test_assert(W_arr[3][0] == 1.0); // Left Up
     test_assert(W_arr[3][1] == 0.5);
     test_assert(W_arr[3][2] == 0.5);
     test_assert(W_arr[3][3] == 1.0);
 
-    free_array_matrix(W_arr, n);
+    mtbdd_to_matrix_array(M, n, ALTERNATE_ROW_FIRST_WISE_MODE, W_arr);
+
+    print_matrix_array(W_arr, n);
+
+    test_assert(W_arr[0][0] == 1.0); // First row
+    test_assert(W_arr[0][1] == 0.5);
+    test_assert(W_arr[0][2] == 3.0);
+    test_assert(W_arr[0][3] == 1.5);
+
+    test_assert(W_arr[1][0] == 0.5); // Second row
+    test_assert(W_arr[1][1] == 1.0);
+    test_assert(W_arr[1][2] == 1.5);
+    test_assert(W_arr[1][3] == 3.0);
+    
+    test_assert(W_arr[2][0] == 2.0); // Third row
+    test_assert(W_arr[2][1] == 1.0);
+    test_assert(W_arr[2][2] == 1.0);
+    test_assert(W_arr[2][3] == 0.5);
+    
+    test_assert(W_arr[3][0] == 1.0); // Fourth row
+    test_assert(W_arr[3][1] == 2.0);
+    test_assert(W_arr[3][2] == 0.5);
+    test_assert(W_arr[3][3] == 1.0);
+
+    free_matrix_array(W_arr, n);
 
     return 0;
 }
+
+
+int
+test_mtbdd_matrix_vector_multiplication()
+{
+    // 
+    //  M . v = w, M: 2^n x 2^n, v: 2^n x 1 (n_row x n_col)
+    //
+
+    int n = 1;
+
+    VecArr_t v_arr[(1 << n)];
+    v_arr[0] = 1.1; v_arr[1] = -2.2;
+    MTBDD v = vector_array_to_mtbdd(v_arr, n, ROW_WISE_MODE);
+
+    MatArr_t **M_arr = NULL;
+    allocate_matrix_array(&M_arr, n);
+
+    M_arr[0][0] = -2.2; M_arr[0][1] =  1.2;
+    M_arr[1][0] =  2.4; M_arr[1][1] = -1.4;
+    MTBDD M = matrix_array_to_mtbdd(M_arr, n, COLUMN_WISE_MODE);
+
+    MTBDD product = mtbdd_matvec_mult(M, v, n);
+
+    MatArr_t w_arr[2];
+    mtbdd_to_vector_array(product, n, COLUMN_WISE_MODE, w_arr);
+
+    test_assert(w_arr[0] == M_arr[0][0] * v_arr[0] + M_arr[0][1] * v_arr[1]);
+    test_assert(w_arr[1] == M_arr[1][0] * v_arr[0] + M_arr[1][1] * v_arr[1]);
+
+    free_matrix_array(M_arr, n);
+
+    return 0;
+}
+
+int
+test_mtbdd_matrix_matrix_multiplication()
+{
+    // 
+    //  K . M = W, M: 2^n x 2^n, L: 2^n x 2^n, W: 2^n x 2^n
+    //
+
+    int n = 1;
+
+    MatArr_t **K_arr = NULL;
+    allocate_matrix_array(&K_arr, n);
+
+    K_arr[0][0] =  1.1; K_arr[0][1] = 1.2; 
+    K_arr[1][0] = -2.2; K_arr[1][1] = 3.3;
+    MTBDD K = matrix_array_to_mtbdd(K_arr, n, ROW_WISE_MODE);
+
+    MatArr_t **M_arr = NULL;
+    allocate_matrix_array(&M_arr, n);
+
+    M_arr[0][0] = -2.2; M_arr[0][1] =  1.2;
+    M_arr[1][0] =  2.4; M_arr[1][1] = -1.4;
+    MTBDD M = matrix_array_to_mtbdd(M_arr, n, COLUMN_WISE_MODE);
+
+    MTBDD product = mtbdd_matvec_mult(K, M, n);
+
+    MatArr_t **W_arr = NULL;
+    allocate_matrix_array(&W_arr, n);
+
+    mtbdd_to_matrix_array(product, n, COLUMN_WISE_MODE, W_arr);
+
+    test_assert(W_arr[0][0] == M_arr[0][0] * K_arr[0][0] + M_arr[0][1] * K_arr[1][0]);
+    test_assert(W_arr[0][1] == M_arr[0][0] * K_arr[0][1] + M_arr[0][1] * K_arr[1][1]);
+
+    test_assert(W_arr[1][0] == M_arr[1][0] * K_arr[0][0] + M_arr[1][1] * K_arr[1][0]);
+    test_assert(W_arr[1][1] == M_arr[1][0] * K_arr[0][1] + M_arr[1][1] * K_arr[1][1]);
+
+    free_matrix_array(K_arr, n);
+    free_matrix_array(M_arr, n);
+    free_matrix_array(W_arr, n);
+
+    return 0;
+}
+
 
 // TODO: make header for test framework
 
