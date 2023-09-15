@@ -320,6 +320,8 @@ QMDD qmdd_circuit(QMDD qmdd, circuit_id_t circ_id, BDDVAR t1, BDDVAR t2);
  *           controls use e.g. cs = [c1, c2, AADD_INVALID_VAR]
  * @param t1 BDDVAR. Parameter 1 for given circuit.
  * @param t2 BDDVAR. Parameter 2 for given circuit.
+ * 
+ * NOTE: This function seems to have some issues w/ gc of edge weight table.
  */
 #define qmdd_ccircuit(qmdd, circ_id, cs, t1, t2) (RUN(qmdd_ccircuit,qmdd,circ_id,cs,0,t1,t2));
 TASK_DECL_6(QMDD, qmdd_ccircuit, QMDD, circuit_id_t, BDDVAR*, uint32_t, BDDVAR, BDDVAR);

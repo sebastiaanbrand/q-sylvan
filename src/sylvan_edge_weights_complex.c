@@ -151,7 +151,7 @@ weight_complex_eq(complex_t *a, complex_t *b)
 bool
 weight_complex_eps_close(complex_t *a, complex_t *b, double eps)
 {
-    return ( (flt_abs(a->r - b->r) < eps) && (flt_abs(a->i - b->i) < eps) );
+    return ( (flt_abs(a->r - b->r) <= eps) && (flt_abs(a->i - b->i) <= eps) );
 }
 
 bool
