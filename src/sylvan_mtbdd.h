@@ -1244,6 +1244,8 @@ typedef float MatArr_t;
 
 int allocate_matrix_array(MatArr_t ***W_arr, int n);
 int free_matrix_array(MatArr_t **W_arr, int n);
+
+int print_vector_array(VecArr_t *v_arr, int n);
 int print_matrix_array(MatArr_t **W_arr, int n);
 
 MTBDD vector_array_to_mtbdd(VecArr_t *v_arr, int n, row_column_mode_t mode);
@@ -1288,8 +1290,8 @@ void array_matrix_matrix_product(MatArr_t **M, MatArr_t **V, int n, MatArr_t **W
 #define MTBDD_ZERO 0
 
 // Utils
-MTBDD mtbdd_is_result_in_cache(int f, MTBDD M, MTBDD v);
-void mtbdd_put_result_in_cache(int f, MTBDD M, MTBDD v, MTBDD result);
+MTBDD mtbdd_is_result_in_cache(int f, MTBDD M, MTBDD v, uint64_t n);
+void mtbdd_put_result_in_cache(int f, MTBDD M, MTBDD v, uint64_t n, MTBDD result);
 
 MTBDD mtbdd_get_matrix_left_upper_half(MTBDD M, int n);
 MTBDD mtbdd_get_matrix_right_upper_half(MTBDD M, int n);

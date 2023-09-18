@@ -1246,6 +1246,125 @@ test_mtbdd_to_matrix_array()
 
 
 int
+test_vector_array_to_mtbdd()
+{
+    //
+    //  From v = (1.0  2.0) make a matrix  V = (1.0 2.0)
+    //                                         (1.0 2.0)
+    //
+
+    int n = 1; // Vector has size 2^n
+
+    MTBDD v;
+    
+    // Fill dd column wise oriented
+    v = mtbdd_makenode(0, 
+        mtbdd_makenode(1, mtbdd_double(1.0), mtbdd_double(2.0)),
+        mtbdd_makenode(1, mtbdd_double(1.0), mtbdd_double(2.0)));
+
+    MatArr_t **W_arr = NULL;
+    allocate_matrix_array(&W_arr, n);
+    mtbdd_to_matrix_array(v, n, ALTERNATE_ROW_FIRST_WISE_MODE, W_arr);
+    print_matrix_array(W_arr, n);
+
+    test_assert(W_arr[0][0] == 1.0);
+    test_assert(W_arr[0][1] == 0.0);
+    test_assert(W_arr[1][0] == 2.0);
+    test_assert(W_arr[1][1] == 0.0);
+
+    // Fill dd column wise oriented
+    v = mtbdd_makenode(0, 
+        mtbdd_makenode(1, mtbdd_double(1.0), mtbdd_double(1.0)),
+        mtbdd_makenode(1, mtbdd_double(2.0), mtbdd_double(2.0)));
+
+    allocate_matrix_array(&W_arr, n);
+    mtbdd_to_matrix_array(v, n, ALTERNATE_ROW_FIRST_WISE_MODE, W_arr);
+    print_matrix_array(W_arr, n);
+
+    test_assert(W_arr[0][0] == 1.0);
+    test_assert(W_arr[0][1] == 0.0);
+    test_assert(W_arr[1][0] == 2.0);
+    test_assert(W_arr[1][1] == 0.0);
+
+    //
+
+    VecArr_t v_arr[(1 << n)];
+    v_arr[0] = 0.0; v_arr[1] = 0.0;
+
+    mtbdd_to_vector_array(v, n, ALTERNATE_ROW_FIRST_WISE_MODE, v_arr);
+
+    print_vector_array(v_arr, n);
+
+    test_assert(v_arr[0] == 1.0);
+    test_assert(v_arr[1] == 2.0);
+
+    v = vector_array_to_mtbdd(v_arr, n, ALTERNATE_ROW_FIRST_WISE_MODE);
+
+    mtbdd_to_vector_array(v, n, ALTERNATE_ROW_FIRST_WISE_MODE, v_arr);
+
+    print_vector_array(v_arr, n);
+
+    test_assert(v_arr[0] == 1.0);
+    test_assert(v_arr[1] == 2.0);
+
+    return 0;
+}
+
+int
+test_matrix_array_to_mtbdd()
+{
+    //
+    //  K (x) L = M
+    //
+    //  K = (1.0  3.0)   L = (1.0  0.5)   M = (1.0 x L  3.0 x L)
+    //      (2.0  1.0)       (0.5  1.0)       (2.0 x L  1.0 x L)
+    //
+    //  M = (1.0 0.5 3.0 1.5)
+    //      (0.5 1.0 1.5 3.0)
+    //      (2.0 1.0 1.0 0.5)
+    //      (1.0 2.0 0.5 1.0)
+    //
+
+    int n = 1; // Matrix K and L have 2^n x 2^n size
+
+    MTBDD K;
+    
+    // Fill both dd's column wise oriented
+    K = mtbdd_makenode(0, 
+        mtbdd_makenode(1, mtbdd_double(1.0), mtbdd_double(3.0)),
+        mtbdd_makenode(1, mtbdd_double(2.0), mtbdd_double(1.0)));
+
+    MatArr_t **K_arr = NULL;
+    test_assert(allocate_matrix_array(&K_arr, n) == 0);
+
+    mtbdd_to_matrix_array(K, n, ALTERNATE_ROW_FIRST_WISE_MODE, K_arr);
+
+    print_matrix_array(K_arr, n);
+
+    test_assert(K_arr[0][0] == 1.0);
+    test_assert(K_arr[0][1] == 3.0);
+    test_assert(K_arr[1][0] == 2.0);
+    test_assert(K_arr[1][1] == 1.0);
+
+    K = matrix_array_to_mtbdd(K_arr, n, ALTERNATE_ROW_FIRST_WISE_MODE);
+
+    mtbdd_to_matrix_array(K, n, ALTERNATE_ROW_FIRST_WISE_MODE, K_arr);
+
+    print_matrix_array(K_arr, n);
+
+    test_assert(K_arr[0][0] == 1.0);
+    test_assert(K_arr[0][1] == 3.0);
+    test_assert(K_arr[1][0] == 2.0);
+    test_assert(K_arr[1][1] == 1.0);
+
+    free_matrix_array(K_arr, n);
+
+    return 0;
+}
+
+
+
+int
 test_mtbdd_matrix_vector_multiplication()
 {
     // 
@@ -1360,11 +1479,14 @@ TASK_0(int, runtests)
     if (test_mtbdd_and_abstract_plus_function()) return 1;
 
     // Test 8
-    printf("\nTesting mtbdd linear algebra fuctions\n");
+    printf("\nTesting mtbdd kronecker matrix array conversion functions\n");
     if (test_mtbdd_matrix_kronecker_multiplication()) return 1;
     if (test_mtbdd_to_matrix_array()) return 1;
+    if (test_matrix_array_to_mtbdd()) return 1;
+    if (test_vector_array_to_mtbdd()) return 1;
 
     // Test 9
+    printf("\nTesting mtbdd matrix vector matrix matrix multiplication functions\n");
     //if (test_mtbdd_matrix_vector_multiplication()) return 1;
     //if (test_mtbdd_matrix_matrix_multiplication()) return 1;
 
