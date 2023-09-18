@@ -1252,6 +1252,10 @@ test_vector_array_to_mtbdd()
     //  From v = (1.0  2.0) make a matrix  V = (1.0 2.0)
     //                                         (1.0 2.0)
     //
+    // mtbdd_to_vector_array is implemented with mtbdd_to_matrix_array
+    //
+    // So, first this last function is tested for conversion of vector_arrays
+    //
 
     int n = 1; // Vector has size 2^n
 
@@ -1268,9 +1272,9 @@ test_vector_array_to_mtbdd()
     print_matrix_array(W_arr, n);
 
     test_assert(W_arr[0][0] == 1.0);
-    test_assert(W_arr[0][1] == 0.0);
+    test_assert(W_arr[0][1] == 1.0);
     test_assert(W_arr[1][0] == 2.0);
-    test_assert(W_arr[1][1] == 0.0);
+    test_assert(W_arr[1][1] == 2.0);
 
     // Fill dd column wise oriented
     v = mtbdd_makenode(0, 
@@ -1282,11 +1286,10 @@ test_vector_array_to_mtbdd()
     print_matrix_array(W_arr, n);
 
     test_assert(W_arr[0][0] == 1.0);
-    test_assert(W_arr[0][1] == 0.0);
+    test_assert(W_arr[0][1] == 1.0);
     test_assert(W_arr[1][0] == 2.0);
-    test_assert(W_arr[1][1] == 0.0);
+    test_assert(W_arr[1][1] == 2.0);
 
-    //
 
     VecArr_t v_arr[(1 << n)];
     v_arr[0] = 0.0; v_arr[1] = 0.0;
@@ -1420,12 +1423,13 @@ test_mtbdd_matrix_matrix_multiplication()
     M_arr[1][0] =  2.4; M_arr[1][1] = -1.4;
     MTBDD M = matrix_array_to_mtbdd(M_arr, n, COLUMN_WISE_MODE);
 
-    MTBDD product = mtbdd_matvec_mult(K, M, n);
+    MTBDD product = mtbdd_matmat_mult(K, M, n);
 
     MatArr_t **W_arr = NULL;
     allocate_matrix_array(&W_arr, n);
-
     mtbdd_to_matrix_array(product, n, COLUMN_WISE_MODE, W_arr);
+
+    print_matrix_array(W_arr, n);
 
     test_assert(W_arr[0][0] == M_arr[0][0] * K_arr[0][0] + M_arr[0][1] * K_arr[1][0]);
     test_assert(W_arr[0][1] == M_arr[0][0] * K_arr[0][1] + M_arr[0][1] * K_arr[1][1]);
@@ -1489,6 +1493,8 @@ TASK_0(int, runtests)
     printf("\nTesting mtbdd matrix vector matrix matrix multiplication functions\n");
     //if (test_mtbdd_matrix_vector_multiplication()) return 1;
     //if (test_mtbdd_matrix_matrix_multiplication()) return 1;
+    // TODO: test with 16 x 16 matrices (> 2 x 2)!
+
 
     return 0;
 }

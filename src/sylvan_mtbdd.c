@@ -3988,16 +3988,17 @@ void mtbdd_to_matrix_array(MTBDD M, int n, row_column_mode_t mode, MatArr_t **W)
 
                 if((index & (1 << bit)) == 0) {
 
-                    if(mtbdd_getlow(node) != MTBDD_ZERO) node = mtbdd_getlow(node);
+                    if(mtbdd_getlow(node) != MTBDD_ZERO && mtbdd_isleaf(node) == 0) 
+                        node = mtbdd_getlow(node);
 
                     if(turn_for_column) {
-                        column += (0 << bit_column); // can be removed
+                        column += (0 << bit_column); // TODO: can be removed
                         bit_column -= 1;
                         turn_for_column = false;
                     }
 
                     else {
-                        row += (0 << bit_row); // can be removed
+                        row += (0 << bit_row); // TODO: can be removed
                         bit_row -= 1;
                         turn_for_column = true;
                     }
@@ -4007,7 +4008,8 @@ void mtbdd_to_matrix_array(MTBDD M, int n, row_column_mode_t mode, MatArr_t **W)
                 }
                 else {
 
-                    if(mtbdd_gethigh(node) != MTBDD_ZERO) node = mtbdd_gethigh(node);
+                    if(mtbdd_gethigh(node) != MTBDD_ZERO && mtbdd_isleaf(node) == 0) 
+                        node = mtbdd_gethigh(node);
 
                     if(turn_for_column) {
                         column += (1 << bit_column);
@@ -4047,11 +4049,15 @@ void mtbdd_to_matrix_array(MTBDD M, int n, row_column_mode_t mode, MatArr_t **W)
         for(int bit=(n-1); bit >= 0; bit--) {
 
             if((row & (1 << bit)) == 0) {
-                if(mtbdd_getlow(node) != MTBDD_ZERO) node = mtbdd_getlow(node);
+                if(mtbdd_getlow(node) != MTBDD_ZERO && mtbdd_isleaf(node) == 0) 
+                    node = mtbdd_getlow(node);
+                
                 printf("row=%d getlow()\n", row);
             }
             else {
-                if(mtbdd_gethigh(node) != MTBDD_ZERO) node = mtbdd_gethigh(node);
+                if(mtbdd_gethigh(node) != MTBDD_ZERO && mtbdd_isleaf(node) == 0) 
+                    node = mtbdd_gethigh(node);
+                
                 printf("row=%d gethigh()\n", row);
             }
         }
@@ -4066,11 +4072,15 @@ void mtbdd_to_matrix_array(MTBDD M, int n, row_column_mode_t mode, MatArr_t **W)
             for(int bit=(n-1); bit >= 0; bit--) {
 
                 if((column & (1 << bit)) == 0) {
-                    if(mtbdd_getlow(node) != MTBDD_ZERO) node = mtbdd_getlow(node);
+                    if(mtbdd_getlow(node) != MTBDD_ZERO && mtbdd_isleaf(node) == 0) 
+                        node = mtbdd_getlow(node);
+                    
                     printf("column=%d getlow()\n", column);
                 }
                 else {
-                    if(mtbdd_gethigh(node) != MTBDD_ZERO) node = mtbdd_gethigh(node);
+                    if(mtbdd_gethigh(node) != MTBDD_ZERO && mtbdd_isleaf(node) == 0) 
+                        node = mtbdd_gethigh(node);
+                    
                     printf("column=%d gethigh()\n", column);
                 }
             }
@@ -4159,63 +4169,6 @@ void mtbdd_put_result_in_cache(int function, MTBDD M, MTBDD v, uint64_t n, MTBDD
     return;
 }
 
-MTBDD mtbdd_get_matrix_left_upper_half(MTBDD M, int n)
-{
-    if(n==0 || M == MTBDD_ZERO)
-        return MTBDD_ZERO;
-
-    return MTBDD_ZERO;
-}
-
-MTBDD mtbdd_get_matrix_right_upper_half(MTBDD M, int n)
-{
-    if(n==0 || M == MTBDD_ZERO)
-        return MTBDD_ZERO;
-
-    return MTBDD_ZERO;
-}
-
-MTBDD mtbdd_get_matrix_left_lower_half(MTBDD M, int n)
-{
-    if(n==0 || M == MTBDD_ZERO)
-        return MTBDD_ZERO;
-
-    return MTBDD_ZERO;
-}
-
-MTBDD mtbdd_get_matrix_right_lower_half(MTBDD M, int n)
-{
-    if(n==0 || M == MTBDD_ZERO)
-        return MTBDD_ZERO;
-
-    return MTBDD_ZERO;
-}
-
-MTBDD mtbdd_get_vector_upper_half(MTBDD v, int n)
-{
-    if(n==0 || v == MTBDD_ZERO)
-        return MTBDD_ZERO;
-
-    return MTBDD_ZERO;
-}
-
-MTBDD mtbdd_get_vector_lower_half(MTBDD v, int n)
-{
-    if(n==0 || v == MTBDD_ZERO)
-        return MTBDD_ZERO;
-
-    return MTBDD_ZERO;
-}
-
-MTBDD mtbdd_merge_vectors(MTBDD w1, MTBDD w2, row_column_mode_t mode)
-{
-    if(w1 == MTBDD_ZERO || w2 == MTBDD_ZERO || mode == COLUMN_WISE_MODE) // TODO: mode?
-        return MTBDD_ZERO;
-
-    // x0 - low = w1 and x0 - high = w2
-    return mtbdd_makenode(0, w1, w2);
-}
-
 /**
  * Matrix . Vector multiplication in MTBDD domain
  * 
@@ -4249,7 +4202,16 @@ MTBDD mtbdd_matvec_mult(MTBDD M, MTBDD v, int n)
     // Calculate M with size 2^1 x 2^1 and v with size 2^1
     if(n == 1) {
 
-        result = mtbdd_and_abstract_plus(M, v, 1);
+        // Prepare variable set to be removed from the v
+        size_t length_var_set = 1;
+        uint32_t var[length_var_set];
+        var[0] = n;
+    
+        // Test the mtbdd var_set to array and reverse function
+        MTBDD var_set = mtbdd_set_from_array(var, length_var_set);
+
+        // Compute multiplications and additions
+        result = mtbdd_and_abstract_plus(M, v, var_set);
 
         // Put result in cache
         mtbdd_put_result_in_cache(CACHE_MTBDD_MATVEC_MULT, M, v, n, result);
@@ -4297,20 +4259,31 @@ MTBDD mtbdd_matmat_mult(MTBDD M1, MTBDD M2, int n)
         return result;
 
     // Check if result already in cache
-    result = mtbdd_is_result_in_cache(CACHE_MTBDD_MATVEC_MULT, M1, M2, n);
+    result = mtbdd_is_result_in_cache(CACHE_MTBDD_MATMAT_MULT, M1, M2, n);
     if(result != MTBDD_ZERO)
         return result;
 
-    // Calculate M with size 2^1 x 2^1 and v with size 2^1
+    // Calculate M1 with size 2^1 x 2^1 and M2 with identical size
     if(n == 1) {
 
-        result = mtbdd_and_abstract_plus(M1, M2, n);
+        // Prepare variable set to be removed from the v
+        size_t length_var_set = 1;
+        uint32_t var[length_var_set];
+        var[0] = n;
+    
+        // Test the mtbdd var_set to array and reverse function
+        MTBDD var_set = mtbdd_set_from_array(var, length_var_set);
+
+        // Compute multiplications and additions
+        result = mtbdd_and_abstract_plus(M1, M2, var_set);
 
         // Put result in cache
-        mtbdd_put_result_in_cache(CACHE_MTBDD_MATVEC_MULT, M1, M2, n, result);
+        mtbdd_put_result_in_cache(CACHE_MTBDD_MATMAT_MULT, M1, M2, n, result);
 
         return result;
     }
+
+return result;
 
     // Split matrix M1 in four parts with size 2^(n-1) x 2^(n-1)
     MTBDD M1_00 = mtbdd_getlow(mtbdd_getlow(M1));
@@ -4336,7 +4309,7 @@ MTBDD mtbdd_matmat_mult(MTBDD M1, MTBDD M2, int n)
 
 
     // Put result in cache
-    mtbdd_put_result_in_cache(CACHE_MTBDD_MATVEC_MULT, M1, M2, n, result);
+    mtbdd_put_result_in_cache(CACHE_MTBDD_MATMAT_MULT, M1, M2, n, result);
 
     return result;
 }

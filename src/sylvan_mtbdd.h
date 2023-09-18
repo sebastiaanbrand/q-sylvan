@@ -1286,22 +1286,16 @@ void array_matrix_matrix_product(MatArr_t **M, MatArr_t **V, int n, MatArr_t **W
  * The resulting vector w is column wise sorted.
  * 
  */
-#define CACHE_MTBDD_MATVEC_MULT 1
+
+// TODO: must be integrated with existing functions of other decision diagrams in enum
+#define CACHE_MTBDD_MATVEC_MULT 1 
+#define CACHE_MTBDD_MATMAT_MULT 2
+
 #define MTBDD_ZERO 0
 
 // Utils
 MTBDD mtbdd_is_result_in_cache(int f, MTBDD M, MTBDD v, uint64_t n);
 void mtbdd_put_result_in_cache(int f, MTBDD M, MTBDD v, uint64_t n, MTBDD result);
-
-MTBDD mtbdd_get_matrix_left_upper_half(MTBDD M, int n);
-MTBDD mtbdd_get_matrix_right_upper_half(MTBDD M, int n);
-MTBDD mtbdd_get_matrix_left_lower_half(MTBDD M, int n);
-MTBDD mtbdd_get_matrix_right_lower_half(MTBDD M, int n);
-
-MTBDD mtbdd_get_vector_upper_half(MTBDD v, int n);
-MTBDD mtbdd_get_vector_lower_half(MTBDD v, int n);
-
-MTBDD mtbdd_merge_vectors(MTBDD w1, MTBDD w2, row_column_mode_t mode);
 
 // Function
 MTBDD mtbdd_matvec_mult(MTBDD M, MTBDD v, int n);
