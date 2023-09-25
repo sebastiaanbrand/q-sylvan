@@ -1004,7 +1004,7 @@ test_mtbdd_and_abstract_plus_function()
     // Test the mtbdd var_set to array and reverse function
     MTBDD var_set = mtbdd_set_from_array(var, length_var_set);
 
-    // Compute abstract_plus(dd, var_set)
+    // Compute and_abstract_plus(dd1, dd2, var_set)
     MTBDD w = mtbdd_and_abstract_plus(M, v, var_set);
 
     // Print w
@@ -1378,14 +1378,14 @@ test_mtbdd_matrix_vector_multiplication()
 
     VecArr_t v_arr[(1 << n)];
     v_arr[0] = 1.1; v_arr[1] = -2.2;
-    MTBDD v = vector_array_to_mtbdd(v_arr, n, ROW_WISE_MODE);
+    MTBDD v = vector_array_to_mtbdd(v_arr, n, COLUMN_WISE_MODE);
 
     MatArr_t **M_arr = NULL;
     allocate_matrix_array(&M_arr, n);
 
     M_arr[0][0] = -2.2; M_arr[0][1] =  1.2;
     M_arr[1][0] =  2.4; M_arr[1][1] = -1.4;
-    MTBDD M = matrix_array_to_mtbdd(M_arr, n, COLUMN_WISE_MODE);
+    MTBDD M = matrix_array_to_mtbdd(M_arr, n, ROW_WISE_MODE);
 
     MTBDD product = mtbdd_matvec_mult(M, v, n);
 
@@ -1491,7 +1491,7 @@ TASK_0(int, runtests)
 
     // Test 9
     printf("\nTesting mtbdd matrix vector matrix matrix multiplication functions\n");
-    //if (test_mtbdd_matrix_vector_multiplication()) return 1;
+    if (test_mtbdd_matrix_vector_multiplication()) return 1;
     //if (test_mtbdd_matrix_matrix_multiplication()) return 1;
     // TODO: test with 16 x 16 matrices (> 2 x 2)!
 

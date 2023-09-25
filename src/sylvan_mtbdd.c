@@ -3867,22 +3867,15 @@ MTBDD vector_array_to_mtbdd(VecArr_t *v_arr, int n, row_column_mode_t mode)
         return MTBDD_ZERO;
     
     if(n == 0)
-        return mtbdd_makenode(0, mtbdd_double(v_arr[0]), mtbdd_double(v_arr[0])); 
+        return mtbdd_double(v_arr[0]);
 
     if(n == 1 && (mode == COLUMN_WISE_MODE || mode == ALTERNATE_COLUMN_FIRST_WISE_MODE)) {
-
-        MTBDD column0 = mtbdd_makenode(1, mtbdd_double(v_arr[0]), mtbdd_double(v_arr[0]));
-        MTBDD column1 = mtbdd_makenode(1, mtbdd_double(v_arr[1]), mtbdd_double(v_arr[1]));
-
-        return mtbdd_makenode(0, column0, column1);
+        return mtbdd_makenode(1, mtbdd_double(v_arr[0]), mtbdd_double(v_arr[1]));
     }
 
     if(n == 1 && (mode == ROW_WISE_MODE || mode == ALTERNATE_ROW_FIRST_WISE_MODE)) {
 
-        MTBDD row0 = mtbdd_makenode(1, mtbdd_double(v_arr[0]), mtbdd_double(v_arr[1]));
-        MTBDD row1 = mtbdd_makenode(1, mtbdd_double(v_arr[0]), mtbdd_double(v_arr[1]));
-
-        return mtbdd_makenode(0, row0, row1);
+        return mtbdd_makenode(1, mtbdd_double(v_arr[0]), mtbdd_double(v_arr[1]));
     }
 
     // TODO: if n > 1, recursive, divide in four parts, alternate_column_first
@@ -3899,7 +3892,7 @@ MTBDD matrix_array_to_mtbdd(MatArr_t **M_arr, int n, row_column_mode_t mode)
         return MTBDD_ZERO;
 
     if(n == 0) 
-        return mtbdd_makenode(0, mtbdd_double(M_arr[0][0]), mtbdd_double(M_arr[0][0]));
+        return mtbdd_double(M_arr[0][0]);
 
     if(n == 1 && (mode == COLUMN_WISE_MODE || mode == ALTERNATE_COLUMN_FIRST_WISE_MODE)) {
 
@@ -4181,33 +4174,68 @@ void mtbdd_put_result_in_cache(int function, MTBDD M, MTBDD v, uint64_t n, MTBDD
  */
 MTBDD mtbdd_matvec_mult(MTBDD M, MTBDD v, int n)
 {
+    // 
+    // M(r0r1) is a matrix sorted row wise from the top
+    //
+    // v(c1) is a vector sorted column wise from the top
+    //
+
     MTBDD result = MTBDD_ZERO;
 
     // Validate input arguments
-    if(n <= 0 || M == MTBDD_ZERO || v == MTBDD_ZERO)
+    if(n < 0 || M == MTBDD_ZERO || v == MTBDD_ZERO)
         return result;
-
-/*
-    MTBDD V = MTBDD_ZERO;
-    V = mtbdd_makenode(0, mtbdd_makenode(1, mtbdd_getlow(v), MTBDD_ZERO), mtbdd_makenode(1, mtbdd_gethigh(v), MTBDD_ZERO))
-
-    return mtbdd_matmat_mult(M, V, n);
-*/
 
     // Check if result already in cache
     result = mtbdd_is_result_in_cache(CACHE_MTBDD_MATVEC_MULT, M, v, n);
     if(result != MTBDD_ZERO)
         return result;
 
+    // Calculate M with size 1 x 1, and v with size 1
+    if(n == 0 && mtbdd_isleaf(M) && mtbdd_isleaf(v)) {
+
+        //
+        // M should contain only one leaf, no variables
+        //
+        // v should contain only one leaf, no variables
+        //
+
+        return mtbdd_double(mtbdd_getdouble(M) * mtbdd_getdouble(v));
+    }
+
     // Calculate M with size 2^1 x 2^1 and v with size 2^1
     if(n == 1) {
+
+        // 
+        // M should be row-wise top with variables 0 and 1
+        //
+        // v should be column-first wise with variable 1
+        //
+        // result is two leafs with variable 0
+        //
+        //  M = (a b)   v = (A)     Mv = (aA + bC)
+        //      (c d)       (C)          (cA + dC)
+        //
+        //
+        //  M =        x0
+        //          x1     x1
+        //         a  b   c  d
+        //
+        //  v =        x1
+        //          A       C
+        //
+        //  Mv =       x0
+        //      aA + bC   cA + dC
+        //
+        //  M.v = (x0|.x1|.a + x0|.x1.b + x0.x1|.c + x0.x1.d).(x1|.A + x1.C)
+        //      =  x0|.x1|.A.a + x0.x1|.c.A + x0|.x1.b.C + x0.x1.d.C
+        //      =  x0|.(A.a + b.C) + x0.(c.A + d.C)
+        //
 
         // Prepare variable set to be removed from the v
         size_t length_var_set = 1;
         uint32_t var[length_var_set];
         var[0] = n;
-    
-        // Test the mtbdd var_set to array and reverse function
         MTBDD var_set = mtbdd_set_from_array(var, length_var_set);
 
         // Compute multiplications and additions
@@ -4220,6 +4248,7 @@ MTBDD mtbdd_matvec_mult(MTBDD M, MTBDD v, int n)
     }
 
     // Split matrix M in four parts with size 2^(n-1) x 2^(n-1)
+/*
     MTBDD M00 = mtbdd_getlow(mtbdd_getlow(M));
     MTBDD M10 = mtbdd_gethigh(mtbdd_getlow(M));
     MTBDD M01 = mtbdd_getlow(mtbdd_gethigh(M));
@@ -4232,14 +4261,14 @@ MTBDD mtbdd_matvec_mult(MTBDD M, MTBDD v, int n)
     // w0 = M00 . v0 + M10 . v1
     MTBDD w0 = mtbdd_plus(mtbdd_matvec_mult(M00, v0, n-1), mtbdd_matvec_mult(M10, v1, n-1));
 
-    // w1 = M01 . v0 + M11 . v1 
+    // w1 = M01 . v0 + M11 . v1
     MTBDD w1 = mtbdd_plus(mtbdd_matvec_mult(M01, v0, n-1), mtbdd_matvec_mult(M11, v1, n-1));
 
     result = mtbdd_makenode(0, w0, w1);
 
     // Put result in cache
     mtbdd_put_result_in_cache(CACHE_MTBDD_MATVEC_MULT, M, v, n, result);
-
+*/
     return result;
 }
 
@@ -4283,10 +4312,10 @@ MTBDD mtbdd_matmat_mult(MTBDD M1, MTBDD M2, int n)
         return result;
     }
 
-return result;
+    //return result;
 
     // Split matrix M1 in four parts with size 2^(n-1) x 2^(n-1)
-    MTBDD M1_00 = mtbdd_getlow(mtbdd_getlow(M1));
+    MTBDD M1_00 = mtbdd_getlow(mtbdd_getlow(M1));  // TODO: check leaf node and existing variables!
     MTBDD M1_10 = mtbdd_gethigh(mtbdd_getlow(M1));
     MTBDD M1_01 = mtbdd_getlow(mtbdd_gethigh(M1));
     MTBDD M1_11 = mtbdd_gethigh(mtbdd_gethigh(M1));
