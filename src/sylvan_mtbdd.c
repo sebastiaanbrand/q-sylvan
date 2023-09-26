@@ -3837,7 +3837,7 @@ print_matrix_array(MatArr_t **W_arr, int n)
  *      M[0][0]     M[0][1]
  *      M[1][0]     M[1][1]
  * 
- * The transpose of M[row][col] = M[col][row]
+ * The transpose of M[row][col] is M[col][row]
  * 
  *      M[0][0]     M[1][0]
  *      M[0][1]     M[1][1]
@@ -3846,14 +3846,14 @@ print_matrix_array(MatArr_t **W_arr, int n)
  * 
  *                          x0
  *                x1                   x1
- *          x2         x2        x2          x2
+ *
  *        M[0][0]    M[0][1]   M[1][0]     M[1][1]
  *
  * MTBDD is row wise (= transpose):
  * 
  *                          x0
  *                x1                   x1
- *          x2         x2        x2          x2
+ *
  *        M[0][0]    M[1][0]   M[0][1]     M[1][1]
  * 
  */
@@ -4207,7 +4207,7 @@ MTBDD mtbdd_matvec_mult(MTBDD M, MTBDD v, int n)
     if(n == 1) {
 
         // 
-        // M should be row-wise top with variables 0 and 1
+        // M should be row-wise top to bottom with variables 0 and 1
         //
         // v should be column-first wise with variable 1
         //
@@ -4232,6 +4232,10 @@ MTBDD mtbdd_matvec_mult(MTBDD M, MTBDD v, int n)
         //      =  x0|.(A.a + b.C) + x0.(c.A + d.C)
         //
 
+        // Check if var(M) = {0,1} and var(v) = {1} // TODO: extend for sparse mtbdd's
+        if(mtbdd_getvar(M) != 0 || mtbdd_getvar(mtbdd_getlow(M)) != 1 || mtbdd_getvar(v) != 1)
+            return result;
+
         // Prepare variable set to be removed from the v
         size_t length_var_set = 1;
         uint32_t var[length_var_set];
@@ -4247,9 +4251,10 @@ MTBDD mtbdd_matvec_mult(MTBDD M, MTBDD v, int n)
         return result;
     }
 
-    // Split matrix M in four parts with size 2^(n-1) x 2^(n-1)
 /*
-    MTBDD M00 = mtbdd_getlow(mtbdd_getlow(M));
+    // Split matrix M in four parts with size 2^(n-1) x 2^(n-1)
+
+    MTBDD M00 = mtbdd_getlow(mtbdd_getlow(M)); // TODO: incorporate vars!
     MTBDD M10 = mtbdd_gethigh(mtbdd_getlow(M));
     MTBDD M01 = mtbdd_getlow(mtbdd_gethigh(M));
     MTBDD M11 = mtbdd_gethigh(mtbdd_gethigh(M));
@@ -4295,16 +4300,74 @@ MTBDD mtbdd_matmat_mult(MTBDD M1, MTBDD M2, int n)
     // Calculate M1 with size 2^1 x 2^1 and M2 with identical size
     if(n == 1) {
 
-        // Prepare variable set to be removed from the v
+        // 
+        // M1 should be row-wise top to bottom with variables 0 and 1
+        //
+        // M2 should be column-first wise with variables 0 and 1
+        //
+        // result is two leafs with variable 0
+        //
+        //  M1 = (a b)   M2 = (A B)   M1.M2 = (a.A + b.C  a.B + b.D) = (M00 M01)
+        //       (c d)        (C D)           (c.A + d.C  c.B + d.D)   (M10 M11)
+        //
+        //
+        //  M1 =       x0
+        //          x1     x1
+        //         a  b   c  d
+        //
+        //  M2 =       x0
+        //          x1     x1
+        //         A  C   B  D
+        //
+        //  M1.M2 =     x0
+        //          x1        x1
+        //       M00  M10  M01  M11
+        //
+        //  Calculation is done in two steps:
+        //
+        //  1.  M00M11(x0) = M1 (x0x1).M2(x0x1), x1 reduced
+        //  2.  M10M01(x0) = M1'(x0x1).M2(x0x1), x1 reduced 
+        //  3.  Combine M00M11(x0) and M10M01(x0) to get M1.M2
+        //
+        //  Proof:
+        //
+        //  M1.M2  = (x0|.x1|.a + x0|.x1.b + x0.x1|.c + x0.x1.d) . (x0|.x1|.A + x0|.x1.C + x0.x1|.B + x0.x1.D)
+        //         => x0|.(x1|+x1).(a.A + b.C) + x0.(x1|+x1).(c.B + d.D), x1 reduced
+        //         =  M00M11(x0) -> M00 = M00M11(0), M11 = M00M11(1)
+        //
+        //  M1'.M2 = (x0|.x1|.c + x0|.x1.d + x0.x1|.a + x0.x1.b) . (x0|.x1|.A + x0|.x1.C + x0.x1|.B + x0.x1.D)
+        //         => x0|.(c.A + d.C) + x0.(a.B + b.D), x1 reduced
+        //         =  M10M01(x0) -> M10 = M00M11(0), M01 = M00M11(1)
+        //
+
+        // Check if var(M1) = {0,1} and var(M2) = {0,1} // TODO: extend for sparse mtbdds
+        if( mtbdd_getvar(M1) != 0 || mtbdd_getvar(mtbdd_getlow(M1)) != 1 ||
+            mtbdd_getvar(M2) != 0 || mtbdd_getvar(mtbdd_getlow(M2)) != 1 )
+            return result;
+
+        // Compose M1' out of M1 by swapping low and high of x0
+        MTBDD M1_ = mtbdd_makenode(0, mtbdd_gethigh(M1), mtbdd_getlow(M1));
+
+        // Prepare variable set to be removed x1 from the matrices 
         size_t length_var_set = 1;
         uint32_t var[length_var_set];
         var[0] = n;
-    
-        // Test the mtbdd var_set to array and reverse function
         MTBDD var_set = mtbdd_set_from_array(var, length_var_set);
 
         // Compute multiplications and additions
-        result = mtbdd_and_abstract_plus(M1, M2, var_set);
+        MTBDD M00M11 = mtbdd_and_abstract_plus(M1,  M2, var_set);
+        MTBDD M10M01 = mtbdd_and_abstract_plus(M1_, M2, var_set);
+
+        double M00 = mtbdd_getdouble(mtbdd_getlow(M00M11));
+        double M11 = mtbdd_getdouble(mtbdd_gethigh(M00M11));
+
+        double M10 = mtbdd_getdouble(mtbdd_getlow(M10M01));
+        double M01 = mtbdd_getdouble(mtbdd_gethigh(M10M01));
+
+        MTBDD x0_low  = mtbdd_makenode(1, mtbdd_double(M00), mtbdd_double(M10));
+        MTBDD x0_high = mtbdd_makenode(1, mtbdd_double(M01), mtbdd_double(M11));
+
+        result = mtbdd_makenode(0, x0_low, x0_high);
 
         // Put result in cache
         mtbdd_put_result_in_cache(CACHE_MTBDD_MATMAT_MULT, M1, M2, n, result);
@@ -4312,8 +4375,7 @@ MTBDD mtbdd_matmat_mult(MTBDD M1, MTBDD M2, int n)
         return result;
     }
 
-    //return result;
-
+/*
     // Split matrix M1 in four parts with size 2^(n-1) x 2^(n-1)
     MTBDD M1_00 = mtbdd_getlow(mtbdd_getlow(M1));  // TODO: check leaf node and existing variables!
     MTBDD M1_10 = mtbdd_gethigh(mtbdd_getlow(M1));
@@ -4339,7 +4401,7 @@ MTBDD mtbdd_matmat_mult(MTBDD M1, MTBDD M2, int n)
 
     // Put result in cache
     mtbdd_put_result_in_cache(CACHE_MTBDD_MATMAT_MULT, M1, M2, n, result);
-
+*/
     return result;
 }
 
