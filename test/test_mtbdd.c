@@ -1412,30 +1412,32 @@ test_mtbdd_matrix_matrix_multiplication()
     MatArr_t **K_arr = NULL;
     allocate_matrix_array(&K_arr, n);
 
-    K_arr[0][0] =  1.1; K_arr[0][1] = 1.2; 
-    K_arr[1][0] = -2.2; K_arr[1][1] = 3.3;
+    K_arr[0][0] =  1.0; K_arr[0][1] = 2.0; 
+    K_arr[1][0] = -1.0; K_arr[1][1] = 3.0;
     MTBDD K = matrix_array_to_mtbdd(K_arr, n, ROW_WISE_MODE);
 
     MatArr_t **M_arr = NULL;
     allocate_matrix_array(&M_arr, n);
 
-    M_arr[0][0] = -2.2; M_arr[0][1] =  1.2;
-    M_arr[1][0] =  2.4; M_arr[1][1] = -1.4;
+    M_arr[0][0] = -1.0; M_arr[0][1] =  2.0;
+    M_arr[1][0] =  1.0; M_arr[1][1] = -2.0;
     MTBDD M = matrix_array_to_mtbdd(M_arr, n, COLUMN_WISE_MODE);
 
     MTBDD product = mtbdd_matmat_mult(K, M, n);
 
     MatArr_t **W_arr = NULL;
     allocate_matrix_array(&W_arr, n);
-    mtbdd_to_matrix_array(product, n, COLUMN_WISE_MODE, W_arr);
+    mtbdd_to_matrix_array(product, n, ROW_WISE_MODE, W_arr);
 
+    print_matrix_array(K_arr, n);
+    print_matrix_array(M_arr, n);
     print_matrix_array(W_arr, n);
 
-    test_assert(W_arr[0][0] == M_arr[0][0] * K_arr[0][0] + M_arr[0][1] * K_arr[1][0]);
-    test_assert(W_arr[0][1] == M_arr[0][0] * K_arr[0][1] + M_arr[0][1] * K_arr[1][1]);
+    test_assert(W_arr[0][0] == K_arr[0][0] * M_arr[0][0] + K_arr[0][1] * M_arr[1][0]);
+    test_assert(W_arr[0][1] == K_arr[0][0] * M_arr[0][1] + K_arr[0][1] * M_arr[1][1]);
 
-    test_assert(W_arr[1][0] == M_arr[1][0] * K_arr[0][0] + M_arr[1][1] * K_arr[1][0]);
-    test_assert(W_arr[1][1] == M_arr[1][0] * K_arr[0][1] + M_arr[1][1] * K_arr[1][1]);
+    test_assert(W_arr[1][0] == K_arr[1][0] * M_arr[0][0] + K_arr[1][1] * M_arr[1][0]);
+    test_assert(W_arr[1][1] == K_arr[1][0] * M_arr[0][1] + K_arr[1][1] * M_arr[1][1]);
 
     free_matrix_array(K_arr, n);
     free_matrix_array(M_arr, n);
@@ -1492,7 +1494,7 @@ TASK_0(int, runtests)
     // Test 9
     printf("\nTesting mtbdd matrix vector matrix matrix multiplication functions\n");
     if (test_mtbdd_matrix_vector_multiplication()) return 1;
-    //if (test_mtbdd_matrix_matrix_multiplication()) return 1;
+    if (test_mtbdd_matrix_matrix_multiplication()) return 1;
     // TODO: test with 16 x 16 matrices (> 2 x 2)!
 
 

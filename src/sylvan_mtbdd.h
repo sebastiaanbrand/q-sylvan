@@ -1239,7 +1239,7 @@ typedef enum {
     ALTERNATE_ROW_FIRST_WISE_MODE           // f(r0,r0,c1,r1) = W[r0r1][c0c1], r,c ={ 0 | 1 }
 } row_column_mode_t;
 
-typedef float VecArr_t; // pointer to struct with array of struct as element. Struct contains complex number.
+typedef float VecArr_t; // TODO: pointer to struct with array of struct as element. Struct contains complex number.
 typedef float MatArr_t;
 
 int allocate_matrix_array(MatArr_t ***W_arr, int n);
