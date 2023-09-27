@@ -4375,33 +4375,55 @@ MTBDD mtbdd_matmat_mult(MTBDD M1, MTBDD M2, int n)
         return result;
     }
 
-/*
+    //
     // Split matrix M1 in four parts with size 2^(n-1) x 2^(n-1)
-    MTBDD M1_00 = mtbdd_getlow(mtbdd_getlow(M1));  // TODO: check leaf node and existing variables!
-    MTBDD M1_10 = mtbdd_gethigh(mtbdd_getlow(M1));
-    MTBDD M1_01 = mtbdd_getlow(mtbdd_gethigh(M1));
-    MTBDD M1_11 = mtbdd_gethigh(mtbdd_gethigh(M1));
+    //
+    //  M1 is row-wise sorted
+    //
+    MTBDD M1_00 = mtbdd_getlow(  mtbdd_getlow(M1)  );
+    MTBDD M1_01 = mtbdd_gethigh( mtbdd_getlow(M1)  );
+    MTBDD M1_10 = mtbdd_getlow(  mtbdd_gethigh(M1) );
+    MTBDD M1_11 = mtbdd_gethigh( mtbdd_gethigh(M1) );
 
+    //
     // Split matrix M2 in four parts with size 2^(n-1) x 2^(n-1)
-    MTBDD M2_00 = mtbdd_getlow(mtbdd_getlow(M2));
-    MTBDD M2_10 = mtbdd_gethigh(mtbdd_getlow(M2));
-    MTBDD M2_01 = mtbdd_getlow(mtbdd_gethigh(M2));
-    MTBDD M2_11 = mtbdd_gethigh(mtbdd_gethigh(M2));
+    //
+    //  M2 is column-wise sorted
+    //
+    MTBDD M2_00 = mtbdd_getlow(  mtbdd_getlow(M2)  );
+    MTBDD M2_10 = mtbdd_gethigh( mtbdd_getlow(M2)  );
+    MTBDD M2_01 = mtbdd_getlow(  mtbdd_gethigh(M2) );
+    MTBDD M2_11 = mtbdd_gethigh( mtbdd_gethigh(M2) );
 
-    // W00 = M1_00 . M2_00 + M1_01 . M2_10    W01 = M1_00 . M2_01 + M1_01 . M2_11 
+    //
+    // W00 = M1_00 . M2_00 + M1_01 . M2_10    W01 = M1_00 . M2_01 + M1_01 . M2_11
+    //
+    //  W00 and W01 are column-wise sorted
+    //
     MTBDD W00 = mtbdd_plus(mtbdd_matmat_mult(M1_00, M2_00, n-1), mtbdd_matmat_mult(M1_01, M2_10, n-1));
     MTBDD W01 = mtbdd_plus(mtbdd_matmat_mult(M1_00, M2_01, n-1), mtbdd_matmat_mult(M1_01, M2_11, n-1));
 
+    //
     // W10 = M1_10 . M2_00 + M1_11 . M2_10    W11 = M1_10 . M2_01 + M1_11 . M2_11 
+    //
+    //  W10 and W11 are column-wise sorted
+    //
     MTBDD W10 = mtbdd_plus(mtbdd_matmat_mult(M1_10, M2_00, n-1), mtbdd_matmat_mult(M1_11, M2_10, n-1));
     MTBDD W11 = mtbdd_plus(mtbdd_matmat_mult(M1_10, M2_01, n-1), mtbdd_matmat_mult(M1_11, M2_11, n-1));
 
-    result = mtbdd_makenode(0, mtbdd_makenode(1, W00, W10), mtbdd_makenode(1, W01, W11));
+    // 
+    // Compose final matrix as result
+    //
+    //  Matrix is column-wise sorted
+    //
+    MTBDD x0_low  = mtbdd_makenode(1, W00, W10);
+    MTBDD x0_high = mtbdd_makenode(1, W01, W11); 
 
+    result = mtbdd_makenode(0, x0_low, x0_high);
 
     // Put result in cache
     mtbdd_put_result_in_cache(CACHE_MTBDD_MATMAT_MULT, M1, M2, n, result);
-*/
+
     return result;
 }
 

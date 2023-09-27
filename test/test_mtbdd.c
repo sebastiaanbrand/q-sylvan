@@ -1446,6 +1446,76 @@ test_mtbdd_matrix_matrix_multiplication()
     return 0;
 }
 
+int
+test_matrix_matrix_multiplication_4x4()
+{
+    //
+    //  K (x) L = M
+    //
+    //  K = (1.0  3.0)   L = (1.0  0.5)   M = (1.0 x L  3.0 x L)
+    //      (2.0  1.0)       (0.5  1.0)       (2.0 x L  1.0 x L)
+    //
+    //  M = (1.0 0.5 3.0 1.5)
+    //      (0.5 1.0 1.5 3.0)
+    //      (2.0 1.0 1.0 0.5)
+    //      (1.0 2.0 0.5 1.0)
+    //
+    //  W = M.M
+    //
+    //  W = ()
+    //
+    //  Test is to check if the multiplication is correct for 4 x 4 sized matrices.
+    //
+
+    // Compose matrix M with expansive Kronecker product
+
+    int n = 2;
+
+    MTBDD K, L, M1, M2, W;
+    
+    // Fill both dd's column wise oriented
+    K = mtbdd_makenode(0, mtbdd_makenode(1, mtbdd_double(1.0), mtbdd_double(3.0)),
+                          mtbdd_makenode(1, mtbdd_double(2.0), mtbdd_double(1.0)));
+
+    L = mtbdd_makenode(0, mtbdd_makenode(1, mtbdd_double(1.0), mtbdd_double(0.5)),
+                          mtbdd_makenode(1, mtbdd_double(0.5), mtbdd_double(1.0)));
+
+    M1 = mtbdd_tensor_prod(K, L, n);
+    M2 = mtbdd_tensor_prod(K, L, n);
+
+    test_assert(M1 != M2);
+
+    // Calculate W = M1.M2 = M.M
+
+    W = mtbdd_matmat_mult(M1, M2, n);
+
+    // Evaluate with matrix arrays
+
+    MatArr_t **W_ = NULL;
+    allocate_matrix_array(&W_, n);
+    mtbdd_to_matrix_array(W, n, ALTERNATE_ROW_FIRST_WISE_MODE, W_);
+
+    MatArr_t **M_ = NULL;
+    allocate_matrix_array(&M_, n);
+    mtbdd_to_matrix_array(M1, n, ALTERNATE_ROW_FIRST_WISE_MODE, M_);
+    
+    print_matrix_array(W_, n);
+    print_matrix_array(M_, n);
+
+    for(int col=0; col<(1<<n); col++) { // column in second matrix
+        for(int row=0; row<(1<<n); row++) { // row in first matrix
+            double element = 0.0;
+            for(int iterator=0; iterator<(1<<n); iterator++)
+                element += M_[row][iterator] * M_[iterator][col];
+            test_assert(W_[row][col] == element);
+        }
+    }
+
+    free_matrix_array(W_, n);
+    free_matrix_array(M_, n);
+
+    return 0;
+}
 
 // TODO: make header for test framework
 
@@ -1485,7 +1555,7 @@ TASK_0(int, runtests)
     if (test_mtbdd_and_abstract_plus_function()) return 1;
 
     // Test 8
-    printf("\nTesting mtbdd kronecker matrix array conversion functions\n");
+    printf("\nTesting mtbdd kronecker and matrix array conversion functions\n");
     if (test_mtbdd_matrix_kronecker_multiplication()) return 1;
     if (test_mtbdd_to_matrix_array()) return 1;
     if (test_matrix_array_to_mtbdd()) return 1;
@@ -1495,8 +1565,7 @@ TASK_0(int, runtests)
     printf("\nTesting mtbdd matrix vector matrix matrix multiplication functions\n");
     if (test_mtbdd_matrix_vector_multiplication()) return 1;
     if (test_mtbdd_matrix_matrix_multiplication()) return 1;
-    // TODO: test with 16 x 16 matrices (> 2 x 2)!
-
+    //if (test_matrix_matrix_multiplication_4x4()) return 1;
 
     return 0;
 }
