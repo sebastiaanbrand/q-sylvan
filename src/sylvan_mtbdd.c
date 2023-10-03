@@ -3996,7 +3996,7 @@ void mtbdd_to_matrix_array(MTBDD M, int n, row_column_mode_t mode, MatArr_t **W)
                         turn_for_column = true;
                     }
 
-                    printf("node = %ld, index = %d, getlow -> bit=%d, row=%d, column=%d\n", node, index, bit, row, column);
+                    //printf("node = %ld, index = %d, getlow -> bit=%d, row=%d, column=%d\n", node, index, bit, row, column);
 
                 }
                 else {
@@ -4016,12 +4016,12 @@ void mtbdd_to_matrix_array(MTBDD M, int n, row_column_mode_t mode, MatArr_t **W)
                         turn_for_column = true;
                     }
 
-                    printf("node = %ld, index = %d, getlow -> bit=%d, row=%d, column=%d\n", node, index, bit, row, column);
+                    //printf("node = %ld, index = %d, getlow -> bit=%d, row=%d, column=%d\n", node, index, bit, row, column);
 
                 }
             }
 
-            printf("row=%d, column=%d\n", row, column);
+            //printf("row=%d, column=%d\n", row, column);
 
             if(mode == ALTERNATE_COLUMN_FIRST_WISE_MODE)
                 W[row][column] = mtbdd_getdouble(node);
@@ -4051,7 +4051,7 @@ void mtbdd_to_matrix_array(MTBDD M, int n, row_column_mode_t mode, MatArr_t **W)
                 if(mtbdd_gethigh(node) != MTBDD_ZERO && mtbdd_isleaf(node) == 0) 
                     node = mtbdd_gethigh(node);
                 
-                printf("row=%d gethigh()\n", row);
+                //printf("row=%d gethigh()\n", row);
             }
         }
 
@@ -4068,13 +4068,13 @@ void mtbdd_to_matrix_array(MTBDD M, int n, row_column_mode_t mode, MatArr_t **W)
                     if(mtbdd_getlow(node) != MTBDD_ZERO && mtbdd_isleaf(node) == 0) 
                         node = mtbdd_getlow(node);
                     
-                    printf("column=%d getlow()\n", column);
+                    //printf("column=%d getlow()\n", column);
                 }
                 else {
                     if(mtbdd_gethigh(node) != MTBDD_ZERO && mtbdd_isleaf(node) == 0) 
                         node = mtbdd_gethigh(node);
                     
-                    printf("column=%d gethigh()\n", column);
+                    //printf("column=%d gethigh()\n", column);
                 }
             }
 
@@ -4139,28 +4139,71 @@ void array_matrix_matrix_product(MatArr_t **M1, MatArr_t **M2, int n, MatArr_t *
  * 
  */
 
-MTBDD mtbdd_is_result_in_cache(int function, MTBDD M, MTBDD v, uint64_t n)
+MTBDD mtbdd_is_result_in_cache(int function, uint64_t num1, uint64_t num2, uint64_t num3)
 {
     MTBDD result = MTBDD_ZERO;
 
-    if(function == 0 || M == MTBDD_ZERO || v == MTBDD_ZERO)
+    if(function == 0 || num1 == MTBDD_ZERO || num2 == MTBDD_ZERO)
         return result;
 
-    if(cache_get3(function, M, v, n, &result))
+    if(cache_get3(function, num1, num2, num3, &result))
         return result;
 
     return MTBDD_ZERO;
 }
 
-void mtbdd_put_result_in_cache(int function, MTBDD M, MTBDD v, uint64_t n, MTBDD result)
+void mtbdd_put_result_in_cache(int function, uint64_t num1, uint64_t num2, uint64_t num3, uint64_t result)
 {
-    if(function == 0 || M == MTBDD_ZERO || v == MTBDD_ZERO || result == MTBDD_ZERO)
+    if(function == 0 || num1 == MTBDD_ZERO || num2 == MTBDD_ZERO || result == MTBDD_ZERO)
         return;
 
-    cache_put3(function, M, v, n, result);
+    cache_put3(function, num1, num2, num3, result);
 
     return;
 }
+
+/**
+ * Renumber vars in a decision diagram 
+ * 
+ * to let it start from new_var.
+ * 
+ * So, the var_set = {2, 3, ..., n} to a decision diagram 
+ * 
+ * is renumbered to {0, 1, ..., n-2} if new_var = 0.
+ */
+
+MTBDD mtbdd_renumber_variables(MTBDD M, uint32_t new_var)
+{
+    MTBDD result = MTBDD_ZERO;
+
+    if(M == MTBDD_ZERO)
+        return result;
+
+    if(mtbdd_isleaf(M))
+        return M;
+
+    if(mtbdd_isnode(M) && mtbdd_getvar(M) == new_var)
+        return M;
+
+    MTBDD getlow = mtbdd_getlow(M);
+    MTBDD gethigh = mtbdd_gethigh(M);
+
+    result = mtbdd_is_result_in_cache(CACHE_MTBDD_RENUMBER_VARS, new_var, getlow, gethigh);
+    if(result != MTBDD_ZERO)
+        return result;
+
+    MTBDD low = mtbdd_renumber_variables(getlow, new_var + 1);
+    MTBDD high = mtbdd_renumber_variables(gethigh, new_var + 1);
+
+    result = mtbdd_makenode(new_var, low, high);
+
+    printf("I was here new var = %d, low = %ld, high = %ld!\n", new_var, low, high);
+
+    mtbdd_put_result_in_cache(CACHE_MTBDD_RENUMBER_VARS, new_var, low, high, result);
+
+    return result;
+}
+
 
 /**
  * Matrix . Vector multiplication in MTBDD domain
@@ -4340,6 +4383,11 @@ MTBDD mtbdd_matmat_mult(MTBDD M1, MTBDD M2, int n)
         //         =  M10M01(x0) -> M10 = M00M11(0), M01 = M00M11(1)
         //
 
+        printf("multiply mat mat var(M1) = %d\n", mtbdd_getvar(M1));
+        printf("multiply mat mat var(M2) = %d\n", mtbdd_getvar(M2));
+        printf("multiply mat mat var(low(M1))  = %d\n", mtbdd_getvar(mtbdd_getlow(M1)));
+        printf("multiply mat mat var(high(M2)) = %d\n", mtbdd_getvar(mtbdd_getlow(M2)));
+
         // Check if var(M1) = {0,1} and var(M2) = {0,1} // TODO: extend for sparse mtbdds
         if( mtbdd_getvar(M1) != 0 || mtbdd_getvar(mtbdd_getlow(M1)) != 1 ||
             mtbdd_getvar(M2) != 0 || mtbdd_getvar(mtbdd_getlow(M2)) != 1 )
@@ -4372,8 +4420,12 @@ MTBDD mtbdd_matmat_mult(MTBDD M1, MTBDD M2, int n)
         // Put result in cache
         mtbdd_put_result_in_cache(CACHE_MTBDD_MATMAT_MULT, M1, M2, n, result);
 
+        printf("multiply mat mat n = %d\n", n);
+
         return result;
     }
+
+    printf("multiply mat mat n = %d\n", n);
 
     //
     // Split matrix M1 in four parts with size 2^(n-1) x 2^(n-1)
@@ -4381,6 +4433,11 @@ MTBDD mtbdd_matmat_mult(MTBDD M1, MTBDD M2, int n)
     //  M1 is row-wise sorted
     //
     MTBDD M1_00 = mtbdd_getlow(  mtbdd_getlow(M1)  );
+    if(mtbdd_getvar(M1_00) > 1) {
+
+    }
+
+
     MTBDD M1_01 = mtbdd_gethigh( mtbdd_getlow(M1)  );
     MTBDD M1_10 = mtbdd_getlow(  mtbdd_gethigh(M1) );
     MTBDD M1_11 = mtbdd_gethigh( mtbdd_gethigh(M1) );

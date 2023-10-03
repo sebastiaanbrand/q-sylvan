@@ -1401,6 +1401,67 @@ test_mtbdd_matrix_vector_multiplication()
 }
 
 int
+test_renumber_variables()
+{
+    // 
+    //  Decrease var numbers from 3 -> 0
+    //
+    //             x3
+    //        x4        x4
+    //     1.0  2.0  3.0  4.0
+    //
+    //
+    //  Expected output:
+    //
+    //             x0
+    //        x1        x1
+    //     1.0  2.0  3.0  4.0
+    //
+
+    MTBDD M = mtbdd_makenode(3, 
+            mtbdd_makenode(4, mtbdd_double(1.0), mtbdd_double(2.0)),
+            mtbdd_makenode(4, mtbdd_double(3.0), mtbdd_double(4.0))
+        );
+
+    // Decrease the var numbers
+    MTBDD W = mtbdd_renumber_variables(M, 0);
+
+    printf("getlow        = %ld\n", mtbdd_getlow(W));
+    printf("gethigh       = %ld\n", mtbdd_gethigh(W));
+    printf("getvar        = %d \n", mtbdd_getvar(W));
+    printf("getvar        = %d \n", mtbdd_getvar(mtbdd_getlow(W)));
+
+    printf("getdouble(getlow)   0 = %lf\n", mtbdd_getdouble( mtbdd_getlow(mtbdd_getlow(W)) ));
+    printf("getdouble(gethigh)  1 = %lf\n", mtbdd_getdouble( mtbdd_gethigh(mtbdd_gethigh(W)) ));
+
+    test_assert(mtbdd_getvar(W) == 0);
+    test_assert(mtbdd_getvar(mtbdd_getlow(W)) == 1);
+
+    test_assert(mtbdd_getdouble(mtbdd_getlow(mtbdd_getlow(W)))  == 1.0);
+    test_assert(mtbdd_getdouble(mtbdd_getlow(mtbdd_gethigh(W))) == 3.0);
+
+    // Increase the var numbers
+    W = mtbdd_renumber_variables(M, 6);
+
+    printf("getlow        = %ld\n", mtbdd_getlow(W));
+    printf("gethigh       = %ld\n", mtbdd_gethigh(W));
+    printf("getvar        = %d \n", mtbdd_getvar(W));
+    printf("getvar        = %d \n", mtbdd_getvar(mtbdd_getlow(W)));
+
+    printf("getdouble(getlow)   0 = %lf\n", mtbdd_getdouble( mtbdd_getlow(mtbdd_getlow(W)) ));
+    printf("getdouble(gethigh)  1 = %lf\n", mtbdd_getdouble( mtbdd_gethigh(mtbdd_gethigh(W)) ));
+
+    test_assert(mtbdd_getvar(W) == 6);
+    test_assert(mtbdd_getvar(mtbdd_getlow(W)) == 7);
+
+    test_assert(mtbdd_getdouble(mtbdd_getlow(mtbdd_getlow(W)))  == 1.0);
+    test_assert(mtbdd_getdouble(mtbdd_getlow(mtbdd_gethigh(W))) == 3.0);
+
+    return 0;
+}
+
+
+int
 test_mtbdd_matrix_matrix_multiplication()
 {
     // 
@@ -1483,7 +1544,7 @@ test_matrix_matrix_multiplication_4x4()
     M1 = mtbdd_tensor_prod(K, L, n);
     M2 = mtbdd_tensor_prod(K, L, n);
 
-    test_assert(M1 != M2);
+    test_assert(M1 == M2);
 
     // Calculate W = M1.M2 = M.M
 
@@ -1498,7 +1559,7 @@ test_matrix_matrix_multiplication_4x4()
     MatArr_t **M_ = NULL;
     allocate_matrix_array(&M_, n);
     mtbdd_to_matrix_array(M1, n, ALTERNATE_ROW_FIRST_WISE_MODE, M_);
-    
+
     print_matrix_array(W_, n);
     print_matrix_array(M_, n);
 
@@ -1560,6 +1621,7 @@ TASK_0(int, runtests)
     if (test_mtbdd_to_matrix_array()) return 1;
     if (test_matrix_array_to_mtbdd()) return 1;
     if (test_vector_array_to_mtbdd()) return 1;
+    if (test_renumber_variables()) return 1;
 
     // Test 9
     printf("\nTesting mtbdd matrix vector matrix matrix multiplication functions\n");
