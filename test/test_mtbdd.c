@@ -1460,6 +1460,51 @@ test_renumber_variables()
     return 0;
 }
 
+int
+test_determine_top_var_and_leafcount()
+{
+    // Test with identical leafvalues
+
+    MTBDD M = MTBDD_ZERO;
+
+    MTBDD node1 = mtbdd_makenode(4, mtbdd_double(3.0), mtbdd_double(3.0));
+    MTBDD node2 = mtbdd_makenode(4, mtbdd_double(3.0), mtbdd_double(3.0));
+    M = mtbdd_makenode(3, node1, node2);
+
+    int topvar = -1;
+    int botvar = 100;
+    int leafcount = 0;
+    determine_top_var_and_leafcount(M, &botvar, &topvar, &leafcount);
+
+    printf("topvar = %d\n", topvar);
+    printf("botvar = %d\n", botvar);
+    printf("leafcount = %d\n", leafcount);
+
+    test_assert(topvar == -1);
+    test_assert(botvar == 100);
+    test_assert(leafcount == 1);
+
+    // Test with different leafvalues
+
+    node1 = mtbdd_makenode(4, mtbdd_double(3.0), mtbdd_double(1.0));
+    node2 = mtbdd_makenode(4, mtbdd_double(1.0), mtbdd_double(3.0));
+    M = mtbdd_makenode(3, node1, node2);
+
+    topvar = -1;
+    botvar = 100;
+    leafcount = 0;
+    determine_top_var_and_leafcount(M, &botvar, &topvar, &leafcount);
+
+    printf("topvar = %d\n", topvar);
+    printf("botvar = %d\n", botvar);
+    printf("leafcount = %d\n", leafcount);
+
+    test_assert(topvar == 4);
+    test_assert(botvar == 3);
+    test_assert(leafcount == 4); // Should be two!
+
+    return 0;
+}
 
 int
 test_mtbdd_matrix_matrix_multiplication()
@@ -1485,6 +1530,52 @@ test_mtbdd_matrix_matrix_multiplication()
     MTBDD M = matrix_array_to_mtbdd(M_arr, n, COLUMN_WISE_MODE);
 
     MTBDD product = mtbdd_matmat_mult(K, M, n);
+
+    MatArr_t **W_arr = NULL;
+    allocate_matrix_array(&W_arr, n);
+    mtbdd_to_matrix_array(product, n, ROW_WISE_MODE, W_arr);
+
+    print_matrix_array(K_arr, n);
+    print_matrix_array(M_arr, n);
+    print_matrix_array(W_arr, n);
+
+    test_assert(W_arr[0][0] == K_arr[0][0] * M_arr[0][0] + K_arr[0][1] * M_arr[1][0]);
+    test_assert(W_arr[0][1] == K_arr[0][0] * M_arr[0][1] + K_arr[0][1] * M_arr[1][1]);
+
+    test_assert(W_arr[1][0] == K_arr[1][0] * M_arr[0][0] + K_arr[1][1] * M_arr[1][0]);
+    test_assert(W_arr[1][1] == K_arr[1][0] * M_arr[0][1] + K_arr[1][1] * M_arr[1][1]);
+
+    free_matrix_array(K_arr, n);
+    free_matrix_array(M_arr, n);
+    free_matrix_array(W_arr, n);
+
+    return 0;
+}
+
+int
+test_mtbdd_matrix_matrix_multiplication_scalair()
+{
+    // 
+    //  K . M = W, M: 2^n x 2^n, L: 2^n x 2^n, W: 2^n x 2^n
+    //
+
+    int n = 1;
+
+    MatArr_t **K_arr = NULL;
+    allocate_matrix_array(&K_arr, n);
+
+    K_arr[0][0] =  1.0; K_arr[0][1] = 2.0; 
+    K_arr[1][0] = -1.0; K_arr[1][1] = 3.0;
+    MTBDD K = matrix_array_to_mtbdd(K_arr, n, ROW_WISE_MODE);
+
+    MatArr_t **M_arr = NULL;
+    allocate_matrix_array(&M_arr, n);
+
+    M_arr[0][0] = -1.0; M_arr[0][1] =  2.0;
+    M_arr[1][0] =  1.0; M_arr[1][1] = -2.0;
+    MTBDD M = matrix_array_to_mtbdd(M_arr, n, COLUMN_WISE_MODE);
+
+    MTBDD product = mtbdd_matmat_mult_scalair(K, M, n+1, 0);
 
     MatArr_t **W_arr = NULL;
     allocate_matrix_array(&W_arr, n);
@@ -1536,10 +1627,10 @@ test_matrix_matrix_multiplication_4x4()
     
     // Fill both dd's column wise oriented
     K = mtbdd_makenode(0, mtbdd_makenode(1, mtbdd_double(1.0), mtbdd_double(3.0)),
-                          mtbdd_makenode(1, mtbdd_double(2.0), mtbdd_double(1.0)));
+                          mtbdd_makenode(1, mtbdd_double(2.0), mtbdd_double(4.0)));
 
-    L = mtbdd_makenode(0, mtbdd_makenode(1, mtbdd_double(1.0), mtbdd_double(0.5)),
-                          mtbdd_makenode(1, mtbdd_double(0.5), mtbdd_double(1.0)));
+    L = mtbdd_makenode(0, mtbdd_makenode(1, mtbdd_double(1.0), mtbdd_double(2.0)),
+                          mtbdd_makenode(1, mtbdd_double(0.5), mtbdd_double(1.5)));
 
     M1 = mtbdd_tensor_prod(K, L, n);
     M2 = mtbdd_tensor_prod(K, L, n);
@@ -1622,11 +1713,13 @@ TASK_0(int, runtests)
     if (test_matrix_array_to_mtbdd()) return 1;
     if (test_vector_array_to_mtbdd()) return 1;
     if (test_renumber_variables()) return 1;
+    if (test_determine_top_var_and_leafcount()) return 1;
 
     // Test 9
     printf("\nTesting mtbdd matrix vector matrix matrix multiplication functions\n");
     if (test_mtbdd_matrix_vector_multiplication()) return 1;
     if (test_mtbdd_matrix_matrix_multiplication()) return 1;
+    //if (test_mtbdd_matrix_matrix_multiplication_scalair()) return 1;
     //if (test_matrix_matrix_multiplication_4x4()) return 1;
 
     return 0;

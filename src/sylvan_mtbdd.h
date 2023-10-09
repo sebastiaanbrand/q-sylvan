@@ -1288,9 +1288,10 @@ void array_matrix_matrix_product(MatArr_t **M, MatArr_t **V, int n, MatArr_t **W
  */
 
 // TODO: must be integrated with existing functions of other decision diagrams in enum
-#define CACHE_MTBDD_MATVEC_MULT 1 
-#define CACHE_MTBDD_MATMAT_MULT 2
-#define CACHE_MTBDD_RENUMBER_VARS 3
+#define CACHE_MTBDD_MATVEC_MULT    1 
+#define CACHE_MTBDD_MATMAT_MULT    2
+#define CACHE_MTBDD_RENUMBER_VARS  3
+#define CACHE_MTBDD_TOPVAR         4
 
 #define MTBDD_ZERO 0
 
@@ -1299,6 +1300,7 @@ uint64_t mtbdd_is_result_in_cache(int f, uint64_t num1, uint64_t num2, uint64_t 
 void mtbdd_put_result_in_cache(int f, uint64_t num1, uint64_t num2, uint64_t num3, uint64_t result);
 
 MTBDD mtbdd_renumber_variables(MTBDD M, uint32_t new_var);
+void determine_top_var_and_leafcount(MTBDD M, int *botvar, int *topvar, int *leafcount);
 
 // Function
 MTBDD mtbdd_matvec_mult(MTBDD M, MTBDD v, int n);
@@ -1311,6 +1313,7 @@ MTBDD mtbdd_matvec_mult(MTBDD M, MTBDD v, int n);
 */
 
 MTBDD mtbdd_matmat_mult(MTBDD M1, MTBDD M2, int n);
+MTBDD mtbdd_matmat_mult_scalair(MTBDD M1, MTBDD M2, int nvars, int nextvar);
 
 /**
  * Kronecker multiplication or Tensor product
