@@ -1575,7 +1575,8 @@ test_mtbdd_matrix_matrix_multiplication_scalair()
     M_arr[1][0] =  1.0; M_arr[1][1] = -2.0;
     MTBDD M = matrix_array_to_mtbdd(M_arr, n, COLUMN_WISE_MODE);
 
-    MTBDD product = mtbdd_matmat_mult_scalair(K, M, n+1, 0);
+    int currentvar = n + 1;
+    MTBDD product = mtbdd_matmat_mult_scalair(K, M, n + 1, &currentvar);
 
     MatArr_t **W_arr = NULL;
     allocate_matrix_array(&W_arr, n);
@@ -1719,7 +1720,7 @@ TASK_0(int, runtests)
     printf("\nTesting mtbdd matrix vector matrix matrix multiplication functions\n");
     if (test_mtbdd_matrix_vector_multiplication()) return 1;
     if (test_mtbdd_matrix_matrix_multiplication()) return 1;
-    //if (test_mtbdd_matrix_matrix_multiplication_scalair()) return 1;
+    if (test_mtbdd_matrix_matrix_multiplication_scalair()) return 1;
     //if (test_matrix_matrix_multiplication_4x4()) return 1;
 
     return 0;

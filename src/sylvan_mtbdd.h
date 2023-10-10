@@ -1313,7 +1313,7 @@ MTBDD mtbdd_matvec_mult(MTBDD M, MTBDD v, int n);
 */
 
 MTBDD mtbdd_matmat_mult(MTBDD M1, MTBDD M2, int n);
-MTBDD mtbdd_matmat_mult_scalair(MTBDD M1, MTBDD M2, int nvars, int nextvar);
+MTBDD mtbdd_matmat_mult_scalair(MTBDD M1, MTBDD M2, int nvars, int *currentvar);
 
 /**
  * Kronecker multiplication or Tensor product

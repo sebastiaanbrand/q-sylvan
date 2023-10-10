@@ -4206,7 +4206,7 @@ MTBDD mtbdd_renumber_variables(MTBDD M, uint32_t new_var)
 
 void determine_top_var_and_leafcount(MTBDD M, int *botvar, int *topvar, int *leafcount)
 {
-    printf("M = %ld, isleaf = %d, getvar=%d\n, ", M, mtbdd_isleaf(M), mtbdd_getvar(M));
+    //printf("M = %ld, isleaf = %d, getvar=%d\n, ", M, mtbdd_isleaf(M), mtbdd_getvar(M));
 
     if(M == MTBDD_ZERO)
         return;
@@ -4513,7 +4513,7 @@ MTBDD mtbdd_matmat_mult(MTBDD M1, MTBDD M2, int n)
  *   Computes A.B for two 2^n x 2^n matrices.
  *  
  */
-MTBDD mtbdd_matmat_mult_scalair(MTBDD M1, MTBDD M2, int nvars, int nextvar)
+MTBDD mtbdd_matmat_mult_scalair(MTBDD M1, MTBDD M2, int nvars, int *currentvar)
 {
     MTBDD result = MTBDD_ZERO;
 
@@ -4522,48 +4522,100 @@ MTBDD mtbdd_matmat_mult_scalair(MTBDD M1, MTBDD M2, int nvars, int nextvar)
         return result;
 
     // Multiply two scalairs
-    if(nextvar == nvars) { 
-        assert(mtbdd_isleaf(M1));
-        assert(mtbdd_isleaf(M2));
+    if(mtbdd_isleaf(M1) && mtbdd_isleaf(M2))
         return mtbdd_getdouble(M1) * mtbdd_getdouble(M2);
-    }
+
+    // For testing: determine topvar of M1 and M2
+    int topvar1 = -1;
+    int botvar1 = 100;
+    int leafcount1 = 0;
+    determine_top_var_and_leafcount(M1, &botvar1, &topvar1, &leafcount1);
+
+    printf("topvar = %d\n", topvar1);
+    printf("botvar = %d\n", botvar1);
+    printf("leafcount = %d\n", leafcount1);
+
+    int topvar2 = -1;
+    int botvar2 = 100;
+    int leafcount2 = 0;
+    determine_top_var_and_leafcount(M2, &botvar2, &topvar2, &leafcount2);
+
+    printf("topvar = %d\n", topvar2);
+    printf("botvar = %d\n", botvar2);
+    printf("leafcount = %d\n", leafcount2);
 
     // Check if result already in cache
-    result = mtbdd_is_result_in_cache(CACHE_MTBDD_MATMAT_MULT, M1, M2, nextvar);
+    result = mtbdd_is_result_in_cache(CACHE_MTBDD_MATMAT_MULT, M1, M2, *currentvar);
     if(result != MTBDD_ZERO) {
-        printf("Result was cached (M1, M2, nextvar) = (%ld, %ld, %d) !\n", M1, M2, nextvar);
+        printf("Result was cached (M1, M2, nextvar) = (%ld, %ld, %d) !\n", M1, M2, *currentvar);
         return result;
     }
 
-    // Multiply recursive
-    nextvar++;
+    // Multiply recursive, reduce M1 and M2 with two vars
+    MTBDD M1_00 = M1;
+    MTBDD M1_01 = M1;
+    MTBDD M1_10 = M1;
+    MTBDD M1_11 = M1;
 
-    MTBDD M1_00 = mtbdd_getlow(  mtbdd_getlow( M1) );
-    MTBDD M1_01 = mtbdd_gethigh( mtbdd_getlow( M1) );
-    MTBDD M1_10 = mtbdd_getlow(  mtbdd_gethigh(M1) );
-    MTBDD M1_11 = mtbdd_gethigh( mtbdd_gethigh(M1) );
+    if(!mtbdd_isleaf(M1)) {
 
-    MTBDD M2_00 = mtbdd_getlow(  mtbdd_getlow( M2) );
-    MTBDD M2_01 = mtbdd_gethigh( mtbdd_getlow( M2) );
-    MTBDD M2_10 = mtbdd_getlow(  mtbdd_gethigh(M2) );
-    MTBDD M2_11 = mtbdd_gethigh( mtbdd_gethigh(M2) );
+        M1_00 = mtbdd_getlow( M1);
+        if(!mtbdd_isleaf(M1_00))
+            M1_00 = mtbdd_getlow(M1_00);
+        
+        M1_01 = mtbdd_getlow( M1);
+        if(!mtbdd_isleaf(M1_01))
+            M1_01 = mtbdd_gethigh(M1_01);
+        
+        M1_10 = mtbdd_gethigh(M1);
+        if(!mtbdd_isleaf(M1_10))
+            M1_10 = mtbdd_getlow(M1_10);
+        
+        M1_11 = mtbdd_gethigh(M1);
+        if(!mtbdd_isleaf(M1_11))
+            M1_11 = mtbdd_gethigh(M1_11);
+    }
 
-    MTBDD W00 = mtbdd_plus(mtbdd_matmat_mult_scalair(M1_00, M2_00, nvars, nextvar), mtbdd_matmat_mult_scalair(M1_01, M2_10, nvars, nextvar));
-    MTBDD W01 = mtbdd_plus(mtbdd_matmat_mult_scalair(M1_00, M2_01, nvars, nextvar), mtbdd_matmat_mult_scalair(M1_01, M2_11, nvars, nextvar));
-    MTBDD W10 = mtbdd_plus(mtbdd_matmat_mult_scalair(M1_10, M2_00, nvars, nextvar), mtbdd_matmat_mult_scalair(M1_11, M2_10, nvars, nextvar));
-    MTBDD W11 = mtbdd_plus(mtbdd_matmat_mult_scalair(M1_10, M2_01, nvars, nextvar), mtbdd_matmat_mult_scalair(M1_11, M2_11, nvars, nextvar));
+    MTBDD M2_00 = M2;
+    MTBDD M2_01 = M2;
+    MTBDD M2_10 = M2;
+    MTBDD M2_11 = M2;
 
-    nextvar--;
+    if(!mtbdd_isleaf(M2)) {
 
-    MTBDD low  = mtbdd_makenode(2*nextvar+1, W00, W01);
-    MTBDD high = mtbdd_makenode(2*nextvar+1, W10, W11);
+        M2_00 = mtbdd_getlow( M2);
+        if(!mtbdd_isleaf(M2_00))
+            M2_00 = mtbdd_getlow(M2_00);
+        
+        M2_01 = mtbdd_getlow( M2);
+        if(!mtbdd_isleaf(M2_01))
+            M2_01 = mtbdd_gethigh(M2_01);
+        
+        M2_10 = mtbdd_gethigh(M2);
+        if(!mtbdd_isleaf(M2_10))
+            M2_10 = mtbdd_getlow(M2_10);
+        
+        M2_11 = mtbdd_gethigh(M2);
+        if(!mtbdd_isleaf(M2_11))
+            M2_11 = mtbdd_gethigh(M2_11);
+    }
 
-    result = mtbdd_makenode(2*nextvar, low, high);
+    *currentvar = *currentvar + 2;
 
-    result = mtbdd_renumber_variables(result, 0);
+    MTBDD W00 = mtbdd_plus(mtbdd_matmat_mult_scalair(M1_00, M2_00, nvars, currentvar), mtbdd_matmat_mult_scalair(M1_01, M2_10, nvars, currentvar));
+    MTBDD W01 = mtbdd_plus(mtbdd_matmat_mult_scalair(M1_00, M2_01, nvars, currentvar), mtbdd_matmat_mult_scalair(M1_01, M2_11, nvars, currentvar));
+    MTBDD W10 = mtbdd_plus(mtbdd_matmat_mult_scalair(M1_10, M2_00, nvars, currentvar), mtbdd_matmat_mult_scalair(M1_11, M2_10, nvars, currentvar));
+    MTBDD W11 = mtbdd_plus(mtbdd_matmat_mult_scalair(M1_10, M2_01, nvars, currentvar), mtbdd_matmat_mult_scalair(M1_11, M2_11, nvars, currentvar));
+
+    MTBDD low  = mtbdd_makenode(*currentvar+1, W00, W01);
+    MTBDD high = mtbdd_makenode(*currentvar+1, W10, W11);
+
+    result = mtbdd_makenode(*currentvar, low, high);
+
+    // result = mtbdd_renumber_variables(result, 0);
  
     // Put result in cache
-    mtbdd_put_result_in_cache(CACHE_MTBDD_MATMAT_MULT, M1, M2, nextvar, result);
+    mtbdd_put_result_in_cache(CACHE_MTBDD_MATMAT_MULT, M1, M2, *currentvar, result);
 
     return result;
 }
