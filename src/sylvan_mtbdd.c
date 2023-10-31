@@ -4126,7 +4126,7 @@ void array_matrix_matrix_product(MatArr_t **M1, MatArr_t **M2, int n, MatArr_t *
     MTBDD M2_row = matrix_array_to_mtbdd(M2, n, ROW_WISE_MODE);
 
     // Multiply in MTBDD domain
-    MTBDD W_col = mtbdd_matmat_mult(M1_col, M2_row, n);
+    MTBDD W_col = mtbdd_matmat_mult_alt(M1_col, M2_row, n);
 
     mtbdd_to_matrix_array(W_col, n, COLUMN_WISE_MODE, W);
     
@@ -4158,6 +4158,29 @@ void mtbdd_put_result_in_cache(int function, uint64_t num1, uint64_t num2, uint6
         return;
 
     cache_put3(function, num1, num2, num3, result);
+
+    return;
+}
+
+MTBDD mtbdd_is_result_in_cache4(int function, uint64_t num1, uint64_t num2, uint64_t num3, uint64_t num4)
+{
+    MTBDD result = MTBDD_ZERO;
+
+    if(function == 0 || num1 == MTBDD_ZERO || num2 == MTBDD_ZERO)
+        return result;
+
+    if(cache_get4(function, num1, num2, num3, num4, &result))
+        return result;
+
+    return MTBDD_ZERO;
+}
+
+void mtbdd_put_result_in_cache4(int function, uint64_t num1, uint64_t num2, uint64_t num3, uint64_t num4, uint64_t result)
+{
+    if(function == 0 || num1 == MTBDD_ZERO || num2 == MTBDD_ZERO || result == MTBDD_ZERO)
+        return;
+
+    cache_put4(function, num1, num2, num3, num4, result);
 
     return;
 }
@@ -4231,6 +4254,107 @@ void determine_top_var_and_leafcount(MTBDD M, int *botvar, int *topvar, int *lea
     }
 
     assert(false); // M should be leaf or node
+
+    return;
+}
+
+//
+//  Given the following dd:
+//
+//        |
+//        x3 -
+//        |
+//        x4 -
+//        |
+//        x7 -
+//        |
+//
+//  Get the children (low and high) on the level of the given var
+//
+//  var = 4: -> "mag niet"
+//
+//              |
+//              x3 -
+//              |
+//              x4 - M_high
+//  M_low  -->  | 
+//              x7 -
+//              |
+//
+//  var = 1: suppose [x1] is a virtual node
+//
+//    |         |
+//   [x1]      [x1] -
+//    |    -->  | | <-- return these as M_low and M_high
+//    x3        x3 -
+//    |         |
+//
+//  var = 5: create virtual node [x5] and return low and high
+//
+//    |         |
+//    |  -->   [x5] 
+//    |         | | <-- return these as M_low and M_high
+//    x7        x7 -
+//    |         |
+//
+//  var = 9: this is equal to x7 as highs var -> "mag niet"
+//
+//    |         |
+//    x7 -  --> x7 - M_high
+//    |         | <-- M_low
+//   [x9] -
+//    |
+//
+
+void mtbdd_get_children_of_var(MTBDD M, MTBDD *M_low, MTBDD *M_high, uint32_t var)
+{
+    *M_low = MTBDD_ZERO;
+    *M_high = MTBDD_ZERO;
+
+    if(M == MTBDD_ZERO) {
+        *M_low = M;
+        *M_high = M;
+        return;
+    }
+
+    //
+    // TODO: Introduce mtbddnode_t node = MTBDD_GETNODE(M); That is more efficient.
+    //
+
+    if(mtbdd_isleaf(M)) {
+        *M_low = M;
+        *M_high = M;
+        return;
+    }
+
+    if(mtbdd_getvar(M) > var) {
+        *M_low = M;
+        *M_high = M;
+        return;
+    }
+
+    if(mtbdd_getvar(M) == var) {
+        *M_low = mtbdd_getlow(M);
+        *M_high = mtbdd_gethigh(M);
+        return;
+    }
+
+    if(mtbdd_getvar(M) < var) { // follow the low edge down -> "mag niet", beter exit()
+        mtbdd_get_children_of_var(mtbdd_getlow(M), M_low, M_high, var);
+        return;
+    }
+
+    return;
+}
+
+void mtbdd_split_mtbdd_into_four_parts(MTBDD M, MTBDD *M00, MTBDD *M01, MTBDD *M10, MTBDD *M11, uint32_t var)
+{
+    MTBDD M_0 = MTBDD_ZERO;
+    MTBDD M_1 = MTBDD_ZERO;
+
+    mtbdd_get_children_of_var(M, &M_0, &M_1, var);
+    mtbdd_get_children_of_var(M_0, M00, M01, var + 1);
+    mtbdd_get_children_of_var(M_1, M10, M11, var + 1);
 
     return;
 }
@@ -4357,7 +4481,7 @@ MTBDD mtbdd_matvec_mult(MTBDD M, MTBDD v, int n)
  * 
  */
 
-MTBDD mtbdd_matmat_mult(MTBDD M1, MTBDD M2, int n)
+MTBDD mtbdd_matmat_mult_alt(MTBDD M1, MTBDD M2, int n)
 {
     MTBDD result = MTBDD_ZERO;
 
@@ -4478,16 +4602,16 @@ MTBDD mtbdd_matmat_mult(MTBDD M1, MTBDD M2, int n)
     //
     //  W00 and W01 are column-wise sorted
     //
-    MTBDD W00 = mtbdd_plus(mtbdd_matmat_mult(M1_00, M2_00, n-1), mtbdd_matmat_mult(M1_01, M2_01, n-1));
-    MTBDD W01 = mtbdd_plus(mtbdd_matmat_mult(M1_00, M2_10, n-1), mtbdd_matmat_mult(M1_01, M2_11, n-1));
+    MTBDD W00 = mtbdd_plus(mtbdd_matmat_mult_alt(M1_00, M2_00, n-1), mtbdd_matmat_mult_alt(M1_01, M2_01, n-1));
+    MTBDD W01 = mtbdd_plus(mtbdd_matmat_mult_alt(M1_00, M2_10, n-1), mtbdd_matmat_mult_alt(M1_01, M2_11, n-1));
 
     //
     // W10 = M1_10 . M2_00 + M1_11 . M2_01    W11 = M1_10 . M2_10 + M1_11 . M2_11 
     //
     //  W10 and W11 are column-wise sorted
     //
-    MTBDD W10 = mtbdd_plus(mtbdd_matmat_mult(M1_10, M2_00, n-1), mtbdd_matmat_mult(M1_11, M2_01, n-1));
-    MTBDD W11 = mtbdd_plus(mtbdd_matmat_mult(M1_10, M2_10, n-1), mtbdd_matmat_mult(M1_11, M2_11, n-1));
+    MTBDD W10 = mtbdd_plus(mtbdd_matmat_mult_alt(M1_10, M2_00, n-1), mtbdd_matmat_mult_alt(M1_11, M2_01, n-1));
+    MTBDD W11 = mtbdd_plus(mtbdd_matmat_mult_alt(M1_10, M2_10, n-1), mtbdd_matmat_mult_alt(M1_11, M2_11, n-1));
 
     // 
     // Compose final matrix as result
@@ -4513,7 +4637,7 @@ MTBDD mtbdd_matmat_mult(MTBDD M1, MTBDD M2, int n)
  *   Computes A.B for two 2^n x 2^n matrices.
  *  
  */
-MTBDD mtbdd_matmat_mult_scalair(MTBDD M1, MTBDD M2, int nvars, int *currentvar)
+MTBDD mtbdd_matmat_mult(MTBDD M1, MTBDD M2, int nvars, int currentvar)
 {
     MTBDD result = MTBDD_ZERO;
 
@@ -4522,9 +4646,17 @@ MTBDD mtbdd_matmat_mult_scalair(MTBDD M1, MTBDD M2, int nvars, int *currentvar)
         return result;
 
     // Multiply two scalairs
-    if(mtbdd_isleaf(M1) && mtbdd_isleaf(M2))
-        return mtbdd_getdouble(M1) * mtbdd_getdouble(M2);
+    if(nvars == currentvar) {
+    
+        if(!mtbdd_isleaf(M1)) 
+            exit(0);
+        
+        if(!mtbdd_isleaf(M2)) 
+            exit(0);
 
+        return mtbdd_getdouble(M1) * mtbdd_getdouble(M2);
+    }
+/*
     // For testing: determine topvar of M1 and M2
     int topvar1 = -1;
     int botvar1 = 100;
@@ -4543,11 +4675,12 @@ MTBDD mtbdd_matmat_mult_scalair(MTBDD M1, MTBDD M2, int nvars, int *currentvar)
     printf("topvar = %d\n", topvar2);
     printf("botvar = %d\n", botvar2);
     printf("leafcount = %d\n", leafcount2);
+*/
 
     // Check if result already in cache
-    result = mtbdd_is_result_in_cache(CACHE_MTBDD_MATMAT_MULT, M1, M2, *currentvar);
+    result = mtbdd_is_result_in_cache4(CACHE_MTBDD_MATMAT_MULT, M1, M2, nvars, currentvar);
     if(result != MTBDD_ZERO) {
-        printf("Result was cached (M1, M2, nextvar) = (%ld, %ld, %d) !\n", M1, M2, *currentvar);
+        printf("Result was cached based on (M1, M2, nvars, currentvar) = (%ld, %ld, %d, %d) !\n", M1, M2, nvars, currentvar);
         return result;
     }
 
@@ -4557,68 +4690,167 @@ MTBDD mtbdd_matmat_mult_scalair(MTBDD M1, MTBDD M2, int nvars, int *currentvar)
     MTBDD M1_10 = M1;
     MTBDD M1_11 = M1;
 
-    if(!mtbdd_isleaf(M1)) {
-
-        M1_00 = mtbdd_getlow( M1);
-        if(!mtbdd_isleaf(M1_00))
-            M1_00 = mtbdd_getlow(M1_00);
-        
-        M1_01 = mtbdd_getlow( M1);
-        if(!mtbdd_isleaf(M1_01))
-            M1_01 = mtbdd_gethigh(M1_01);
-        
-        M1_10 = mtbdd_gethigh(M1);
-        if(!mtbdd_isleaf(M1_10))
-            M1_10 = mtbdd_getlow(M1_10);
-        
-        M1_11 = mtbdd_gethigh(M1);
-        if(!mtbdd_isleaf(M1_11))
-            M1_11 = mtbdd_gethigh(M1_11);
-    }
+    mtbdd_split_mtbdd_into_four_parts(M1, &M1_00, &M1_01, &M1_10, &M1_11, currentvar);
 
     MTBDD M2_00 = M2;
     MTBDD M2_01 = M2;
     MTBDD M2_10 = M2;
     MTBDD M2_11 = M2;
 
-    if(!mtbdd_isleaf(M2)) {
+    mtbdd_split_mtbdd_into_four_parts(M2, &M2_00, &M2_01, &M2_10, &M2_11, currentvar);
 
-        M2_00 = mtbdd_getlow( M2);
-        if(!mtbdd_isleaf(M2_00))
-            M2_00 = mtbdd_getlow(M2_00);
-        
-        M2_01 = mtbdd_getlow( M2);
-        if(!mtbdd_isleaf(M2_01))
-            M2_01 = mtbdd_gethigh(M2_01);
-        
-        M2_10 = mtbdd_gethigh(M2);
-        if(!mtbdd_isleaf(M2_10))
-            M2_10 = mtbdd_getlow(M2_10);
-        
-        M2_11 = mtbdd_gethigh(M2);
-        if(!mtbdd_isleaf(M2_11))
-            M2_11 = mtbdd_gethigh(M2_11);
-    }
+    currentvar = currentvar+2;
 
-    *currentvar = *currentvar + 2;
+/*
+    //MTBDD M = mtbdd_matmat_mult(M1_00, M2_00, nvars, currentvar);
 
-    MTBDD W00 = mtbdd_plus(mtbdd_matmat_mult_scalair(M1_00, M2_00, nvars, currentvar), mtbdd_matmat_mult_scalair(M1_01, M2_10, nvars, currentvar));
-    MTBDD W01 = mtbdd_plus(mtbdd_matmat_mult_scalair(M1_00, M2_01, nvars, currentvar), mtbdd_matmat_mult_scalair(M1_01, M2_11, nvars, currentvar));
-    MTBDD W10 = mtbdd_plus(mtbdd_matmat_mult_scalair(M1_10, M2_00, nvars, currentvar), mtbdd_matmat_mult_scalair(M1_11, M2_10, nvars, currentvar));
-    MTBDD W11 = mtbdd_plus(mtbdd_matmat_mult_scalair(M1_10, M2_01, nvars, currentvar), mtbdd_matmat_mult_scalair(M1_11, M2_11, nvars, currentvar));
+    int topvar = -1;
+    int botvar = 100;
+    int leafcount = 0;
+    determine_top_var_and_leafcount(M1_00, &botvar, &topvar, &leafcount);
 
-    MTBDD low  = mtbdd_makenode(*currentvar+1, W00, W01);
-    MTBDD high = mtbdd_makenode(*currentvar+1, W10, W11);
+    printf("M1_00 topvar = %d\n", topvar);
+    printf("M1_00 botvar = %d\n", botvar);
+    printf("M1_00 leafcount = %d\n", leafcount);
 
-    result = mtbdd_makenode(*currentvar, low, high);
+    topvar = -1;
+    botvar = 100;
+    leafcount = 0;
+    determine_top_var_and_leafcount(M1, &botvar, &topvar, &leafcount);
 
-    // result = mtbdd_renumber_variables(result, 0);
- 
+    printf("M1 topvar = %d\n", topvar);
+    printf("M1 botvar = %d\n", botvar);
+    printf("M1 leafcount = %d\n", leafcount);
+*/
+
+    MTBDD W00 = mtbdd_plus(
+        mtbdd_matmat_mult(M1_00, M2_00, nvars, currentvar), 
+        mtbdd_matmat_mult(M1_01, M2_10, nvars, currentvar));
+
+    MTBDD W01 = mtbdd_plus(
+        mtbdd_matmat_mult(M1_00, M2_01, nvars, currentvar), 
+        mtbdd_matmat_mult(M1_01, M2_11, nvars, currentvar));
+
+    MTBDD W10 = mtbdd_plus(
+        mtbdd_matmat_mult(M1_10, M2_00, nvars, currentvar), 
+        mtbdd_matmat_mult(M1_11, M2_10, nvars, currentvar));
+
+    MTBDD W11 = mtbdd_plus(
+        mtbdd_matmat_mult(M1_10, M2_01, nvars, currentvar), 
+        mtbdd_matmat_mult(M1_11, M2_11, nvars, currentvar));
+
+    currentvar = currentvar-2;
+
+    MTBDD low  = mtbdd_makenode(currentvar+1, W00, W01);
+    MTBDD high = mtbdd_makenode(currentvar+1, W10, W11);
+
+    result = mtbdd_makenode(currentvar, low, high);
+
     // Put result in cache
-    mtbdd_put_result_in_cache(CACHE_MTBDD_MATMAT_MULT, M1, M2, *currentvar, result);
+    mtbdd_put_result_in_cache4(CACHE_MTBDD_MATMAT_MULT, M1, M2, currentvar, nvars, result);
 
     return result;
 }
+
+/**
+ * Multiplication of a and b matrices to get M = a . b, size n x n
+ * 
+ *  M(r,c) is element in row r and column c. Same for a(r,c) and b(r,c).
+ * 
+ * In indices:
+ * 
+ *  M(i,j,N) = sum k=0 to N-1 of ( a(i,k) . b(k,j) ) with N = 2^n = number of elements.
+ * 
+ *  M holds all elements M(i,j,N) with 0 <= i < N, and 0 <= j < N, N = number of elements in a = b
+ * 
+ * Derive recursive calculation of M(i,j,N):
+ * 
+ *  if (N == 0) 
+ *      -> M(0,0,0) = NULL
+ * 
+ *  if (N == 1) 
+ *      -> M(i,j,1) = sum k=0 to 0 of ( a(i,k) . b(k,j) ) = a(i,0) . b(0,j) and i,j < n
+ * 
+ *  if (N == 2)
+ *      -> M(i,j,2) = sum k=0 to 1 of ( a(i,k) . b(k,j) ) = a(i,0) . b(0,j) + a(i,1) . b(1,j) and i,j < N
+ *                  = M(i,j,1) + a(i,1) . b(1,j) and i,j < N
+ * 
+ *  if (N > 2) and (0 <= i < N) and (0 <= j < N)    
+ *      -> M(i,j,N) = sum k=0 to N-1 of ( a(i,k) . b(k,j) ) and i,j < N
+ *                  = sum k=0 to N-2 of ( a(i,k) . b(k,j) ) + a(i,N-1) . b(N-1,j) and i,j < N 
+ *                  = M(i,j,N-1) + a(i,N-1) . b(N-1,j) and i,j < N
+ *                  = M(i,j,N-2) + a(i,N-2) . b(N-2,j) + a(i,N-1) . b(N-1,j) and i,j < N
+ *
+ *  M, a and b are mtbdd's.
+ * 
+ * 
+*/
+
+/*
+
+//
+//
+//
+MTBDD mtbdd_matmat_indices(uint32_t n, MTBDD a, MTBDD b)
+{
+    MTBDD result = MTBDD_ZERO;
+
+    if (n==0)
+        return mtbdd_M(0,0,0,a,b);
+
+    if (n==1)
+        return mtbdd_M(0,0,1,a,b);
+
+    // Fill result column-wise
+    //
+    // M:       |
+    //          x0 -        "row", 2^1 = 2 leaves
+    //          |
+    //          x1 -        "col"
+    //          |
+    //          x2 -        "row"
+    //          |
+    //          x3 -        "col", 2^4 = 16 leaves, var = n-1
+    //          |
+    //
+    // Run through the indices, M has size n x n
+    //
+    
+    uint32_t pair = MTBDD_ZERO;
+
+    for(uint32_t row=0; row<n; row++)
+    {
+        for(uint32_t col=0; col<n; col+=2)
+        {
+            value_low = mtbdd_M(row, col, n, a, b);
+            value_high = mtbdd_M(row, col+1, n, a, b);
+
+            pair = mtbdd_makenode(n-1, mtbdd_double(value_low), mtbdd_double(value_high));
+        }
+
+        M = mtbdd_makenode(n-2, pair, ?);
+    }
+    return result;
+}
+
+
+
+MTBDD mtbdd_M(uint32_t row, uint32_t col, uint32_t n, MTBDD a, MTBDD b)
+{
+    MTBDD result = MTBDD_ZERO;
+
+    if (n==0)
+        return result;
+
+    if (n==1)
+        return mtbdd_getdouble(a) * mtbdd_getdouble(b);
+
+    if (n==2)
+        return result;
+
+    return result;
+}
+*/
 
 /**
  * Kronecker multiplication or Tensor product

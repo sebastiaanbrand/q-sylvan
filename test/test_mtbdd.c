@@ -1365,8 +1365,6 @@ test_matrix_array_to_mtbdd()
     return 0;
 }
 
-
-
 int
 test_mtbdd_matrix_vector_multiplication()
 {
@@ -1507,10 +1505,49 @@ test_determine_top_var_and_leafcount()
 }
 
 int
-test_mtbdd_matrix_matrix_multiplication()
+test_mtbdd_get_children_of_var()
+{
+    // Test with 
+    //
+    // M =  x2
+    //      |
+    //      x4 -  
+    //      |
+    //
+    // Insert virtual var x3 
+    //
+    // M =  x2 
+    //      |
+    //     [x3] 
+    //      | |
+    //      x4 -  
+    //      |
+    //
+    double value1 = 3.0;
+    double value2 = 1.0;
+
+    MTBDD node1 = mtbdd_makenode(4, mtbdd_double(value1), mtbdd_double(value2));
+    MTBDD node2 = mtbdd_makenode(4, mtbdd_double(value2), mtbdd_double(value1));
+    MTBDD M = mtbdd_makenode(2, node1, node2);
+
+    MTBDD M_low = M;
+    MTBDD M_high = M;
+    mtbdd_get_children_of_var(M, &M_low, &M_high, 3);
+
+    test_assert(mtbdd_getvar(M_low) == 4);
+    test_assert(mtbdd_getvar(M_high) == 4);
+
+    test_assert(mtbdd_getdouble(mtbdd_getlow(M_low)) == value1);
+    test_assert(mtbdd_getdouble(mtbdd_gethigh(M_high)) == value2);
+
+    return 0;
+}
+
+int
+test_mtbdd_matrix_matrix_multiplication_alternative()
 {
     // 
-    //  K . M = W, M: 2^n x 2^n, L: 2^n x 2^n, W: 2^n x 2^n
+    //  K . M = W, M: n x n, L: n x n, W: n x n
     //
 
     int n = 1;
@@ -1529,7 +1566,7 @@ test_mtbdd_matrix_matrix_multiplication()
     M_arr[1][0] =  1.0; M_arr[1][1] = -2.0;
     MTBDD M = matrix_array_to_mtbdd(M_arr, n, COLUMN_WISE_MODE);
 
-    MTBDD product = mtbdd_matmat_mult(K, M, n);
+    MTBDD product = mtbdd_matmat_mult_alt(K, M, 2*n);
 
     MatArr_t **W_arr = NULL;
     allocate_matrix_array(&W_arr, n);
@@ -1553,7 +1590,7 @@ test_mtbdd_matrix_matrix_multiplication()
 }
 
 int
-test_mtbdd_matrix_matrix_multiplication_scalair()
+test_mtbdd_matrix_matrix_multiplication()
 {
     // 
     //  K . M = W, M: 2^n x 2^n, L: 2^n x 2^n, W: 2^n x 2^n
@@ -1575,8 +1612,8 @@ test_mtbdd_matrix_matrix_multiplication_scalair()
     M_arr[1][0] =  1.0; M_arr[1][1] = -2.0;
     MTBDD M = matrix_array_to_mtbdd(M_arr, n, COLUMN_WISE_MODE);
 
-    int currentvar = n + 1;
-    MTBDD product = mtbdd_matmat_mult_scalair(K, M, n + 1, &currentvar);
+    int currentvar = 0;
+    MTBDD product = mtbdd_matmat_mult(K, M, 2*n, currentvar);
 
     MatArr_t **W_arr = NULL;
     allocate_matrix_array(&W_arr, n);
@@ -1640,7 +1677,7 @@ test_matrix_matrix_multiplication_4x4()
 
     // Calculate W = M1.M2 = M.M
 
-    W = mtbdd_matmat_mult(M1, M2, n);
+    W = mtbdd_matmat_mult_alt(M1, M2, n);
 
     // Evaluate with matrix arrays
 
@@ -1682,15 +1719,15 @@ TASK_0(int, runtests)
     if (test_mtbdd_makenode_ithvar()) return 1;
 
     // Test 2
-    printf("\nTesting mtbdd makeleaf, makenode, leaf type boolean integer {0,1}.\n");
+    printf("\nTesting mtbdd makeleaf, makenode, leaf type boolean integer {0, 1}.\n");
     if (test_mtbdd_makenodes_and_leafs_boolean_terminals()) return 1;
 
     // Test 3
-    printf("\nTesting mtbdd makeleaf, makenode, leaf type integer {0,1,2,3}.\n");
+    printf("\nTesting mtbdd makeleaf, makenode, leaf type integer {0, 1, 2, 3}.\n");
     if (test_mtbdd_makenodes_and_leafs_integer_terminals()) return 1;
 
     // Test 4
-    printf("\nTesting mtbdd makeleaf, makenode, leaf type real {0.25,0.25,0.75,-0.25}.\n");
+    printf("\nTesting mtbdd makeleaf, makenode, leaf type real {0.25, 0.25, 0.75, -0.25}.\n");
     if (test_mtbdd_makenodes_and_leafs_real_terminals()) return 1;
 
     // Test 5
@@ -1715,12 +1752,13 @@ TASK_0(int, runtests)
     if (test_vector_array_to_mtbdd()) return 1;
     if (test_renumber_variables()) return 1;
     if (test_determine_top_var_and_leafcount()) return 1;
+    if (test_mtbdd_get_children_of_var()) return 1;
 
     // Test 9
     printf("\nTesting mtbdd matrix vector matrix matrix multiplication functions\n");
     if (test_mtbdd_matrix_vector_multiplication()) return 1;
+    if (test_mtbdd_matrix_matrix_multiplication_alternative()) return 1;
     if (test_mtbdd_matrix_matrix_multiplication()) return 1;
-    if (test_mtbdd_matrix_matrix_multiplication_scalair()) return 1;
     //if (test_matrix_matrix_multiplication_4x4()) return 1;
 
     return 0;

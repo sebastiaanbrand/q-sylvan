@@ -1296,11 +1296,17 @@ void array_matrix_matrix_product(MatArr_t **M, MatArr_t **V, int n, MatArr_t **W
 #define MTBDD_ZERO 0
 
 // Utils
-uint64_t mtbdd_is_result_in_cache(int f, uint64_t num1, uint64_t num2, uint64_t num3);
 void mtbdd_put_result_in_cache(int f, uint64_t num1, uint64_t num2, uint64_t num3, uint64_t result);
+uint64_t mtbdd_is_result_in_cache(int f, uint64_t num1, uint64_t num2, uint64_t num3);
+
+uint64_t mtbdd_is_result_in_cache4(int f, uint64_t num1, uint64_t num2, uint64_t num3, uint64_t num4);
+void mtbdd_put_result_in_cache4(int f, uint64_t num1, uint64_t num2, uint64_t num3, uint64_t num4, uint64_t result);
 
 MTBDD mtbdd_renumber_variables(MTBDD M, uint32_t new_var);
 void determine_top_var_and_leafcount(MTBDD M, int *botvar, int *topvar, int *leafcount);
+
+void mtbdd_get_children_of_var(MTBDD M, MTBDD *M_low, MTBDD *M_high, uint32_t var);
+void mtbdd_split_mtbdd_into_four_parts(MTBDD M, MTBDD *M00, MTBDD *M01, MTBDD *M10, MTBDD *M11, uint32_t var);
 
 // Function
 MTBDD mtbdd_matvec_mult(MTBDD M, MTBDD v, int n);
@@ -1312,8 +1318,8 @@ MTBDD mtbdd_matvec_mult(MTBDD M, MTBDD v, int n);
  * 
 */
 
-MTBDD mtbdd_matmat_mult(MTBDD M1, MTBDD M2, int n);
-MTBDD mtbdd_matmat_mult_scalair(MTBDD M1, MTBDD M2, int nvars, int *currentvar);
+MTBDD mtbdd_matmat_mult_alt(MTBDD M1, MTBDD M2, int n);
+MTBDD mtbdd_matmat_mult(MTBDD M1, MTBDD M2, int nvars, int currentvar);
 
 /**
  * Kronecker multiplication or Tensor product
