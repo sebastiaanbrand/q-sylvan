@@ -1469,17 +1469,15 @@ test_determine_top_var_and_leafcount()
     MTBDD node2 = mtbdd_makenode(4, mtbdd_double(3.0), mtbdd_double(3.0));
     M = mtbdd_makenode(3, node1, node2);
 
-    int topvar = -1;
-    int botvar = 100;
+    int maxvar = -1;
+    int minvar = 100;
     int leafcount = 0;
-    determine_top_var_and_leafcount(M, &botvar, &topvar, &leafcount);
+    determine_top_var_and_leafcount(M, &minvar, &maxvar, &leafcount);
 
-    printf("topvar = %d\n", topvar);
-    printf("botvar = %d\n", botvar);
-    printf("leafcount = %d\n", leafcount);
+    printf("M: maxvar = %d, minvar = %d, leaves = %d\n", maxvar, minvar, leafcount);
 
-    test_assert(topvar == -1);
-    test_assert(botvar == 100);
+    test_assert(maxvar == -1);
+    test_assert(minvar == 100);
     test_assert(leafcount == 1);
 
     // Test with different leafvalues
@@ -1488,17 +1486,15 @@ test_determine_top_var_and_leafcount()
     node2 = mtbdd_makenode(4, mtbdd_double(1.0), mtbdd_double(3.0));
     M = mtbdd_makenode(3, node1, node2);
 
-    topvar = -1;
-    botvar = 100;
+    maxvar = -1;
+    minvar = 100;
     leafcount = 0;
-    determine_top_var_and_leafcount(M, &botvar, &topvar, &leafcount);
+    determine_top_var_and_leafcount(M, &minvar, &maxvar, &leafcount);
 
-    printf("topvar = %d\n", topvar);
-    printf("botvar = %d\n", botvar);
-    printf("leafcount = %d\n", leafcount);
+    printf("M: maxvar = %d, minvar = %d, leaves = %d\n", maxvar, minvar, leafcount);
 
-    test_assert(topvar == 4);
-    test_assert(botvar == 3);
+    test_assert(maxvar == 4);
+    test_assert(minvar == 3);
     test_assert(leafcount == 4); // Should be two!
 
     return 0;
@@ -1509,36 +1505,29 @@ test_mtbdd_get_children_of_var()
 {
     // Test with 
     //
-    // M =  x2
+    // M =  
     //      |
-    //      x4 -  
+    //      x1
     //      |
-    //
-    // Insert virtual var x3 
-    //
-    // M =  x2 
-    //      |
-    //     [x3] 
-    //      | |
-    //      x4 -  
+    //      x2 -
     //      |
     //
     double value1 = 3.0;
     double value2 = 1.0;
 
-    MTBDD node1 = mtbdd_makenode(4, mtbdd_double(value1), mtbdd_double(value2));
-    MTBDD node2 = mtbdd_makenode(4, mtbdd_double(value2), mtbdd_double(value1));
-    MTBDD M = mtbdd_makenode(2, node1, node2);
+    MTBDD node1 = mtbdd_makenode(2, mtbdd_double(value1), mtbdd_double(value2));
+    MTBDD node2 = mtbdd_makenode(2, mtbdd_double(value2), mtbdd_double(value1));
+    MTBDD M = mtbdd_makenode(1, node1, node2);
 
     MTBDD M_low = M;
     MTBDD M_high = M;
-    mtbdd_get_children_of_var(M, &M_low, &M_high, 3);
+    mtbdd_get_children_of_var(M, &M_low, &M_high, 1);
 
-    test_assert(mtbdd_getvar(M_low) == 4);
-    test_assert(mtbdd_getvar(M_high) == 4);
+    test_assert(mtbdd_getvar(M_low) == 2);
+    test_assert(mtbdd_getvar(M_high) == 2);
 
     test_assert(mtbdd_getdouble(mtbdd_getlow(M_low)) == value1);
-    test_assert(mtbdd_getdouble(mtbdd_gethigh(M_high)) == value2);
+    test_assert(mtbdd_getdouble(mtbdd_gethigh(M_high)) == value1);
 
     return 0;
 }
@@ -1547,7 +1536,7 @@ int
 test_mtbdd_matrix_matrix_multiplication_alternative()
 {
     // 
-    //  K . M = W, M: n x n, L: n x n, W: n x n
+    //  K . M = W, M: n x n, L: 2^n x 2^n, W: 2^n x 2^n
     //
 
     int n = 1;
