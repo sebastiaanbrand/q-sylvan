@@ -4456,11 +4456,11 @@ MTBDD mtbdd_matmat_mult_alt(MTBDD M1, MTBDD M2, int n)
         return result;
 
     // Check if result already in cache
-    result = mtbdd_is_result_in_cache(CACHE_MTBDD_MATMAT_MULT, M1, M2, n, CACHE_MTBDD_FOURTH_NUM);
-    if(result != MTBDD_ZERO) {
-        printf("Result was cached (M1, M2, n) = (%ld, %ld, %d) !\n", M1, M2, n);
-        return result;
-    }
+//    result = mtbdd_is_result_in_cache(CACHE_MTBDD_MATMAT_MULT, M1, M2, n, CACHE_MTBDD_FOURTH_NUM);
+//    if(result != MTBDD_ZERO) {
+//        printf("Result was cached (M1, M2, n) = (%ld, %ld, %d) !\n", M1, M2, n);
+//        return result;
+//    }
 
     // Calculate M1 with size 2^1 x 2^1 and M2 with identical size
     if(n == 1) {
@@ -4592,7 +4592,7 @@ MTBDD mtbdd_matmat_mult_alt(MTBDD M1, MTBDD M2, int n)
     result = mtbdd_renumber_variables(result, 0);
  
     // Put result in cache
-    mtbdd_put_result_in_cache(CACHE_MTBDD_MATMAT_MULT, M1, M2, n-2, CACHE_MTBDD_FOURTH_NUM, result);
+//  mtbdd_put_result_in_cache(CACHE_MTBDD_MATMAT_MULT, M1, M2, n-2, CACHE_MTBDD_FOURTH_NUM, result);
 
     return result;
 }

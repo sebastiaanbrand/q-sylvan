@@ -1555,7 +1555,7 @@ test_mtbdd_matrix_matrix_multiplication_alternative()
     M_arr[1][0] =  1.0; M_arr[1][1] = -2.0;
     MTBDD M = matrix_array_to_mtbdd(M_arr, n, COLUMN_WISE_MODE);
 
-    MTBDD product = mtbdd_matmat_mult_alt(K, M, 2*n);
+    MTBDD product = mtbdd_matmat_mult_alt(K, M, n);
 
     MatArr_t **W_arr = NULL;
     allocate_matrix_array(&W_arr, n);
@@ -1579,7 +1579,59 @@ test_mtbdd_matrix_matrix_multiplication_alternative()
 }
 
 int
-test_mtbdd_matrix_matrix_multiplication()
+test_mtbdd_matrix_matrix_multiplication_1()
+{
+    // 
+    //  K . M = W, M: 2^n x 2^n, L: 2^n x 2^n, W: 2^n x 2^n
+    //
+
+    int n = 1;
+
+    MatArr_t **K_arr = NULL;
+    allocate_matrix_array(&K_arr, n);
+
+    K_arr[0][0] =  1.0; K_arr[0][1] = 0.0; 
+    K_arr[1][0] =  1.0; K_arr[1][1] = 1.0;
+    MTBDD K = matrix_array_to_mtbdd(K_arr, n, ROW_WISE_MODE);
+
+    MatArr_t **M_arr = NULL;
+    allocate_matrix_array(&M_arr, n);
+
+    M_arr[0][0] =  1.0; M_arr[0][1] =  0.0;
+    M_arr[1][0] =  0.0; M_arr[1][1] =  2.0;
+    MTBDD M = matrix_array_to_mtbdd(M_arr, n, ROW_WISE_MODE);
+
+    int currentvar = 0;
+    MTBDD product = mtbdd_matmat_mult(K, M, 2*n, currentvar);
+
+    MatArr_t **W_arr = NULL;
+    allocate_matrix_array(&W_arr, n);
+    mtbdd_to_matrix_array(product, n, COLUMN_WISE_MODE, W_arr);
+
+    print_matrix_array(K_arr, n);
+    print_matrix_array(M_arr, n);
+    print_matrix_array(W_arr, n);
+
+    printf("W[0][0]: %lf %lf\n", W_arr[0][0], K_arr[0][0] * M_arr[0][0] + K_arr[0][1] * M_arr[1][0]);
+    printf("W[0][1]: %lf %lf\n", W_arr[0][1], K_arr[0][0] * M_arr[0][1] + K_arr[0][1] * M_arr[1][1]);
+    printf("W[1][0]: %lf %lf\n", W_arr[1][0], K_arr[1][0] * M_arr[0][0] + K_arr[1][1] * M_arr[1][0]);
+    printf("W[1][1]: %lf %lf\n", W_arr[1][1], K_arr[1][0] * M_arr[0][1] + K_arr[1][1] * M_arr[1][1]);
+
+    test_assert(W_arr[0][0] == K_arr[0][0] * M_arr[0][0] + K_arr[0][1] * M_arr[1][0]);
+    test_assert(W_arr[0][1] == K_arr[0][0] * M_arr[0][1] + K_arr[0][1] * M_arr[1][1]);
+
+    test_assert(W_arr[1][0] == K_arr[1][0] * M_arr[0][0] + K_arr[1][1] * M_arr[1][0]);
+    test_assert(W_arr[1][1] == K_arr[1][0] * M_arr[0][1] + K_arr[1][1] * M_arr[1][1]);
+
+    free_matrix_array(K_arr, n);
+    free_matrix_array(M_arr, n);
+    free_matrix_array(W_arr, n);
+
+    return 0;
+}
+
+int
+test_mtbdd_matrix_matrix_multiplication_2()
 {
     // 
     //  K . M = W, M: 2^n x 2^n, L: 2^n x 2^n, W: 2^n x 2^n
@@ -1591,26 +1643,31 @@ test_mtbdd_matrix_matrix_multiplication()
     allocate_matrix_array(&K_arr, n);
 
     K_arr[0][0] =  1.0; K_arr[0][1] = 2.0; 
-    K_arr[1][0] = -1.0; K_arr[1][1] = 3.0;
+    K_arr[1][0] =  1.0; K_arr[1][1] = 3.0;
     MTBDD K = matrix_array_to_mtbdd(K_arr, n, ROW_WISE_MODE);
 
     MatArr_t **M_arr = NULL;
     allocate_matrix_array(&M_arr, n);
 
-    M_arr[0][0] = -1.0; M_arr[0][1] =  2.0;
-    M_arr[1][0] =  1.0; M_arr[1][1] = -2.0;
-    MTBDD M = matrix_array_to_mtbdd(M_arr, n, COLUMN_WISE_MODE);
+    M_arr[0][0] =  1.0; M_arr[0][1] =  2.0;
+    M_arr[1][0] =  1.0; M_arr[1][1] =  2.0;
+    MTBDD M = matrix_array_to_mtbdd(M_arr, n, ROW_WISE_MODE);
 
     int currentvar = 0;
     MTBDD product = mtbdd_matmat_mult(K, M, 2*n, currentvar);
 
     MatArr_t **W_arr = NULL;
     allocate_matrix_array(&W_arr, n);
-    mtbdd_to_matrix_array(product, n, ROW_WISE_MODE, W_arr);
+    mtbdd_to_matrix_array(product, n, COLUMN_WISE_MODE, W_arr);
 
     print_matrix_array(K_arr, n);
     print_matrix_array(M_arr, n);
     print_matrix_array(W_arr, n);
+
+    printf("W[0][0]: %lf %lf\n", W_arr[0][0], K_arr[0][0] * M_arr[0][0] + K_arr[0][1] * M_arr[1][0]);
+    printf("W[0][1]: %lf %lf\n", W_arr[0][1], K_arr[0][0] * M_arr[0][1] + K_arr[0][1] * M_arr[1][1]);
+    printf("W[1][0]: %lf %lf\n", W_arr[1][0], K_arr[1][0] * M_arr[0][0] + K_arr[1][1] * M_arr[1][0]);
+    printf("W[1][1]: %lf %lf\n", W_arr[1][1], K_arr[1][0] * M_arr[0][1] + K_arr[1][1] * M_arr[1][1]);
 
     test_assert(W_arr[0][0] == K_arr[0][0] * M_arr[0][0] + K_arr[0][1] * M_arr[1][0]);
     test_assert(W_arr[0][1] == K_arr[0][0] * M_arr[0][1] + K_arr[0][1] * M_arr[1][1]);
@@ -1665,8 +1722,8 @@ test_matrix_matrix_multiplication_4x4()
     test_assert(M1 == M2);
 
     // Calculate W = M1.M2 = M.M
-
-    W = mtbdd_matmat_mult_alt(M1, M2, n);
+    int currentvar = 0;
+    W = mtbdd_matmat_mult(M1, M2, 2*n, currentvar);
 
     // Evaluate with matrix arrays
 
@@ -1747,8 +1804,9 @@ TASK_0(int, runtests)
     printf("\nTesting mtbdd matrix vector matrix matrix multiplication functions\n");
     if (test_mtbdd_matrix_vector_multiplication()) return 1;
     if (test_mtbdd_matrix_matrix_multiplication_alternative()) return 1;
-    if (test_mtbdd_matrix_matrix_multiplication()) return 1;
-    //if (test_matrix_matrix_multiplication_4x4()) return 1;
+    if (test_mtbdd_matrix_matrix_multiplication_1()) return 1;
+    if (test_mtbdd_matrix_matrix_multiplication_2()) return 1;
+    if (test_matrix_matrix_multiplication_4x4()) return 1;
 
     return 0;
 }
