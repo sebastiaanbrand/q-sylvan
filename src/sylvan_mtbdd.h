@@ -1287,33 +1287,41 @@ void array_matrix_matrix_product(MatArr_t **M, MatArr_t **V, int n, MatArr_t **W
  * 
  */
 
-// TODO: must be integrated with existing functions of other decision diagrams in enum
-#define CACHE_MTBDD_MATVEC_MULT    1234
-#define CACHE_MTBDD_MATMAT_MULT    2234
-#define CACHE_MTBDD_RENUMBER_VARS  3234
-#define CACHE_MTBDD_TOPVAR         4234
-
-#define CACHE_MTBDD_FOURTH_NUM     5234
+//#define CACHE_MTBDD_FOURTH_NUM     255LL
 
 #define MTBDD_ZERO 0
 
 // Utils
-uint64_t mtbdd_is_result_in_cache(int f, uint64_t num1, uint64_t num2, uint64_t num3, uint64_t num4);
-void mtbdd_put_result_in_cache(int f, uint64_t num1, uint64_t num2, uint64_t num3, uint64_t num4, uint64_t result);
+uint64_t mtbdd_is_result_in_cache_3(int f, uint64_t num1, uint64_t num2, uint64_t num3);
+void mtbdd_put_result_in_cache_3(int f, uint64_t num1, uint64_t num2, uint64_t num3, uint64_t result);
+
+uint64_t mtbdd_is_result_in_cache_4(int f, uint64_t num1, uint64_t num2, uint64_t num3, uint64_t num4);
+void mtbdd_put_result_in_cache_4(int f, uint64_t num1, uint64_t num2, uint64_t num3, uint64_t num4, uint64_t result);
 
 MTBDD mtbdd_renumber_variables(MTBDD M, uint32_t new_var);
 void determine_top_var_and_leafcount(MTBDD M, int *botvar, int *topvar, int *leafcount);
 
+
+
 void mtbdd_get_children_of_var(MTBDD M, MTBDD *M_low, MTBDD *M_high, uint32_t var);
+void mtbdd_split_mtbdd_into_two_parts(MTBDD v, MTBDD *v00, MTBDD *v01, uint32_t var);
 void mtbdd_split_mtbdd_into_four_parts(MTBDD M, MTBDD *M00, MTBDD *M01, MTBDD *M10, MTBDD *M11, uint32_t var);
 
-// Function
-MTBDD mtbdd_matvec_mult(MTBDD M, MTBDD v, int n);
+
+/*
+ * Matrix . Vector multiplication in MTBDD domain
+ * 
+ * Computes A.v for one 2^n matrix and one 2^n vector.
+ * 
+*/
+
+MTBDD mtbdd_matvec_mult(MTBDD M, MTBDD v, int nvars, int currentvar);
+MTBDD mtbdd_matvec_mult_alt(MTBDD M, MTBDD v, int n);
 
 /*
  * Matrix . Matrix multiplication in MTBDD domain
  * 
- *   Computes A.B for two 2^n x 2^n matrices.
+ *   Computes A.B for two 2^n x 2^n matrices, n = {0,1,...}.
  * 
 */
 

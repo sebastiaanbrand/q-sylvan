@@ -100,45 +100,51 @@ static const uint64_t CACHE_MTBDD_LESS              = (53LL<<40);
 static const uint64_t CACHE_MTBDD_GEQ               = (54LL<<40);
 static const uint64_t CACHE_MTBDD_GREATER           = (55LL<<40);
 static const uint64_t CACHE_MTBDD_EVAL_COMPOSE      = (56LL<<40);
-static const uint64_t CACHE_MTBDD_TENSOR            = (57LL<<40);
+static const uint64_t CACHE_MTBDD_MATVEC_MULT       = (57LL<<40);
+static const uint64_t CACHE_MTBDD_MATMAT_MULT       = (58LL<<40);
+static const uint64_t CACHE_MTBDD_RENUMBER_VARS     = (59LL<<40);
+static const uint64_t CACHE_MTBDD_TOPVAR            = (60LL<<40);
+static const uint64_t CACHE_MTBDD_TENSOR            = (61LL<<40);
 
 // AADD operations
-static const uint64_t CACHE_AADD_PLUS               = (60LL<<40);
-static const uint64_t CACHE_AADD_MATVEC_MULT        = (61LL<<40);
-static const uint64_t CACHE_AADD_MATMAT_MULT        = (62LL<<40);
-static const uint64_t CACHE_AADD_REPLACE_TERMINAL   = (63LL<<40);
-static const uint64_t CACHE_AADD_INC_VARS           = (64LL<<40);
-static const uint64_t CACHE_AADD_CLEAN_WGT_TABLE    = (65LL<<40);
-static const uint64_t CACHE_AADD_IS_ORDERED         = (66LL<<40);
+static const uint64_t CACHE_AADD_PLUS               = (70LL<<40);
+static const uint64_t CACHE_AADD_MATVEC_MULT        = (71LL<<40);
+static const uint64_t CACHE_AADD_MATMAT_MULT        = (72LL<<40);
+static const uint64_t CACHE_AADD_REPLACE_TERMINAL   = (73LL<<40);
+static const uint64_t CACHE_AADD_INC_VARS           = (74LL<<40);
+static const uint64_t CACHE_AADD_CLEAN_WGT_TABLE    = (75LL<<40);
+static const uint64_t CACHE_AADD_IS_ORDERED         = (76LL<<40);
 
 // Operations on AADD edge weights
-static const uint64_t CACHE_WGT_ADD                 = (70LL<<40);
-static const uint64_t CACHE_WGT_SUB                 = (71LL<<40);
-static const uint64_t CACHE_WGT_MUL                 = (72LL<<40);
-static const uint64_t CACHE_WGT_DIV                 = (73LL<<40);
+static const uint64_t CACHE_WGT_ADD                 = (80LL<<40);
+static const uint64_t CACHE_WGT_SUB                 = (81LL<<40);
+static const uint64_t CACHE_WGT_MUL                 = (82LL<<40);
+static const uint64_t CACHE_WGT_DIV                 = (83LL<<40);
 
 // QMDD operations
-static const uint64_t CACHE_QMDD_GATE               = (80LL<<40);
-static const uint64_t CACHE_QMDD_CGATE              = (81LL<<40);
-static const uint64_t CACHE_QMDD_CGATE_RANGE        = (82LL<<40);
-static const uint64_t CACHE_QMDD_SUBCIRC            = (83LL<<40);
-static const uint64_t CACHE_QMDD_PROB               = (84LL<<40);
+static const uint64_t CACHE_QMDD_GATE               = (90LL<<40);
+static const uint64_t CACHE_QMDD_CGATE              = (91LL<<40);
+static const uint64_t CACHE_QMDD_CGATE_RANGE        = (92LL<<40);
+static const uint64_t CACHE_QMDD_SUBCIRC            = (93LL<<40);
+static const uint64_t CACHE_QMDD_PROB               = (94LL<<40);
+
+// TODO: renumber
 
 // ZDD operations
-static const uint64_t CACHE_ZDD_FROM_MTBDD          = (80LL<<40);
-static const uint64_t CACHE_ZDD_TO_MTBDD            = (81LL<<40);
-static const uint64_t CACHE_ZDD_EXTEND_DOMAIN       = (82LL<<40);
-static const uint64_t CACHE_ZDD_SUPPORT             = (83LL<<40);
-static const uint64_t CACHE_ZDD_PATHCOUNT           = (84LL<<40);
-static const uint64_t CACHE_ZDD_AND                 = (85LL<<40);
-static const uint64_t CACHE_ZDD_OR                  = (86LL<<40);
-static const uint64_t CACHE_ZDD_ITE                 = (87LL<<40);
-static const uint64_t CACHE_ZDD_NOT                 = (88LL<<40);
-static const uint64_t CACHE_ZDD_DIFF                = (89LL<<40);
-static const uint64_t CACHE_ZDD_EXISTS              = (90LL<<40);
-static const uint64_t CACHE_ZDD_PROJECT             = (91LL<<40);
-static const uint64_t CACHE_ZDD_ISOP                = (92LL<<40);
-static const uint64_t CACHE_ZDD_COVER_TO_BDD        = (93LL<<40);
+static const uint64_t CACHE_ZDD_FROM_MTBDD          = (100LL<<40);
+static const uint64_t CACHE_ZDD_TO_MTBDD            = (101LL<<40);
+static const uint64_t CACHE_ZDD_EXTEND_DOMAIN       = (102LL<<40);
+static const uint64_t CACHE_ZDD_SUPPORT             = (103LL<<40);
+static const uint64_t CACHE_ZDD_PATHCOUNT           = (104LL<<40);
+static const uint64_t CACHE_ZDD_AND                 = (105LL<<40);
+static const uint64_t CACHE_ZDD_OR                  = (106LL<<40);
+static const uint64_t CACHE_ZDD_ITE                 = (107LL<<40);
+static const uint64_t CACHE_ZDD_NOT                 = (108LL<<40);
+static const uint64_t CACHE_ZDD_DIFF                = (109LL<<40);
+static const uint64_t CACHE_ZDD_EXISTS              = (110LL<<40);
+static const uint64_t CACHE_ZDD_PROJECT             = (111LL<<40);
+static const uint64_t CACHE_ZDD_ISOP                = (112LL<<40);
+static const uint64_t CACHE_ZDD_COVER_TO_BDD        = (113LL<<40);
 
 #ifdef __cplusplus
 }
