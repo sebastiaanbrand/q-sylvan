@@ -64,6 +64,11 @@ target_sources(qsylvan PRIVATE sylvan_gmp.c PUBLIC sylvan_gmp.h)
 target_include_directories(qsylvan PRIVATE ${GMP_INCLUDE_DIR})
 target_link_libraries(qsylvan PUBLIC ${GMP_LIBRARIES})
 
+find_package(MPC REQUIRED)
+target_sources(qsylvan PRIVATE sylvan_mpc.c PUBLIC sylvan_mpc.h)
+target_include_directories(qsylvan PRIVATE ${MPC_INCLUDE_DIR})
+target_link_libraries(qsylvan PUBLIC ${MPC_LIBRARIES})
+
 # Do we want to collect BDD statistics?
 option(SYLVAN_STATS "Let Sylvan collect statistics at runtime" OFF)
 if(SYLVAN_STATS)

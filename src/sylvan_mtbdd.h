@@ -1233,10 +1233,10 @@ MTBDD mtbdd_refs_sync(MTBDD mtbdd);
 //#define ROW_WISE_MODE 2
 
 typedef enum {
-    COLUMN_WISE_MODE,                       // f(r0,r1,c0,c1) = W[r0r1][c0c1], r,c ={ 0 | 1 }
-    ROW_WISE_MODE,                          // f(c0,c1,r0,r1) = W[r0r1][c0c1], r,c ={ 0 | 1 }
-    ALTERNATE_COLUMN_FIRST_WISE_MODE,       // f(c0,r0,c1,r1) = W[r0r1][c0c1], r,c ={ 0 | 1 }
-    ALTERNATE_ROW_FIRST_WISE_MODE           // f(r0,r0,c1,r1) = W[r0r1][c0c1], r,c ={ 0 | 1 }
+    COLUMN_WISE_MODE,                       // f(r0,r1,c0,c1) = W[r0r1][c0c1], r,c ={ 0, 1 }
+    ROW_WISE_MODE,                          // f(c0,c1,r0,r1) = W[r0r1][c0c1], r,c ={ 0, 1 }
+    ALTERNATE_COLUMN_FIRST_WISE_MODE,       // f(c0,r0,c1,r1) = W[r0r1][c0c1], r,c ={ 0, 1 }
+    ALTERNATE_ROW_FIRST_WISE_MODE           // f(r0,r0,c1,r1) = W[r0r1][c0c1], r,c ={ 0, 1 }
 } row_column_mode_t;
 
 typedef float VecArr_t; // TODO: pointer to struct with array of struct as element. Struct contains complex number.
@@ -1301,12 +1301,9 @@ void mtbdd_put_result_in_cache_4(int f, uint64_t num1, uint64_t num2, uint64_t n
 MTBDD mtbdd_renumber_variables(MTBDD M, uint32_t new_var);
 void determine_top_var_and_leafcount(MTBDD M, int *botvar, int *topvar, int *leafcount);
 
-
-
 void mtbdd_get_children_of_var(MTBDD M, MTBDD *M_low, MTBDD *M_high, uint32_t var);
 void mtbdd_split_mtbdd_into_two_parts(MTBDD v, MTBDD *v00, MTBDD *v01, uint32_t var);
 void mtbdd_split_mtbdd_into_four_parts(MTBDD M, MTBDD *M00, MTBDD *M01, MTBDD *M10, MTBDD *M11, uint32_t var);
-
 
 /*
  * Matrix . Vector multiplication in MTBDD domain

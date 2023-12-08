@@ -1405,6 +1405,8 @@ test_mtbdd_matrix_vector_multiplication()
     //  M . v = w, M: 2^n x 2^n, v: 2^n x 1 (n_row x n_col)
     //
 
+    printf("\n>> matvec() <<\n");
+
     int n = 1;
 
     MatArr_t **M_arr = NULL;

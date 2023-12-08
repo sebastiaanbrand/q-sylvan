@@ -160,7 +160,7 @@ sylvan_mt_quit()
 }
 
 void
-sylvan_init_mt() //TODO: here you can define another custom leaf type
+sylvan_init_mt()
 {
     if (mt_initialized) return;
     mt_initialized = 1;
@@ -197,6 +197,7 @@ sylvan_mt_to_str(int complement, uint32_t type, uint64_t value, char* buf, size_
 {
     assert(type < cl_registry_count);
     customleaf_t *c = cl_registry + type;
+
     if (type == 0) {
         size_t required = (size_t)snprintf(NULL, 0, "%" PRId64, (int64_t)value);
         char *ptr = buf;
@@ -206,6 +207,7 @@ sylvan_mt_to_str(int complement, uint32_t type, uint64_t value, char* buf, size_
         }
         if (ptr != NULL) snprintf(ptr, buflen, "%" PRId64, (int64_t)value);
         return ptr;
+    
     } else if (type == 1) {
         size_t required = (size_t)snprintf(NULL, 0, "%f", *(double*)&value);
         char *ptr = buf;
@@ -215,6 +217,7 @@ sylvan_mt_to_str(int complement, uint32_t type, uint64_t value, char* buf, size_
         }
         if (ptr != NULL) snprintf(ptr, buflen, "%f", *(double*)&value);
         return ptr;
+    
     } else if (type == 2) {
         int32_t num = (int32_t)(value>>32);
         uint32_t denom = value&0xffffffff;
@@ -226,8 +229,10 @@ sylvan_mt_to_str(int complement, uint32_t type, uint64_t value, char* buf, size_
         }
         if (ptr != NULL) snprintf(ptr, buflen, "%" PRId32 "/%" PRIu32, num, denom);
         return ptr;
+    
     } else if (c->to_str_cb != NULL) {
         return c->to_str_cb(complement, value, buf, buflen);
+    
     } else {
         return NULL;
     }
