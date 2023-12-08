@@ -9,9 +9,11 @@ Q-Sylvan extends the parallel decision diagram library [Sylvan](https://github.c
 ## Installation
 
 ### Dependencies
-Q-Sylvan requires the following libraries: `popt` and `GMP`. On Ubuntu it should be possible to install these with
+Q-Sylvan requires the following libraries: `popt`, `GMP`, `MPFR` and `MPC`. On Ubuntu it should be possible to install these with
 - `sudo apt-get install libpopt-dev`
 - `sudo apt-get install libgmp-dev`
+- `sudo apt-get install libmpfr-dev`
+- `sudo apt-get install libmpc-dev`
 - `sudo apt-get install cmake`
 
 
