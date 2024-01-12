@@ -84,7 +84,7 @@ mpc_equals(const uint64_t left, const uint64_t right)
 {
     //
     // This function is called by the unique table when comparing a new 
-    // leaf with an existing leaf
+    // leaf with an existing leaf.
     //
 
     mpc_ptr x = (mpc_ptr)(size_t)left;
@@ -177,11 +177,11 @@ mpc_read_binary(FILE* in, uint64_t *val)
 /**
  * Initialize mpc custom leaves
  */
-void
+uint32_t
 mpc_init()
 {
     // Register custom leaf type callback functions
-    mpc_type = sylvan_mt_create_type();
+    uint32_t mpc_type = sylvan_mt_create_type();
 
     // Basic functions
     sylvan_mt_set_hash(mpc_type, mpc_hash);
@@ -190,9 +190,11 @@ mpc_init()
     sylvan_mt_set_destroy(mpc_type, mpc_destroy);
 
     // Printing / storage functions
-    sylvan_mt_set_to_str(mpc_type, NULL);         // mpc_to_str);
+    sylvan_mt_set_to_str(mpc_type, NULL);         // mpc_to_str);         Switched out for now.
     sylvan_mt_set_write_binary(mpc_type, NULL);   // mpc_write_binary);
     sylvan_mt_set_read_binary(mpc_type, NULL);    // mpc_read_binary);
+
+    return mpc_type;
 }
 
 /**
@@ -201,8 +203,28 @@ mpc_init()
 MTBDD
 mtbdd_mpc(mpc_t val)
 {
-    return mtbdd_makeleaf(mpc_type, (size_t)val);
+    //uint32_t mpc_type = MPC_TYPE;
+    return mtbdd_makeleaf(mpc_type, (size_t)val); // TODO: mpc_type currently global?
 }
+
+
+/**
+ * Compare mpc leafs
+*/
+int
+mpc_compare(const uint64_t left, const uint64_t right)
+{
+    //
+    // This function is called by the unique table when comparing a new 
+    // leaf with an existing leaf.
+    //
+
+    mpc_ptr x = (mpc_ptr)(size_t)left;
+    mpc_ptr y = (mpc_ptr)(size_t)right;
+
+    return !mpc_cmp(x, y);  // mpc_cmp == 0 if x == y
+}
+
 
 /**
  * Operation "plus" for two mpq MTBDDs

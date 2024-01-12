@@ -16,10 +16,10 @@
  */
 
 /**
- * This is an implementation of the Multi Precision Complex numbers library MPC for
- * custom leaves of the MTBDDs.
+ * This is an implementation of the Multi Precision Complex numbers library 
+ * MPC for custom leaves of the MTBDDs.
  * 
- * The source code is copied from "sylvan_gmp.h/c" for rational numbers in April 2023.
+ * The source code was copied from "sylvan_gmp.h/c" initially.
  * 
  */
 
@@ -34,32 +34,38 @@ namespace sylvan {
 extern "C" {
 #endif /* __cplusplus */
 
-/**
- * Complex number as extension of the gmp library.
- */
-
+// Base of the representation of the float number in the complex number
 #define MPC_BASE_OF_FLOAT 10
 
 // Rounding the real and imaginary numbers to zero = ZZ 
 #define MPC_ROUNDING MPC_RNDZZ
 
-// Number of bit for the complex number
+// Number of bits for the complex number
 #define MPC_PRECISION 256
 
 // Max buffer length to handle filestrings
 #define MPC_MAXLENGTH_FILESTRING 256
 
+// TODO: Global still needed?
 static uint32_t mpc_type;
 
 /**
  * Initialize MPC custom leaves
  */
-void mpc_init(void);
+uint32_t 
+mpc_init(void);
 
 /**
  * Create MPC leaf
  */
-MTBDD mtbdd_mpc(mpc_t val);
+MTBDD 
+mtbdd_mpc(mpc_t val);
+
+/**
+ * Compare MPC variables
+*/
+int 
+mpc_compare(const uint64_t left, const uint64_t right);
 
 /**
  * Operation "plus" for two mpc MTBDDs

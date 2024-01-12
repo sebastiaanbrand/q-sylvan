@@ -24,6 +24,14 @@
  * Handling of custom leaves "registry"
  */
 
+// The register the supported leaf types 0,1,2
+#define CL_REGISTRY_COUNT 3
+
+// The register element size (= number of max leaf types)
+// If cl_register_size < cl_register_count allocate more memory
+#define CL_REGISTRY_SIZE 8
+
+// Callbacks for one custom leaf type
 typedef struct
 {
     sylvan_mt_hash_cb hash_cb;
@@ -33,6 +41,7 @@ typedef struct
     sylvan_mt_to_str_cb to_str_cb;
     sylvan_mt_write_binary_cb write_binary_cb;
     sylvan_mt_read_binary_cb read_binary_cb;
+
 } customleaf_t;
 
 static customleaf_t *cl_registry;
@@ -172,9 +181,9 @@ sylvan_init_mt()
     llmsset_set_custom(nodes, _sylvan_hash_cb, _sylvan_equals_cb, _sylvan_create_cb, _sylvan_destroy_cb);
 
     // Initialize data structures
-    cl_registry_size = 8;
+    cl_registry_size = CL_REGISTRY_SIZE;
     cl_registry = (customleaf_t *)calloc(sizeof(customleaf_t), cl_registry_size);
-    cl_registry_count = 3; // 0, 1, 2 are taken
+    cl_registry_count = CL_REGISTRY_COUNT;
 }
 
 /**
