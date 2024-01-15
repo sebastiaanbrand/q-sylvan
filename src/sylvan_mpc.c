@@ -90,7 +90,7 @@ mpc_equals(const uint64_t left, const uint64_t right)
     mpc_ptr x = (mpc_ptr)(size_t)left;
     mpc_ptr y = (mpc_ptr)(size_t)right;
 
-    return mpc_cmp(x, y) ? 1 : 0;
+    return !mpc_cmp(x, y); // ? 1 : 0;
 }
 
 static void
@@ -104,10 +104,15 @@ mpc_create(uint64_t *val)
     //mpc_ptr x = (mpc_ptr)malloc(sizeof(__mpc_struct));
     //mpc_init(x);
 
+    //mpc_t x;
+    //mpc_init2(x, MPC_PRECISION);
+    //mpc_set(x, *(mpc_ptr*)val, MPC_ROUNDING);
+    //*(mpc_ptr*)val = x;
+
     mpc_t x;
     mpc_init2(x, MPC_PRECISION);
-    mpc_set(x, *(mpc_ptr*)val, MPC_ROUNDING);
-    *(mpc_ptr*)val = x;
+    mpc_set(x, (mpc_ptr)val, MPC_ROUNDING);
+    *(mpc_ptr*)val = (mpc_ptr)x;
 
     return;
 }
@@ -121,7 +126,7 @@ mpc_destroy(uint64_t val)
     //
 
     mpc_clear((mpc_ptr)val);
-    free((void*)val);
+    //free((void*)val);
 
     return;
 }
@@ -207,6 +212,17 @@ mtbdd_mpc(mpc_t val)
     return mtbdd_makeleaf(mpc_type, (size_t)val); // TODO: mpc_type currently global?
 }
 
+/**
+ * Assign a complex number
+*/
+void 
+mpc_assign(mpc_ptr complexnumber, double real, double imag)
+{
+    mpc_init2(complexnumber, MPC_PRECISION);
+    mpc_set_d_d(complexnumber, real, imag, MPC_ROUNDING);
+    return;
+}
+
 
 /**
  * Compare mpc leafs
@@ -227,7 +243,7 @@ mpc_compare(const uint64_t left, const uint64_t right)
 
 
 /**
- * Operation "plus" for two mpq MTBDDs
+ * Operation "plus" for two mpc MTBDDs
  * Interpret partial function as "0"
  */
 TASK_IMPL_2(MTBDD, mpc_op_plus, MTBDD*, pa, MTBDD*, pb)
@@ -249,12 +265,49 @@ TASK_IMPL_2(MTBDD, mpc_op_plus, MTBDD*, pa, MTBDD*, pb)
         mpc_t x;
         mpc_init2(x, MPC_PRECISION);
         mpc_add(x, ma, mb, MPC_ROUNDING);
-        MTBDD result = mtbdd_mpc(x);
+        MTBDD result = mtbdd_mpc((mpc_ptr)x);
         mpc_clear(x);
         return result;
     }
 
     // Commutative, so swap a,b for better cache performance
+    if (a < b) {
+        *pa = b;
+        *pb = a;
+    }
+
+    return mtbdd_invalid;
+}
+
+/**
+ * Operation "times" for two mpc MTBDDs
+ * Interpret partial function as "0"
+ */
+TASK_IMPL_2(MTBDD, mpc_op_times, MTBDD*, pa, MTBDD*, pb)
+{
+    MTBDD a = *pa, b = *pb;
+
+    // Check for partial functions
+    if (a == mtbdd_false) return b;
+    if (b == mtbdd_false) return a;
+
+    // If both leaves, compute plus
+    if (mtbdd_isleaf(a) && mtbdd_isleaf(b)) {
+
+        assert(mtbdd_gettype(a) == mpc_type && mtbdd_gettype(b) == mpc_type);
+
+        mpc_ptr ma = (mpc_ptr)mtbdd_getvalue(a);
+        mpc_ptr mb = (mpc_ptr)mtbdd_getvalue(b);
+
+        mpc_t x;
+        mpc_init2(x, MPC_PRECISION);
+        mpc_mul(x, ma, mb, MPC_ROUNDING);
+        MTBDD result = mtbdd_mpc((mpc_ptr)x);
+        mpc_clear(x);
+        return result;
+    }
+
+    // Commutative, so swap a,b for better cache performance <-- Also for times?
     if (a < b) {
         *pa = b;
         *pb = a;

@@ -62,6 +62,12 @@ MTBDD
 mtbdd_mpc(mpc_t val);
 
 /**
+ * Assign a MPC complex number
+*/
+void 
+mpc_assign(mpc_ptr complexnumber, double real, double imag);
+
+/**
  * Compare MPC variables
 */
 int 
@@ -82,7 +88,7 @@ TASK_DECL_2(MTBDD, mpc_op_plus, MTBDD*, MTBDD*);
 /**
  * Operation "times" for two mpq MTBDDs
  */
-//TASK_DECL_2(MTBDD, gmp_op_times, MTBDD*, MTBDD*);
+TASK_DECL_2(MTBDD, mpc_op_times, MTBDD*, MTBDD*);
 //TASK_DECL_3(MTBDD, gmp_abstract_op_times, MTBDD, MTBDD, int);
 
 /**

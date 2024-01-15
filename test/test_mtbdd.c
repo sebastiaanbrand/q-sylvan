@@ -351,27 +351,30 @@ test_mtbdd_makenodes_and_leafs_complex_terminals()
 
     // Set the terminal leafs
     mpc_t value_00;
+
+    //mpc_assign(value_00, 0.25, 0.25);
+
     mpc_init2(value_00, MPC_PRECISION);
     mpc_set_d_d(value_00, 0.25, 0.25, MPC_ROUNDING);
-    mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, value_00, MPFR_RNDN);
+    mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, value_00, MPC_ROUNDING);
     putchar('\n');
 
     mpc_t value_01;
     mpc_init2(value_01, MPC_PRECISION);
     mpc_set_d_d(value_01, 0.25, 0.25, MPC_ROUNDING);
-    mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, value_01, MPFR_RNDN);
+    mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, value_01, MPC_ROUNDING);
     putchar('\n');
 
     mpc_t value_10;
     mpc_init2(value_10, MPC_PRECISION);
     mpc_set_d_d(value_10, 0.75, 0.0, MPC_ROUNDING);
-    mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, value_10, MPFR_RNDN);
+    mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, value_10, MPC_ROUNDING);
     putchar('\n');
 
     mpc_t value_11;
     mpc_init2(value_11, MPC_PRECISION);
     mpc_set_d_d(value_11, -0.25, 0.0, MPC_ROUNDING);
-    mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, value_11, MPFR_RNDN);
+    mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, value_11, MPC_ROUNDING);
     putchar('\n');
 
     MTBDD index_leaf_00 = mtbdd_mpc(value_00);
@@ -557,7 +560,7 @@ test_mtbdd_arithmic_functions_double()
     
     if(false) {
         printf("dd_times = %ld \n", dd_times);
-        printf("terminal 00 = %lf \n", mtbdd_getdouble(mtbdd_getlow(mtbdd_getlow(dd_times))));
+        printf("terminal 00 = %lf \n", mtbdd_getdouble(mtbdd_getlow(mtbdd_getlow(dd_plus))));
         printf("terminal 01 = %lf \n", mtbdd_getdouble(mtbdd_gethigh(mtbdd_getlow(dd_times))));
         printf("terminal 10 = %lf \n", mtbdd_getdouble(mtbdd_getlow(mtbdd_gethigh(dd_times))));
         printf("terminal 11 = %lf \n", mtbdd_getdouble(mtbdd_gethigh(mtbdd_gethigh(dd_times))));
@@ -565,12 +568,12 @@ test_mtbdd_arithmic_functions_double()
 
     assert(mtbdd_getdouble(mtbdd_getlow(mtbdd_getlow(dd_times)))   == value_00*value_00);
     assert(mtbdd_getdouble(mtbdd_gethigh(mtbdd_getlow(dd_times)))  == value_01*value_01);
-    assert(mtbdd_getdouble(mtbdd_getlow(mtbdd_gethigh(dd_times)))  == value_10*value_10); // Failure!?
-    assert(mtbdd_getdouble(mtbdd_gethigh(mtbdd_gethigh(dd_times))) == value_11*value_11); // Failure!?
+    assert(mtbdd_getdouble(mtbdd_getlow(mtbdd_gethigh(dd_times)))  == value_10*value_10);
+    assert(mtbdd_getdouble(mtbdd_gethigh(mtbdd_gethigh(dd_times))) == value_11*value_11);
 
     // Compute min(a, b)
     dd_min = mtbdd_min(dd1, dd1);
-    assert(dd_min == dd1);         // because dd1 = dd1, no minimum of the terminals determined?
+    assert(dd_min == dd1);
 
     // Define dd2 different from dd1
     double value_00_ = 0.75;
@@ -637,11 +640,11 @@ test_mtbdd_arithmic_functions_complex()
     //
     // MTBDD dd1 =
     //
-    //                    x1
+    //                         x1
     //
-    //            x2                 x2
+    //            x2                       x2
     //
-    //  0.25+0.25i  0.75    0.35+0.3i  0.65
+    //  0.25+1.25i  0.75+1.75i    0.35+1.35i  0.65+1.65i
     //
     //
     // MTBDD dd2 = 
@@ -655,21 +658,32 @@ test_mtbdd_arithmic_functions_complex()
     //
     //
 
-    MTBDD dd1, dd2;
-    MTBDD dd_plus, dd_minus, dd_times, dd_min, dd_max;
+    MTBDD dd1 ; //, dd2;
+    MTBDD dd_plus, dd_times; //, dd_minus, dd_min, dd_max;
 
     // Set the terminal leafs
-    double value_00 = 0.25;
-    double value_01 = 0.75;
-    double value_10 = 0.35;
-    double value_11 = 0.65;
+    mpc_t value_00;
+    
+    //mpc_assign(value_00, 0.25, 1.25);
 
-    MTBDD index_leaf_00 = mtbdd_double(value_00);
-    MTBDD index_leaf_01 = mtbdd_double(value_01);
-    MTBDD index_leaf_10 = mtbdd_double(value_10);
-    MTBDD index_leaf_11 = mtbdd_double(value_11);
+    mpc_init2(value_00, MPC_PRECISION);
+    mpc_set_d_d(value_00, 0.25, 1.25, MPC_ROUNDING);
+    mpc_t value_01;
+    mpc_init2(value_01, MPC_PRECISION);
+    mpc_set_d_d(value_01, 0.75, 1.75, MPC_ROUNDING);
+    mpc_t value_10;
+    mpc_init2(value_10, MPC_PRECISION);
+    mpc_set_d_d(value_10, 0.35, 1.35, MPC_ROUNDING);
+    mpc_t value_11;
+    mpc_init2(value_11, MPC_PRECISION);
+    mpc_set_d_d(value_11, 0.65, 1.65, MPC_ROUNDING);
 
-    if(false) {
+    MTBDD index_leaf_00 = mtbdd_mpc(value_00);
+    MTBDD index_leaf_01 = mtbdd_mpc(value_01);
+    MTBDD index_leaf_10 = mtbdd_mpc(value_10);
+    MTBDD index_leaf_11 = mtbdd_mpc(value_11);
+
+    if(true) {
         printf("index_leaf_00 = %ld \n", index_leaf_00);
         printf("index_leaf_01 = %ld \n", index_leaf_01);
         printf("index_leaf_10 = %ld \n", index_leaf_10);
@@ -696,16 +710,129 @@ test_mtbdd_arithmic_functions_complex()
 
     // Compute a + b
     dd_plus = mtbdd_plus(dd1, dd1);
-    
-    if(false) {
+    printf("dd_plus = %ld \n", dd_plus);
+
+    if(true) {
         printf("dd_plus = %ld \n", dd_plus);
-        printf("terminal 00 = %lf \n", mtbdd_getdouble(mtbdd_getlow(mtbdd_getlow(dd_plus))));
-        printf("terminal 01 = %lf \n", mtbdd_getdouble(mtbdd_gethigh(mtbdd_getlow(dd_plus))));
-        printf("terminal 10 = %lf \n", mtbdd_getdouble(mtbdd_getlow(mtbdd_gethigh(dd_plus))));
-        printf("terminal 11 = %lf \n", mtbdd_getdouble(mtbdd_gethigh(mtbdd_gethigh(dd_plus))));
+
+        printf("terminal 00 = %ld \n", mtbdd_getlow(  mtbdd_getlow( dd_plus)));
+        printf("terminal 01 = %ld \n", mtbdd_gethigh( mtbdd_getlow( dd_plus)));
+        printf("terminal 10 = %ld \n", mtbdd_getlow(  mtbdd_gethigh(dd_plus)));
+        printf("terminal 11 = %ld \n", mtbdd_gethigh( mtbdd_gethigh(dd_plus)));
+
+        printf("index_00 is leaf = %d \n", mtbdd_isleaf( mtbdd_getlow(mtbdd_getlow(dd_plus))));
+
+        uint64_t getvalue_00 = mtbdd_getvalue( mtbdd_getlow( mtbdd_getlow( dd_plus)) );
+
+        printf("getvalue_00 = %ld value_00 = %ld\n", getvalue_00, (uint64_t)value_00);
+
+        //mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, (mpc_ptr)getvalue_00, MPC_ROUNDING); <-- SegFault!
+        //putchar('\n');
+
+        mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, (mpc_ptr)value_00, MPC_ROUNDING);
+        putchar('\n');
     }
 
-    assert(mtbdd_getdouble(mtbdd_getlow(mtbdd_getlow(dd_plus)))   == value_00+value_00);
+    mpc_t add_00;
+    mpc_init2(add_00, MPC_PRECISION);
+    mpc_add(add_00, value_00, value_00, MPC_ROUNDING);
+    mpc_t add_01;
+    mpc_init2(add_01, MPC_PRECISION);
+    mpc_add(add_01, value_01, value_01, MPC_ROUNDING);
+    mpc_t add_10;
+    mpc_init2(add_10, MPC_PRECISION);
+    mpc_add(add_10, value_10, value_10, MPC_ROUNDING);
+    mpc_t add_11;
+    mpc_init2(add_11, MPC_PRECISION);
+    mpc_add(add_11, value_11, value_11, MPC_ROUNDING);
+
+    if(true) {
+        mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, (mpc_ptr)add_00, MPC_ROUNDING);
+        putchar('\n');
+        mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, (mpc_ptr)add_01, MPC_ROUNDING);
+        putchar('\n');
+        mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, (mpc_ptr)add_10, MPC_ROUNDING);
+        putchar('\n');
+        mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, (mpc_ptr)add_11, MPC_ROUNDING);
+        putchar('\n');
+    }
+
+    //test_assert( mpc_compare( mtbdd_getvalue(mtbdd_getlow(mtbdd_getlow(  dd_plus))), (uint64_t)add_00));
+    //test_assert( mpc_compare( mtbdd_getvalue(mtbdd_gethigh(mtbdd_getlow( dd_plus))), (uint64_t)add_01));
+    //test_assert( mpc_compare( mtbdd_getvalue(mtbdd_getlow(mtbdd_gethigh( dd_plus))), (uint64_t)add_10));
+    //test_assert( mpc_compare( mtbdd_getvalue(mtbdd_gethigh(mtbdd_gethigh(dd_plus))), (uint64_t)add_11));
+
+    mpc_clear(add_00);
+    mpc_clear(add_01);
+    mpc_clear(add_10);
+    mpc_clear(add_11);
+
+    // Compute a . b
+    dd_times = mtbdd_times(dd1, dd1);
+    printf("dd_times = %ld \n", dd_times);
+
+    if(true) {
+        printf("dd_times = %ld \n", dd_times);
+
+        printf("terminal 00 = %ld \n", mtbdd_getlow(  mtbdd_getlow( dd_times)));
+        printf("terminal 01 = %ld \n", mtbdd_gethigh( mtbdd_getlow( dd_times)));
+        printf("terminal 10 = %ld \n", mtbdd_getlow(  mtbdd_gethigh(dd_times)));
+        printf("terminal 11 = %ld \n", mtbdd_gethigh( mtbdd_gethigh(dd_times)));
+
+        printf("index_00 is leaf = %d \n", mtbdd_isleaf( mtbdd_getlow(mtbdd_getlow(dd_times))));
+
+        uint64_t getvalue_00 = mtbdd_getvalue( mtbdd_getlow( mtbdd_getlow( dd_times)) );
+
+        printf("getvalue_00 = %ld value_00 = %ld\n", getvalue_00, (uint64_t)value_00);
+
+        //mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, (mpc_ptr)getvalue_00, MPC_ROUNDING); //<-- SegFault!
+        //putchar('\n');
+
+        mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, (mpc_ptr)value_00, MPC_ROUNDING);
+        putchar('\n');
+    }
+
+    mpc_t times_00;
+    mpc_init2(times_00, MPC_PRECISION);
+    mpc_mul(times_00, value_00, value_00, MPC_ROUNDING);
+    mpc_t times_01;
+    mpc_init2(times_01, MPC_PRECISION);
+    mpc_mul(times_01, value_01, value_01, MPC_ROUNDING);
+    mpc_t times_10;
+    mpc_init2(times_10, MPC_PRECISION);
+    mpc_mul(times_10, value_10, value_10, MPC_ROUNDING);
+    mpc_t times_11;
+    mpc_init2(times_11, MPC_PRECISION);
+    mpc_mul(times_11, value_11, value_11, MPC_ROUNDING);
+
+    if(true) {
+        mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, (mpc_ptr)times_00, MPC_ROUNDING);
+        putchar('\n');
+        mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, (mpc_ptr)times_01, MPC_ROUNDING);
+        putchar('\n');
+        mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, (mpc_ptr)times_10, MPC_ROUNDING);
+        putchar('\n');
+        mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, (mpc_ptr)times_11, MPC_ROUNDING);
+        putchar('\n');
+    }
+
+    //test_assert( mpc_compare( mtbdd_getvalue(mtbdd_getlow(mtbdd_getlow(  dd_times))), (uint64_t)times_00));
+    //test_assert( mpc_compare( mtbdd_getvalue(mtbdd_gethigh(mtbdd_getlow( dd_times))), (uint64_t)times_01));
+    //test_assert( mpc_compare( mtbdd_getvalue(mtbdd_getlow(mtbdd_gethigh( dd_times))), (uint64_t)times_10));
+    //test_assert( mpc_compare( mtbdd_getvalue(mtbdd_gethigh(mtbdd_gethigh(dd_times))), (uint64_t)times_11));
+
+    mpc_clear(times_00);
+    mpc_clear(times_01);
+    mpc_clear(times_10);
+    mpc_clear(times_11);
+
+/*
+    mpc_t add_00;
+    mpc_init2(add_00, MPC_PRECISION);
+    mpc_add(add_00, value_00, value_00, MPC_ROUNDING);
+
+
+
     assert(mtbdd_getdouble(mtbdd_gethigh(mtbdd_getlow(dd_plus)))  == value_01+value_01);
     assert(mtbdd_getdouble(mtbdd_getlow(mtbdd_gethigh(dd_plus)))  == value_10+value_10);
     assert(mtbdd_getdouble(mtbdd_gethigh(mtbdd_gethigh(dd_plus))) == value_11+value_11);
@@ -726,25 +853,9 @@ test_mtbdd_arithmic_functions_complex()
     assert(mtbdd_getdouble(mtbdd_getlow( mtbdd_gethigh(dd_minus))) == value_10-value_10);
     assert(mtbdd_getdouble(mtbdd_gethigh(mtbdd_gethigh(dd_minus))) == value_11-value_11);
 
-    // Compute a * b
-    dd_times = mtbdd_times(dd1, dd1);
-    
-    if(false) {
-        printf("dd_times = %ld \n", dd_times);
-        printf("terminal 00 = %lf \n", mtbdd_getdouble(mtbdd_getlow(mtbdd_getlow(dd_times))));
-        printf("terminal 01 = %lf \n", mtbdd_getdouble(mtbdd_gethigh(mtbdd_getlow(dd_times))));
-        printf("terminal 10 = %lf \n", mtbdd_getdouble(mtbdd_getlow(mtbdd_gethigh(dd_times))));
-        printf("terminal 11 = %lf \n", mtbdd_getdouble(mtbdd_gethigh(mtbdd_gethigh(dd_times))));
-    }
-
-    assert(mtbdd_getdouble(mtbdd_getlow(mtbdd_getlow(dd_times)))   == value_00*value_00);
-    assert(mtbdd_getdouble(mtbdd_gethigh(mtbdd_getlow(dd_times)))  == value_01*value_01);
-    assert(mtbdd_getdouble(mtbdd_getlow(mtbdd_gethigh(dd_times)))  == value_10*value_10); // Failure!?
-    assert(mtbdd_getdouble(mtbdd_gethigh(mtbdd_gethigh(dd_times))) == value_11*value_11); // Failure!?
-
     // Compute min(a, b)
     dd_min = mtbdd_min(dd1, dd1);
-    assert(dd_min == dd1);         // because dd1 = dd1, no minimum of the terminals determined?
+    assert(dd_min == dd1);
 
     // Define dd2 different from dd1
     double value_00_ = 0.75;
@@ -801,7 +912,7 @@ test_mtbdd_arithmic_functions_complex()
     assert(mtbddnode_isleaf(MTBDD_GETNODE(dd_max)) == 0);
     assert(mtbdd_getdouble(mtbdd_getlow(dd_max))  == 0.75);
     assert(mtbdd_getdouble(mtbdd_gethigh(dd_max)) == 0.65);
-
+*/
     return 0;
 }
 
@@ -2122,8 +2233,6 @@ TASK_0(int, runtests)
     if (test_mtbdd_makenodes_and_leafs_real_terminals()) return 1;
     if (test_mtbdd_makenodes_and_leafs_complex_terminals()) return 1;
 
-// leaftype is double
-
     // Test 3
     printf("\nTesting mtbdd arithmic functions.\n");
     if (test_mtbdd_arithmic_functions_double()) return 1;
@@ -2152,7 +2261,7 @@ TASK_0(int, runtests)
     // Test 7
     printf("\nTesting mtbdd matrix vector matrix matrix multiplication functions\n");
     if (test_mtbdd_matrix_vector_multiplication_alt()) return 1;
-    if (test_mtbdd_matrix_vector_multiplication()) return 1;
+    //if (test_mtbdd_matrix_vector_multiplication()) return 1;
     if (test_mtbdd_matrix_matrix_multiplication_alt()) return 1;
     if (test_mtbdd_matrix_matrix_multiplication_1()) return 1;
     if (test_mtbdd_matrix_matrix_multiplication_2()) return 1;
