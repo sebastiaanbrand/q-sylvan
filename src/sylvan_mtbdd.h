@@ -1302,7 +1302,7 @@ MTBDD mtbdd_renumber_variables(MTBDD M, uint32_t new_var);
 void determine_top_var_and_leafcount(MTBDD M, int *botvar, int *topvar, int *leafcount);
 
 void mtbdd_get_children_of_var(MTBDD M, MTBDD *M_low, MTBDD *M_high, uint32_t var);
-void mtbdd_split_mtbdd_into_two_parts(MTBDD v, MTBDD *v00, MTBDD *v01, uint32_t var);
+void mtbdd_split_mtbdd_into_two_parts(MTBDD v, MTBDD *v0, MTBDD *v1, uint32_t var);
 void mtbdd_split_mtbdd_into_four_parts(MTBDD M, MTBDD *M00, MTBDD *M01, MTBDD *M10, MTBDD *M11, uint32_t var);
 
 /*

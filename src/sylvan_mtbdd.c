@@ -3876,7 +3876,7 @@ MTBDD vector_array_to_mtbdd(VecArr_t *v_arr, int n, row_column_mode_t mode)
 
     if(n == 1 && (mode == ROW_WISE_MODE || mode == ALTERNATE_ROW_FIRST_WISE_MODE)) {
 
-        return mtbdd_makenode(1, mtbdd_double(v_arr[0]), mtbdd_double(v_arr[1]));
+        return mtbdd_makenode(0, mtbdd_double(v_arr[0]), mtbdd_double(v_arr[1]));
     }
 
     // TODO: if n > 1, recursive, divide in four parts, alternate_column_first
@@ -4335,15 +4335,9 @@ void mtbdd_get_children_of_var(MTBDD M, MTBDD *M_low, MTBDD *M_high, uint32_t va
     return;
 }
 
-void mtbdd_split_mtbdd_into_two_parts(MTBDD v, MTBDD *v00, MTBDD *v01, uint32_t var)
+void mtbdd_split_mtbdd_into_two_parts(MTBDD v, MTBDD *v0, MTBDD *v1, uint32_t var)
 {
-    MTBDD v_0 = MTBDD_ZERO;
-    MTBDD v_1 = MTBDD_ZERO;
-
-    mtbdd_get_children_of_var(v, &v_0, &v_1, var);
-    mtbdd_get_children_of_var(v_0, v00, v01, var + 1);
-//    mtbdd_get_children_of_var(v_1, M10, M11, var + 1);
-
+    mtbdd_get_children_of_var(v, v0, v1, var);
     return;
 }
 
@@ -4640,22 +4634,15 @@ MTBDD mtbdd_matmat_mult_alt(MTBDD M1, MTBDD M2, int n)
  */
 MTBDD mtbdd_matvec_mult(MTBDD M, MTBDD v, int nvars, int currentvar)
 {
-
-    printf("M = %ld, v = %ld, nvars = %d, currentvar = %d\n", M, v, nvars, currentvar);
-
     int maxvar = -1;
     int minvar = 100;
     int leafcount = 0;
     determine_top_var_and_leafcount(M, &minvar, &maxvar, &leafcount);
 
-    printf("M: maxvar = %d, minvar = %d, leaves = %d\n", maxvar, minvar, leafcount);
-
     maxvar = -1;
     minvar = 100;
     leafcount = 0;
     determine_top_var_and_leafcount(v, &minvar, &maxvar, &leafcount);
-
-    printf("v: maxvar = %d, minvar = %d, leaves = %d\n", maxvar, minvar, leafcount);
 
     MTBDD result = MTBDD_ZERO;
 
@@ -4704,17 +4691,6 @@ MTBDD mtbdd_matvec_mult(MTBDD M, MTBDD v, int nvars, int currentvar)
     mtbdd_split_mtbdd_into_two_parts(v, &v_0, &v_1, currentvar);
 
     currentvar = currentvar+2;
-
-    MTBDD a = mtbdd_matvec_mult(M_00, v_0, nvars, currentvar);
-    MTBDD b = mtbdd_matvec_mult(M_01, v_1, nvars, currentvar);
-
-    maxvar = -1; minvar = 100; leafcount = 0;
-    determine_top_var_and_leafcount(a, &minvar, &maxvar, &leafcount);
-    printf("a: maxvar = %d, minvar = %d, leaves = %d\n", maxvar, minvar, leafcount);
-
-    maxvar = -1; minvar = 100; leafcount = 0;
-    determine_top_var_and_leafcount(b, &minvar, &maxvar, &leafcount);
-    printf("b: maxvar = %d, minvar = %d, leaves = %d\n", maxvar, minvar, leafcount);
 
     //
     // W00 = M_00 . v_0 + M_01 . v_1    
