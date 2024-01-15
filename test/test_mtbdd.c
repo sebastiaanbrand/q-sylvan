@@ -1838,19 +1838,23 @@ test_mtbdd_matrix_vector_multiplication()
     MatArr_t **M_arr = NULL;
     allocate_matrix_array(&M_arr, n);
 
+    // even variables index rows
+    // odd variables index columns
     M_arr[0][0] = -2.2; M_arr[0][1] =  1.2;
     M_arr[1][0] =  2.4; M_arr[1][1] = -1.4;
     MTBDD M = matrix_array_to_mtbdd(M_arr, n, ROW_WISE_MODE);
 
     VecArr_t v_arr[(1 << n)];
+    // this is a column vector, so should be indexed by even variables (rows)
     v_arr[0] = 1.1; v_arr[1] = -2.2;
-    MTBDD v = vector_array_to_mtbdd(v_arr, n, COLUMN_WISE_MODE);
+    MTBDD v = vector_array_to_mtbdd(v_arr, n, ROW_WISE_MODE);
 
     int currentvar = 0;
     MTBDD product = mtbdd_matvec_mult(M, v, 2*n, currentvar);
 
     MatArr_t w_arr[2];
-    mtbdd_to_vector_array(product, n, ROW_WISE_MODE, w_arr);
+    // TODO: fix inconsistency between this COLUMN_WISE_MODE and ROW_WISE_MODE used for input
+    mtbdd_to_vector_array(product, n, COLUMN_WISE_MODE, w_arr);
 
     test_assert(w_arr[0] == M_arr[0][0] * v_arr[0] + M_arr[0][1] * v_arr[1]);
     test_assert(w_arr[1] == M_arr[1][0] * v_arr[0] + M_arr[1][1] * v_arr[1]);
