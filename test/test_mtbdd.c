@@ -231,10 +231,10 @@ test_mtbdd_makenodes_and_leafs_integer_terminals()
 }
 
 int
-test_mtbdd_makenodes_and_leafs_real_terminals()
+test_mtbdd_makenodes_and_leafs_double_terminals()
 {
     //
-    // f = f(x1,x2), f: Boolean -> Real, f = x1 <op> f(x2) + !x1 <op> f(x2)
+    // f = f(x1,x2), f: Boolean -> Double, f = x1 <op> f(x2) + !x1 <op> f(x2)
     //
     //                      x1
     //             x2                  x2
@@ -258,10 +258,10 @@ test_mtbdd_makenodes_and_leafs_real_terminals()
     double value_low_10  =  0.75;
     double value_high_11 = -0.25;
 
-    MTBDD index_leaf_00 = mtbdd_double(/*terminal_type,*/ value_low_00);
-    MTBDD index_leaf_01 = mtbdd_double(/*terminal_type,*/ value_high_01);
-    MTBDD index_leaf_10 = mtbdd_double(/*terminal_type,*/ value_low_10);
-    MTBDD index_leaf_11 = mtbdd_double(/*terminal_type,*/ value_high_11);
+    MTBDD index_leaf_00 = mtbdd_double(value_low_00);
+    MTBDD index_leaf_01 = mtbdd_double(value_high_01);
+    MTBDD index_leaf_10 = mtbdd_double(value_low_10);
+    MTBDD index_leaf_11 = mtbdd_double(value_high_11);
 
     if(false) {
         printf("index_leaf_00 = %ld \n", index_leaf_00);
@@ -2234,7 +2234,7 @@ TASK_0(int, runtests)
     printf("\nTesting mtbdd makeleaf, makenode, leaf type boolean, integer, double, complex.\n");
     if (test_mtbdd_makenodes_and_leafs_boolean_terminals()) return 1;
     if (test_mtbdd_makenodes_and_leafs_integer_terminals()) return 1;
-    if (test_mtbdd_makenodes_and_leafs_real_terminals()) return 1;
+    if (test_mtbdd_makenodes_and_leafs_double_terminals()) return 1;
     if (test_mtbdd_makenodes_and_leafs_complex_terminals()) return 1;
 
     // Test 3
@@ -2265,7 +2265,7 @@ TASK_0(int, runtests)
     // Test 7
     printf("\nTesting mtbdd matrix vector matrix matrix multiplication functions\n");
     if (test_mtbdd_matrix_vector_multiplication_alt()) return 1;
-    //if (test_mtbdd_matrix_vector_multiplication()) return 1;
+    if (test_mtbdd_matrix_vector_multiplication()) return 1;
     if (test_mtbdd_matrix_matrix_multiplication_alt()) return 1;
     if (test_mtbdd_matrix_matrix_multiplication_1()) return 1;
     if (test_mtbdd_matrix_matrix_multiplication_2()) return 1;

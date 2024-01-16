@@ -14,7 +14,7 @@
 /build
 *.so
 CMakeFiles/
-*.cmake
+#*.cmake
 *Makefile
 CMakeCache.txt
 qsylvan.pc
