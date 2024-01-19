@@ -26,6 +26,7 @@ typedef struct quantum_circuit_s {
     bool *creg;
     bool has_intermediate_measurements;
     quantum_op_t *operations;
+    bool reversed_qubit_order;
 } quantum_circuit_t;
 
 /**

@@ -987,10 +987,14 @@ TASK_IMPL_3(double, qmdd_unnormed_prob, QMDD, qmdd, BDDVAR, topvar, BDDVAR, nvar
 }
 
 complex_t
-qmdd_get_amplitude(QMDD q, bool *basis_state)
+qmdd_get_amplitude(QMDD q, bool *x, BDDVAR nqubits)
 {
+    // QMDD is indexed q_0, ..., q_{n-1} but |x> is assumed q_{n-1}, ..., q_0,
+    // so we temporarily reverse x.
+    reverse_bit_array(x, nqubits);
     complex_t res;
-    weight_value(aadd_getvalue(q, basis_state), &res);
+    weight_value(aadd_getvalue(q, x), &res);
+    reverse_bit_array(x, nqubits);
     return res;
 }
 

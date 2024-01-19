@@ -202,10 +202,13 @@ TASK_DECL_3(double, qmdd_unnormed_prob, QMDD, BDDVAR, BDDVAR);
  * 
  * @param qmdd A QMDD encoding some quantum state |psi>.
  * @param basis_state A bitstring x of some computational basis state |x>.
+ * @param nqubits Number of qubits of the state.
+ * 
+ * |x> is assumed to have big-endian encoding (i.e. q_{n-1}, ..., q_2, q_1, q_0)
  * 
  * @return The amplitude <x|psi>.
  */
-complex_t qmdd_get_amplitude(QMDD qmdd, bool *basis_state);
+complex_t qmdd_get_amplitude(QMDD qmdd, bool *basis_state, BDDVAR nqubits);
 
 /**
  * Computes the probability from a given edge weight index.

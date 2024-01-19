@@ -10,6 +10,7 @@
 static int workers = 1;
 static int rseed = 0;
 static bool count_nodes = false;
+static bool output_vector = false;
 static size_t min_tablesize = 1LL<<25;
 static size_t max_tablesize = 1LL<<25;
 static size_t min_cachesize = 1LL<<16;
@@ -29,7 +30,8 @@ static struct argp_option options[] =
     {"norm-strat", 's', "<low|largest|l2>", 0, "Edge weight normalization strategy", 0},
     {"tol", 't', "<tolerance>", 0, "Tolerance for deciding edge weights equal (default=1e-14)", 0},
     {"json", 'j', "<filename>", 0, "Write stats to given filename as json", 0},
-    {"count-nodes", 'c', 0, 0, "Track maximum number of nodes", 1},
+    {"count-nodes", 'c', 0, 0, "Track maximum number of nodes", 0},
+    {"state-vector", 'v', 0, 0, "Also output the complete state vector", 0},
     {0, 0, 0, 0, 0, 0}
 };
 static error_t
@@ -56,6 +58,10 @@ parse_opt(int key, char *arg, struct argp_state *state)
         break;
     case 'c':
         count_nodes = true;
+        break;
+    case 'v':
+        output_vector = true;
+        break;
     case ARGP_KEY_ARG:
         if (state->arg_num >= 1) argp_usage(state);
         qasm_inputfile = arg;
@@ -83,6 +89,7 @@ typedef struct stats_s {
     uint64_t shots;
     double simulation_time;
     double norm;
+    QMDD final_state;
 } stats_t;
 stats_t stats;
 
@@ -93,6 +100,23 @@ void fprint_stats(FILE *stream, quantum_circuit_t* circuit)
     fprintf(stream, "  \"measurement_results\": {\n");
     fprintf(stream, "    \""); fprint_creg(stream, circuit); fprintf(stream, "\": 1\n");
     fprintf(stream, "  },\n");
+    if (output_vector)
+    {
+        fprintf(stream, "  \"state_vector\": [\n");
+        for (int k = 0; k < (1<<(circuit->qreg_size)); k++) {
+            bool *x = int_to_bitarray(k, circuit->qreg_size, !(circuit->reversed_qubit_order));
+            complex_t c = qmdd_get_amplitude(stats.final_state, x, circuit->qreg_size);
+            fprintf(stream, "    [\n");
+            fprintf(stream, "      %.16lf,\n", c.r);
+            fprintf(stream, "      %.16lf\n", c.i);
+            if (k == (1<<(circuit->qreg_size))-1)
+                fprintf(stream, "    ]\n");
+            else
+                fprintf(stream, "    ],\n");
+            free(x);
+        }
+        fprintf(stream, "  ],\n");
+    }
     fprintf(stream, "  \"statistics\": {\n");
     fprintf(stream, "    \"applied_gates\": %ld,\n", stats.applied_gates);
     fprintf(stream, "    \"benchmark\": \"%s\",\n", circuit->name);
@@ -300,6 +324,9 @@ void simulate_circuit(quantum_circuit_t* circuit)
                 double p;
                 // don't set state = post measurement state
                 qmdd_measure_all(state, circuit->qreg_size, circuit->creg, &p);
+                if (circuit->reversed_qubit_order) {
+                    reverse_bit_array(circuit->creg, circuit->qreg_size);
+                }
                 break;
             }
         }
@@ -310,6 +337,7 @@ void simulate_circuit(quantum_circuit_t* circuit)
         op = op->next;
     }
     stats.simulation_time = wctime() - t_start;
+    stats.final_state = state;
     stats.shots = 1;
     stats.final_nodes = aadd_countnodes(state);
     stats.norm = qmdd_get_norm(state, circuit->qreg_size);

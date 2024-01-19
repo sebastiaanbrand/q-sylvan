@@ -1249,4 +1249,15 @@ bit_from_int(uint64_t a, uint8_t index)
     return (bool) res;
 }
 
+void
+reverse_bit_array(bool *x, int length)
+{
+    bool tmp;
+    for(int i = 0; i<(length/2); i++){
+        tmp = x[i];
+        x[i] = x[length-i-1];
+        x[length-i-1] = tmp;
+    }
+}
+
 /*******************************</Debug stuff>*********************************/

@@ -128,6 +128,7 @@ class QASMParser {
             first_op->type = op_blank;
             first_op->next = NULL;
             circuit->operations = first_op;
+            circuit->reversed_qubit_order = false;
             last_op = first_op;
             strcpy(circuit->name, circname.c_str());
 
@@ -659,6 +660,7 @@ void reverse_order(quantum_circuit_t *circuit)
         sort_targets(head);
         head = head->next;
     }
+    circuit->reversed_qubit_order = true;
 }
 
 
@@ -700,7 +702,8 @@ void print_quantum_circuit(quantum_circuit_t* circuit)
 
 void fprint_creg(FILE *stream, quantum_circuit_t* circuit)
 {
-    for (int i = 0; i < circuit->creg_size; i++) {
+    // print in big-endian
+    for (int i = circuit->creg_size-1; i >= 0 ; i--) {
         fprintf(stream, "%d", circuit->creg[i]);
     }
 }

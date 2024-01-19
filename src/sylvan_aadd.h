@@ -260,6 +260,7 @@ void _print_bitstring(bool *x, int n, bool backwards);
 uint64_t bitarray_to_int(bool *x, int n, bool MSB_first);
 bool * int_to_bitarray(uint64_t n, int length, bool MSB_first);
 bool bit_from_int(uint64_t a, uint8_t index);
+void reverse_bit_array(bool *x, int length);
 
 /*******************************</Debug stuff>*********************************/
 
