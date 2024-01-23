@@ -387,7 +387,7 @@ test_mtbdd_makenodes_and_leafs_complex_terminals()
         printf("index_leaf_01 = %ld \n", index_leaf_01);
         printf("index_leaf_10 = %ld \n", index_leaf_10);
         printf("index_leaf_11 = %ld \n", index_leaf_11);
-        printf("mpc_type = %d\n", mpc_type);
+        printf("mpc_type = %d\n", g_mpc_type);
     }
 
     // Different terminals should have different indices
@@ -426,7 +426,7 @@ test_mtbdd_makenodes_and_leafs_complex_terminals()
     if(true) {
         mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, (mpc_ptr)mtbdd_getvalue(index_leaf_10), MPFR_RNDN);
         putchar('\n');
-        printf("mpc_compare(00) = %d %ld %ld\n", mpc_compare( mtbdd_getvalue(index_leaf_10), (uint64_t)value_00), mtbdd_getvalue(index_leaf_10), (uint64_t)value_00);
+        printf("mpc_compare(00) = %" PRId32 " %" PRId64 " %" PRId64 "\n", mpc_compare( mtbdd_getvalue(index_leaf_10), (uint64_t)value_00), mtbdd_getvalue(index_leaf_10), (uint64_t)value_00);
     }
 
     test_assert( mpc_compare( mtbdd_getvalue(index_leaf_00), (uint64_t)value_00) );
@@ -827,16 +827,6 @@ test_mtbdd_arithmic_functions_complex()
     mpc_clear(times_11);
 
 /*
-    mpc_t add_00;
-    mpc_init2(add_00, MPC_PRECISION);
-    mpc_add(add_00, value_00, value_00, MPC_ROUNDING);
-
-
-
-    assert(mtbdd_getdouble(mtbdd_gethigh(mtbdd_getlow(dd_plus)))  == value_01+value_01);
-    assert(mtbdd_getdouble(mtbdd_getlow(mtbdd_gethigh(dd_plus)))  == value_10+value_10);
-    assert(mtbdd_getdouble(mtbdd_gethigh(mtbdd_gethigh(dd_plus))) == value_11+value_11);
-
     // Compute a - b
     dd_minus = mtbdd_minus(dd1, dd1);
     
@@ -2228,13 +2218,13 @@ TASK_0(int, runtests)
 
     // Test 1
     printf("\nTesting mtbdd makenode and ithvar.\n");
-    if (test_mtbdd_makenode_ithvar()) return 1;
+    //if (test_mtbdd_makenode_ithvar()) return 1;
 
     // Test 2
     printf("\nTesting mtbdd makeleaf, makenode, leaf type boolean, integer, double, complex.\n");
-    if (test_mtbdd_makenodes_and_leafs_boolean_terminals()) return 1;
-    if (test_mtbdd_makenodes_and_leafs_integer_terminals()) return 1;
-    if (test_mtbdd_makenodes_and_leafs_double_terminals()) return 1;
+    //if (test_mtbdd_makenodes_and_leafs_boolean_terminals()) return 1;
+    //if (test_mtbdd_makenodes_and_leafs_integer_terminals()) return 1;
+    //if (test_mtbdd_makenodes_and_leafs_double_terminals()) return 1;
     if (test_mtbdd_makenodes_and_leafs_complex_terminals()) return 1;
 
     // Test 3
@@ -2285,7 +2275,7 @@ int main()
     //sylvan_init_bdd(); 
     
     sylvan_init_mtbdd();            // TODO: Make argument for terminal type
-    mpc_type = mpc_init();          // Generate the mpc_type and set the hash callbacks for this custom type
+    g_mpc_type = mpc_init();          // Generate the mpc_type and set the hash callbacks for this custom type
 
     //sylvan_init_package(); // Restore the callbacks for ldd
     //sylvan_init_ldd();

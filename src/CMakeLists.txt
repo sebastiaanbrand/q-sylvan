@@ -64,6 +64,11 @@ target_sources(qsylvan PRIVATE sylvan_gmp.c PUBLIC sylvan_gmp.h)
 target_include_directories(qsylvan PRIVATE ${GMP_INCLUDE_DIR})
 target_link_libraries(qsylvan PUBLIC ${GMP_LIBRARIES})
 
+find_package(MPFR REQUIRED)
+target_sources(qsylvan PRIVATE sylvan_mpc.c PUBLIC sylvan_mpc.h)
+target_include_directories(qsylvan PRIVATE ${MPFR_INCLUDE_DIR})
+target_link_libraries(qsylvan PUBLIC ${MPFR_LIBRARIES})
+
 find_package(MPC REQUIRED)
 target_sources(qsylvan PRIVATE sylvan_mpc.c PUBLIC sylvan_mpc.h)
 target_include_directories(qsylvan PRIVATE ${MPC_INCLUDE_DIR})

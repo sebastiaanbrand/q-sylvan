@@ -46,32 +46,84 @@ static uint64_t
 mpc_hash(const uint64_t val, const uint64_t seed)
 {
     //
-    // Hash the mpc struct in pointer v
+    // Calculate the hash based in a mpc_t complex number
     //
-    // The precision of the real or imaginary part equals 
-    // the number of bit of the floating point number
-    //
-    // We just hash based on the contents of the memory
+    // The precision of the real and imaginary parts are
+    // limited, and corresponds to the long double type 
+    // which has a size in bytes of 16. 
     //
 
-    mpc_ptr x = (mpc_ptr)(size_t)val;
+    // mpc_ptr x = (mpc_ptr)(size_t)val;
+
+    // const uint64_t prime = 1099511628211;
+    // uint64_t hash = seed;
+    // mp_limb_t *limbs; // Contains unsigned longs
+
+//
+
+    if(true) {
+        // Example conversion from long double to bytes
+        long double long_double = 3.14159L;  // Replace this with your long double value
+
+        // Create an array of bytes
+        unsigned char bytes[sizeof(long double)];
+
+        // Copy the bytes of the long double to the array
+        memcpy(bytes, &long_double, sizeof(long double));
+
+        // Display the bytes in hexadecimal format
+        printf("Long double Value: %.17Lf\n", long_double);
+        printf("Bytes in Hexadecimal: ");
+    
+        for (size_t i = 0; i < sizeof(long double); ++i) {
+            printf("%02x ", bytes[i]);
+        }
+        printf("\n");
+    }
+
+//
+
+    //
+    // Calculate the hash based on the real part of the complex number val
+    //
+    mpfr_t real;
+    mpc_real(real, (mpc_ptr)val, MPC_ROUNDING);
+
+    // Convert the real part from mpc to long double type (16 x 8 bits = 128 bits) 
+    long double real_limited = mpfr_get_ld(real, MPC_ROUNDING);
+
+    // Convert the limited real part in long double (16 bytes in ARM64) to an array of bytes
+    int nr_bytes_complex_parts = 16;
+    unsigned char bytes[nr_bytes_complex_parts];
+    assert(nr_bytes_complex_parts == sizeof(long double)); // Check if the OS supports long double, if not exit this program
+
+    memcpy(bytes, &real_limited, nr_bytes_complex_parts);
 
     const uint64_t prime = 1099511628211;
     uint64_t hash = seed;
-    mp_limb_t *limbs;
+    int nr_bytes_hash = 8;
+    assert(nr_bytes_hash == sizeof(uint64_t)); // Check if the OS supports long double, if not exit this program
 
-    // hash "real" limbs
-    limbs = x->re->_mpfr_d;
-    for (int i=0; i<abs((int)x->re->_mpfr_prec); i++) {
-        hash = hash ^ limbs[i];
+    for(int i=0; i<nr_bytes_complex_parts; i++) {
+        hash = hash ^ bytes[i];
         hash = rotl64(hash, 47);
         hash = hash * prime;
     }
 
-    // hash "imag" limbs
-    limbs = x->im->_mpfr_d;
-    for (int i=0; i<abs((int)x->im->_mpfr_prec); i++) {
-        hash = hash ^ limbs[i];
+    //
+    // Calculate the hash further based on the imaginary part of the complex number val
+    //
+    mpfr_t imag;
+    mpc_imag(imag, (mpc_ptr)val, MPC_ROUNDING);
+
+    // Convert the imaginary part from mpc to long double type (16 x 8 bits = 128 bits) 
+    long double imag_limited = mpfr_get_ld(imag, MPC_ROUNDING);
+
+    // Convert the limited imaginary part in long double (16 bytes in ARM64) to an array of bytes
+    memcpy(bytes, &imag_limited, nr_bytes_complex_parts);
+
+    for(int i=0; i<nr_bytes_complex_parts; i++) {
+        hash = hash ^ bytes[i];
         hash = rotl64(hash, 31);
         hash = hash * prime;
     }
@@ -209,7 +261,7 @@ MTBDD
 mtbdd_mpc(mpc_t val)
 {
     //uint32_t mpc_type = MPC_TYPE;
-    return mtbdd_makeleaf(mpc_type, (size_t)val); // TODO: mpc_type currently global?
+    return mtbdd_makeleaf(g_mpc_type, (size_t)val); // TODO: mpc_type currently global?
 }
 
 /**
@@ -257,7 +309,7 @@ TASK_IMPL_2(MTBDD, mpc_op_plus, MTBDD*, pa, MTBDD*, pb)
     // If both leaves, compute plus
     if (mtbdd_isleaf(a) && mtbdd_isleaf(b)) {
 
-        assert(mtbdd_gettype(a) == mpc_type && mtbdd_gettype(b) == mpc_type);
+        assert(mtbdd_gettype(a) == g_mpc_type && mtbdd_gettype(b) == g_mpc_type);
 
         mpc_ptr ma = (mpc_ptr)mtbdd_getvalue(a);
         mpc_ptr mb = (mpc_ptr)mtbdd_getvalue(b);
@@ -294,7 +346,7 @@ TASK_IMPL_2(MTBDD, mpc_op_times, MTBDD*, pa, MTBDD*, pb)
     // If both leaves, compute plus
     if (mtbdd_isleaf(a) && mtbdd_isleaf(b)) {
 
-        assert(mtbdd_gettype(a) == mpc_type && mtbdd_gettype(b) == mpc_type);
+        assert(mtbdd_gettype(a) == g_mpc_type && mtbdd_gettype(b) == g_mpc_type);
 
         mpc_ptr ma = (mpc_ptr)mtbdd_getvalue(a);
         mpc_ptr mb = (mpc_ptr)mtbdd_getvalue(b);
@@ -317,10 +369,10 @@ TASK_IMPL_2(MTBDD, mpc_op_times, MTBDD*, pa, MTBDD*, pb)
 }
 
 /**
- * Operation "minus" for two mpq MTBDDs
+ * Operation "minus" for two mpc MTBDDs
  * Interpret partial function as "0"
  *
-TASK_IMPL_2(MTBDD, gmp_op_minus, MTBDD*, pa, MTBDD*, pb)
+TASK_IMPL_2(MTBDD, mpc_op_minus, MTBDD*, pa, MTBDD*, pb)
 {
     MTBDD a = *pa, b = *pb;
 
@@ -330,17 +382,18 @@ TASK_IMPL_2(MTBDD, gmp_op_minus, MTBDD*, pa, MTBDD*, pb)
 
     // If both leaves, compute plus
     if (mtbdd_isleaf(a) && mtbdd_isleaf(b)) {
-        assert(mtbdd_gettype(a) == gmp_type && mtbdd_gettype(b) == gmp_type);
 
-        mpq_ptr ma = (mpq_ptr)mtbdd_getvalue(a);
-        mpq_ptr mb = (mpq_ptr)mtbdd_getvalue(b);
+        assert(mtbdd_gettype(a) == mpc_type && mtbdd_gettype(b) == mpc_type);
 
-        mpq_t mres;
-        mpq_init(mres);
-        mpq_sub(mres, ma, mb);
-        MTBDD res = mtbdd_gmp(mres);
-        mpq_clear(mres);
-        return res;
+        mpc_ptr ma = (mpc_ptr)mtbdd_getvalue(a);
+        mpc_ptr mb = (mpc_ptr)mtbdd_getvalue(b);
+
+        mpc_t x;
+        mpq_init2(x, MPC_PRECISION);
+        mpc_sub(x, ma, mb, MPC_ROUNDING);
+        MTBDD result = mtbdd_mpc((mpc_ptr)x);
+        mpq_clear(x);
+        return result;
     }
 
     return mtbdd_invalid;

@@ -111,6 +111,7 @@ sylvan_mt_create_type()
 void sylvan_mt_set_hash(uint32_t type, sylvan_mt_hash_cb hash_cb)
 {
     customleaf_t *c = cl_registry + type;
+    printf("registered custom hash function %p for type %d\n", hash_cb, type);
     c->hash_cb = hash_cb;
 }
 
@@ -194,6 +195,7 @@ sylvan_mt_has_custom_hash(uint32_t type)
 {
     assert(type < cl_registry_count);
     customleaf_t *c = cl_registry + type;
+    printf("checking custom hash for type %d: %p\n", type, c->hash_cb);
     return c->hash_cb != NULL ? 1 : 0;
 }
 

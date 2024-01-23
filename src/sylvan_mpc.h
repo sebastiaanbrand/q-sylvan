@@ -25,6 +25,7 @@
 
 #include <sylvan.h>
 #include <mpc.h>
+#include <mpfr.h>
 
 #ifndef SYLVAN_MPC_H
 #define SYLVAN_MPC_H
@@ -47,7 +48,7 @@ extern "C" {
 #define MPC_MAXLENGTH_FILESTRING 256
 
 // TODO: Global still needed?
-static uint32_t mpc_type;
+static uint32_t g_mpc_type;
 
 /**
  * Initialize MPC custom leaves
@@ -83,7 +84,7 @@ TASK_DECL_2(MTBDD, mpc_op_plus, MTBDD*, MTBDD*);
 /**
  * Operation "minus" for two mpq MTBDDs
  */
-//TASK_DECL_2(MTBDD, gmp_op_minus, MTBDD*, MTBDD*);
+//TASK_DECL_2(MTBDD, mpc_op_minus, MTBDD*, MTBDD*);
 
 /**
  * Operation "times" for two mpq MTBDDs

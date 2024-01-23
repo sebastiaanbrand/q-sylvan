@@ -439,6 +439,8 @@ mtbdd_makeleaf(uint32_t type, uint64_t value)
 
     int custom = sylvan_mt_has_custom_hash(type);
 
+printf("custom = %d \n", custom);
+
     int created;
     uint64_t index = custom ? llmsset_lookupc(nodes, n.a, n.b, &created) : llmsset_lookup(nodes, n.a, n.b, &created);
     if (index == 0) {
