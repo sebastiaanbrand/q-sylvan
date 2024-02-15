@@ -125,8 +125,15 @@ static inline uint64_t
 llmsset_lookup2(const llmsset_t dbs, uint64_t a, uint64_t b, int* created, const int custom)
 {
     uint64_t hash_rehash = 14695981039346656037LLU;
-    if (custom) hash_rehash = dbs->hash_cb(a, b, hash_rehash);
-    else hash_rehash = sylvan_tabhash16(a, b, hash_rehash);
+    if (custom) {
+
+printf("sylvan_table.c llmsset_lookup2() nodes->hash_cb = %p\n", dbs->hash_cb);
+
+        hash_rehash = dbs->hash_cb(a, b, hash_rehash);
+    }
+    else {
+        hash_rehash = sylvan_tabhash16(a, b, hash_rehash);
+    }
 
     const uint64_t step = (((hash_rehash >> 20) | 1) << 3);
     const uint64_t hash = hash_rehash & MASK_HASH;
@@ -148,8 +155,11 @@ llmsset_lookup2(const llmsset_t dbs, uint64_t a, uint64_t b, int* created, const
                 // Claim data bucket and write data
                 cidx = claim_data_bucket(dbs);
                 if (cidx == (uint64_t)-1) return 0; // failed to claim a data bucket
-                if (custom) dbs->create_cb(&a, &b);
+                if (custom) dbs->create_cb(&a, &b); // a is the node, b is the value
                 uint64_t *d_ptr = ((uint64_t*)dbs->data) + 2*cidx;
+
+printf("sylvan_table.c llmsset_lookup2() dbs->data = %p cidx = %ld\n", dbs->data, cidx);
+
                 d_ptr[0] = a;
                 d_ptr[1] = b;
             }
@@ -166,6 +176,9 @@ llmsset_lookup2(const llmsset_t dbs, uint64_t a, uint64_t b, int* created, const
             uint64_t d_idx = v & MASK_INDEX;
             uint64_t *d_ptr = ((uint64_t*)dbs->data) + 2*d_idx;
             if (custom) {
+
+printf("sylvan_table.c llmsset_lookup2() dbs->data = %p d_idx = %ld\n", dbs->data, d_idx);
+
                 if (dbs->equals_cb(a, b, d_ptr[0], d_ptr[1])) {
                     if (cidx != 0) {
                         dbs->destroy_cb(a, b);
@@ -198,6 +211,7 @@ llmsset_lookup2(const llmsset_t dbs, uint64_t a, uint64_t b, int* created, const
 #else
             last = idx = hash_rehash % dbs->table_size;
 #endif
+
         }
     }
 }
@@ -211,6 +225,9 @@ llmsset_lookup(const llmsset_t dbs, const uint64_t a, const uint64_t b, int* cre
 uint64_t
 llmsset_lookupc(const llmsset_t dbs, const uint64_t a, const uint64_t b, int* created)
 {
+
+printf("sylvan_table.c llmsset_lookupc(custom=1) dbs->hash_cb = %p\n", dbs->hash_cb);
+
     return llmsset_lookup2(dbs, a, b, created, 1);
 }
 
@@ -326,6 +343,9 @@ llmsset_create(size_t initial_size, size_t max_size)
     dbs->bitmap2[0] = 0xc000000000000000LL;
 
     dbs->hash_cb = NULL;
+
+printf("sylvan_table.c llmsset_create() dbs->hash_cb = %p\n", dbs->hash_cb);
+
     dbs->equals_cb = NULL;
     dbs->create_cb = NULL;
     dbs->destroy_cb = NULL;
@@ -515,6 +535,9 @@ VOID_TASK_IMPL_1(llmsset_destroy_unmarked, llmsset_t, dbs)
 void llmsset_set_custom(const llmsset_t dbs, llmsset_hash_cb hash_cb, llmsset_equals_cb equals_cb, llmsset_create_cb create_cb, llmsset_destroy_cb destroy_cb)
 {
     dbs->hash_cb = hash_cb;
+
+printf("sylvan_table.c llmsset_set_custom() dbs->hash_cb = %p\n", dbs->hash_cb);
+
     dbs->equals_cb = equals_cb;
     dbs->create_cb = create_cb;
     dbs->destroy_cb = destroy_cb;

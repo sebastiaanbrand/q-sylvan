@@ -24,7 +24,13 @@ After downloading or cloning the repository, from the repository folder the code
 3. `cmake ..`
 4. `make`
 
-Test can be run with `make test`.
+Test can be run with `make test` or `ctest`, or a specific test such as `./test/test_mtbdd`.
+
+Debugging can be activated with `gdb ./test/test_mtbdd`.
+
+The GNU GDB Debugger accepts command as `(gdb) run` or `(gdb) backtrace` or `(gdb) exit`.
+
+See also https://cs.brown.edu/courses/cs033/docs/guides/gdb.pdf.
 
 Another build can be run after removal of the build folder with `rmdir -rf build`.
 

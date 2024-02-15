@@ -48,7 +48,8 @@ extern "C" {
 #define MPC_MAXLENGTH_FILESTRING 256
 
 // TODO: Global still needed?
-static uint32_t g_mpc_type;
+#define MPC_TYPE 3
+//static uint32_t g_mpc_type;
 
 /**
  * Initialize MPC custom leaves
@@ -132,7 +133,7 @@ TASK_DECL_2(MTBDD, mpc_op_times, MTBDD*, MTBDD*);
 /**
  * Compute a * b
  */
-//#define gmp_times(a, b) mtbdd_apply(a, b, TASK(gmp_op_times))
+#define mpc_times(a, b) mtbdd_apply(a, b, TASK(mpc_op_times))
 
 /**
  * Compute a * b

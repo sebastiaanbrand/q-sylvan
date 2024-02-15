@@ -32,9 +32,7 @@
  * Type "0" is the Integer type. 
  * Type "1" is the Real type.
  * Type "2" is the Fraction type, consisting of two 32-bit integers (numerator and denominator).
- * 
- * TODO: Type "3" is custom: Complex number with doubles
- * TODO: Type "4" is custom: Complex number implemented with the MPC Library.
+ * Type "3" is custom: Complex number implemented with the MPC Library.
  * 
  * For non-Boolean MTBDDs, mtbdd_false is used for partial functions, i.e. mtbdd_false
  * indicates that the function is not defined for a certain input.

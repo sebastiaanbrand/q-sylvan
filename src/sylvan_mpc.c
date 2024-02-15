@@ -59,34 +59,11 @@ mpc_hash(const uint64_t val, const uint64_t seed)
     // uint64_t hash = seed;
     // mp_limb_t *limbs; // Contains unsigned longs
 
-//
-
-    if(true) {
-        // Example conversion from long double to bytes
-        long double long_double = 3.14159L;  // Replace this with your long double value
-
-        // Create an array of bytes
-        unsigned char bytes[sizeof(long double)];
-
-        // Copy the bytes of the long double to the array
-        memcpy(bytes, &long_double, sizeof(long double));
-
-        // Display the bytes in hexadecimal format
-        printf("Long double Value: %.17Lf\n", long_double);
-        printf("Bytes in Hexadecimal: ");
-    
-        for (size_t i = 0; i < sizeof(long double); ++i) {
-            printf("%02x ", bytes[i]);
-        }
-        printf("\n");
-    }
-
-//
-
     //
     // Calculate the hash based on the real part of the complex number val
     //
     mpfr_t real;
+    mpfr_init2(real, MPC_PRECISION);
     mpc_real(real, (mpc_ptr)val, MPC_ROUNDING);
 
     // Convert the real part from mpc to long double type (16 x 8 bits = 128 bits) 
@@ -114,6 +91,7 @@ mpc_hash(const uint64_t val, const uint64_t seed)
     // Calculate the hash further based on the imaginary part of the complex number val
     //
     mpfr_t imag;
+    mpfr_init2(imag, MPC_PRECISION);
     mpc_imag(imag, (mpc_ptr)val, MPC_ROUNDING);
 
     // Convert the imaginary part from mpc to long double type (16 x 8 bits = 128 bits) 
@@ -127,6 +105,46 @@ mpc_hash(const uint64_t val, const uint64_t seed)
         hash = rotl64(hash, 31);
         hash = hash * prime;
     }
+
+//
+    if(false) {
+        // Example conversion from long double to bytes
+        long double long_double = real_limited;
+
+        // Create an array of bytes
+        unsigned char bytes[sizeof(long double)];
+
+        // Copy the bytes of the long double to the array
+        memcpy(bytes, &long_double, sizeof(long double));
+
+        // Display the bytes in hexadecimal format
+        printf("real limited to long double value: %.17Lf\n", long_double);
+        printf("bytes in hexadecimal: ");
+    
+        for (size_t i = 0; i < sizeof(long double); ++i) {
+            printf("%02x ", bytes[i]);
+        }
+        printf("\n");
+
+        // Example conversion from long double to bytes
+        long_double = imag_limited;
+
+        // Copy the bytes of the long double to the array
+        memcpy(bytes, &long_double, sizeof(long double));
+
+        // Display the bytes in hexadecimal format
+        printf("imag limited to long double value: %.17Lf\n", long_double);
+        printf("bytes in hexadecimal: ");
+    
+        for (size_t i = 0; i < sizeof(long double); ++i) {
+            printf("%02x ", bytes[i]);
+        }
+        printf("\n");
+    }
+//
+
+    mpfr_clear(real);
+    mpfr_clear(imag);
 
     return hash ^ (hash >> 32);
 }
@@ -142,7 +160,91 @@ mpc_equals(const uint64_t left, const uint64_t right)
     mpc_ptr x = (mpc_ptr)(size_t)left;
     mpc_ptr y = (mpc_ptr)(size_t)right;
 
-    return !mpc_cmp(x, y); // ? 1 : 0;
+printf("mpc_equals analysis\n\n");
+
+    mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, x, MPC_ROUNDING);
+    putchar('\n');
+
+    printf("prec = %ld\n", x->re->_mpfr_prec);
+    printf("sign = %d\n",  x->re->_mpfr_sign);
+    printf("exp  = %ld\n", x->re->_mpfr_exp);
+    printf("d    = %p\n",  x->re->_mpfr_d);
+
+    printf("prec = %ld\n", y->re->_mpfr_prec);
+    printf("sign = %d\n",  y->re->_mpfr_sign);
+    printf("exp  = %ld\n", y->re->_mpfr_exp);
+    printf("d    = %p\n",  y->re->_mpfr_d);
+
+/*
+        // Example conversion from long double to bytes
+        long double long_double = real_limited;
+
+        // Create an array of bytes
+        unsigned char bytes[sizeof(long double)];
+
+        // Copy the bytes of the long double to the array
+        memcpy(bytes, &long_double, sizeof(long double));
+
+        // Display the bytes in hexadecimal format
+        printf("real limited to long double value: %.17Lf\n", long_double);
+        printf("bytes in hexadecimal: ");
+    
+        for (size_t i = 0; i < sizeof(long double); ++i) {
+            printf("%02x ", bytes[i]);
+        }
+        printf("\n");
+*/
+
+    mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, y, MPC_ROUNDING);
+    putchar('\n');
+
+    mpfr_t real_x;
+    mpfr_init2(real_x, MPC_PRECISION);
+    int res = mpc_real(real_x, (mpc_ptr)x, MPC_ROUNDING);
+printf("res = %d\n", res);
+    long double real_x_ld = mpfr_get_ld(real_x, MPC_ROUNDING);
+
+printf("real_x = %Lf\n", real_x_ld);
+
+    mpfr_t imag_x;
+    mpfr_init2(imag_x, MPC_PRECISION);
+    res = mpc_imag(imag_x, (mpc_ptr)x, MPC_ROUNDING);
+printf("res = %d\n", res);
+    long double imag_x_ld = mpfr_get_ld(imag_x, MPC_ROUNDING);
+
+printf("imag_x = %Lf\n", imag_x_ld);
+
+    mpfr_t real_y;
+    mpfr_init2(real_y, MPC_PRECISION);
+    res = mpc_real(real_y, (mpc_ptr)y, MPC_ROUNDING);
+printf("res = %d\n", res);
+    long double real_y_ld = mpfr_get_ld(real_y, MPC_ROUNDING);
+
+printf("real_y = %Lf\n", real_y_ld);
+
+    mpfr_t imag_y;
+    mpfr_init2(imag_y, MPC_PRECISION);
+printf("--\n");
+    res = mpc_imag(imag_y, (mpc_ptr)y, MPC_ROUNDING);
+printf("res = %d\n", res);
+    long double imag_y_ld = mpfr_get_ld(imag_y, MPC_ROUNDING);
+
+printf("imag_y = %Lf\n", imag_y_ld);
+
+    int result = 0;
+    result = ((real_x_ld == real_y_ld) && (imag_x_ld == imag_y_ld)) ? 1 : 0;
+
+    mpfr_clear(real_x);
+    mpfr_clear(imag_x);
+
+    mpfr_clear(real_y);
+    mpfr_clear(imag_y);
+
+    printf("sylvan_mpc.c mpc_equals() own method = %d \n", result);
+
+    printf("sylvan_mpc.c mpc_equals() mpc_cmp() = %d \n", mpc_cmp(x, y) ? 1 : 0);
+
+    return result;
 }
 
 static void
@@ -153,17 +255,9 @@ mpc_create(uint64_t *val)
     // We make a copy, which will be stored in the hash table.
     //
 
-    //mpc_ptr x = (mpc_ptr)malloc(sizeof(__mpc_struct));
-    //mpc_init(x);
-
-    //mpc_t x;
-    //mpc_init2(x, MPC_PRECISION);
-    //mpc_set(x, *(mpc_ptr*)val, MPC_ROUNDING);
-    //*(mpc_ptr*)val = x;
-
-    mpc_t x;
+    mpc_ptr x = (mpc_ptr)malloc(sizeof(mpc_t));
     mpc_init2(x, MPC_PRECISION);
-    mpc_set(x, (mpc_ptr)val, MPC_ROUNDING);
+    mpc_set(x, *(mpc_ptr*)val, MPC_ROUNDING);
     *(mpc_ptr*)val = (mpc_ptr)x;
 
     return;
@@ -178,7 +272,7 @@ mpc_destroy(uint64_t val)
     //
 
     mpc_clear((mpc_ptr)val);
-    //free((void*)val);
+    free((void*)val);
 
     return;
 }
@@ -260,8 +354,12 @@ mpc_init()
 MTBDD
 mtbdd_mpc(mpc_t val)
 {
-    //uint32_t mpc_type = MPC_TYPE;
-    return mtbdd_makeleaf(g_mpc_type, (size_t)val); // TODO: mpc_type currently global?
+    uint32_t mpc_type = MPC_TYPE;
+    uint32_t g_mpc_type = MPC_TYPE;
+
+printf("sylvan_mpc.c mtbdd_mpc(val) g_mpc_type = %d\n", g_mpc_type);
+
+    return mtbdd_makeleaf(mpc_type, (size_t)val);
 }
 
 /**
@@ -290,6 +388,26 @@ mpc_compare(const uint64_t left, const uint64_t right)
     mpc_ptr x = (mpc_ptr)(size_t)left;
     mpc_ptr y = (mpc_ptr)(size_t)right;
 
+printf("sylvan_mpc.c mpc_compare()\n\n");
+
+    //mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, x, MPC_ROUNDING);
+    //putchar('\n');
+
+    //mpfr_t re = y->re;
+    //mpfr_t im = y->im;
+
+    printf("prec = %ld\n", x->re->_mpfr_prec);
+    printf("sign = %d\n",  x->re->_mpfr_sign);
+    printf("exp  = %ld\n", x->re->_mpfr_exp);
+    printf("d    = %p\n",  x->re->_mpfr_d);
+
+    printf("prec = %ld\n", y->re->_mpfr_prec);
+    printf("sign = %d\n",  y->re->_mpfr_sign);
+    printf("exp  = %ld\n", y->re->_mpfr_exp);
+    printf("d    = %p\n",  y->re->_mpfr_d);
+
+printf("sylvan_mpc.c mpc_compare() = %d \n", mpc_cmp(x,y));
+
     return !mpc_cmp(x, y);  // mpc_cmp == 0 if x == y
 }
 
@@ -302,6 +420,8 @@ TASK_IMPL_2(MTBDD, mpc_op_plus, MTBDD*, pa, MTBDD*, pb)
 {
     MTBDD a = *pa, b = *pb;
 
+printf("sylvan_mpc.c mpc_op_plus()\n");
+
     // Check for partial functions
     if (a == mtbdd_false) return b;
     if (b == mtbdd_false) return a;
@@ -309,7 +429,9 @@ TASK_IMPL_2(MTBDD, mpc_op_plus, MTBDD*, pa, MTBDD*, pb)
     // If both leaves, compute plus
     if (mtbdd_isleaf(a) && mtbdd_isleaf(b)) {
 
-        assert(mtbdd_gettype(a) == g_mpc_type && mtbdd_gettype(b) == g_mpc_type);
+printf("sylvan_mpc.c mtbdd_gettype(a) = %d\n", mtbdd_gettype(a));
+
+        assert(mtbdd_gettype(a) == MPC_TYPE && mtbdd_gettype(b) == MPC_TYPE);
 
         mpc_ptr ma = (mpc_ptr)mtbdd_getvalue(a);
         mpc_ptr mb = (mpc_ptr)mtbdd_getvalue(b);
@@ -317,6 +439,12 @@ TASK_IMPL_2(MTBDD, mpc_op_plus, MTBDD*, pa, MTBDD*, pb)
         mpc_t x;
         mpc_init2(x, MPC_PRECISION);
         mpc_add(x, ma, mb, MPC_ROUNDING);
+
+    printf("prec = %ld\n", x->re->_mpfr_prec);
+    printf("sign = %d\n",  x->re->_mpfr_sign);
+    printf("exp  = %ld\n", x->re->_mpfr_exp);
+    printf("d    = %p\n",  x->re->_mpfr_d);
+
         MTBDD result = mtbdd_mpc((mpc_ptr)x);
         mpc_clear(x);
         return result;
@@ -339,14 +467,17 @@ TASK_IMPL_2(MTBDD, mpc_op_times, MTBDD*, pa, MTBDD*, pb)
 {
     MTBDD a = *pa, b = *pb;
 
-    // Check for partial functions
-    if (a == mtbdd_false) return b;
-    if (b == mtbdd_false) return a;
+    /* Check for partial functions and for Boolean (filter) */
+    if (a == mtbdd_false || b == mtbdd_false) return mtbdd_false;
 
-    // If both leaves, compute plus
+    // Check for partial functions
+    if (a == mtbdd_true) return b;
+    if (b == mtbdd_true) return a;
+
+    // If both leaves, compute multiplication
     if (mtbdd_isleaf(a) && mtbdd_isleaf(b)) {
 
-        assert(mtbdd_gettype(a) == g_mpc_type && mtbdd_gettype(b) == g_mpc_type);
+        assert(mtbdd_gettype(a) == MPC_TYPE && mtbdd_gettype(b) == MPC_TYPE);
 
         mpc_ptr ma = (mpc_ptr)mtbdd_getvalue(a);
         mpc_ptr mb = (mpc_ptr)mtbdd_getvalue(b);
