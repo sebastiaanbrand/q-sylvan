@@ -118,14 +118,14 @@ void fprint_stats(FILE *stream, quantum_circuit_t* circuit)
         fprintf(stream, "  ],\n");
     }
     fprintf(stream, "  \"statistics\": {\n");
-    fprintf(stream, "    \"applied_gates\": %ld,\n", stats.applied_gates);
+    fprintf(stream, "    \"applied_gates\": %llu,\n", stats.applied_gates);
     fprintf(stream, "    \"benchmark\": \"%s\",\n", circuit->name);
-    fprintf(stream, "    \"final_nodes\": %ld,\n", stats.final_nodes);
-    fprintf(stream, "    \"max_nodes\": %ld,\n", stats.max_nodes);
+    fprintf(stream, "    \"final_nodes\": %llu,\n", stats.final_nodes);
+    fprintf(stream, "    \"max_nodes\": %llu,\n", stats.max_nodes);
     fprintf(stream, "    \"n_qubits\": %d,\n", circuit->qreg_size);
     fprintf(stream, "    \"norm\": %.5e,\n", stats.norm);
     fprintf(stream, "    \"seed\": %d,\n", rseed);
-    fprintf(stream, "    \"shots\": %ld,\n", stats.shots);
+    fprintf(stream, "    \"shots\": %llu,\n", stats.shots);
     fprintf(stream, "    \"simulation_time\": %lf,\n", stats.simulation_time);
     fprintf(stream, "    \"tolerance\": %.5e,\n", tolerance);
     fprintf(stream, "    \"wgt_norm_strat\": %d,\n", wgt_norm_strat);
