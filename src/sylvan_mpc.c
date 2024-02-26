@@ -490,7 +490,7 @@ TASK_IMPL_2(MTBDD, mpc_op_times, MTBDD*, pa, MTBDD*, pb)
         return result;
     }
 
-    // Commutative, so swap a,b for better cache performance <-- Also for times?
+    // Commutative, so swap a,b for better cache performance
     if (a < b) {
         *pa = b;
         *pb = a;
@@ -502,35 +502,48 @@ TASK_IMPL_2(MTBDD, mpc_op_times, MTBDD*, pa, MTBDD*, pb)
 /**
  * Operation "minus" for two mpc MTBDDs
  * Interpret partial function as "0"
- *
+ */
 TASK_IMPL_2(MTBDD, mpc_op_minus, MTBDD*, pa, MTBDD*, pb)
 {
     MTBDD a = *pa, b = *pb;
 
     // Check for partial functions
-    if (a == mtbdd_false) return gmp_neg(b);
+    if (a == mtbdd_false && mtbdd_isleaf(b)) {
+
+        assert(mtbdd_gettype(b) == MPC_TYPE);
+
+        mpc_ptr mb = (mpc_ptr)mtbdd_getvalue(b);
+
+        mpc_t x;
+        mpc_init2(x, MPC_PRECISION);
+        mpc_neg(x, mb, MPC_ROUNDING);
+        MTBDD result = mtbdd_mpc((mpc_ptr)x);
+        mpc_clear(x);
+        return result; 
+    }
+
     if (b == mtbdd_false) return a;
 
-    // If both leaves, compute plus
+    // If both leaves, compute minus
     if (mtbdd_isleaf(a) && mtbdd_isleaf(b)) {
 
-        assert(mtbdd_gettype(a) == mpc_type && mtbdd_gettype(b) == mpc_type);
+        assert(mtbdd_gettype(a) == MPC_TYPE && mtbdd_gettype(b) == MPC_TYPE);
 
         mpc_ptr ma = (mpc_ptr)mtbdd_getvalue(a);
         mpc_ptr mb = (mpc_ptr)mtbdd_getvalue(b);
 
         mpc_t x;
-        mpq_init2(x, MPC_PRECISION);
+        mpc_init2(x, MPC_PRECISION);
         mpc_sub(x, ma, mb, MPC_ROUNDING);
         MTBDD result = mtbdd_mpc((mpc_ptr)x);
-        mpq_clear(x);
+        mpc_clear(x);
         return result;
     }
 
     return mtbdd_invalid;
 }
 
-**
+/**
  * Operation "times" for two mpq MTBDDs.
  * One of the parameters can be a BDD, then it is interpreted as a filter.
  * For partial functions, domain is intersection

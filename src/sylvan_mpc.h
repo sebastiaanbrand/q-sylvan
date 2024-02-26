@@ -83,12 +83,12 @@ TASK_DECL_2(MTBDD, mpc_op_plus, MTBDD*, MTBDD*);
 //TASK_DECL_3(MTBDD, gmp_abstract_op_plus, MTBDD, MTBDD, int);
 
 /**
- * Operation "minus" for two mpq MTBDDs
+ * Operation "minus" for two mpc MTBDDs
  */
-//TASK_DECL_2(MTBDD, mpc_op_minus, MTBDD*, MTBDD*);
+TASK_DECL_2(MTBDD, mpc_op_minus, MTBDD*, MTBDD*);
 
 /**
- * Operation "times" for two mpq MTBDDs
+ * Operation "times" for two mpc MTBDDs
  */
 TASK_DECL_2(MTBDD, mpc_op_times, MTBDD*, MTBDD*);
 //TASK_DECL_3(MTBDD, gmp_abstract_op_times, MTBDD, MTBDD, int);
@@ -126,9 +126,9 @@ TASK_DECL_2(MTBDD, mpc_op_times, MTBDD*, MTBDD*);
 #define mpc_plus(a, b) mtbdd_apply(a, b, TASK(mpc_op_plus))
 
 /**
- * Compute a + b
+ * Compute a - b
  */
-//#define gmp_minus(a, b) mtbdd_apply(a, b, TASK(gmp_op_minus))
+#define mpc_minus(a, b) mtbdd_apply(a, b, TASK(mpc_op_minus))
 
 /**
  * Compute a * b
@@ -136,7 +136,7 @@ TASK_DECL_2(MTBDD, mpc_op_times, MTBDD*, MTBDD*);
 #define mpc_times(a, b) mtbdd_apply(a, b, TASK(mpc_op_times))
 
 /**
- * Compute a * b
+ * Compute a / b
  */
 //#define gmp_divide(a, b) mtbdd_apply(a, b, TASK(gmp_op_divide))
 
