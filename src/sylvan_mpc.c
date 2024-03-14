@@ -355,24 +355,21 @@ MTBDD
 mtbdd_mpc(mpc_t val)
 {
     uint32_t mpc_type = MPC_TYPE;
-    uint32_t g_mpc_type = MPC_TYPE;
-
-printf("sylvan_mpc.c mtbdd_mpc(val) g_mpc_type = %d\n", g_mpc_type);
+    //uint32_t g_mpc_type = MPC_TYPE;
 
     return mtbdd_makeleaf(mpc_type, (size_t)val);
 }
 
 /**
- * Assign a complex number
+ * Assign a complex number based on real and imaginair double
 */
-void 
+void
 mpc_assign(mpc_ptr complexnumber, double real, double imag)
 {
     mpc_init2(complexnumber, MPC_PRECISION);
     mpc_set_d_d(complexnumber, real, imag, MPC_ROUNDING);
     return;
 }
-
 
 /**
  * Compare mpc leafs
@@ -390,27 +387,81 @@ mpc_compare(const uint64_t left, const uint64_t right)
 
 printf("sylvan_mpc.c mpc_compare()\n\n");
 
-    //mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, x, MPC_ROUNDING);
-    //putchar('\n');
+    printf("prec x = %ld\n", x->re->_mpfr_prec);
+    printf("sign x = %d\n",  x->re->_mpfr_sign);
+    printf("exp  x = %ld\n", x->re->_mpfr_exp);
+    printf("d    x = %p\n",  x->re->_mpfr_d);
 
-    //mpfr_t re = y->re;
-    //mpfr_t im = y->im;
-
-    printf("prec = %ld\n", x->re->_mpfr_prec);
-    printf("sign = %d\n",  x->re->_mpfr_sign);
-    printf("exp  = %ld\n", x->re->_mpfr_exp);
-    printf("d    = %p\n",  x->re->_mpfr_d);
-
-    printf("prec = %ld\n", y->re->_mpfr_prec);
-    printf("sign = %d\n",  y->re->_mpfr_sign);
-    printf("exp  = %ld\n", y->re->_mpfr_exp);
-    printf("d    = %p\n",  y->re->_mpfr_d);
+    printf("prec y = %ld\n", y->re->_mpfr_prec);
+    printf("sign y = %d\n",  y->re->_mpfr_sign);
+    printf("exp  y = %ld\n", y->re->_mpfr_exp);
+    printf("d    y = %p\n",  y->re->_mpfr_d);
 
 printf("sylvan_mpc.c mpc_compare() = %d \n", mpc_cmp(x,y));
 
     return !mpc_cmp(x, y);  // mpc_cmp == 0 if x == y
 }
 
+/**
+ * Compare mpc leafs absolute |z1| == |z2|
+*/
+int
+mpc_compare_abs(const uint64_t left, const uint64_t right)
+{
+    //
+    // This function is called by the unique table when comparing a new 
+    // leaf with an existing leaf.
+    //
+
+    mpc_ptr x = (mpc_ptr)(size_t)left;
+    mpc_ptr y = (mpc_ptr)(size_t)right;
+
+printf("sylvan_mpc.c mpc_compare_abs()\n\n");
+
+    printf("prec x = %ld\n", x->re->_mpfr_prec);
+    printf("sign x = %d\n",  x->re->_mpfr_sign);
+    printf("exp  x = %ld\n", x->re->_mpfr_exp);
+    printf("d    x = %p\n",  x->re->_mpfr_d);
+
+    printf("prec y = %ld\n", y->re->_mpfr_prec);
+    printf("sign y = %d\n",  y->re->_mpfr_sign);
+    printf("exp  y = %ld\n", y->re->_mpfr_exp);
+    printf("d    y = %p\n",  y->re->_mpfr_d);
+
+printf("sylvan_mpc.c mpc_compare_abs() = %d \n", mpc_cmp_abs(x,y));
+
+    return !mpc_cmp_abs(x, y);  // mpc_cmp == 0 if x == y
+}
+
+/**
+ * Take absolute minimum of z1 and z2
+*/
+int
+mpc_minimum_abs(mpc_ptr result, mpc_ptr z1, mpc_ptr z2)
+{
+    if (mpc_cmp_abs(z1, z2) < 0) {
+        mpc_set(result, z1, MPC_ROUNDING);
+    } else {
+        mpc_set(result, z2, MPC_ROUNDING);
+    }
+
+    return 0;
+}
+
+/**
+ * Take absolute maximum of z1 and z2
+*/
+int
+mpc_maximum_abs(mpc_ptr result, mpc_ptr z1, mpc_ptr z2)
+{
+    if (mpc_cmp_abs(z1, z2) > 0) {
+        mpc_set(result, z1, MPC_ROUNDING);
+    } else {
+        mpc_set(result, z2, MPC_ROUNDING);
+    }
+
+    return 0;
+}
 
 /**
  * Operation "plus" for two mpc MTBDDs
@@ -420,16 +471,12 @@ TASK_IMPL_2(MTBDD, mpc_op_plus, MTBDD*, pa, MTBDD*, pb)
 {
     MTBDD a = *pa, b = *pb;
 
-printf("sylvan_mpc.c mpc_op_plus()\n");
-
     // Check for partial functions
     if (a == mtbdd_false) return b;
     if (b == mtbdd_false) return a;
 
     // If both leaves, compute plus
     if (mtbdd_isleaf(a) && mtbdd_isleaf(b)) {
-
-printf("sylvan_mpc.c mtbdd_gettype(a) = %d\n", mtbdd_gettype(a));
 
         assert(mtbdd_gettype(a) == MPC_TYPE && mtbdd_gettype(b) == MPC_TYPE);
 
@@ -439,11 +486,6 @@ printf("sylvan_mpc.c mtbdd_gettype(a) = %d\n", mtbdd_gettype(a));
         mpc_t x;
         mpc_init2(x, MPC_PRECISION);
         mpc_add(x, ma, mb, MPC_ROUNDING);
-
-    printf("prec = %ld\n", x->re->_mpfr_prec);
-    printf("sign = %d\n",  x->re->_mpfr_sign);
-    printf("exp  = %ld\n", x->re->_mpfr_exp);
-    printf("d    = %p\n",  x->re->_mpfr_d);
 
         MTBDD result = mtbdd_mpc((mpc_ptr)x);
         mpc_clear(x);
@@ -544,47 +586,6 @@ TASK_IMPL_2(MTBDD, mpc_op_minus, MTBDD*, pa, MTBDD*, pb)
 }
 
 /**
- * Operation "times" for two mpq MTBDDs.
- * One of the parameters can be a BDD, then it is interpreted as a filter.
- * For partial functions, domain is intersection
- *
-TASK_IMPL_2(MTBDD, gmp_op_times, MTBDD*, pa, MTBDD*, pb)
-{
-    MTBDD a = *pa, b = *pb;
-
-    // Check for partial functions and for Boolean (filter) 
-    if (a == mtbdd_false || b == mtbdd_false) return mtbdd_false;
-
-    // If one of Boolean, interpret as filter
-    if (a == mtbdd_true) return b;
-    if (b == mtbdd_true) return a;
-
-    // Handle multiplication of leaves
-    if (mtbdd_isleaf(a) && mtbdd_isleaf(b)) {
-        assert(mtbdd_gettype(a) == gmp_type && mtbdd_gettype(b) == gmp_type);
-
-        mpq_ptr ma = (mpq_ptr)mtbdd_getvalue(a);
-        mpq_ptr mb = (mpq_ptr)mtbdd_getvalue(b);
-
-        // compute result
-        mpq_t mres;
-        mpq_init(mres);
-        mpq_mul(mres, ma, mb);
-        MTBDD res = mtbdd_gmp(mres);
-        mpq_clear(mres);
-        return res;
-    }
-
-    // Commutative, so make "a" the lowest for better cache performance
-    if (a < b) {
-        *pa = b;
-        *pb = a;
-    }
-
-    return mtbdd_invalid;
-}
-
-**
  * Operation "divide" for two mpq MTBDDs.
  * For partial functions, domain is intersection
  *
@@ -613,11 +614,12 @@ TASK_IMPL_2(MTBDD, gmp_op_divide, MTBDD*, pa, MTBDD*, pb)
 
     return mtbdd_invalid;
 }
+*/
 
-**
+/**
  * Operation "min" for two mpq MTBDDs.
- *
-TASK_IMPL_2(MTBDD, gmp_op_min, MTBDD*, pa, MTBDD*, pb)
+ */
+TASK_IMPL_2(MTBDD, mpc_op_min, MTBDD*, pa, MTBDD*, pb)
 {
     MTBDD a = *pa, b = *pb;
 
@@ -630,11 +632,14 @@ TASK_IMPL_2(MTBDD, gmp_op_min, MTBDD*, pa, MTBDD*, pb)
 
     // Compute result for leaves
     if (mtbdd_isleaf(a) && mtbdd_isleaf(b)) {
-        assert(mtbdd_gettype(a) == gmp_type && mtbdd_gettype(b) == gmp_type);
 
-        mpq_ptr ma = (mpq_ptr)mtbdd_getvalue(a);
-        mpq_ptr mb = (mpq_ptr)mtbdd_getvalue(b);
-        int cmp = mpq_cmp(ma, mb);
+        assert(mtbdd_gettype(a) == MPC_TYPE && mtbdd_gettype(b) == MPC_TYPE);
+
+        mpc_ptr ma = (mpc_ptr)mtbdd_getvalue(a);
+        mpc_ptr mb = (mpc_ptr)mtbdd_getvalue(b);
+
+        int cmp = mpc_cmp_abs(ma, mb);
+        
         return cmp < 0 ? a : b;
     }
 
@@ -647,10 +652,10 @@ TASK_IMPL_2(MTBDD, gmp_op_min, MTBDD*, pa, MTBDD*, pb)
     return mtbdd_invalid;
 }
 
-**
+/**
  * Operation "max" for two mpq MTBDDs.
- *
-TASK_IMPL_2(MTBDD, gmp_op_max, MTBDD*, pa, MTBDD*, pb)
+ */
+TASK_IMPL_2(MTBDD, mpc_op_max, MTBDD*, pa, MTBDD*, pb)
 {
     MTBDD a = *pa, b = *pb;
 
@@ -663,11 +668,14 @@ TASK_IMPL_2(MTBDD, gmp_op_max, MTBDD*, pa, MTBDD*, pb)
 
     // Compute result for leaves
     if (mtbdd_isleaf(a) && mtbdd_isleaf(b)) {
-        assert(mtbdd_gettype(a) == gmp_type && mtbdd_gettype(b) == gmp_type);
 
-        mpq_ptr ma = (mpq_ptr)mtbdd_getvalue(a);
-        mpq_ptr mb = (mpq_ptr)mtbdd_getvalue(b);
-        int cmp = mpq_cmp(ma, mb);
+        assert(mtbdd_gettype(a) == MPC_TYPE && mtbdd_gettype(b) == MPC_TYPE);
+
+        mpc_ptr ma = (mpc_ptr)mtbdd_getvalue(a);
+        mpc_ptr mb = (mpc_ptr)mtbdd_getvalue(b);
+
+        int cmp = mpc_cmp_abs(ma, mb);
+        
         return cmp > 0 ? a : b;
     }
 
@@ -680,8 +688,8 @@ TASK_IMPL_2(MTBDD, gmp_op_max, MTBDD*, pa, MTBDD*, pb)
     return mtbdd_invalid;
 }
 
-**
- * Operation "neg" for one mpq MTBDD
+/**
+ * Operation "neg" for one mpq MTBDD        TODO: refactor mpc_op_minus (substraction)
  *
 TASK_IMPL_2(MTBDD, gmp_op_neg, MTBDD, dd, size_t, p)
 {

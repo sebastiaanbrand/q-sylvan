@@ -65,15 +65,33 @@ mtbdd_mpc(mpc_t val);
 
 /**
  * Assign a MPC complex number
-*/
+ */
 void 
 mpc_assign(mpc_ptr complexnumber, double real, double imag);
 
 /**
- * Compare MPC variables
-*/
+ * Compare MPC variables, re1 == re2 and im1 == im2
+ */
 int 
 mpc_compare(const uint64_t left, const uint64_t right);
+
+/**
+ * Compare MPC variables absolute, |z1| == |z2|
+ */
+int
+mpc_compare_abs(const uint64_t left, const uint64_t right);
+
+/**
+ * Take minimum of left and right
+ */
+int
+mpc_minimum_abs(mpc_ptr result, mpc_ptr z1, mpc_ptr z2);
+
+/**
+ * Take maximum of left and right
+ */
+int
+mpc_maximum_abs(mpc_ptr result, mpc_ptr z1, mpc_ptr z2);
 
 /**
  * Operation "plus" for two mpc MTBDDs
@@ -101,13 +119,13 @@ TASK_DECL_2(MTBDD, mpc_op_times, MTBDD*, MTBDD*);
 /**
  * Operation "min" for two mpq MTBDDs
  */
-//TASK_DECL_2(MTBDD, gmp_op_min, MTBDD*, MTBDD*);
+TASK_DECL_2(MTBDD, mpc_op_min, MTBDD*, MTBDD*);
 //TASK_DECL_3(MTBDD, gmp_abstract_op_min, MTBDD, MTBDD, int);
 
 /**
  * Operation "max" for two mpq MTBDDs
  */
-//TASK_DECL_2(MTBDD, gmp_op_max, MTBDD*, MTBDD*);
+TASK_DECL_2(MTBDD, mpc_op_max, MTBDD*, MTBDD*);
 //TASK_DECL_3(MTBDD, gmp_abstract_op_max, MTBDD, MTBDD, int);
 
 /**
@@ -143,12 +161,12 @@ TASK_DECL_2(MTBDD, mpc_op_times, MTBDD*, MTBDD*);
 /**
  * Compute min(a, b)
  */
-//#define gmp_min(a, b) mtbdd_apply(a, b, TASK(gmp_op_min))
+#define mpc_min(a, b) mtbdd_apply(a, b, TASK(mpc_op_min))
 
 /**
  * Compute max(a, b)
  */
-//#define gmp_max(a, b) mtbdd_apply(a, b, TASK(gmp_op_max))
+#define mpc_max(a, b) mtbdd_apply(a, b, TASK(mpc_op_max))
 
 /**
  * Compute -a
@@ -159,8 +177,6 @@ TASK_DECL_2(MTBDD, mpc_op_times, MTBDD*, MTBDD*);
  * Compute abs(a)
  */
 //#define gmp_abs(a) mtbdd_uapply(a, TASK(gmp_op_abs), 0);
-
-// TODO: abstract == reduce
 
 /**
  * Abstract the variables in <v> from <a> by taking the sum of all values
