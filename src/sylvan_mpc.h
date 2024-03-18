@@ -23,12 +23,10 @@
  * 
  */
 
-#include <sylvan.h>
-#include <mpc.h>
-#include <mpfr.h>
-
 #ifndef SYLVAN_MPC_H
 #define SYLVAN_MPC_H
+
+#include <mpc.h>
 
 #ifdef __cplusplus
 namespace sylvan {
@@ -56,12 +54,6 @@ extern "C" {
  */
 uint32_t 
 mpc_init(void);
-
-/**
- * Create MPC leaf
- */
-MTBDD 
-mtbdd_mpc(mpc_t val);
 
 /**
  * Assign a MPC complex number
@@ -98,7 +90,7 @@ mpc_maximum_abs(mpc_ptr result, mpc_ptr z1, mpc_ptr z2);
  */
 TASK_DECL_2(MTBDD, mpc_op_plus, MTBDD*, MTBDD*);
 
-//TASK_DECL_3(MTBDD, gmp_abstract_op_plus, MTBDD, MTBDD, int);
+//TASK_DECL_3(MTBDD, mpc_abstract_op_plus, MTBDD, MTBDD, int);
 
 /**
  * Operation "minus" for two mpc MTBDDs
@@ -109,34 +101,34 @@ TASK_DECL_2(MTBDD, mpc_op_minus, MTBDD*, MTBDD*);
  * Operation "times" for two mpc MTBDDs
  */
 TASK_DECL_2(MTBDD, mpc_op_times, MTBDD*, MTBDD*);
-//TASK_DECL_3(MTBDD, gmp_abstract_op_times, MTBDD, MTBDD, int);
+//TASK_DECL_3(MTBDD, mpc_abstract_op_times, MTBDD, MTBDD, int);
 
 /**
  * Operation "divide" for two mpq MTBDDs
  */
-//TASK_DECL_2(MTBDD, gmp_op_divide, MTBDD*, MTBDD*);
+//TASK_DECL_2(MTBDD, mpc_op_divide, MTBDD*, MTBDD*);
 
 /**
- * Operation "min" for two mpq MTBDDs
+ * Operation "min" for two mpc MTBDDs
  */
 TASK_DECL_2(MTBDD, mpc_op_min, MTBDD*, MTBDD*);
-//TASK_DECL_3(MTBDD, gmp_abstract_op_min, MTBDD, MTBDD, int);
+//TASK_DECL_3(MTBDD, mpc_abstract_op_min, MTBDD, MTBDD, int);
 
 /**
  * Operation "max" for two mpq MTBDDs
  */
 TASK_DECL_2(MTBDD, mpc_op_max, MTBDD*, MTBDD*);
-//TASK_DECL_3(MTBDD, gmp_abstract_op_max, MTBDD, MTBDD, int);
+//TASK_DECL_3(MTBDD, mpc_abstract_op_max, MTBDD, MTBDD, int);
 
 /**
- * Operation "negate" for one mpq MTBDD
+ * Operation "negate" for one mpc MTBDD
  */
-//TASK_DECL_2(MTBDD, gmp_op_neg, MTBDD, size_t);
+//TASK_DECL_2(MTBDD, mpc_op_neg, MTBDD, size_t);
 
 /**
- * Operation "abs" for one mpq MTBDD
+ * Operation "abs" for one mpc MTBDD
  */
-//TASK_DECL_2(MTBDD, gmp_op_abs, MTBDD, size_t);
+//TASK_DECL_2(MTBDD, mpc_op_abs, MTBDD, size_t);
 
 /**
  * Compute a + b
@@ -156,7 +148,7 @@ TASK_DECL_2(MTBDD, mpc_op_max, MTBDD*, MTBDD*);
 /**
  * Compute a / b
  */
-//#define gmp_divide(a, b) mtbdd_apply(a, b, TASK(gmp_op_divide))
+//#define mpc_divide(a, b) mtbdd_apply(a, b, TASK(mpc_op_divide))
 
 /**
  * Compute min(a, b)

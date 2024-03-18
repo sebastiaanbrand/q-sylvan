@@ -17,7 +17,7 @@
 
 #include <sylvan_int.h>
 
-#include <errno.h>  // for errno
+#include <errno.h>
 #include <string.h> // memset
 #include <sys/mman.h> // for mmap
 

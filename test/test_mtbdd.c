@@ -350,8 +350,6 @@ test_mtbdd_makenodes_and_leafs_complex_terminals()
     //
 
     // Set the terminal leafs
-    uint32_t mpc_type = 3;
-
     mpc_t value_00;
 
     //mpc_assign(value_00, 0.25, 0.25);
@@ -379,15 +377,10 @@ test_mtbdd_makenodes_and_leafs_complex_terminals()
     mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, value_11, MPC_ROUNDING);
     putchar('\n');
 
-    //MTBDD index_leaf_00 = mtbdd_mpc(value_00);
-    //MTBDD index_leaf_01 = mtbdd_mpc(value_01);
-    //MTBDD index_leaf_10 = mtbdd_mpc(value_10);
-    //MTBDD index_leaf_11 = mtbdd_mpc(value_11);
-
-    MTBDD index_leaf_00 = mtbdd_makeleaf(mpc_type, (size_t)value_00);
-    MTBDD index_leaf_01 = mtbdd_makeleaf(mpc_type, (size_t)value_01);
-    MTBDD index_leaf_10 = mtbdd_makeleaf(mpc_type, (size_t)value_10);
-    MTBDD index_leaf_11 = mtbdd_makeleaf(mpc_type, (size_t)value_11);
+    MTBDD index_leaf_00 = mtbdd_makeleaf(MPC_TYPE, (size_t)value_00);
+    MTBDD index_leaf_01 = mtbdd_makeleaf(MPC_TYPE, (size_t)value_01);
+    MTBDD index_leaf_10 = mtbdd_makeleaf(MPC_TYPE, (size_t)value_10);
+    MTBDD index_leaf_11 = mtbdd_makeleaf(MPC_TYPE, (size_t)value_11);
 
     if(true) {
         printf("index_leaf_00 = %ld \n", index_leaf_00);
@@ -507,11 +500,12 @@ test_mtbdd_arithmic_functions_double()
     MTBDD index_leaf_10 = mtbdd_double(value_10);
     MTBDD index_leaf_11 = mtbdd_double(value_11);
 
-    if(false) {
+    if(true) {
         printf("index_leaf_00 = %ld \n", index_leaf_00);
         printf("index_leaf_01 = %ld \n", index_leaf_01);
         printf("index_leaf_10 = %ld \n", index_leaf_10);
         printf("index_leaf_11 = %ld \n", index_leaf_11);
+        printf(">>>> type = %d\n", mtbdd_gettype(index_leaf_00));
     }
 
     // Make non-terminal nodes - middle layer, so variable x2
@@ -670,10 +664,10 @@ test_mtbdd_arithmic_plus_sub_times_functions_complex()
     mpc_t value_11;
     mpc_assign(value_11, 0.65, 1.65);
 
-    MTBDD index_leaf_00 = mtbdd_mpc(value_00);
-    MTBDD index_leaf_01 = mtbdd_mpc(value_01);
-    MTBDD index_leaf_10 = mtbdd_mpc(value_10);
-    MTBDD index_leaf_11 = mtbdd_mpc(value_11);
+    MTBDD index_leaf_00 = mtbdd_makeleaf(MPC_TYPE, (size_t)value_00);
+    MTBDD index_leaf_01 = mtbdd_makeleaf(MPC_TYPE, (size_t)value_01);
+    MTBDD index_leaf_10 = mtbdd_makeleaf(MPC_TYPE, (size_t)value_10);
+    MTBDD index_leaf_11 = mtbdd_makeleaf(MPC_TYPE, (size_t)value_11);
 
     if(true) {
         printf("index_leaf_00 = %ld \n", index_leaf_00);
@@ -701,7 +695,8 @@ test_mtbdd_arithmic_plus_sub_times_functions_complex()
     dd1 = index_root_node;
 
     // Compute a + b
-    dd_plus = mpc_plus(dd1, dd1);
+    //dd_plus = mpc_plus(dd1, dd1);
+    dd_plus = mtbdd_plus(dd1, dd1);
 
     if(false) {
         printf("dd_plus = %ld \n", dd_plus);
@@ -917,16 +912,17 @@ test_mtbdd_arithmic_min_max_functions_complex()
     mpc_t value_11;
     mpc_assign(value_11, 0.65, 1.65);
     
-    MTBDD index_leaf_00 = mtbdd_mpc(value_00);
-    MTBDD index_leaf_01 = mtbdd_mpc(value_01);
-    MTBDD index_leaf_10 = mtbdd_mpc(value_10);
-    MTBDD index_leaf_11 = mtbdd_mpc(value_11);
+    MTBDD index_leaf_00 = mtbdd_makeleaf(MPC_TYPE, (size_t)value_00);
+    MTBDD index_leaf_01 = mtbdd_makeleaf(MPC_TYPE, (size_t)value_01);
+    MTBDD index_leaf_10 = mtbdd_makeleaf(MPC_TYPE, (size_t)value_10);
+    MTBDD index_leaf_11 = mtbdd_makeleaf(MPC_TYPE, (size_t)value_11);
 
     if(true) {
         printf("index_leaf_00 = %ld \n", index_leaf_00);
         printf("index_leaf_01 = %ld \n", index_leaf_01);
         printf("index_leaf_10 = %ld \n", index_leaf_10);
         printf("index_leaf_11 = %ld \n", index_leaf_11);
+        printf(">>>> type = %d\n", mtbdd_gettype(index_leaf_00));
     }
 
     // Make non-terminal nodes - middle layer, so variable x2
@@ -951,7 +947,7 @@ test_mtbdd_arithmic_min_max_functions_complex()
     mpc_t value_0;
     mpc_assign(value_0, 1.25, 0.75);
     
-    MTBDD index_leaf_0 = mtbdd_mpc(value_0);
+    MTBDD index_leaf_0 = mtbdd_makeleaf(MPC_TYPE, (size_t)value_0);
 
     if(true) {
         printf("index_leaf_0 = %ld \n", index_leaf_0);
@@ -2406,8 +2402,8 @@ TASK_0(int, runtests)
 
     // Test 3
     printf("\nTesting mtbdd arithmic functions.\n");
-    //if (test_mtbdd_arithmic_functions_double()) return 1;
-    //if (test_mtbdd_arithmic_plus_sub_times_functions_complex()) return 1;
+    if (test_mtbdd_arithmic_functions_double()) return 1;
+    if (test_mtbdd_arithmic_plus_sub_times_functions_complex()) return 1;
     if (test_mtbdd_arithmic_min_max_functions_complex()) return 1;
 
     // Test 4

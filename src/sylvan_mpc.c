@@ -17,6 +17,7 @@
 #include <sylvan_int.h>
 #include <sylvan_mpc.h>
 
+#include <mpfr.h>
 #include <math.h>
 #include <string.h>
 
@@ -349,18 +350,6 @@ mpc_init()
 }
 
 /**
- * Create mpc leaf
- */
-MTBDD
-mtbdd_mpc(mpc_t val)
-{
-    uint32_t mpc_type = MPC_TYPE;
-    //uint32_t g_mpc_type = MPC_TYPE;
-
-    return mtbdd_makeleaf(mpc_type, (size_t)val);
-}
-
-/**
  * Assign a complex number based on real and imaginair double
 */
 void
@@ -372,7 +361,7 @@ mpc_assign(mpc_ptr complexnumber, double real, double imag)
 }
 
 /**
- * Compare mpc leafs
+ * Compare mpc leafs, re1 == re2 and im1 == im2
 */
 int
 mpc_compare(const uint64_t left, const uint64_t right)
@@ -384,20 +373,6 @@ mpc_compare(const uint64_t left, const uint64_t right)
 
     mpc_ptr x = (mpc_ptr)(size_t)left;
     mpc_ptr y = (mpc_ptr)(size_t)right;
-
-printf("sylvan_mpc.c mpc_compare()\n\n");
-
-    printf("prec x = %ld\n", x->re->_mpfr_prec);
-    printf("sign x = %d\n",  x->re->_mpfr_sign);
-    printf("exp  x = %ld\n", x->re->_mpfr_exp);
-    printf("d    x = %p\n",  x->re->_mpfr_d);
-
-    printf("prec y = %ld\n", y->re->_mpfr_prec);
-    printf("sign y = %d\n",  y->re->_mpfr_sign);
-    printf("exp  y = %ld\n", y->re->_mpfr_exp);
-    printf("d    y = %p\n",  y->re->_mpfr_d);
-
-printf("sylvan_mpc.c mpc_compare() = %d \n", mpc_cmp(x,y));
 
     return !mpc_cmp(x, y);  // mpc_cmp == 0 if x == y
 }
@@ -487,7 +462,7 @@ TASK_IMPL_2(MTBDD, mpc_op_plus, MTBDD*, pa, MTBDD*, pb)
         mpc_init2(x, MPC_PRECISION);
         mpc_add(x, ma, mb, MPC_ROUNDING);
 
-        MTBDD result = mtbdd_mpc((mpc_ptr)x);
+        MTBDD result = mtbdd_makeleaf(MPC_TYPE, (size_t)x);
         mpc_clear(x);
         return result;
     }
@@ -527,7 +502,7 @@ TASK_IMPL_2(MTBDD, mpc_op_times, MTBDD*, pa, MTBDD*, pb)
         mpc_t x;
         mpc_init2(x, MPC_PRECISION);
         mpc_mul(x, ma, mb, MPC_ROUNDING);
-        MTBDD result = mtbdd_mpc((mpc_ptr)x);
+        MTBDD result = mtbdd_makeleaf(MPC_TYPE, (size_t)x);
         mpc_clear(x);
         return result;
     }
@@ -559,7 +534,7 @@ TASK_IMPL_2(MTBDD, mpc_op_minus, MTBDD*, pa, MTBDD*, pb)
         mpc_t x;
         mpc_init2(x, MPC_PRECISION);
         mpc_neg(x, mb, MPC_ROUNDING);
-        MTBDD result = mtbdd_mpc((mpc_ptr)x);
+        MTBDD result = mtbdd_makeleaf(MPC_TYPE, (size_t)x);
         mpc_clear(x);
         return result; 
     }
@@ -577,7 +552,7 @@ TASK_IMPL_2(MTBDD, mpc_op_minus, MTBDD*, pa, MTBDD*, pb)
         mpc_t x;
         mpc_init2(x, MPC_PRECISION);
         mpc_sub(x, ma, mb, MPC_ROUNDING);
-        MTBDD result = mtbdd_mpc((mpc_ptr)x);
+        MTBDD result = mtbdd_makeleaf(MPC_TYPE, (size_t)x);
         mpc_clear(x);
         return result;
     }
@@ -617,7 +592,7 @@ TASK_IMPL_2(MTBDD, gmp_op_divide, MTBDD*, pa, MTBDD*, pb)
 */
 
 /**
- * Operation "min" for two mpq MTBDDs.
+ * Operation "min" for two mpc MTBDDs compared with magnitudes.
  */
 TASK_IMPL_2(MTBDD, mpc_op_min, MTBDD*, pa, MTBDD*, pb)
 {
@@ -653,7 +628,7 @@ TASK_IMPL_2(MTBDD, mpc_op_min, MTBDD*, pa, MTBDD*, pb)
 }
 
 /**
- * Operation "max" for two mpq MTBDDs.
+ * Operation "max" for two mpc MTBDDs compared with magnitudes.
  */
 TASK_IMPL_2(MTBDD, mpc_op_max, MTBDD*, pa, MTBDD*, pb)
 {

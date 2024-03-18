@@ -27,6 +27,8 @@
 
 #include <sylvan_cache.h>
 
+#include <sylvan_mpc.h>
+
 /* Primitives */
 int
 mtbdd_isleaf(MTBDD bdd)
@@ -439,13 +441,8 @@ mtbdd_makeleaf(uint32_t type, uint64_t value)
 
     int custom = sylvan_mt_has_custom_hash(type);
 
-printf("sylvan_mtbdd.c mtbdd_makeleaf(): type = %d, custom = %d \n", type, custom);
-
-    int created;
-    
+    int created;    
     uint64_t index = custom ? llmsset_lookupc(nodes, n.a, n.b, &created) : llmsset_lookup(nodes, n.a, n.b, &created);
-
-printf("sylvan_mtbdd.c mtbdd_makeleaf(): index = %ld, created = %d\n", index, created);
 
     if (index == 0) {
         RUN(sylvan_gc);
@@ -622,16 +619,16 @@ mtbdd_fraction(int64_t nom, uint64_t denom)
 }
 
 MTBDD
-mtbdd_complex_double(complex_double_t value)
+mtbdd_complex_mpc(complex_mpc_t value)
 {
-    uint32_t terminal_type = 3; // Custom type for complex double
+    uint32_t terminal_type = MPC_TYPE; // Custom type for complex mpc
     return mtbdd_makeleaf(terminal_type, *(uint64_t*)&value);
 }
 
 MTBDD
-mtbdd_complex_mpc(complex_mpc_t value)
+mtbdd_complex_double(complex_double_t value)
 {
-    uint32_t terminal_type = 4; // Custom type for complex mpc
+    uint32_t terminal_type = 4; // Custom type for complex double
     return mtbdd_makeleaf(terminal_type, *(uint64_t*)&value);
 }
 
@@ -921,7 +918,8 @@ TASK_IMPL_5(MTBDD, mtbdd_applyp, MTBDD, a, MTBDD, b, size_t, p, mtbdd_applyp_op,
 
 /**
  * Apply a unary operation <op> to <dd>.
- */TASK_IMPL_3(MTBDD, mtbdd_uapply, MTBDD, dd, mtbdd_uapply_op, op, size_t, param)
+ */
+TASK_IMPL_3(MTBDD, mtbdd_uapply, MTBDD, dd, mtbdd_uapply_op, op, size_t, param)
 {
     /* Maybe perform garbage collection */
     sylvan_gc_test();
@@ -1156,6 +1154,7 @@ TASK_IMPL_3(MTBDD, mtbdd_abstract, MTBDD, a, MTBDD, v, mtbdd_abstract_op, op)
 TASK_IMPL_2(MTBDD, mtbdd_op_plus, MTBDD*, pa, MTBDD*, pb)
 {
     MTBDD a = *pa, b = *pb;
+
     if (a == mtbdd_false) return b;
     if (b == mtbdd_false) return a;
 
@@ -1167,32 +1166,53 @@ TASK_IMPL_2(MTBDD, mtbdd_op_plus, MTBDD*, pa, MTBDD*, pb)
     mtbddnode_t nb = MTBDD_GETNODE(b);
 
     if (mtbddnode_isleaf(na) && mtbddnode_isleaf(nb)) {
+
         uint64_t val_a = mtbddnode_getvalue(na);
         uint64_t val_b = mtbddnode_getvalue(nb);
+        
         if (mtbddnode_gettype(na) == 0 && mtbddnode_gettype(nb) == 0) {
             // both integer
             return mtbdd_int64(*(int64_t*)(&val_a) + *(int64_t*)(&val_b));
+        
         } else if (mtbddnode_gettype(na) == 1 && mtbddnode_gettype(nb) == 1) {
             // both double
             return mtbdd_double(*(double*)(&val_a) + *(double*)(&val_b));
+        
         } else if (mtbddnode_gettype(na) == 2 && mtbddnode_gettype(nb) == 2) {
+        
             // both fraction
-            int64_t nom_a = (int32_t)(val_a>>32);  //TODO: no gmp here?
+            int64_t nom_a = (int32_t)(val_a>>32);
             int64_t nom_b = (int32_t)(val_b>>32);
             uint64_t denom_a = val_a&0xffffffff;
             uint64_t denom_b = val_b&0xffffffff;
+        
             // common cases
             if (nom_a == 0) return b;
             if (nom_b == 0) return a;
+        
             // equalize denominators
             uint32_t c = gcd(denom_a, denom_b);
             nom_a *= denom_b/c;
             nom_b *= denom_a/c;
             denom_a *= denom_b/c;
+        
             // add
             return mtbdd_fraction(nom_a + nom_b, denom_a);
+        
         } else {
-            assert(0); // failure
+
+            assert(mtbdd_gettype(a) == MPC_TYPE && mtbdd_gettype(b) == MPC_TYPE);
+
+            mpc_ptr ma = (mpc_ptr)val_a;
+            mpc_ptr mb = (mpc_ptr)val_b;
+
+            mpc_t x;
+            mpc_init2(x, MPC_PRECISION);
+            mpc_add(x, ma, mb, MPC_ROUNDING);
+
+            MTBDD result = mtbdd_makeleaf(MPC_TYPE, (size_t)x);
+            mpc_clear(x);
+            return result;        
         }
     }
 
