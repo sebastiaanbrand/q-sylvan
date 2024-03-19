@@ -62,16 +62,28 @@ void
 mpc_assign(mpc_ptr complexnumber, double real, double imag);
 
 /**
+ * Add two complex numbers with multiprecision
+ */
+void
+mpc_addition(mpc_ptr x, mpc_ptr z1, mpc_ptr z2);
+
+/**
+ * Multiply two complex numbers with multiprecision
+ */
+void
+mpc_multiplication(mpc_ptr x, mpc_ptr z1, mpc_ptr z2);
+
+/**
  * Compare MPC variables, re1 == re2 and im1 == im2
  */
 int 
-mpc_compare(const uint64_t left, const uint64_t right);
+mpc_compare(const uint64_t z1, const uint64_t z2);
 
 /**
  * Compare MPC variables absolute, |z1| == |z2|
  */
 int
-mpc_compare_abs(const uint64_t left, const uint64_t right);
+mpc_compare_abs(const uint64_t z1, const uint64_t z2);
 
 /**
  * Take minimum of left and right

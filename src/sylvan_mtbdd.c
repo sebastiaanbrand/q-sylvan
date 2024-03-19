@@ -3946,6 +3946,7 @@ MTBDD vector_array_to_mtbdd(VecArr_t *v_arr, int n, row_column_mode_t mode)
     }
 
     // TODO: if n > 1, recursive, divide in four parts, alternate_column_first
+    assert(n<2);
 
     return MTBDD_ZERO;
 }
@@ -3978,6 +3979,7 @@ MTBDD matrix_array_to_mtbdd(MatArr_t **M_arr, int n, row_column_mode_t mode)
     }
 
     // TODO: if n > 1, recursive, divide in four parts
+    assert(n<2);
 
     return MTBDD_ZERO;
 }
