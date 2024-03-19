@@ -41,25 +41,18 @@ rotl64(uint64_t x, int8_t r)
  *      create, 
  *      destroy, 
  *      and print.
- * 
  */
+
+/**
+ * Calculate the hash based in a mpc_t complex number
+ *
+ * The precision of the real and imaginary parts are
+ * limited, and corresponds to the long double type 
+ * which has a size in bytes of 16. 
+ */ 
 static uint64_t
 mpc_hash(const uint64_t val, const uint64_t seed)
 {
-    //
-    // Calculate the hash based in a mpc_t complex number
-    //
-    // The precision of the real and imaginary parts are
-    // limited, and corresponds to the long double type 
-    // which has a size in bytes of 16. 
-    //
-
-    // mpc_ptr x = (mpc_ptr)(size_t)val;
-
-    // const uint64_t prime = 1099511628211;
-    // uint64_t hash = seed;
-    // mp_limb_t *limbs; // Contains unsigned longs
-
     //
     // Calculate the hash based on the real part of the complex number val
     //
@@ -107,155 +100,31 @@ mpc_hash(const uint64_t val, const uint64_t seed)
         hash = hash * prime;
     }
 
-//
-    if(false) {
-        // Example conversion from long double to bytes
-        long double long_double = real_limited;
-
-        // Create an array of bytes
-        unsigned char bytes[sizeof(long double)];
-
-        // Copy the bytes of the long double to the array
-        memcpy(bytes, &long_double, sizeof(long double));
-
-        // Display the bytes in hexadecimal format
-        printf("real limited to long double value: %.17Lf\n", long_double);
-        printf("bytes in hexadecimal: ");
-    
-        for (size_t i = 0; i < sizeof(long double); ++i) {
-            printf("%02x ", bytes[i]);
-        }
-        printf("\n");
-
-        // Example conversion from long double to bytes
-        long_double = imag_limited;
-
-        // Copy the bytes of the long double to the array
-        memcpy(bytes, &long_double, sizeof(long double));
-
-        // Display the bytes in hexadecimal format
-        printf("imag limited to long double value: %.17Lf\n", long_double);
-        printf("bytes in hexadecimal: ");
-    
-        for (size_t i = 0; i < sizeof(long double); ++i) {
-            printf("%02x ", bytes[i]);
-        }
-        printf("\n");
-    }
-//
-
     mpfr_clear(real);
     mpfr_clear(imag);
 
     return hash ^ (hash >> 32);
 }
 
+
+/**
+ * This function is dynamically wired with the hash logic 
+ * as compare function when comparing a new 
+ * leaf with an existing leaf.
+ */
 static int
 mpc_equals(const uint64_t left, const uint64_t right)
 {
-    //
-    // This function is called by the unique table when comparing a new 
-    // leaf with an existing leaf.
-    //
-
-    mpc_ptr x = (mpc_ptr)(size_t)left;
-    mpc_ptr y = (mpc_ptr)(size_t)right;
-
-printf("mpc_equals analysis\n\n");
-
-    mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, x, MPC_ROUNDING);
-    putchar('\n');
-
-    printf("prec = %ld\n", x->re->_mpfr_prec);
-    printf("sign = %d\n",  x->re->_mpfr_sign);
-    printf("exp  = %ld\n", x->re->_mpfr_exp);
-    printf("d    = %p\n",  x->re->_mpfr_d);
-
-    printf("prec = %ld\n", y->re->_mpfr_prec);
-    printf("sign = %d\n",  y->re->_mpfr_sign);
-    printf("exp  = %ld\n", y->re->_mpfr_exp);
-    printf("d    = %p\n",  y->re->_mpfr_d);
-
-/*
-        // Example conversion from long double to bytes
-        long double long_double = real_limited;
-
-        // Create an array of bytes
-        unsigned char bytes[sizeof(long double)];
-
-        // Copy the bytes of the long double to the array
-        memcpy(bytes, &long_double, sizeof(long double));
-
-        // Display the bytes in hexadecimal format
-        printf("real limited to long double value: %.17Lf\n", long_double);
-        printf("bytes in hexadecimal: ");
-    
-        for (size_t i = 0; i < sizeof(long double); ++i) {
-            printf("%02x ", bytes[i]);
-        }
-        printf("\n");
-*/
-
-    mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, y, MPC_ROUNDING);
-    putchar('\n');
-
-    mpfr_t real_x;
-    mpfr_init2(real_x, MPC_PRECISION);
-    int res = mpc_real(real_x, (mpc_ptr)x, MPC_ROUNDING);
-printf("res = %d\n", res);
-    long double real_x_ld = mpfr_get_ld(real_x, MPC_ROUNDING);
-
-printf("real_x = %Lf\n", real_x_ld);
-
-    mpfr_t imag_x;
-    mpfr_init2(imag_x, MPC_PRECISION);
-    res = mpc_imag(imag_x, (mpc_ptr)x, MPC_ROUNDING);
-printf("res = %d\n", res);
-    long double imag_x_ld = mpfr_get_ld(imag_x, MPC_ROUNDING);
-
-printf("imag_x = %Lf\n", imag_x_ld);
-
-    mpfr_t real_y;
-    mpfr_init2(real_y, MPC_PRECISION);
-    res = mpc_real(real_y, (mpc_ptr)y, MPC_ROUNDING);
-printf("res = %d\n", res);
-    long double real_y_ld = mpfr_get_ld(real_y, MPC_ROUNDING);
-
-printf("real_y = %Lf\n", real_y_ld);
-
-    mpfr_t imag_y;
-    mpfr_init2(imag_y, MPC_PRECISION);
-printf("--\n");
-    res = mpc_imag(imag_y, (mpc_ptr)y, MPC_ROUNDING);
-printf("res = %d\n", res);
-    long double imag_y_ld = mpfr_get_ld(imag_y, MPC_ROUNDING);
-
-printf("imag_y = %Lf\n", imag_y_ld);
-
-    int result = 0;
-    result = ((real_x_ld == real_y_ld) && (imag_x_ld == imag_y_ld)) ? 1 : 0;
-
-    mpfr_clear(real_x);
-    mpfr_clear(imag_x);
-
-    mpfr_clear(real_y);
-    mpfr_clear(imag_y);
-
-    printf("sylvan_mpc.c mpc_equals() own method = %d \n", result);
-
-    printf("sylvan_mpc.c mpc_equals() mpc_cmp() = %d \n", mpc_cmp(x, y) ? 1 : 0);
-
-    return result;
+    return mpc_compare(left, right);
 }
 
+/**
+ * This function is called by the unique table when a leaf does not yet exist.
+ * We make a copy, which will be stored in the hash table to re-use the leaf.
+*/
 static void
 mpc_create(uint64_t *val)
 {
-    //
-    // This function is called by the unique table when a leaf does not yet exist.
-    // We make a copy, which will be stored in the hash table.
-    //
-
     mpc_ptr x = (mpc_ptr)malloc(sizeof(mpc_t));
     mpc_init2(x, MPC_PRECISION);
     mpc_set(x, *(mpc_ptr*)val, MPC_ROUNDING);
@@ -264,14 +133,13 @@ mpc_create(uint64_t *val)
     return;
 }
 
+/**
+ * This function is called by the unique table
+ * when a leaf is removed during garbage collection. 
+ */
 static void
 mpc_destroy(uint64_t val)
 {
-    //
-    // This function is called by the unique table
-    // when a leaf is removed during garbage collection. 
-    //
-
     mpc_clear((mpc_ptr)val);
     free((void*)val);
 
@@ -334,6 +202,7 @@ mpc_init()
 {
     // Register custom leaf type callback functions
     uint32_t mpc_type = sylvan_mt_create_type();
+    assert(mpc_type == MPC_TYPE);
 
     // Basic functions
     sylvan_mt_set_hash(mpc_type, mpc_hash);
@@ -341,8 +210,8 @@ mpc_init()
     sylvan_mt_set_create(mpc_type, mpc_create);
     sylvan_mt_set_destroy(mpc_type, mpc_destroy);
 
-    // Printing / storage functions
-    sylvan_mt_set_to_str(mpc_type, NULL);         // mpc_to_str);         Switched out for now.
+    // Printing / storage functions. Switched out for now.
+    sylvan_mt_set_to_str(mpc_type, NULL);         // mpc_to_str);         
     sylvan_mt_set_write_binary(mpc_type, NULL);   // mpc_write_binary);
     sylvan_mt_set_read_binary(mpc_type, NULL);    // mpc_read_binary);
 
@@ -351,7 +220,7 @@ mpc_init()
 
 /**
  * Assign a complex number based on real and imaginair double
-*/
+ */
 void
 mpc_assign(mpc_ptr complexnumber, double real, double imag)
 {
@@ -361,18 +230,37 @@ mpc_assign(mpc_ptr complexnumber, double real, double imag)
 }
 
 /**
- * Compare mpc leafs, re1 == re2 and im1 == im2
+ * Add two complex numbers with multiprecision
 */
-int
-mpc_compare(const uint64_t left, const uint64_t right)
+void
+mpc_addition(mpc_ptr x, mpc_ptr z1, mpc_ptr z2)
 {
-    //
-    // This function is called by the unique table when comparing a new 
-    // leaf with an existing leaf.
-    //
+    mpc_init2(x, MPC_PRECISION);
+    mpc_add(x, z1, z2, MPC_ROUNDING);
 
-    mpc_ptr x = (mpc_ptr)(size_t)left;
-    mpc_ptr y = (mpc_ptr)(size_t)right;
+    return;
+}
+
+/**
+ * Multiply two complex numbers with multiprecision
+*/
+void
+mpc_multiplication(mpc_ptr x, mpc_ptr z1, mpc_ptr z2)
+{
+    mpc_init2(x, MPC_PRECISION);
+    mpc_mul(x, z1, z2, MPC_ROUNDING);
+
+    return;
+}
+
+/**
+ * Compare mpc leafs, re1 == re2 and im1 == im2
+ */
+int
+mpc_compare(const uint64_t z1, const uint64_t z2)
+{
+    mpc_ptr x = (mpc_ptr)(size_t)z1;
+    mpc_ptr y = (mpc_ptr)(size_t)z2;
 
     return !mpc_cmp(x, y);  // mpc_cmp == 0 if x == y
 }
@@ -381,31 +269,12 @@ mpc_compare(const uint64_t left, const uint64_t right)
  * Compare mpc leafs absolute |z1| == |z2|
 */
 int
-mpc_compare_abs(const uint64_t left, const uint64_t right)
+mpc_compare_abs(const uint64_t z1, const uint64_t z2)
 {
-    //
-    // This function is called by the unique table when comparing a new 
-    // leaf with an existing leaf.
-    //
+    mpc_ptr x = (mpc_ptr)(size_t)z1;
+    mpc_ptr y = (mpc_ptr)(size_t)z2;
 
-    mpc_ptr x = (mpc_ptr)(size_t)left;
-    mpc_ptr y = (mpc_ptr)(size_t)right;
-
-printf("sylvan_mpc.c mpc_compare_abs()\n\n");
-
-    printf("prec x = %ld\n", x->re->_mpfr_prec);
-    printf("sign x = %d\n",  x->re->_mpfr_sign);
-    printf("exp  x = %ld\n", x->re->_mpfr_exp);
-    printf("d    x = %p\n",  x->re->_mpfr_d);
-
-    printf("prec y = %ld\n", y->re->_mpfr_prec);
-    printf("sign y = %d\n",  y->re->_mpfr_sign);
-    printf("exp  y = %ld\n", y->re->_mpfr_exp);
-    printf("d    y = %p\n",  y->re->_mpfr_d);
-
-printf("sylvan_mpc.c mpc_compare_abs() = %d \n", mpc_cmp_abs(x,y));
-
-    return !mpc_cmp_abs(x, y);  // mpc_cmp == 0 if x == y
+    return !mpc_cmp_abs(x, y);  // mpc_cmp_abs == 0 if x == y
 }
 
 /**
@@ -453,18 +322,7 @@ TASK_IMPL_2(MTBDD, mpc_op_plus, MTBDD*, pa, MTBDD*, pb)
     // If both leaves, compute plus
     if (mtbdd_isleaf(a) && mtbdd_isleaf(b)) {
 
-        assert(mtbdd_gettype(a) == MPC_TYPE && mtbdd_gettype(b) == MPC_TYPE);
-
-        mpc_ptr ma = (mpc_ptr)mtbdd_getvalue(a);
-        mpc_ptr mb = (mpc_ptr)mtbdd_getvalue(b);
-
-        mpc_t x;
-        mpc_init2(x, MPC_PRECISION);
-        mpc_add(x, ma, mb, MPC_ROUNDING);
-
-        MTBDD result = mtbdd_makeleaf(MPC_TYPE, (size_t)x);
-        mpc_clear(x);
-        return result;
+        return mpc_addition_core(a,b);
     }
 
     // Commutative, so swap a,b for better cache performance
@@ -474,6 +332,23 @@ TASK_IMPL_2(MTBDD, mpc_op_plus, MTBDD*, pa, MTBDD*, pb)
     }
 
     return mtbdd_invalid;
+}
+
+MTBDD
+mpc_addition_core(MTBDD a, MTBDD b)
+{
+    assert(mtbdd_gettype(a) == MPC_TYPE && mtbdd_gettype(b) == MPC_TYPE);
+
+    mpc_ptr ma = (mpc_ptr)mtbdd_getvalue(a);
+    mpc_ptr mb = (mpc_ptr)mtbdd_getvalue(b);
+
+    mpc_t x;
+    mpc_init2(x, MPC_PRECISION);
+    mpc_add(x, ma, mb, MPC_ROUNDING);
+
+    MTBDD result = mtbdd_makeleaf(MPC_TYPE, (size_t)x);
+    mpc_clear(x);
+    return result;
 }
 
 /**
@@ -494,17 +369,7 @@ TASK_IMPL_2(MTBDD, mpc_op_times, MTBDD*, pa, MTBDD*, pb)
     // If both leaves, compute multiplication
     if (mtbdd_isleaf(a) && mtbdd_isleaf(b)) {
 
-        assert(mtbdd_gettype(a) == MPC_TYPE && mtbdd_gettype(b) == MPC_TYPE);
-
-        mpc_ptr ma = (mpc_ptr)mtbdd_getvalue(a);
-        mpc_ptr mb = (mpc_ptr)mtbdd_getvalue(b);
-
-        mpc_t x;
-        mpc_init2(x, MPC_PRECISION);
-        mpc_mul(x, ma, mb, MPC_ROUNDING);
-        MTBDD result = mtbdd_makeleaf(MPC_TYPE, (size_t)x);
-        mpc_clear(x);
-        return result;
+        return mpc_multiply_core(a,b);
     }
 
     // Commutative, so swap a,b for better cache performance
@@ -514,6 +379,22 @@ TASK_IMPL_2(MTBDD, mpc_op_times, MTBDD*, pa, MTBDD*, pb)
     }
 
     return mtbdd_invalid;
+}
+
+MTBDD
+mpc_multiply_core(MTBDD a, MTBDD b)
+{
+    assert(mtbdd_gettype(a) == MPC_TYPE && mtbdd_gettype(b) == MPC_TYPE);
+
+    mpc_ptr ma = (mpc_ptr)mtbdd_getvalue(a);
+    mpc_ptr mb = (mpc_ptr)mtbdd_getvalue(b);
+
+    mpc_t x;
+    mpc_init2(x, MPC_PRECISION);
+    mpc_mul(x, ma, mb, MPC_ROUNDING);
+    MTBDD result = mtbdd_makeleaf(MPC_TYPE, (size_t)x);
+    mpc_clear(x);
+    return result;
 }
 
 /**
@@ -544,20 +425,26 @@ TASK_IMPL_2(MTBDD, mpc_op_minus, MTBDD*, pa, MTBDD*, pb)
     // If both leaves, compute minus
     if (mtbdd_isleaf(a) && mtbdd_isleaf(b)) {
 
-        assert(mtbdd_gettype(a) == MPC_TYPE && mtbdd_gettype(b) == MPC_TYPE);
-
-        mpc_ptr ma = (mpc_ptr)mtbdd_getvalue(a);
-        mpc_ptr mb = (mpc_ptr)mtbdd_getvalue(b);
-
-        mpc_t x;
-        mpc_init2(x, MPC_PRECISION);
-        mpc_sub(x, ma, mb, MPC_ROUNDING);
-        MTBDD result = mtbdd_makeleaf(MPC_TYPE, (size_t)x);
-        mpc_clear(x);
-        return result;
+        return mpc_substract_core(a,b);
     }
 
     return mtbdd_invalid;
+}
+
+MTBDD
+mpc_substract_core(MTBDD a, MTBDD b)
+{
+    assert(mtbdd_gettype(a) == MPC_TYPE && mtbdd_gettype(b) == MPC_TYPE);
+
+    mpc_ptr ma = (mpc_ptr)mtbdd_getvalue(a);
+    mpc_ptr mb = (mpc_ptr)mtbdd_getvalue(b);
+
+    mpc_t x;
+    mpc_init2(x, MPC_PRECISION);
+    mpc_sub(x, ma, mb, MPC_ROUNDING);
+    MTBDD result = mtbdd_makeleaf(MPC_TYPE, (size_t)x);
+    mpc_clear(x);
+    return result;
 }
 
 /**
@@ -608,13 +495,15 @@ TASK_IMPL_2(MTBDD, mpc_op_min, MTBDD*, pa, MTBDD*, pb)
     // Compute result for leaves
     if (mtbdd_isleaf(a) && mtbdd_isleaf(b)) {
 
+        return mpc_minimum_core(a,b);
+
         assert(mtbdd_gettype(a) == MPC_TYPE && mtbdd_gettype(b) == MPC_TYPE);
 
         mpc_ptr ma = (mpc_ptr)mtbdd_getvalue(a);
         mpc_ptr mb = (mpc_ptr)mtbdd_getvalue(b);
 
         int cmp = mpc_cmp_abs(ma, mb);
-        
+    
         return cmp < 0 ? a : b;
     }
 
@@ -625,6 +514,19 @@ TASK_IMPL_2(MTBDD, mpc_op_min, MTBDD*, pa, MTBDD*, pb)
     }
 
     return mtbdd_invalid;
+}
+
+MTBDD
+mpc_minimum_core(MTBDD a, MTBDD b)
+{
+    assert(mtbdd_gettype(a) == MPC_TYPE && mtbdd_gettype(b) == MPC_TYPE);
+
+    mpc_ptr ma = (mpc_ptr)mtbdd_getvalue(a);
+    mpc_ptr mb = (mpc_ptr)mtbdd_getvalue(b);
+
+    int cmp = mpc_cmp_abs(ma, mb);
+    
+    return cmp < 0 ? a : b;
 }
 
 /**
@@ -643,6 +545,8 @@ TASK_IMPL_2(MTBDD, mpc_op_max, MTBDD*, pa, MTBDD*, pb)
 
     // Compute result for leaves
     if (mtbdd_isleaf(a) && mtbdd_isleaf(b)) {
+
+        return mpc_maximum_core(a,b);
 
         assert(mtbdd_gettype(a) == MPC_TYPE && mtbdd_gettype(b) == MPC_TYPE);
 
@@ -663,33 +567,47 @@ TASK_IMPL_2(MTBDD, mpc_op_max, MTBDD*, pa, MTBDD*, pb)
     return mtbdd_invalid;
 }
 
+MTBDD
+mpc_maximum_core(MTBDD a, MTBDD b)
+{
+    assert(mtbdd_gettype(a) == MPC_TYPE && mtbdd_gettype(b) == MPC_TYPE);
+
+    mpc_ptr ma = (mpc_ptr)mtbdd_getvalue(a);
+    mpc_ptr mb = (mpc_ptr)mtbdd_getvalue(b);
+
+    int cmp = mpc_cmp_abs(ma, mb);
+    
+    return cmp > 0 ? a : b;
+}
+
 /**
- * Operation "neg" for one mpq MTBDD        TODO: refactor mpc_op_minus (substraction)
- *
-TASK_IMPL_2(MTBDD, gmp_op_neg, MTBDD, dd, size_t, p)
+ * Operation "neg" for one mpc MTBDD
+ */
+TASK_IMPL_2(MTBDD, mpc_op_neg, MTBDD, dd, size_t, p)
 {
     // Handle partial functions
     if (dd == mtbdd_false) return mtbdd_false;
 
     // Compute result for leaf
     if (mtbdd_isleaf(dd)) {
-        assert(mtbdd_gettype(dd) == gmp_type);
 
-        mpq_ptr m = (mpq_ptr)mtbdd_getvalue(dd);
+        assert(mtbdd_gettype(dd) == MPC_TYPE);
 
-        mpq_t mres;
-        mpq_init(mres);
-        mpq_neg(mres, m);
-        MTBDD res = mtbdd_gmp(mres);
-        mpq_clear(mres);
-        return res;
+        mpc_ptr mb = (mpc_ptr)mtbdd_getvalue(dd);
+
+        mpc_t x;
+        mpc_init2(x, MPC_PRECISION);
+        mpc_neg(x, mb, MPC_ROUNDING);
+        MTBDD result = mtbdd_makeleaf(MPC_TYPE, (size_t)x);
+        mpc_clear(x);
+        return result; 
     }
 
     return mtbdd_invalid;
     (void)p;
 }
 
-**
+/**
  * Operation "abs" for one mpq MTBDD
  *
 TASK_IMPL_2(MTBDD, gmp_op_abs, MTBDD, dd, size_t, p)

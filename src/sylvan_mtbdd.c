@@ -1201,18 +1201,8 @@ TASK_IMPL_2(MTBDD, mtbdd_op_plus, MTBDD*, pa, MTBDD*, pb)
         
         } else {
 
-            assert(mtbdd_gettype(a) == MPC_TYPE && mtbdd_gettype(b) == MPC_TYPE);
-
-            mpc_ptr ma = (mpc_ptr)val_a;
-            mpc_ptr mb = (mpc_ptr)val_b;
-
-            mpc_t x;
-            mpc_init2(x, MPC_PRECISION);
-            mpc_add(x, ma, mb, MPC_ROUNDING);
-
-            MTBDD result = mtbdd_makeleaf(MPC_TYPE, (size_t)x);
-            mpc_clear(x);
-            return result;        
+            // Complex numbers in multi precision
+            return mpc_addition_core(a,b);
         }
     }
 
@@ -1225,8 +1215,11 @@ TASK_IMPL_2(MTBDD, mtbdd_op_plus, MTBDD*, pa, MTBDD*, pb)
 }
 
 /**
- * Binary operation Minus (for MTBDDs of same type)
- * Only for MTBDDs where either all leaves are Boolean, or Integer, or Double.
+ * Binary operation Minus "substraction" (for MTBDDs of same type)
+ * 
+ * Only for MTBDDs where either all leaves are Boolean, or Integer, 
+ * or Double, or Multiprecision Complex.
+ * 
  * For Integer/Double MTBDDs, mtbdd_false is interpreted as "0" or "0.0".
  */
 TASK_IMPL_2(MTBDD, mtbdd_op_minus, MTBDD*, pa, MTBDD*, pb)
@@ -1239,31 +1232,44 @@ TASK_IMPL_2(MTBDD, mtbdd_op_minus, MTBDD*, pa, MTBDD*, pb)
     mtbddnode_t nb = MTBDD_GETNODE(b);
 
     if (mtbddnode_isleaf(na) && mtbddnode_isleaf(nb)) {
+
         uint64_t val_a = mtbddnode_getvalue(na);
         uint64_t val_b = mtbddnode_getvalue(nb);
+        
         if (mtbddnode_gettype(na) == 0 && mtbddnode_gettype(nb) == 0) {
+            
             // both integer
             return mtbdd_int64(*(int64_t*)(&val_a) - *(int64_t*)(&val_b));
+        
         } else if (mtbddnode_gettype(na) == 1 && mtbddnode_gettype(nb) == 1) {
+            
             // both double
             return mtbdd_double(*(double*)(&val_a) - *(double*)(&val_b));
+        
         } else if (mtbddnode_gettype(na) == 2 && mtbddnode_gettype(nb) == 2) {
+        
             // both fraction
             int64_t nom_a = (int32_t)(val_a>>32);
             int64_t nom_b = (int32_t)(val_b>>32);
             uint64_t denom_a = val_a&0xffffffff;
             uint64_t denom_b = val_b&0xffffffff;
+        
             // common cases
             if (nom_b == 0) return a;
+        
             // equalize denominators
             uint32_t c = gcd(denom_a, denom_b);
             nom_a *= denom_b/c;
             nom_b *= denom_a/c;
             denom_a *= denom_b/c;
+        
             // subtract
             return mtbdd_fraction(nom_a - nom_b, denom_a);
+        
         } else {
-            assert(0); // failure
+        
+            // Complex numbers in multi precision
+            return mpc_substract_core(a,b);
         }
     }
 
@@ -1271,8 +1277,11 @@ TASK_IMPL_2(MTBDD, mtbdd_op_minus, MTBDD*, pa, MTBDD*, pb)
 }
 
 /**
- * Binary operation Times (for MTBDDs of same type)
- * Only for MTBDDs where either all leaves are Boolean, or Integer, or Double.
+ * Binary operation times (for MTBDDs of same type)
+ * 
+ * Only for MTBDDs where either all leaves are Boolean, 
+ * or Integer, or Double, or Complex.
+ * 
  * For Integer/Double MTBDD, if either operand is mtbdd_false (not defined),
  * then the result is mtbdd_false (i.e. not defined).
  */
@@ -1289,9 +1298,12 @@ TASK_IMPL_2(MTBDD, mtbdd_op_times, MTBDD*, pa, MTBDD*, pb)
     mtbddnode_t nb = MTBDD_GETNODE(b);
 
     if (mtbddnode_isleaf(na) && mtbddnode_isleaf(nb)) {
+        
         uint64_t val_a = mtbddnode_getvalue(na);
         uint64_t val_b = mtbddnode_getvalue(nb);
+        
         if (mtbddnode_gettype(na) == 0 && mtbddnode_gettype(nb) == 0) {
+        
             // both integer
             int64_t i_a = *(int64_t*)(&val_a);
             int64_t i_b = *(int64_t*)(&val_b);
@@ -1300,7 +1312,9 @@ TASK_IMPL_2(MTBDD, mtbdd_op_times, MTBDD*, pa, MTBDD*, pb)
             if (i_a == 1) return b;
             if (i_b == 1) return a;
             return mtbdd_int64(i_a * i_b);
+        
         } else if (mtbddnode_gettype(na) == 1 && mtbddnode_gettype(nb) == 1) {
+        
             // both double
             double d_a = *(double*)(&val_a);
             double d_b = *(double*)(&val_b);
@@ -1309,7 +1323,9 @@ TASK_IMPL_2(MTBDD, mtbdd_op_times, MTBDD*, pa, MTBDD*, pb)
             if (d_b == 0.0) return b;
             if (d_b == 1.0) return a;
             return mtbdd_double(d_a * d_b);
+        
         } else if (mtbddnode_gettype(na) == 2 && mtbddnode_gettype(nb) == 2) {
+        
             // both fraction
             int64_t nom_a = (int32_t)(val_a>>32);
             int64_t nom_b = (int32_t)(val_b>>32);
@@ -1325,8 +1341,11 @@ TASK_IMPL_2(MTBDD, mtbdd_op_times, MTBDD*, pa, MTBDD*, pb)
             nom_a *= (nom_b/c);
             denom_a *= (denom_b/d);
             return mtbdd_fraction(nom_a, denom_a);
+
         } else {
-            assert(0); // failure
+
+            // Complex numbers in multi precision
+            return mpc_multiply_core(a,b);
         }
     }
 
@@ -1360,17 +1379,20 @@ TASK_IMPL_2(MTBDD, mtbdd_op_min, MTBDD*, pa, MTBDD*, pb)
     mtbddnode_t na = MTBDD_GETNODE(a);
     mtbddnode_t nb = MTBDD_GETNODE(b);
 
-    printf("2\n");
-
     if (mtbddnode_isleaf(na) && mtbddnode_isleaf(nb)) {
+        
         uint64_t val_a = mtbddnode_getvalue(na);
         uint64_t val_b = mtbddnode_getvalue(nb);
+        
         if (mtbddnode_gettype(na) == 0 && mtbddnode_gettype(nb) == 0) {
+        
             // both integer
             int64_t va = *(int64_t*)(&val_a);
             int64_t vb = *(int64_t*)(&val_b);
             return va < vb ? a : b;
+        
         } else if (mtbddnode_gettype(na) == 1 && mtbddnode_gettype(nb) == 1) {
+        
             // both double
             double va = *(double*)&val_a;
             double vb = *(double*)&val_b;
@@ -1378,7 +1400,9 @@ TASK_IMPL_2(MTBDD, mtbdd_op_min, MTBDD*, pa, MTBDD*, pb)
             printf("3  %lf  %lf \n", va, vb);
 
             return va < vb ? a : b;
+        
         } else if (mtbddnode_gettype(na) == 2 && mtbddnode_gettype(nb) == 2) {
+        
             // both fraction
             int64_t nom_a = (int32_t)(val_a>>32);
             int64_t nom_b = (int32_t)(val_b>>32);
@@ -1390,8 +1414,10 @@ TASK_IMPL_2(MTBDD, mtbdd_op_min, MTBDD*, pa, MTBDD*, pb)
             nom_b *= denom_a/c;
             // compute lowest
             return nom_a < nom_b ? a : b;
+        
         } else {
-            assert(0); // failure
+        
+            return mpc_minimum_core(a,b);
         }
     }
 
@@ -1422,32 +1448,43 @@ TASK_IMPL_2(MTBDD, mtbdd_op_max, MTBDD*, pa, MTBDD*, pb)
     mtbddnode_t nb = MTBDD_GETNODE(b);
 
     if (mtbddnode_isleaf(na) && mtbddnode_isleaf(nb)) {
+        
         uint64_t val_a = mtbddnode_getvalue(na);
         uint64_t val_b = mtbddnode_getvalue(nb);
+        
         if (mtbddnode_gettype(na) == 0 && mtbddnode_gettype(nb) == 0) {
+        
             // both integer
             int64_t va = *(int64_t*)(&val_a);
             int64_t vb = *(int64_t*)(&val_b);
             return va > vb ? a : b;
+        
         } else if (mtbddnode_gettype(na) == 1 && mtbddnode_gettype(nb) == 1) {
+        
             // both double
             double vval_a = *(double*)&val_a;
             double vval_b = *(double*)&val_b;
             return vval_a > vval_b ? a : b;
+        
         } else if (mtbddnode_gettype(na) == 2 && mtbddnode_gettype(nb) == 2) {
+        
             // both fraction
             int64_t nom_a = (int32_t)(val_a>>32);
             int64_t nom_b = (int32_t)(val_b>>32);
             uint64_t denom_a = val_a&0xffffffff;
             uint64_t denom_b = val_b&0xffffffff;
+        
             // equalize denominators
             uint32_t c = gcd(denom_a, denom_b);
             nom_a *= denom_b/c;
             nom_b *= denom_a/c;
+        
             // compute highest
             return nom_a > nom_b ? a : b;
+        
         } else {
-            assert(0); // failure
+        
+            return mpc_maximum_core(a,b);
         }
     }
 

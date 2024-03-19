@@ -123,12 +123,42 @@ TASK_DECL_2(MTBDD, mpc_op_max, MTBDD*, MTBDD*);
 /**
  * Operation "negate" for one mpc MTBDD
  */
-//TASK_DECL_2(MTBDD, mpc_op_neg, MTBDD, size_t);
+TASK_DECL_2(MTBDD, mpc_op_neg, MTBDD, size_t);
 
 /**
  * Operation "abs" for one mpc MTBDD
  */
 //TASK_DECL_2(MTBDD, mpc_op_abs, MTBDD, size_t);
+
+/**
+ * Addition core to be re-used.
+*/
+MTBDD
+mpc_addition_core(MTBDD a, MTBDD b);
+
+/**
+ * Substract core to be re-used.
+*/
+MTBDD
+mpc_substract_core(MTBDD a, MTBDD b);
+
+/**
+ * Multiply core to be re-used.
+*/
+MTBDD
+mpc_multiply_core(MTBDD a, MTBDD b);
+
+/**
+ * Minimum core to be re-used.
+*/
+MTBDD
+mpc_minimum_core(MTBDD a, MTBDD b);
+
+/**
+ * Maximum core to be re-used.
+*/
+MTBDD
+mpc_maximum_core(MTBDD a, MTBDD b);
 
 /**
  * Compute a + b
@@ -163,7 +193,7 @@ TASK_DECL_2(MTBDD, mpc_op_max, MTBDD*, MTBDD*);
 /**
  * Compute -a
  */
-//#define gmp_neg(a) mtbdd_uapply(a, TASK(gmp_op_neg), 0);
+#define mpc_negative(a) mtbdd_uapply(a, TASK(mpc_op_neg), 0);
 
 /**
  * Compute abs(a)

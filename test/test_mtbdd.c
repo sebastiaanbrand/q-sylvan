@@ -758,7 +758,8 @@ test_mtbdd_arithmic_plus_sub_times_functions_complex()
     mpc_clear(add_11);
 
     // Compute a . b
-    dd_times = mpc_times(dd1, dd1);
+    //dd_times = mpc_times(dd1, dd1);
+    dd_times = mtbdd_times(dd1, dd1);
     printf("dd_times = %ld \n", dd_times);
 
     if(false) {
@@ -917,7 +918,7 @@ test_mtbdd_arithmic_min_max_functions_complex()
     MTBDD index_leaf_10 = mtbdd_makeleaf(MPC_TYPE, (size_t)value_10);
     MTBDD index_leaf_11 = mtbdd_makeleaf(MPC_TYPE, (size_t)value_11);
 
-    if(true) {
+    if(false) {
         printf("index_leaf_00 = %ld \n", index_leaf_00);
         printf("index_leaf_01 = %ld \n", index_leaf_01);
         printf("index_leaf_10 = %ld \n", index_leaf_10);
@@ -1005,7 +1006,7 @@ test_mtbdd_arithmic_min_max_functions_complex()
     mpc_init2(max_11, MPC_PRECISION);
     mpc_maximum_abs(max_11, value_11, value_0);
 
-    if(true) {
+    if(false) {
         printf("dd1 values \n");
         mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, (mpc_ptr)value_00, MPC_ROUNDING);
         putchar('\n');
@@ -2260,6 +2261,58 @@ test_mtbdd_matrix_matrix_multiplication_1()
 }
 
 int
+test_mtbdd_matrix_matrix_multiplication_mpc_1()
+{
+    // 
+    //  K . M = W, M: 2^n x 2^n, L: 2^n x 2^n, W: 2^n x 2^n
+    //
+
+    int n = 1;
+
+    MatArr_t **K_arr = NULL;
+    allocate_matrix_array(&K_arr, n);
+
+    K_arr[0][0] =  1.0; K_arr[0][1] = 0.0; 
+    K_arr[1][0] =  1.0; K_arr[1][1] = 1.0;
+    MTBDD K = matrix_array_to_mtbdd(K_arr, n, ROW_WISE_MODE);
+
+    MatArr_t **M_arr = NULL;
+    allocate_matrix_array(&M_arr, n);
+
+    M_arr[0][0] =  1.0; M_arr[0][1] =  0.0;
+    M_arr[1][0] =  0.0; M_arr[1][1] =  2.0;
+    MTBDD M = matrix_array_to_mtbdd(M_arr, n, ROW_WISE_MODE);
+
+    int currentvar = 0;
+    MTBDD product = mtbdd_matmat_mult(K, M, 2*n, currentvar);
+
+    MatArr_t **W_arr = NULL;
+    allocate_matrix_array(&W_arr, n);
+    mtbdd_to_matrix_array(product, n, COLUMN_WISE_MODE, W_arr);
+
+    print_matrix_array(K_arr, n);
+    print_matrix_array(M_arr, n);
+    print_matrix_array(W_arr, n);
+
+    printf("W[0][0]: %lf %lf\n", W_arr[0][0], K_arr[0][0] * M_arr[0][0] + K_arr[0][1] * M_arr[1][0]);
+    printf("W[0][1]: %lf %lf\n", W_arr[0][1], K_arr[0][0] * M_arr[0][1] + K_arr[0][1] * M_arr[1][1]);
+    printf("W[1][0]: %lf %lf\n", W_arr[1][0], K_arr[1][0] * M_arr[0][0] + K_arr[1][1] * M_arr[1][0]);
+    printf("W[1][1]: %lf %lf\n", W_arr[1][1], K_arr[1][0] * M_arr[0][1] + K_arr[1][1] * M_arr[1][1]);
+
+    test_assert(W_arr[0][0] == K_arr[0][0] * M_arr[0][0] + K_arr[0][1] * M_arr[1][0]);
+    test_assert(W_arr[0][1] == K_arr[0][0] * M_arr[0][1] + K_arr[0][1] * M_arr[1][1]);
+
+    test_assert(W_arr[1][0] == K_arr[1][0] * M_arr[0][0] + K_arr[1][1] * M_arr[1][0]);
+    test_assert(W_arr[1][1] == K_arr[1][0] * M_arr[0][1] + K_arr[1][1] * M_arr[1][1]);
+
+    free_matrix_array(K_arr, n);
+    free_matrix_array(M_arr, n);
+    free_matrix_array(W_arr, n);
+
+    return 0;
+}
+
+int
 test_mtbdd_matrix_matrix_multiplication_2()
 {
     // 
@@ -2431,8 +2484,8 @@ TASK_0(int, runtests)
     // if (test_mtbdd_matrix_vector_multiplication_alt()) return 1;
     // if (test_mtbdd_matrix_vector_multiplication()) return 1;
     // if (test_mtbdd_matrix_matrix_multiplication_alt()) return 1;
-    // if (test_mtbdd_matrix_matrix_multiplication_1()) return 1;
-    // if (test_mtbdd_matrix_matrix_multiplication_2()) return 1;
+    if (test_mtbdd_matrix_matrix_multiplication_1()) return 1;
+    if (test_mtbdd_matrix_matrix_multiplication_2()) return 1;
     // if (test_matrix_matrix_multiplication_4x4()) return 1;
 
     return 0;
