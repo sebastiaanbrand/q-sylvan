@@ -161,6 +161,33 @@ MTBDD
 mpc_maximum_core(MTBDD a, MTBDD b);
 
 /**
+ * Matrix and vector array functions with mpc.
+ */
+int 
+allocate_matrix_array_mpc(mpc_ptr ***W_arr, int n);
+
+int 
+free_matrix_array_mpc(mpc_ptr **W_arr, int n);
+
+int
+print_vector_array_mpc(mpc_ptr *v_arr, int n);
+
+int
+print_matrix_array_mpc(mpc_ptr **W_arr, int n);
+
+MTBDD 
+vector_array_to_mtbdd_mpc(mpc_ptr *v_arr, int n, row_column_mode_t mode);
+
+MTBDD 
+matrix_array_to_mtbdd_mpc(mpc_ptr **M_arr, int n, row_column_mode_t mode);
+
+void 
+mtbdd_to_vector_array_mpc(MTBDD v, int n, row_column_mode_t mode, mpc_ptr *w);
+
+void 
+mtbdd_to_matrix_array_mpc(MTBDD M, int n, row_column_mode_t mode, mpc_ptr **W);
+
+/**
  * Compute a + b
  */
 #define mpc_plus(a, b) mtbdd_apply(a, b, TASK(mpc_op_plus))

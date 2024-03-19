@@ -3867,6 +3867,9 @@ print_vector_array(VecArr_t *v_arr, int n)
     return 0;
 }
 
+/**
+ * Print contents of the array given the element type
+*/
 int
 print_matrix_array(MatArr_t **W_arr, int n)
 {
@@ -3874,7 +3877,7 @@ print_matrix_array(MatArr_t **W_arr, int n)
         return 1;
 
     for(int row=0; row < (1 << n); row++)
-        for(int column=0; column < (1 << n); column++)
+        for(int column=0; column < (1 << n); column++) 
             printf("W_arr[%d][%d] = %lf\n", row, column, W_arr[row][column]);
 
     return 0;

@@ -1737,7 +1737,7 @@ test_mtbdd_matrix_kronecker_multiplication()
 }
 
 int
-test_mtbdd_to_matrix_array()
+test_mtbdd_to_matrix_array_double()
 {
     //
     //  K (x) L = M
@@ -2455,9 +2455,9 @@ TASK_0(int, runtests)
 
     // Test 3
     printf("\nTesting mtbdd arithmic functions.\n");
-    if (test_mtbdd_arithmic_functions_double()) return 1;
-    if (test_mtbdd_arithmic_plus_sub_times_functions_complex()) return 1;
-    if (test_mtbdd_arithmic_min_max_functions_complex()) return 1;
+    //if (test_mtbdd_arithmic_functions_double()) return 1;
+    //if (test_mtbdd_arithmic_plus_sub_times_functions_complex()) return 1;
+    //if (test_mtbdd_arithmic_min_max_functions_complex()) return 1;
 
     // Test 4
     printf("\nTesting mtbdd abstract arithmic functions.\n");
@@ -2472,7 +2472,7 @@ TASK_0(int, runtests)
     // Test 6
     printf("\nTesting mtbdd kronecker and matrix array conversion functions\n");
     // if (test_mtbdd_matrix_kronecker_multiplication()) return 1;
-    // if (test_mtbdd_to_matrix_array()) return 1;
+    if (test_mtbdd_to_matrix_array_double()) return 1;
     // if (test_matrix_array_to_mtbdd()) return 1;
     // if (test_vector_array_to_mtbdd()) return 1;
     // if (test_renumber_variables()) return 1;

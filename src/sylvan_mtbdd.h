@@ -1,6 +1,7 @@
 /*
  * Copyright 2011-2016 Formal Methods and Tools, University of Twente
  * Copyright 2016-2017 Tom van Dijk, Johannes Kepler University Linz
+ * Copyright 2023-2024 System Verification Lab, LIACS, Leiden University
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1237,8 +1238,12 @@ typedef enum {
     ALTERNATE_ROW_FIRST_WISE_MODE           // f(r0,r0,c1,r1) = W[r0r1][c0c1], r,c ={ 0, 1 }
 } row_column_mode_t;
 
-typedef float VecArr_t; // TODO: pointer to struct with array of struct as element. Struct contains complex number.
-typedef float MatArr_t;
+/**
+ * Matrix MTBDD conversion functions.
+*/
+
+typedef double VecArr_t;
+typedef double MatArr_t;
 
 int allocate_matrix_array(MatArr_t ***W_arr, int n);
 int free_matrix_array(MatArr_t **W_arr, int n);
