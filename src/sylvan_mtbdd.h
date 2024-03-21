@@ -1228,14 +1228,11 @@ MTBDD mtbdd_refs_sync(MTBDD mtbdd);
  * 
  */
 
-//#define COLUMN_WISE_MODE 1
-//#define ROW_WISE_MODE 2
-
 typedef enum {
     COLUMN_WISE_MODE,                       // f(r0,r1,c0,c1) = W[r0r1][c0c1], r,c ={ 0, 1 }
     ROW_WISE_MODE,                          // f(c0,c1,r0,r1) = W[r0r1][c0c1], r,c ={ 0, 1 }
     ALTERNATE_COLUMN_FIRST_WISE_MODE,       // f(c0,r0,c1,r1) = W[r0r1][c0c1], r,c ={ 0, 1 }
-    ALTERNATE_ROW_FIRST_WISE_MODE           // f(r0,r0,c1,r1) = W[r0r1][c0c1], r,c ={ 0, 1 }
+    ALTERNATE_ROW_FIRST_WISE_MODE           // f(c0,r0,c1,r1) = W[r0r1][c0c1], r,c ={ 0, 1 }
 } row_column_mode_t;
 
 /**
