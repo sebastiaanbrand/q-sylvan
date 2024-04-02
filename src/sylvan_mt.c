@@ -88,11 +88,12 @@ _sylvan_hash_cb(uint64_t a, uint64_t b, uint64_t seed)
 {
     customleaf_t *c = sylvan_mt_from_node(a, b);
 
-    printf(" "); fflush(stdout);
+    //printf(" "); fflush(stdout);
     uint64_t tmp = seed ^ a;
 
     if (c->hash_cb != NULL) {
         printf("custom hash cb = %p\n", c->hash_cb);
+        printf("hash_cb (%ld, %ld)\n", b, tmp);
         return c->hash_cb(b, tmp);
     }
     else {

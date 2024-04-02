@@ -53,6 +53,7 @@ rotl64(uint64_t x, int8_t r)
 static uint64_t
 mpc_hash(const uint64_t val, const uint64_t seed)
 {
+    printf("mpc_hash(%ld, %ld)\n", val, seed);
     //
     // Calculate the hash based on the real part of the complex number val
     //
@@ -62,11 +63,16 @@ mpc_hash(const uint64_t val, const uint64_t seed)
 
     // Convert the real part from mpc to long double type (16 x 8 bits = 128 bits) 
     long double real_limited = mpfr_get_ld(real, MPC_ROUNDING);
+    printf("    real  = %lf", (double) real_limited);
 
     // Convert the limited real part in long double (16 bytes in ARM64) to an array of bytes
     int nr_bytes_complex_parts = 16;
     unsigned char bytes[nr_bytes_complex_parts];
-    assert(nr_bytes_complex_parts == sizeof(long double)); // Check if the OS supports long double, if not exit this program
+    if (nr_bytes_complex_parts != sizeof(long double)) {
+        // Check if the OS supports long double, if not exit this program
+        fprintf(stderr, "64 bit int unsupported\n");
+        exit(1);
+    }
 
     memcpy(bytes, &real_limited, nr_bytes_complex_parts);
 
@@ -79,11 +85,14 @@ mpc_hash(const uint64_t val, const uint64_t seed)
         exit(1);
     }
 
+    printf(" [ ");
     for(int i=0; i<nr_bytes_complex_parts; i++) {
+        printf("%.2x ", bytes[i]); 
         hash = hash ^ bytes[i];
         hash = rotl64(hash, 47);
         hash = hash * prime;
     }
+    printf("]\n");
 
     //
     // Calculate the hash further based on the imaginary part of the complex number val
@@ -94,20 +103,26 @@ mpc_hash(const uint64_t val, const uint64_t seed)
 
     // Convert the imaginary part from mpc to long double type (16 x 8 bits = 128 bits) 
     long double imag_limited = mpfr_get_ld(imag, MPC_ROUNDING);
+    printf("    imag  = %lf", (double) real_limited);
 
     // Convert the limited imaginary part in long double (16 bytes in ARM64) to an array of bytes
     memcpy(bytes, &imag_limited, nr_bytes_complex_parts);
 
+    printf(" [ ");
     for(int i=0; i<nr_bytes_complex_parts; i++) {
+        printf("%.2x ", bytes[i]); 
         hash = hash ^ bytes[i];
         hash = rotl64(hash, 31);
         hash = hash * prime;
     }
+    printf("]\n");
 
     mpfr_clear(real);
     mpfr_clear(imag);
 
-    return hash ^ (hash >> 32);
+    hash = hash ^ (hash >> 32);
+    printf("    hash value = %lx\n\n", hash);
+    return hash;
 }
 
 

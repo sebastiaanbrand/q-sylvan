@@ -326,13 +326,21 @@ test_mtbdd_makenodes_and_leafs_complex()
     putchar('\n');
 
     MTBDD index_leaf_00 = mtbdd_makeleaf(MPC_TYPE, (size_t)value_00);
+    MTBDD index_leaf_00_cp = mtbdd_makeleaf(MPC_TYPE, (size_t)value_00);
     MTBDD index_leaf_01 = mtbdd_makeleaf(MPC_TYPE, (size_t)value_01);
     MTBDD index_leaf_10 = mtbdd_makeleaf(MPC_TYPE, (size_t)value_10);
     MTBDD index_leaf_11 = mtbdd_makeleaf(MPC_TYPE, (size_t)value_11);
 
+    printf("index_leaf_00 = %ld \n", index_leaf_00);
+    printf("index_leaf_01 = %ld \n", index_leaf_01);
+    printf("index_leaf_10 = %ld \n", index_leaf_10);
+    printf("index_leaf_11 = %ld \n", index_leaf_11);
+
     // Different terminals should have different indices
+    test_assert(index_leaf_00 == index_leaf_00_cp);
     test_assert(index_leaf_00 == index_leaf_01); 
     test_assert(index_leaf_01 != index_leaf_11);
+    exit(0);
 
     // Make non-terminal nodes - middle layer, so variable x2
     uint32_t index_x2 = 2;
