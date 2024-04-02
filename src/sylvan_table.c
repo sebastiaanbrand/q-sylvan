@@ -124,11 +124,12 @@ static const uint64_t CL_MASK_R   = ((LINE_SIZE) / 8) - 1;
 static inline uint64_t
 llmsset_lookup2(const llmsset_t dbs, uint64_t a, uint64_t b, int* created, const int custom)
 {
+
+//printf("sylvan_table.c llmsset_lookup2() nodes->hash_cb = %p\n", dbs->hash_cb);
+    //printf(" "); fflush(stdout);
+
     uint64_t hash_rehash = 14695981039346656037LLU;
     if (custom) {
-
-printf("sylvan_table.c llmsset_lookup2() nodes->hash_cb = %p\n", dbs->hash_cb);
-
         hash_rehash = dbs->hash_cb(a, b, hash_rehash);
     }
     else {
@@ -158,8 +159,6 @@ printf("sylvan_table.c llmsset_lookup2() nodes->hash_cb = %p\n", dbs->hash_cb);
                 if (custom) dbs->create_cb(&a, &b); // a is the node, b is the value
                 uint64_t *d_ptr = ((uint64_t*)dbs->data) + 2*cidx;
 
-printf("sylvan_table.c llmsset_lookup2() dbs->data = %p cidx = %ld\n", dbs->data, cidx);
-
                 d_ptr[0] = a;
                 d_ptr[1] = b;
             }
@@ -176,8 +175,6 @@ printf("sylvan_table.c llmsset_lookup2() dbs->data = %p cidx = %ld\n", dbs->data
             uint64_t d_idx = v & MASK_INDEX;
             uint64_t *d_ptr = ((uint64_t*)dbs->data) + 2*d_idx;
             if (custom) {
-
-printf("sylvan_table.c llmsset_lookup2() dbs->data = %p d_idx = %ld\n", dbs->data, d_idx);
 
                 if (dbs->equals_cb(a, b, d_ptr[0], d_ptr[1])) {
                     if (cidx != 0) {
@@ -225,9 +222,6 @@ llmsset_lookup(const llmsset_t dbs, const uint64_t a, const uint64_t b, int* cre
 uint64_t
 llmsset_lookupc(const llmsset_t dbs, const uint64_t a, const uint64_t b, int* created)
 {
-
-printf("sylvan_table.c llmsset_lookupc(custom=1) dbs->hash_cb = %p\n", dbs->hash_cb);
-
     return llmsset_lookup2(dbs, a, b, created, 1);
 }
 
@@ -343,9 +337,6 @@ llmsset_create(size_t initial_size, size_t max_size)
     dbs->bitmap2[0] = 0xc000000000000000LL;
 
     dbs->hash_cb = NULL;
-
-printf("sylvan_table.c llmsset_create() dbs->hash_cb = %p\n", dbs->hash_cb);
-
     dbs->equals_cb = NULL;
     dbs->create_cb = NULL;
     dbs->destroy_cb = NULL;

@@ -72,8 +72,6 @@ _sylvan_create_cb(uint64_t *a, uint64_t *b)
 {
     customleaf_t *c = sylvan_mt_from_node(*a, *b);
 
-printf("sylvan_mt.c _sylvan_create_cb() c->create_cb = %p\n", c->create_cb);
-
     if (c->create_cb != NULL) c->create_cb(b);
 }
 
@@ -90,22 +88,24 @@ _sylvan_hash_cb(uint64_t a, uint64_t b, uint64_t seed)
 {
     customleaf_t *c = sylvan_mt_from_node(a, b);
 
-printf("sylvan_mt.c _sylvan_hash_cb() c->hash_cb = %p\n", c->hash_cb);
+    printf(" "); fflush(stdout);
+    uint64_t tmp = seed ^ a;
 
-    if (c->hash_cb != NULL) return c->hash_cb(b, seed ^ a);
-    else return sylvan_tabhash16(a, b, seed);
+    if (c->hash_cb != NULL) {
+        printf("custom hash cb = %p\n", c->hash_cb);
+        return c->hash_cb(b, tmp);
+    }
+    else {
+        printf("default hash\n");
+        return sylvan_tabhash16(a, b, seed);
+    }
 }
 
 static int
 _sylvan_equals_cb(uint64_t a, uint64_t b, uint64_t aa, uint64_t bb)
 {
-
-printf("sylvan_mt.c _sylvan_equals_cb() a = %ld, b = %ld, aa = %ld, bb = %ld \n", a, b, aa, bb);
-
     if (a != aa) return 0;
     customleaf_t *c = sylvan_mt_from_node(a, b);
-
-printf("sylvan_mt.c _sylvan_equals_cb() c->equals_cb = %p\n", c->equals_cb);
 
     if (c->equals_cb != NULL) return c->equals_cb(b, bb);
     else return b == bb ? 1 : 0;
@@ -126,18 +126,12 @@ sylvan_mt_create_type()
 void sylvan_mt_set_hash(uint32_t type, sylvan_mt_hash_cb hash_cb)
 {
     customleaf_t *c = cl_registry + type;
-
-printf("sylvan_mt.c sylvan_mt_set_hash() hash_cb = %p for type %d\n\n", hash_cb, type);
-    
     c->hash_cb = hash_cb;
 }
 
 void sylvan_mt_set_equals(uint32_t type, sylvan_mt_equals_cb equals_cb)
 {
     customleaf_t *c = cl_registry + type;
-
-printf("sylvan_mt.c sylvan_mt_set_equals() equals_cb = %p for type %d\n\n", equals_cb, type);
-
     c->equals_cb = equals_cb;
 }
 
@@ -201,8 +195,6 @@ sylvan_init_mt()
     // Tell llmsset to use our custom hooks
     llmsset_set_custom(nodes, _sylvan_hash_cb, _sylvan_equals_cb, _sylvan_create_cb, _sylvan_destroy_cb);
 
-printf("sylvan_mt.c sylvan_init_mt() nodes->hash_cb = %p\n", nodes->hash_cb);
-
     // Initialize data structures
     cl_registry_size = CL_REGISTRY_SIZE;
     cl_registry = (customleaf_t *)calloc(sizeof(customleaf_t), cl_registry_size);
@@ -217,8 +209,6 @@ sylvan_mt_has_custom_hash(uint32_t type)
 {
     assert(type < cl_registry_count);
     customleaf_t *c = cl_registry + type;
-
-printf("sylvan_mt.c sylvan_mt_has_custom_hash() c->hash_cb = %p\n", c->hash_cb);
 
     return c->hash_cb != NULL ? 1 : 0;
 }
@@ -278,8 +268,6 @@ sylvan_mt_hash(uint32_t type, uint64_t value, uint64_t seed)
 {
     assert(type < cl_registry_count);
     customleaf_t *c = cl_registry + type;
-
-printf("sylvan_mt.c sylvan_mt_hash() c->hash_cb = %p\n", c->hash_cb);
 
     if (c->hash_cb != NULL) return c->hash_cb(value, seed);
     else return sylvan_tabhash16((uint64_t)type, value, seed);

@@ -1342,10 +1342,14 @@ TASK_IMPL_2(MTBDD, mtbdd_op_times, MTBDD*, pa, MTBDD*, pb)
             denom_a *= (denom_b/d);
             return mtbdd_fraction(nom_a, denom_a);
 
-        } else {
+        } else if (mtbddnode_gettype(na) == MPC_TYPE && mtbddnode_gettype(nb) == MPC_TYPE) {
 
             // Complex numbers in multi precision
             return mpc_multiply_core(a,b);
+
+        } else {
+
+            assert(0);
         }
     }
 

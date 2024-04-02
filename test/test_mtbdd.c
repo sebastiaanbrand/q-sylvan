@@ -1892,8 +1892,6 @@ test_determine_top_var_and_leafcount_double()
     int leafcount = 0;
     determine_top_var_and_leafcount(M, &minvar, &maxvar, &leafcount);
 
-    printf("M: maxvar = %d, minvar = %d, leaves = %d\n", maxvar, minvar, leafcount);
-
     test_assert(maxvar == -1);
     test_assert(minvar == 100);
     test_assert(leafcount == 1);
@@ -1908,8 +1906,6 @@ test_determine_top_var_and_leafcount_double()
     minvar = 100;
     leafcount = 0;
     determine_top_var_and_leafcount(M, &minvar, &maxvar, &leafcount);
-
-    printf("M: maxvar = %d, minvar = %d, leaves = %d\n", maxvar, minvar, leafcount);
 
     test_assert(maxvar == 4);
     test_assert(minvar == 3);
@@ -2550,13 +2546,13 @@ int main()
     // Simple Sylvan initialization, also initialize BDD, MTBDD and LDD support
     sylvan_set_sizes(1LL<<20, 1LL<<20, 1LL<<16, 1LL<<16);
     sylvan_init_package(); 
-    //sylvan_init_bdd(); 
     
-    sylvan_init_mtbdd();            // TODO: Make argument for terminal type
-    printf("mpc_type = %d\n", mpc_init());        // Generate the mpc_type and set the hash callbacks for this custom type
+    sylvan_init_mtbdd();
 
-    //sylvan_init_package(); // Restore the callbacks for ldd
-    //sylvan_init_ldd();
+    uint32_t mpc_type = mpc_init();
+    printf("mpc_type = %d\n", mpc_type);
+
+    assert(mpc_type == MPC_TYPE);
 
     printf("Sylvan initialization complete.\n");
 
