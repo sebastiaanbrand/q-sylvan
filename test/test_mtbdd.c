@@ -448,10 +448,10 @@ test_mtbdd_arithmic_functions_double()
     // Compute a - b
     dd_minus = mtbdd_minus(dd1, dd1);
     
-    assert(mtbdd_getdouble(mtbdd_getlow( mtbdd_getlow(dd_minus) )) == value_00-value_00);
-    assert(mtbdd_getdouble(mtbdd_gethigh(mtbdd_getlow(dd_minus) )) == value_01-value_01);
-    assert(mtbdd_getdouble(mtbdd_getlow( mtbdd_gethigh(dd_minus))) == value_10-value_10);
-    assert(mtbdd_getdouble(mtbdd_gethigh(mtbdd_gethigh(dd_minus))) == value_11-value_11);
+    test_assert(mtbdd_getdouble(mtbdd_getlow( mtbdd_getlow(dd_minus) )) == value_00-value_00);
+    test_assert(mtbdd_getdouble(mtbdd_gethigh(mtbdd_getlow(dd_minus) )) == value_01-value_01);
+    test_assert(mtbdd_getdouble(mtbdd_getlow( mtbdd_gethigh(dd_minus))) == value_10-value_10);
+    test_assert(mtbdd_getdouble(mtbdd_gethigh(mtbdd_gethigh(dd_minus))) == value_11-value_11);
 
     // Compute a * b
     dd_times = mtbdd_times(dd1, dd1);

@@ -4212,7 +4212,7 @@ void array_matrix_matrix_product(MatArr_t **M1, MatArr_t **M2, int n, MatArr_t *
  * 
  */
 
-MTBDD mtbdd_is_result_in_cache_3(int function, uint64_t num1, uint64_t num2, uint64_t num3)
+MTBDD mtbdd_is_result_in_cache_3(uint64_t function, uint64_t num1, uint64_t num2, uint64_t num3)
 {
     MTBDD result = MTBDD_ZERO;
 
@@ -4224,7 +4224,7 @@ MTBDD mtbdd_is_result_in_cache_3(int function, uint64_t num1, uint64_t num2, uin
     return result;
 }
 
-void mtbdd_put_result_in_cache_3(int function, uint64_t num1, uint64_t num2, uint64_t num3, uint64_t result)
+void mtbdd_put_result_in_cache_3(uint64_t function, uint64_t num1, uint64_t num2, uint64_t num3, uint64_t result)
 {
     if(!cache_put3(function, num1, num2, num3, result)) {
         printf("Error in cache_put4()\n");
@@ -4233,7 +4233,7 @@ void mtbdd_put_result_in_cache_3(int function, uint64_t num1, uint64_t num2, uin
     return;
 }
 
-MTBDD mtbdd_is_result_in_cache_4(int function, uint64_t num1, uint64_t num2, uint64_t num3, uint64_t num4)
+MTBDD mtbdd_is_result_in_cache_4(uint64_t function, uint64_t num1, uint64_t num2, uint64_t num3, uint64_t num4)
 {
     MTBDD result = MTBDD_ZERO;
 
@@ -4245,7 +4245,7 @@ MTBDD mtbdd_is_result_in_cache_4(int function, uint64_t num1, uint64_t num2, uin
     return result;
 }
 
-void mtbdd_put_result_in_cache_4(int function, uint64_t num1, uint64_t num2, uint64_t num3, uint64_t num4, uint64_t result)
+void mtbdd_put_result_in_cache_4(uint64_t function, uint64_t num1, uint64_t num2, uint64_t num3, uint64_t num4, uint64_t result)
 {
     if(!cache_put4(function, num1, num2, num3, num4, result)) {
         printf("Error in cache_put4()\n");

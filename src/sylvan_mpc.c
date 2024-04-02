@@ -73,7 +73,11 @@ mpc_hash(const uint64_t val, const uint64_t seed)
     const uint64_t prime = 1099511628211;
     uint64_t hash = seed;
     int nr_bytes_hash = 8;
-    assert(nr_bytes_hash == sizeof(uint64_t)); // Check if the OS supports long double, if not exit this program
+    if (nr_bytes_hash != sizeof(uint64_t)) {
+        // Check if the OS supports long double, if not exit this program
+        fprintf(stderr, "64 bit int unsupported\n");
+        exit(1);
+    }
 
     for(int i=0; i<nr_bytes_complex_parts; i++) {
         hash = hash ^ bytes[i];
