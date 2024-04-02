@@ -947,20 +947,20 @@ test_mtbdd_abstract_plus_function_1_double()
     var_set = mtbdd_set_from_array(var, length_var_set);
     mtbdd_set_to_array(var_set, var_);
 
-    assert(mtbdd_set_count(var_set) == length_var_set);
-    assert(var[0] == var_[0]);
-    if (length_var_set > 1) assert(var[1] == var_[1]);
+    test_assert(mtbdd_set_count(var_set) == length_var_set);
+    test_assert(var[0] == var_[0]);
+    if (length_var_set > 1) test_assert(var[1] == var_[1]);
 
     // Compute abstract_plus(dd, var_set)
     MTBDD dd_plus = mtbdd_abstract_plus(dd, var_set);
 
     // Print dd_plus
-    FILE *out = fopen("..//Testing//Temporary//output_dd_plus_1.dot", "w");
-    mtbdd_fprintdot(out, dd_plus);
-    fclose(out);
+    //FILE *out = fopen("..//Testing//Temporary//output_dd_plus_1.dot", "w");
+    //mtbdd_fprintdot(out, dd_plus);
+    //fclose(out);
 
-    assert(mtbdd_getdouble(mtbdd_getlow(dd_plus))  == 0.6);
-    assert(mtbdd_getdouble(mtbdd_gethigh(dd_plus)) == 1.5);
+    test_assert(mtbdd_getdouble(mtbdd_getlow(dd_plus))  == 0.6);
+    test_assert(mtbdd_getdouble(mtbdd_gethigh(dd_plus)) == 1.5);
 
     return 0;
 }
@@ -1045,17 +1045,17 @@ test_mtbdd_abstract_plus_function_2_double()
     var_set = mtbdd_set_from_array(var, length_var_set);
     mtbdd_set_to_array(var_set, var_);
 
-    assert(mtbdd_set_count(var_set) == length_var_set);
-    assert(var[0] == var_[0]);
-    if (length_var_set > 1) assert(var[1] == var_[1]);
+    test_assert(mtbdd_set_count(var_set) == length_var_set);
+    test_assert(var[0] == var_[0]);
+    if (length_var_set > 1) test_assert(var[1] == var_[1]);
 
     // Compute abstract_plus(dd, var_set)
     MTBDD dd_plus = mtbdd_abstract_plus(dd, var_set);
 
     // Print dd_plus
-    FILE *out = fopen("..//Testing//Temporary//output_dd_plus_2.dot", "w");
-    mtbdd_fprintdot(out, dd_plus);
-    fclose(out);
+    //FILE *out = fopen("..//Testing//Temporary//output_dd_plus_2.dot", "w");
+    //mtbdd_fprintdot(out, dd_plus);
+    //fclose(out);
 
     // Print all kinds of gets
     printf("dd_plus       = %ld\n", dd_plus);
@@ -1069,8 +1069,8 @@ test_mtbdd_abstract_plus_function_2_double()
     printf("getlow(low)   00 = %lf\n", mtbdd_getdouble( mtbdd_getlow(dd_plus)));
     printf("getlow(high)  10 = %lf\n", mtbdd_getdouble( mtbdd_gethigh(dd_plus)));
 
-    assert(mtbdd_getdouble(mtbdd_getlow(dd_plus))  == 1.0);
-    assert(mtbdd_getdouble(mtbdd_gethigh(dd_plus)) == 1.1);
+    test_assert(mtbdd_getdouble(mtbdd_getlow(dd_plus))  == 1.0);
+    test_assert(mtbdd_getdouble(mtbdd_gethigh(dd_plus)) == 1.1);
 
     return 0;
 }
@@ -1154,17 +1154,17 @@ test_mtbdd_abstract_plus_min_max_times_function_3_double()
     var_set = mtbdd_set_from_array(var, length_var_set);
     mtbdd_set_to_array(var_set, var_);
 
-    assert(mtbdd_set_count(var_set) == length_var_set);
-    assert(var[0] == var_[0]);
-    if (length_var_set > 1) assert(var[1] == var_[1]);
+    test_assert(mtbdd_set_count(var_set) == length_var_set);
+    test_assert(var[0] == var_[0]);
+    if (length_var_set > 1) test_assert(var[1] == var_[1]);
 
     // Compute abstract_plus(dd, var_set)
     MTBDD dd_plus = mtbdd_abstract_plus(dd, var_set);
 
     // Print dd_plus
-    FILE *out = fopen("..//Testing//Temporary//output_dd_plus_3.dot", "w");
-    mtbdd_fprintdot(out, dd_plus);
-    fclose(out);
+    //FILE *out = fopen("..//Testing//Temporary//output_dd_plus_3.dot", "w");
+    //mtbdd_fprintdot(out, dd_plus);
+    //fclose(out);
 
     // Print all kinds of gets
     printf("dd_plus       = %ld\n", dd_plus);
@@ -1175,20 +1175,20 @@ test_mtbdd_abstract_plus_min_max_times_function_3_double()
     printf("gethigh       = %ld\n", mtbdd_gethigh(dd_plus));
     printf("getvar        = %d \n", mtbdd_getvar(dd_plus));  // index_x0 undefined
 
-    assert(mtbdd_getdouble(dd_plus)  == 2.1);
+    test_assert(mtbdd_getdouble(dd_plus)  == 2.1);
 
     // Other operations
     MTBDD dd_min = mtbdd_abstract_min(dd, var_set);
     printf("getdouble     = %lf\n", mtbdd_getdouble(dd_min));
-    assert(mtbdd_getdouble(dd_min) == 0.25);
+    test_assert(mtbdd_getdouble(dd_min) == 0.25);
 
     MTBDD dd_max = mtbdd_abstract_max(dd, var_set);
     printf("getdouble     = %lf\n", mtbdd_getdouble(dd_max));
-    assert(mtbdd_getdouble(dd_max) == 0.75);
+    test_assert(mtbdd_getdouble(dd_max) == 0.75);
 
     MTBDD dd_times = mtbdd_abstract_times(dd, var_set);
     printf("getdouble     = %lf\n", mtbdd_getdouble(dd_times));
-    assert(mtbdd_getdouble(dd_times) == 0.25 * 0.75 * 0.35 * 0.75 );
+    test_assert(mtbdd_getdouble(dd_times) == 0.25 * 0.75 * 0.35 * 0.75 );
 
     return 0;
 }
@@ -1327,14 +1327,14 @@ test_mtbdd_and_abstract_plus_function_double()
     MTBDD w = mtbdd_and_abstract_plus(M, v, var_set);
 
     // Print w
-    FILE *out = fopen("..//Testing//Temporary//output_and_abstract_plus_w.dot", "w");
-    mtbdd_fprintdot(out, w);
-    fclose(out);
+    //FILE *out = fopen("..//Testing//Temporary//output_and_abstract_plus_w.dot", "w");
+    //mtbdd_fprintdot(out, w);
+    //fclose(out);
 
     double w0 = mtbdd_getdouble(mtbdd_getlow(w));
     double w1 = mtbdd_getdouble(mtbdd_gethigh(w));
 
-    assert(mtbdd_getvar(w) == 2);
+    test_assert(mtbdd_getvar(w) == 2);
     test_assert(w0 == 0.25 * 3.0 + 0.75 * 2.0);
     test_assert(w1 == 0.35 * 3.0 + 0.65 * 2.0);
 
@@ -1348,11 +1348,11 @@ test_mtbdd_and_abstract_plus_function_double()
     MTBDD w_ = mtbdd_and_abstract_plus(M_, w, var_set);
 
     // Print w
-    out = fopen("..//Testing//Temporary//output_and_abstract_plus_mw.dot", "w");
-    mtbdd_fprintdot(out, w_);
-    fclose(out);
+    //out = fopen("..//Testing//Temporary//output_and_abstract_plus_mw.dot", "w");
+    //mtbdd_fprintdot(out, w_);
+    //fclose(out);
 
-    assert(mtbdd_getvar(w_) == 1);
+    test_assert(mtbdd_getvar(w_) == 1);
     test_assert(mtbdd_getdouble(mtbdd_getlow(w_))  == 0.25 * w0 + 0.75 * w1);
     test_assert(mtbdd_getdouble(mtbdd_gethigh(w_)) == 0.35 * w0 + 0.65 * w1);
 
@@ -2552,7 +2552,7 @@ int main()
     uint32_t mpc_type = mpc_init();
     printf("mpc_type = %d\n", mpc_type);
 
-    assert(mpc_type == MPC_TYPE);
+    test_assert(mpc_type == MPC_TYPE);
 
     printf("Sylvan initialization complete.\n");
 
