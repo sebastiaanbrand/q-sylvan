@@ -124,10 +124,6 @@ static const uint64_t CL_MASK_R   = ((LINE_SIZE) / 8) - 1;
 static inline uint64_t
 llmsset_lookup2(const llmsset_t dbs, uint64_t a, uint64_t b, int* created, const int custom)
 {
-
-//printf("sylvan_table.c llmsset_lookup2() nodes->hash_cb = %p\n", dbs->hash_cb);
-    //printf(" "); fflush(stdout);
-
     uint64_t hash_rehash = 14695981039346656037LLU;
     if (custom) {
         hash_rehash = dbs->hash_cb(a, b, hash_rehash);

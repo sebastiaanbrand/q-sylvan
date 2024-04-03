@@ -340,7 +340,6 @@ test_mtbdd_makenodes_and_leafs_complex()
     test_assert(index_leaf_00 == index_leaf_00_cp);
     test_assert(index_leaf_00 == index_leaf_01); 
     test_assert(index_leaf_01 != index_leaf_11);
-    exit(0);
 
     // Make non-terminal nodes - middle layer, so variable x2
     uint32_t index_x2 = 2;

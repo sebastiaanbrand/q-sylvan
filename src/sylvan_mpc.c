@@ -46,14 +46,18 @@ rotl64(uint64_t x, int8_t r)
 /**
  * Calculate the hash based in a mpc_t complex number
  *
- * The precision of the real and imaginary parts are
- * limited, and corresponds to the long double type 
- * which has a size in bytes of 16. 
+ * NOTE: The current implementation of the hashing function first converts the
+ * mpc (mpfr) values to "long doubles".
+ *      - This limits the precision during hashing, but *should not* affect the
+ *        precision of the calculation, since it's the mpc values which are
+ *        actually stored.
+ *      - IMPORTANT: The implementation assumes GCC long doubles, which only use
+ *        80 bits (10 bytes) instead of 128 bits (16 bytes).
+ *        TODO: change mpc_hash to something which isn't compiler dependent.
  */ 
 static uint64_t
 mpc_hash(const uint64_t val, const uint64_t seed)
 {
-    printf("mpc_hash(%ld, %ld)\n", val, seed);
     //
     // Calculate the hash based on the real part of the complex number val
     //
@@ -63,36 +67,28 @@ mpc_hash(const uint64_t val, const uint64_t seed)
 
     // Convert the real part from mpc to long double type (16 x 8 bits = 128 bits) 
     long double real_limited = mpfr_get_ld(real, MPC_ROUNDING);
-    printf("    real  = %lf", (double) real_limited);
 
-    // Convert the limited real part in long double (16 bytes in ARM64) to an array of bytes
+    // Convert the limited real part in long double to an array of bytes 
+    // (16 bytes in AMD64, but GCC only uses 10 of these...) 
     int nr_bytes_complex_parts = 16;
-    unsigned char bytes[nr_bytes_complex_parts];
+    int gcc_long_double_bytes = 10;
+    unsigned char bytes[gcc_long_double_bytes];
     if (nr_bytes_complex_parts != sizeof(long double)) {
         // Check if the OS supports long double, if not exit this program
         fprintf(stderr, "64 bit int unsupported\n");
         exit(1);
     }
 
-    memcpy(bytes, &real_limited, nr_bytes_complex_parts);
+    memcpy(bytes, &real_limited, gcc_long_double_bytes);
 
     const uint64_t prime = 1099511628211;
     uint64_t hash = seed;
-    int nr_bytes_hash = 8;
-    if (nr_bytes_hash != sizeof(uint64_t)) {
-        // Check if the OS supports long double, if not exit this program
-        fprintf(stderr, "64 bit int unsupported\n");
-        exit(1);
-    }
 
-    printf(" [ ");
-    for(int i=0; i<nr_bytes_complex_parts; i++) {
-        printf("%.2x ", bytes[i]); 
+    for(int i=0; i<gcc_long_double_bytes; i++) {
         hash = hash ^ bytes[i];
         hash = rotl64(hash, 47);
         hash = hash * prime;
     }
-    printf("]\n");
 
     //
     // Calculate the hash further based on the imaginary part of the complex number val
@@ -103,25 +99,20 @@ mpc_hash(const uint64_t val, const uint64_t seed)
 
     // Convert the imaginary part from mpc to long double type (16 x 8 bits = 128 bits) 
     long double imag_limited = mpfr_get_ld(imag, MPC_ROUNDING);
-    printf("    imag  = %lf", (double) real_limited);
 
     // Convert the limited imaginary part in long double (16 bytes in ARM64) to an array of bytes
-    memcpy(bytes, &imag_limited, nr_bytes_complex_parts);
+    memcpy(bytes, &imag_limited, gcc_long_double_bytes);
 
-    printf(" [ ");
-    for(int i=0; i<nr_bytes_complex_parts; i++) {
-        printf("%.2x ", bytes[i]); 
+    for(int i=0; i<gcc_long_double_bytes; i++) {
         hash = hash ^ bytes[i];
         hash = rotl64(hash, 31);
         hash = hash * prime;
     }
-    printf("]\n");
 
     mpfr_clear(real);
     mpfr_clear(imag);
 
     hash = hash ^ (hash >> 32);
-    printf("    hash value = %lx\n\n", hash);
     return hash;
 }
 
