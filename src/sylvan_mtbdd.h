@@ -1,6 +1,7 @@
 /*
  * Copyright 2011-2016 Formal Methods and Tools, University of Twente
  * Copyright 2016-2017 Tom van Dijk, Johannes Kepler University Linz
+ * Copyright 2023-2024 System Verification Lab, LIACS, Leiden University
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,9 +33,7 @@
  * Type "0" is the Integer type. 
  * Type "1" is the Real type.
  * Type "2" is the Fraction type, consisting of two 32-bit integers (numerator and denominator).
- * 
- * TODO: Type "3" is custom: Complex number with doubles
- * TODO: Type "4" is custom: Complex number implemented with the MPC Library.
+ * Type "3" is custom: Complex number implemented with the MPC Library.
  * 
  * For non-Boolean MTBDDs, mtbdd_false is used for partial functions, i.e. mtbdd_false
  * indicates that the function is not defined for a certain input.
@@ -1184,33 +1183,173 @@ void mtbdd_refs_spawn(Task *t);
  */
 MTBDD mtbdd_refs_sync(MTBDD mtbdd);
 
+
+/** Matrix / vector operations - extension of original API of Tom van Dijk **/
+
 /**
- * // TODO: Matrix multiplication functions
+ * Utility functions:
  * 
  * Convert a matrix array M[row][col] into a MTBDD.
  * 
  * Convert a vector array v[row] into a MTBDD.
  * 
+ * Convert a MTBDD into a matrix array.
  * 
+ * Convert a MTBDD into a vector array.
  * 
+ * The mode of the conversions refers to how the leafs are 
+ * filled with the array values.
  * 
-*/
-typedef uint32_t VecArr_t; // pointer to struct with array of struct as element. Struct contains complex number.
-typedef uint32_t MatArr_t;
+ * This can be row wise (transpose mode) or column wise.
+ * 
+ * Suppose M[row][col] is a matrix:
+ * 
+ *      M[0][0]     M[0][1]
+ *      M[1][0]     M[1][1]
+ * 
+ * The transpose of M[row][col] = M[col][row]
+ * 
+ *      M[0][0]     M[1][0]
+ *      M[0][1]     M[1][1]
+ * 
+ * Then MTBDD is column wise:
+ * 
+ *                          x0
+ *                x1                   x1
+ *          x2         x2        x2          x2
+ *        M[0][0]    M[0][1]   M[1][0]     M[1][1]
+ *
+ * MTBDD is row wise (= transpose):
+ * 
+ *                          x0
+ *                x1                   x1
+ *          x2         x2        x2          x2
+ *        M[0][0]    M[1][0]   M[0][1]     M[1][1]
+ * 
+ */
 
-MTBDD mtbdd_vector_array_to_mtbdd(VecArr_t vec_arr, int n);
-MTBDD mtbdd_matrix_array_to_mtbdd(MatArr_t mat_arr, int n);
-
-MTBDD mtbdd_matvec_mult(MTBDD A, MTBDD v, int n);    // Computes A.v for an 2^n vector and a 2^n x 2^n matrix.
-MTBDD mtbdd_matmat_mult(MTBDD A, MTBDD B, int n);    // Computes A.B for two 2^n x 2^n matrices.
+typedef enum {
+    COLUMN_WISE_MODE,                       // f(r0,r1,c0,c1) = W[r0r1][c0c1], r,c ={ 0, 1 }
+    ROW_WISE_MODE,                          // f(c0,c1,r0,r1) = W[r0r1][c0c1], r,c ={ 0, 1 }
+    ALTERNATE_COLUMN_FIRST_WISE_MODE,       // f(c0,r0,c1,r1) = W[r0r1][c0c1], r,c ={ 0, 1 }
+    ALTERNATE_ROW_FIRST_WISE_MODE           // f(c0,r0,c1,r1) = W[r0r1][c0c1], r,c ={ 0, 1 }
+} row_column_mode_t;
 
 /**
- * // TODO: Kronecker (or tensor) multiplication
+ * Matrix MTBDD conversion functions.
+*/
+
+typedef double VecArr_t;
+typedef double MatArr_t;
+
+int allocate_matrix_array(MatArr_t ***W_arr, int n);
+int free_matrix_array(MatArr_t **W_arr, int n);
+
+int print_vector_array(VecArr_t *v_arr, int n);
+int print_matrix_array(MatArr_t **W_arr, int n);
+
+MTBDD vector_array_to_mtbdd(VecArr_t *v_arr, int n, row_column_mode_t mode);
+MTBDD matrix_array_to_mtbdd(MatArr_t **M_arr, int n, row_column_mode_t mode);
+
+void mtbdd_to_vector_array(MTBDD v, int n, row_column_mode_t mode, VecArr_t *w);
+void mtbdd_to_matrix_array(MTBDD M, int n, row_column_mode_t mode, MatArr_t **W);
+
+/**
+ * Matrix . Vector multiplication in MTBDD domain
  * 
+ * Computes M.v = w for a 2^n x 2^n matrix M[row][col], and a 2^n vector v[col].
+ * 
+ * Results in an array of a 2^n vector w[col].
+ * 
+ */
+
+void array_matrix_vector_product(MatArr_t **M_arr, VecArr_t *v_arr, int n, VecArr_t *w);
+
+/**
+ * Matrix . Matrix multiplication in MTBDD domain
+ * 
+ * Computes M.V = W for two 2^n x 2^n matrices M[row][col] and V[row][col].
+ * 
+ * Results in an array of a 2^n x 2^n matrix W[row][col].
+ * 
+ */
+
+void array_matrix_matrix_product(MatArr_t **M, MatArr_t **V, int n, MatArr_t **W);
+
+/**
+ * Matrix . Vector multiplication in MTBDD domain
+ * 
+ * Computes M.v for an 2^n vector v and a 2^n x 2^n matrix M.
+ * 
+ * The vector is row wise sorted, the matrix is column wise sorted.
+ * 
+ * The resulting vector w is column wise sorted.
+ * 
+ */
+
+//#define CACHE_MTBDD_FOURTH_NUM     255LL
+
+#define MTBDD_ZERO 0
+
+// Utils
+uint64_t mtbdd_is_result_in_cache_3(uint64_t f, uint64_t num1, uint64_t num2, uint64_t num3);
+void mtbdd_put_result_in_cache_3(uint64_t f, uint64_t num1, uint64_t num2, uint64_t num3, uint64_t result);
+
+uint64_t mtbdd_is_result_in_cache_4(uint64_t f, uint64_t num1, uint64_t num2, uint64_t num3, uint64_t num4);
+void mtbdd_put_result_in_cache_4(uint64_t f, uint64_t num1, uint64_t num2, uint64_t num3, uint64_t num4, uint64_t result);
+
+MTBDD mtbdd_renumber_variables(MTBDD M, uint32_t new_var);
+void determine_top_var_and_leafcount(MTBDD M, int *botvar, int *topvar, int *leafcount);
+
+void mtbdd_get_children_of_var(MTBDD M, MTBDD *M_low, MTBDD *M_high, uint32_t var);
+void mtbdd_split_mtbdd_into_two_parts(MTBDD v, MTBDD *v0, MTBDD *v1, uint32_t var);
+void mtbdd_split_mtbdd_into_four_parts(MTBDD M, MTBDD *M00, MTBDD *M01, MTBDD *M10, MTBDD *M11, uint32_t var);
+
+/*
+ * Matrix . Vector multiplication in MTBDD domain
+ * 
+ * Computes A.v for one 2^n matrix and one 2^n vector.
  * 
 */
-MTBDD mtbdd_vec_kronecker_prod(MTBDD v, MTBDD w, int n_v);    // Computes a \tensor b for two vector QMDDs.
-MTBDD mtbdd_mat_kronecker_prod(MTBDD A, MTBDD B, MTBDD n_A);  // Computes a \tensor b for two matrix QMDDs.
+
+MTBDD mtbdd_matvec_mult(MTBDD M, MTBDD v, int nvars, int currentvar);
+MTBDD mtbdd_matvec_mult_alt(MTBDD M, MTBDD v, int n);
+
+/*
+ * Matrix . Matrix multiplication in MTBDD domain
+ * 
+ *   Computes A.B for two 2^n x 2^n matrices, n = {0,1,...}.
+ * 
+*/
+
+MTBDD mtbdd_matmat_mult(MTBDD M1, MTBDD M2, int nvars, int currentvar);
+MTBDD mtbdd_matmat_mult_alt(MTBDD M1, MTBDD M2, int n);
+
+/**
+ * Kronecker multiplication or Tensor product
+ * 
+ * Vector (x) Vector product
+ * 
+ * Matrix (x) Matrix product
+ * 
+*/
+MTBDD mtbdd_vec_tensor_prod(MTBDD v, MTBDD w, int n);
+
+MTBDD mtbdd_mat_tensor_prod(MTBDD M1, MTBDD M2, int n);
+
+/**
+ * Tensor product
+ * 
+ * @param a MTBDD encoding of a matrix or vector
+ * @param b MTBDD encoding of a matrix or vector
+ * @param leaf_var_a The 'level' of the leaves of 'a'. If 'a' encodes a matrix 
+ *        over DD variables {0,1,2,3,4}, then 'leaf_var_a' should be 5. If 'a' 
+ *        encodes a vector over DD variables {0,2,4}, then 'leaf_var_a' should 
+ *        be 6.
+ * 
+ * @returns MTBDD encoding of 'a' tensor 'b'
+ */
+MTBDD mtbdd_tensor_prod(MTBDD a, MTBDD b, int leaf_var_a);
 
 
 #ifdef __cplusplus
