@@ -26,7 +26,7 @@ NOTE: In the code we are refering to the QMDDs as QMDDs, but our QMDDs are reall
 
 ## Measurements and related
 Note: For measurements, the post-measurement state is the return value of the measurement function, while the input qmdd is unaffected.
-* `qmdd_get_amplitude(QMDD qmdd, bool* x)` : Get the amplitude <qmdd|x> as a complex struct, where x is a bool array of lenght n.
+* `qmdd_get_amplitude(QMDD qmdd, bool* x, int nqubits)` : Get the amplitude <qmdd|x> as a complex struct, where x is a bool array of lenght n.
 * `qmdd_measure_qubit(QMDD qqd, int k, int n, int *m, double *p)` : Measures qubit k of the given n-qubit state. `&m` will contain the measurement outcome, and `&p` will contain Pr(m = 0).
 * `qmdd_measure_all(QMDD qmdd, int n, bool *ms, double *p)` : Does a (computational basis) measurement of all n qubits in the qmdd. The measurement outcomes are put in `ms`, which needs to be an bool array of lenght n. `p` (a pointer to a single double) will contain the probability |<qmdd|ms>|^2.
 
@@ -46,9 +46,9 @@ Note: For measurements, the post-measurement state is the return value of the me
 * `GATEID_sqrtYdag` : (&radic;Y)<sup>&dagger;</sup> gate
 * `GATEID_Rk(k)` : Phase gate with angle 2&pi; &times; 1/2<sup>k</sup>
 * `GATEID_Rk_dag(k)` : Phase gate with angle 2&pi; &times; 1/2<sup>-k</sup>
-* `GATEID_Rx(a)` : Rotation around x-axis with angle 2&pi; &times; a
-* `GATEID_Ry(a)` : Rotation around y-axis with angle 2&pi; &times; a
-* `GATEID_Rz(a)` : Rotation around z-axis with angle 2&pi; &times; a
+* `GATEID_Rx(theta)` : Rotation around x-axis with angle theta
+* `GATEID_Ry(theta)` : Rotation around y-axis with angle theta
+* `GATEID_Rz(theta)` : Rotation around z-axis with angle theta
 
 
 ## Other

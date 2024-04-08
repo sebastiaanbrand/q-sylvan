@@ -11,7 +11,7 @@ extern AADD_WGT AADD_ONE;
 extern AADD_WGT AADD_ZERO;
 extern AADD_WGT AADD_MIN_ONE;
 
-typedef void* weight_t;
+typedef void *weight_t;
 
 typedef enum edge_weight_type {
     WGT_DOUBLE,
@@ -28,7 +28,7 @@ extern void *wgt_storage_new;
 
 /**********************<Managing the edge weight table>************************/
 
-extern void sylvan_init_edge_weights(size_t size, double tol, edge_weight_type_t edge_weight_type, wgt_storage_backend_t backend);
+extern void sylvan_init_edge_weights(size_t min_tablesize, size_t max_tablesize, double tol, edge_weight_type_t edge_weight_type, wgt_storage_backend_t backend);
 extern void init_edge_weight_functions(edge_weight_type_t edge_weight_type);
 extern void init_edge_weight_storage(size_t size, double tol, wgt_storage_backend_t backend, void **wgt_store);
 extern void (*init_wgt_table_entries)(); // set by sylvan_init_aadd
@@ -61,33 +61,59 @@ extern AADD_WGT wgt_table_gc_keep(AADD_WGT a);
 
 /******************<Interface for different edge_weight_types>*****************/
 
-extern weight_t (*weight_malloc)();
-extern void (*_weight_value)(); // weight_value(WGT a, weight_type * res)
-extern AADD_WGT (*weight_lookup)(); // weight_lookup_(weight_type a)
-extern AADD_WGT (*_weight_lookup_ptr)(); // _weight_lookup_ptr(weight_type *a, void *wgt_store)
-#define weight_lookup_ptr(a) _weight_lookup_ptr(a, wgt_storage)
-#define weight_value(a, res) _weight_value(wgt_storage, a, res)
+typedef weight_t (*weight_malloc_f)();
+typedef void (*_weight_value_f)(void *wgt_store, AADD_WGT a, weight_t res);
+typedef AADD_WGT (*weight_lookup_f)(weight_t a);
+typedef AADD_WGT (*_weight_lookup_ptr_f)(weight_t a, void *wgt_store);
 
-extern void (*init_one_zero)();
+typedef void (*init_one_zero_f)(void *wgt_store);
 
 /* Arithmetic operations on edge weights */
-extern void (*weight_abs)(); // a <-- |a|
-extern void (*weight_neg)(); // a <-- -a
-extern void (*weight_sqr)(); // a <-- a^2
-extern void (*weight_add)(); // a <-- a + b
-extern void (*weight_sub)(); // a <-- a - b
-extern void (*weight_mul)(); // a <-- a * b
-extern void (*weight_div)(); // a <-- a / b
-extern bool (*weight_eq)(); // returns true iff a == b
-extern bool (*weight_eps_close)(); // returns true iff dist(a,b) < eps
-#define weight_approx_eq(a,b) weight_eps_close(a,b,sylvan_edge_weights_tolerance())
-extern bool (*weight_greater)(); // returns true iff a > b
+typedef void (*weight_abs_f)(weight_t a); // a <-- |a|
+typedef void (*weight_neg_f)(weight_t a); // a <-- -a
+typedef void (*weight_sqr_f)(weight_t a); // a <-- a^2
+typedef void (*weight_add_f)(weight_t a, weight_t b); // a <-- a + b
+typedef void (*weight_sub_f)(weight_t a, weight_t b); // a <-- a - b
+typedef void (*weight_mul_f)(weight_t a, weight_t b); // a <-- a * b
+typedef void (*weight_div_f)(weight_t a, weight_t b); // a <-- a / b
+typedef bool (*weight_eq_f)(weight_t a, weight_t b); // returns true iff a == b
+typedef bool (*weight_eps_close_f)(weight_t a, weight_t b, double eps); // returns true iff dist(a,b) < eps
+typedef bool (*weight_greater_f)(weight_t a, weight_t b); // returns true iff a > b
 
 /* Normalization methods */
-extern AADD_WGT (*wgt_norm_L2)(); // wgt_norm_L2(AADD_WGT *low, AADD_WGT *high)
-extern AADD_WGT (*wgt_get_low_L2normed)(); // wgt_get_low_L2normed(AADD_WGT high)
+typedef AADD_WGT (*wgt_norm_L2_f)(AADD_WGT *low, AADD_WGT *high);
+typedef AADD_WGT (*wgt_get_low_L2normed_f)(AADD_WGT high);
 
-extern void (*weight_fprint)(); // weight_fprint(FILE *stream, weight_t a)
+typedef void (*weight_fprint_f)(FILE *stream, weight_t a);
+
+
+
+extern weight_malloc_f 		weight_malloc;
+extern _weight_value_f 		_weight_value;
+
+extern weight_lookup_f 		weight_lookup;
+extern _weight_lookup_ptr_f	_weight_lookup_ptr;
+extern init_one_zero_f 		init_one_zero;
+extern weight_abs_f 		weight_abs;
+extern weight_neg_f 		weight_neg;
+extern weight_sqr_f 		weight_sqr;
+extern weight_add_f 		weight_add;
+extern weight_sub_f 		weight_sub;
+extern weight_mul_f 		weight_mul;
+extern weight_div_f 		weight_div;
+extern weight_eq_f 			weight_eq;
+extern weight_eps_close_f 	weight_eps_close;
+extern weight_greater_f		weight_greater;
+
+extern wgt_norm_L2_f		wgt_norm_L2;
+extern wgt_get_low_L2normed_f		wgt_get_low_L2normed;
+
+extern weight_fprint_f 		weight_fprint;
+
+
+#define weight_lookup_ptr(a) _weight_lookup_ptr(a, wgt_storage)
+#define weight_value(a, res) _weight_value(wgt_storage, a, res)
+#define weight_approx_eq(a,b) weight_eps_close(a,b,sylvan_edge_weights_tolerance())
 
 /*****************</Interface for different edge_weight_types>*****************/
 

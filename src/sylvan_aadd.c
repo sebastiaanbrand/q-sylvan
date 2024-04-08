@@ -444,15 +444,18 @@ aadd_quit()
 }
 
 void
-sylvan_init_aadd(size_t wgt_tab_size, double wgt_tab_tolerance, int edge_weigth_backend, int norm_strat, void *init_wgt_tab_entries)
+sylvan_init_aadd(size_t min_wgt_tablesize, size_t max_wgt_tablesize,
+                 double wgt_tab_tolerance, int edge_weigth_backend, 
+                 int norm_strat, void *init_wgt_tab_entries)
 {
     if (aadd_initialized) return;
     aadd_initialized = 1;
 
-    int index_size = (int) ceil(log2(wgt_tab_size));
-    if (edge_weigth_backend == REAL_TUPLES_HASHMAP) index_size = index_size*2;
+    int index_size = (int) ceil(log2(max_wgt_tablesize));
+    if (edge_weigth_backend == REAL_TUPLES_HASHMAP || edge_weigth_backend == REAL_TREE)
+        index_size = index_size*2;
     if (index_size > 33) {
-        printf("max edge weight storage size is 2^33 (2^16 when using REAL_TUPLES_HASHMAP)\n");
+        printf("max edge weight storage size is 2^33 (2^16 when using storing r and i seperately)\n");
         exit(1);
     }
     if (index_size > 23) larger_wgt_indices = true;
@@ -469,7 +472,9 @@ sylvan_init_aadd(size_t wgt_tab_size, double wgt_tab_tolerance, int edge_weigth_
     }
 
     // TODO: pass edge weight type to sylvan_init_aadd
-    sylvan_init_edge_weights(wgt_tab_size, wgt_tab_tolerance, WGT_COMPLEX_128, edge_weigth_backend);
+    sylvan_init_edge_weights(min_wgt_tablesize, max_wgt_tablesize, 
+                             wgt_tab_tolerance, WGT_COMPLEX_128, 
+                             edge_weigth_backend);
     
     init_wgt_table_entries = init_wgt_tab_entries;
     if (init_wgt_table_entries != NULL) {
@@ -498,9 +503,9 @@ sylvan_init_aadd(size_t wgt_tab_size, double wgt_tab_tolerance, int edge_weigth_
 }
 
 void
-sylvan_init_aadd_defaults(size_t wgt_tab_size)
+sylvan_init_aadd_defaults(size_t min_wgt_tablesize, size_t max_wgt_tablesize)
 {
-    sylvan_init_aadd(wgt_tab_size, -1, COMP_HASHMAP, NORM_LOW, NULL);
+    sylvan_init_aadd(min_wgt_tablesize, max_wgt_tablesize, -1, COMP_HASHMAP, NORM_LOW, NULL);
 }
 
 
@@ -1242,6 +1247,17 @@ bit_from_int(uint64_t a, uint8_t index)
     uint64_t res = a & mask;
     res = res>>index;
     return (bool) res;
+}
+
+void
+reverse_bit_array(bool *x, int length)
+{
+    bool tmp;
+    for(int i = 0; i<(length/2); i++){
+        tmp = x[i];
+        x[i] = x[length-i-1];
+        x[length-i-1] = tmp;
+    }
 }
 
 /*******************************</Debug stuff>*********************************/

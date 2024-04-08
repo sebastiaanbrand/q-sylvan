@@ -47,7 +47,7 @@ class QSimulator()
 }
 */
 
-void qsylvan_init_simulator(size_t wgt_tab_size, double wgt_tab_tolerance, int edge_weigth_backend, int norm_strat);
+void qsylvan_init_simulator(size_t min_tablesize, size_t max_tablesize, double wgt_tab_tolerance, int edge_weigth_backend, int norm_strat);
 void qsylvan_init_defaults(size_t wgt_tab_size);
 
 /*****************************</Initialization>********************************/
@@ -193,14 +193,22 @@ QMDD qmdd_measure_all(QMDD qmdd, BDDVAR n, bool* ms, double *p);
 TASK_DECL_3(double, qmdd_unnormed_prob, QMDD, BDDVAR, BDDVAR);
 
 /**
+ * Given a state vector as QMDD, get its (L2) norm.
+ */
+#define qmdd_get_norm(qmdd, nvars) (RUN(qmdd_unnormed_prob,qmdd,0,nvars))
+
+/**
  * Get amplitude of given basis state.
  * 
  * @param qmdd A QMDD encoding some quantum state |psi>.
  * @param basis_state A bitstring x of some computational basis state |x>.
+ * @param nqubits Number of qubits of the state.
+ * 
+ * |x> is assumed to have big-endian encoding (i.e. q_{n-1}, ..., q_2, q_1, q_0)
  * 
  * @return The amplitude <x|psi>.
  */
-complex_t qmdd_get_amplitude(QMDD qmdd, bool *basis_state);
+complex_t qmdd_get_amplitude(QMDD qmdd, bool *basis_state, BDDVAR nqubits);
 
 /**
  * Computes the probability from a given edge weight index.
@@ -315,6 +323,8 @@ QMDD qmdd_circuit(QMDD qmdd, circuit_id_t circ_id, BDDVAR t1, BDDVAR t2);
  *           controls use e.g. cs = [c1, c2, AADD_INVALID_VAR]
  * @param t1 BDDVAR. Parameter 1 for given circuit.
  * @param t2 BDDVAR. Parameter 2 for given circuit.
+ * 
+ * NOTE: This function seems to have some issues w/ gc of edge weight table.
  */
 #define qmdd_ccircuit(qmdd, circ_id, cs, t1, t2) (RUN(qmdd_ccircuit,qmdd,circ_id,cs,0,t1,t2));
 TASK_DECL_6(QMDD, qmdd_ccircuit, QMDD, circuit_id_t, BDDVAR*, uint32_t, BDDVAR, BDDVAR);

@@ -5,6 +5,7 @@
 #include <sylvan.h>
 #include <sylvan_aadd.h>
 #include <sylvan_edge_weights.h>
+#include <sylvan_edge_weights_complex.h>
 
 #include "test_assert.h"
 
@@ -35,76 +36,76 @@ int test_complex_operations() // No influence on DD
     test_assert(weight_eq(&ref1, &ref2));
 
     // test AADD_ZERO
-    ref1 = cmake(0.0, 0.0);         index1 = weight_lookup(ref1);
-    ref2 = cmake(0.0, 0.0);         index2 = weight_lookup(ref2);
-    ref3 = czero();                 index3 = weight_lookup(ref3);
+    ref1 = cmake(0.0, 0.0);         index1 = weight_lookup(&ref1);
+    ref2 = cmake(0.0, 0.0);         index2 = weight_lookup(&ref2);
+    ref3 = czero();                 index3 = weight_lookup(&ref3);
     test_assert(index1 == index2);
     test_assert(index1 == index3);
     test_assert(index1 == AADD_ZERO);
 
     // test AADD_ONE
-    ref1 = cmake(1.0, 0.0);         index1 = weight_lookup(ref1);
-    ref2 = cmake(1.0, 0.0);         index2 = weight_lookup(ref2);
+    ref1 = cmake(1.0, 0.0);         index1 = weight_lookup(&ref1);
+    ref2 = cmake(1.0, 0.0);         index2 = weight_lookup(&ref2);
     test_assert(index1 == index2);
     test_assert(index1 == AADD_ONE);
 
     // Clookup, Cvalue
-    ref1 = cmake(0.5, 0.0);              index1 = weight_lookup(ref1);   weight_value(index1, &val1);
-    ref2 = cmake(0.5, 0.0);              index2 = weight_lookup(ref2);   weight_value(index2, &val2);
-    ref3 = cmake(1.0/flt_sqrt(2.0),0);   index3 = weight_lookup(ref3);   weight_value(index3, &val3);
-    ref4 = cmake(1.0/flt_sqrt(2.0),0);   index4 = weight_lookup(ref4);   weight_value(index4, &val4);
+    ref1 = cmake(0.5, 0.0);              index1 = weight_lookup(&ref1);   weight_value(index1, &val1);
+    ref2 = cmake(0.5, 0.0);              index2 = weight_lookup(&ref2);   weight_value(index2, &val2);
+    ref3 = cmake(1.0/flt_sqrt(2.0),0);   index3 = weight_lookup(&ref3);   weight_value(index3, &val3);
+    ref4 = cmake(1.0/flt_sqrt(2.0),0);   index4 = weight_lookup(&ref4);   weight_value(index4, &val4);
     test_assert(index1 == index2);  test_assert(weight_eq(&val1, &val2));
     test_assert(index3 == index4);  test_assert(weight_eq(&val3, &val4));
 
     // wgt_neg
-    ref1 = cmake(0.3, 4.2);         index1 = weight_lookup(ref1);   weight_value(index1, &val1);
-    ref2 = cmake(-0.3, -4.2);       index2 = weight_lookup(ref2);   weight_value(index2, &val2);
+    ref1 = cmake(0.3, 4.2);         index1 = weight_lookup(&ref1);   weight_value(index1, &val1);
+    ref2 = cmake(-0.3, -4.2);       index2 = weight_lookup(&ref2);   weight_value(index2, &val2);
     index3 = wgt_neg(index1);       weight_value(index3, &val3);
     index4 = wgt_neg(index2);       weight_value(index4, &val4);
     test_assert(index1 == index4);  test_assert(weight_eq(&val1, &val4));
     test_assert(index2 == index3);  test_assert(weight_eq(&val2, &val3));
 
     // wgt_add
-    ref1 = cmake(5.2, 1.0);         index1 = weight_lookup(ref1);   weight_value(index1, &val1);
-    ref2 = cmake(-0.3,7.0);         index2 = weight_lookup(ref2);   weight_value(index2, &val2);
-    ref3 = cmake(4.9, 8.0);         index3 = weight_lookup(ref3);   weight_value(index3, &val3);
+    ref1 = cmake(5.2, 1.0);         index1 = weight_lookup(&ref1);   weight_value(index1, &val1);
+    ref2 = cmake(-0.3,7.0);         index2 = weight_lookup(&ref2);   weight_value(index2, &val2);
+    ref3 = cmake(4.9, 8.0);         index3 = weight_lookup(&ref3);   weight_value(index3, &val3);
     index4=wgt_add(index1,index2);  weight_value(index4, &val4);
     test_assert(index3 == index4);  test_assert(weight_eq(&val3, &val4));
 
     // wgt_sub
-    ref1 = cmake(1/3, 3.5);         index1 = weight_lookup(ref1);   weight_value(index1, &val1);
-    ref2 = cmake(1/3,-1.2);         index2 = weight_lookup(ref2);   weight_value(index2, &val2);
-    ref3 = cmake(0.0, 4.7);         index3 = weight_lookup(ref3);   weight_value(index3, &val3);
+    ref1 = cmake(1/3, 3.5);         index1 = weight_lookup(&ref1);   weight_value(index1, &val1);
+    ref2 = cmake(1/3,-1.2);         index2 = weight_lookup(&ref2);   weight_value(index2, &val2);
+    ref3 = cmake(0.0, 4.7);         index3 = weight_lookup(&ref3);   weight_value(index3, &val3);
     index4=wgt_sub(index1,index2);  weight_value(index4, &val4);
     test_assert(index3 == index4);  test_assert(weight_eq(&val3, &val4));
     
     // wgt_mul
-    ref1 = cmake(3.0, 5.0);         index1 = weight_lookup(ref1);   weight_value(index1, &val1);
-    ref2 = cmake(0.5, 7.0);         index2 = weight_lookup(ref2);   weight_value(index2, &val2);
-    ref3 = cmake(-33.5, 23.5);      index3 = weight_lookup(ref3);   weight_value(index3, &val3);
+    ref1 = cmake(3.0, 5.0);         index1 = weight_lookup(&ref1);   weight_value(index1, &val1);
+    ref2 = cmake(0.5, 7.0);         index2 = weight_lookup(&ref2);   weight_value(index2, &val2);
+    ref3 = cmake(-33.5, 23.5);      index3 = weight_lookup(&ref3);   weight_value(index3, &val3);
     index4=wgt_mul(index1,index2);  weight_value(index4, &val4);
     test_assert(index3 == index4);  test_assert(weight_eq(&val3, &val4));
 
-    ref1 = cmake(1.0/flt_sqrt(2.0),0);   index1 = weight_lookup(ref1);   weight_value(index1, &val1);
-    ref2 = cmake(1.0/flt_sqrt(2.0),0);   index2 = weight_lookup(ref2);   weight_value(index2, &val2);
-    ref3 = cmake(0.5, 0.0);              index3 = weight_lookup(ref3);   weight_value(index3, &val3);
+    ref1 = cmake(1.0/flt_sqrt(2.0),0);   index1 = weight_lookup(&ref1);   weight_value(index1, &val1);
+    ref2 = cmake(1.0/flt_sqrt(2.0),0);   index2 = weight_lookup(&ref2);   weight_value(index2, &val2);
+    ref3 = cmake(0.5, 0.0);              index3 = weight_lookup(&ref3);   weight_value(index3, &val3);
     index4=wgt_mul(index1,index2);  weight_value(index4, &val4);
     test_assert(index3 == index4);  test_assert(weight_eq(&val3, &val4));
 
     // wgt_div
-    ref1 = cmake(1.3,-0.7);         index1 = weight_lookup(ref1);   weight_value(index1, &val1);
-    ref2 = cmake(1.0, 0.0);         index2 = weight_lookup(ref2);   weight_value(index2, &val2);
-    ref3 = cmake(1.3,-0.7);         index3 = weight_lookup(ref3);   weight_value(index3, &val3);
+    ref1 = cmake(1.3,-0.7);         index1 = weight_lookup(&ref1);   weight_value(index1, &val1);
+    ref2 = cmake(1.0, 0.0);         index2 = weight_lookup(&ref2);   weight_value(index2, &val2);
+    ref3 = cmake(1.3,-0.7);         index3 = weight_lookup(&ref3);   weight_value(index3, &val3);
     index4=wgt_div(index1,index2);  weight_value(index4, &val4);
     test_assert(index3 == index4);  test_assert(weight_eq(&val3, &val4));
 
-    ref1 = cmake(5.0, 9.0);         index1 = weight_lookup(ref1);   weight_value(index1, &val1);
-    ref2 = cmake(-4.0,7.0);         index2 = weight_lookup(ref2);   weight_value(index2, &val2);
-    ref3 = cmake(43./65.,-71./65.); index3 = weight_lookup(ref3);   weight_value(index3, &val3);
+    ref1 = cmake(5.0, 9.0);         index1 = weight_lookup(&ref1);   weight_value(index1, &val1);
+    ref2 = cmake(-4.0,7.0);         index2 = weight_lookup(&ref2);   weight_value(index2, &val2);
+    ref3 = cmake(43./65.,-71./65.); index3 = weight_lookup(&ref3);   weight_value(index3, &val3);
     index4=wgt_div(index1, index2); weight_value(index4, &val4);
     test_assert(index3 == index4);  test_assert(weight_eq(&val3, &val4));
 
-    if(VERBOSE) printf("complex operations:       ok\n");
+    if(VERBOSE) printf("complex operations:            ok\n");
     return 0;
 }
 
@@ -122,6 +123,8 @@ int test_basis_state_creation()
     test_assert(qmdd_is_unitvector(q1, 1));
     test_assert(aadd_is_ordered(q0, 1));
     test_assert(aadd_is_ordered(q1, 1));
+    test_assert(fabs(qmdd_get_norm(q0, 1) - 1.0) < 1e-14);
+    test_assert(qmdd_get_norm(q0, 1) == 1.0);
 
     AMP a; // Index to edge weight
     x[0] = 0; a = aadd_getvalue(q0, x); test_assert(a == AADD_ONE);
@@ -139,6 +142,10 @@ int test_basis_state_creation()
     test_assert(qmdd_is_unitvector(q3, 3));
     test_assert(aadd_is_ordered(q2, 3));
     test_assert(aadd_is_ordered(q3, 3));
+    test_assert(fabs(qmdd_get_norm(q2, 3) - 1.0) < 1e-14);
+    test_assert(qmdd_get_norm(q2, 3) == 1.0);
+    test_assert(fabs(qmdd_get_norm(q3, 3) - 1.0) < 1e-14);
+    test_assert(qmdd_get_norm(q3, 3) == 1.0);
 
     x3[2] = 0; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q2, x3); test_assert(a == AADD_ONE);
     x3[2] = 0; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q2, x3); test_assert(a == AADD_ZERO);
@@ -182,30 +189,30 @@ int test_vector_addition()
     q010 = aadd_plus(q01, q0);
     q100 = aadd_plus(q10, q0);
 
-    x[0] = 0; a = aadd_getvalue(q00, x); test_assert(a == weight_lookup(cmake(2.0, 0.0)));
+    x[0] = 0; a = aadd_getvalue(q00, x); test_assert(a == complex_lookup(2.0, 0.0));
     x[0] = 1; a = aadd_getvalue(q00, x); test_assert(a == AADD_ZERO);
     x[0] = 0; a = aadd_getvalue(q01, x); test_assert(a == AADD_ONE);
     x[0] = 1; a = aadd_getvalue(q01, x); test_assert(a == AADD_ONE);
     x[0] = 0; a = aadd_getvalue(q10, x); test_assert(a == AADD_ONE);
     x[0] = 1; a = aadd_getvalue(q10, x); test_assert(a == AADD_ONE);
     x[0] = 0; a = aadd_getvalue(q11, x); test_assert(a == AADD_ZERO);
-    x[0] = 1; a = aadd_getvalue(q11, x); test_assert(a == weight_lookup(cmake(2.0, 0.0)));
+    x[0] = 1; a = aadd_getvalue(q11, x); test_assert(a == complex_lookup(2.0, 0.0));
     test_assert(q01 == q10);
     test_assert(!qmdd_is_unitvector(q01, 1));
 
-    x[0] = 0; a = aadd_getvalue(q000, x); test_assert(a == weight_lookup(cmake(3.0, 0.0)));
+    x[0] = 0; a = aadd_getvalue(q000, x); test_assert(a == complex_lookup(3.0, 0.0));
     x[0] = 1; a = aadd_getvalue(q000, x); test_assert(a == AADD_ZERO);
-    x[0] = 0; a = aadd_getvalue(q001, x); test_assert(a == weight_lookup(cmake(2.0, 0.0)));
+    x[0] = 0; a = aadd_getvalue(q001, x); test_assert(a == complex_lookup(2.0, 0.0));
     x[0] = 1; a = aadd_getvalue(q001, x); test_assert(a == AADD_ONE);
-    x[0] = 0; a = aadd_getvalue(q010, x); test_assert(a == weight_lookup(cmake(2.0, 0.0)));
+    x[0] = 0; a = aadd_getvalue(q010, x); test_assert(a == complex_lookup(2.0, 0.0));
     x[0] = 1; a = aadd_getvalue(q010, x); test_assert(a == AADD_ONE);
-    x[0] = 0; a = aadd_getvalue(q100, x); test_assert(a == weight_lookup(cmake(2.0, 0.0)));
+    x[0] = 0; a = aadd_getvalue(q100, x); test_assert(a == complex_lookup(2.0, 0.0));
     x[0] = 1; a = aadd_getvalue(q100, x); test_assert(a == AADD_ONE);
     test_assert(q001 == q010);
     test_assert(q001 == q100);
     test_assert(!qmdd_is_unitvector(q001, 1));
 
-    
+
 
     // 4 qubit test
     nqubits = 4;
@@ -229,7 +236,7 @@ int test_vector_addition()
     // q0 + q0
     x4[3] = 0; x4[2] = 0; x4[1] = 0; x4[0] = 0; a = aadd_getvalue(q00, x4); test_assert(a == AADD_ZERO);
     x4[3] = 0; x4[2] = 0; x4[1] = 0; x4[0] = 1; a = aadd_getvalue(q00, x4); test_assert(a == AADD_ZERO);
-    x4[3] = 0; x4[2] = 0; x4[1] = 1; x4[0] = 0; a = aadd_getvalue(q00, x4); test_assert(a == weight_lookup(cmake(2.0, 0.0)));
+    x4[3] = 0; x4[2] = 0; x4[1] = 1; x4[0] = 0; a = aadd_getvalue(q00, x4); test_assert(a == complex_lookup(2.0, 0.0));
     x4[3] = 0; x4[2] = 0; x4[1] = 1; x4[0] = 1; a = aadd_getvalue(q00, x4); test_assert(a == AADD_ZERO);
     x4[3] = 0; x4[2] = 1; x4[1] = 0; x4[0] = 0; a = aadd_getvalue(q00, x4); test_assert(a == AADD_ZERO);
     x4[3] = 0; x4[2] = 1; x4[1] = 0; x4[0] = 1; a = aadd_getvalue(q00, x4); test_assert(a == AADD_ZERO);
@@ -276,7 +283,7 @@ int test_vector_addition()
     x4[3] = 0; x4[2] = 1; x4[1] = 1; x4[0] = 1; a = aadd_getvalue(q11, x4); test_assert(a == AADD_ZERO);
     x4[3] = 1; x4[2] = 0; x4[1] = 0; x4[0] = 0; a = aadd_getvalue(q11, x4); test_assert(a == AADD_ZERO);
     x4[3] = 1; x4[2] = 0; x4[1] = 0; x4[0] = 1; a = aadd_getvalue(q11, x4); test_assert(a == AADD_ZERO);
-    x4[3] = 1; x4[2] = 0; x4[1] = 1; x4[0] = 0; a = aadd_getvalue(q11, x4); test_assert(a == weight_lookup(cmake(2.0, 0.0)));
+    x4[3] = 1; x4[2] = 0; x4[1] = 1; x4[0] = 0; a = aadd_getvalue(q11, x4); test_assert(a == complex_lookup(2.0, 0.0));
     x4[3] = 1; x4[2] = 0; x4[1] = 1; x4[0] = 1; a = aadd_getvalue(q11, x4); test_assert(a == AADD_ZERO);
     x4[3] = 1; x4[2] = 1; x4[1] = 0; x4[0] = 0; a = aadd_getvalue(q11, x4); test_assert(a == AADD_ZERO);
     x4[3] = 1; x4[2] = 1; x4[1] = 0; x4[0] = 1; a = aadd_getvalue(q11, x4); test_assert(a == AADD_ZERO);
@@ -287,7 +294,7 @@ int test_vector_addition()
     // q0 + q0 + q0
     x4[3] = 0; x4[2] = 0; x4[1] = 0; x4[0] = 0; a = aadd_getvalue(q000, x4); test_assert(a == AADD_ZERO);
     x4[3] = 0; x4[2] = 0; x4[1] = 0; x4[0] = 1; a = aadd_getvalue(q000, x4); test_assert(a == AADD_ZERO);
-    x4[3] = 0; x4[2] = 0; x4[1] = 1; x4[0] = 0; a = aadd_getvalue(q000, x4); test_assert(a == weight_lookup(cmake(3.0, 0.0)));
+    x4[3] = 0; x4[2] = 0; x4[1] = 1; x4[0] = 0; a = aadd_getvalue(q000, x4); test_assert(a == complex_lookup(3.0, 0.0));
     x4[3] = 0; x4[2] = 0; x4[1] = 1; x4[0] = 1; a = aadd_getvalue(q000, x4); test_assert(a == AADD_ZERO);
     x4[3] = 0; x4[2] = 1; x4[1] = 0; x4[0] = 0; a = aadd_getvalue(q000, x4); test_assert(a == AADD_ZERO);
     x4[3] = 0; x4[2] = 1; x4[1] = 0; x4[0] = 1; a = aadd_getvalue(q000, x4); test_assert(a == AADD_ZERO);
@@ -306,7 +313,7 @@ int test_vector_addition()
     // q0 + q0 + q1 / q0 + q1 + q0 / q1 + q0 + q0
     x4[3] = 0; x4[2] = 0; x4[1] = 0; x4[0] = 1; a = aadd_getvalue(q001, x4); test_assert(a == AADD_ZERO);
     x4[3] = 0; x4[2] = 0; x4[1] = 0; x4[0] = 0; a = aadd_getvalue(q001, x4); test_assert(a == AADD_ZERO);
-    x4[3] = 0; x4[2] = 0; x4[1] = 1; x4[0] = 0; a = aadd_getvalue(q001, x4); test_assert(a == weight_lookup(cmake(2.0, 0.0)));
+    x4[3] = 0; x4[2] = 0; x4[1] = 1; x4[0] = 0; a = aadd_getvalue(q001, x4); test_assert(a == complex_lookup(2.0, 0.0));
     x4[3] = 0; x4[2] = 0; x4[1] = 1; x4[0] = 1; a = aadd_getvalue(q001, x4); test_assert(a == AADD_ZERO);
     x4[3] = 0; x4[2] = 1; x4[1] = 0; x4[0] = 0; a = aadd_getvalue(q001, x4); test_assert(a == AADD_ZERO);
     x4[3] = 0; x4[2] = 1; x4[1] = 0; x4[0] = 1; a = aadd_getvalue(q001, x4); test_assert(a == AADD_ZERO);
@@ -324,7 +331,7 @@ int test_vector_addition()
     test_assert(q001 == q100);
     test_assert(!qmdd_is_unitvector(q001, 4));
 
-    if(VERBOSE) printf("qmdd vector addition:     ok\n");
+    if(VERBOSE) printf("qmdd vector addition:          ok\n");
     return 0;
 }
 
@@ -341,7 +348,7 @@ int run_qmdd_tests()
     return 0;
 }
 
-int test_with(int amps_backend, int norm_strat) 
+int test_with(int wgt_backend, int norm_strat, int wgt_indx_bits) 
 {
     // Standard Lace initialization
     int workers = 1;
@@ -351,10 +358,12 @@ int test_with(int amps_backend, int norm_strat)
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    qsylvan_init_simulator(1LL<<11, -1, amps_backend, norm_strat);
+    qsylvan_init_simulator(1LL<<wgt_indx_bits, 1LL<<wgt_indx_bits, -1, 
+                           wgt_backend, norm_strat);
     qmdd_set_testing_mode(true); // turn on internal sanity tests
 
-    printf("amps backend = %d, norm strategy = %d:\n", amps_backend, norm_strat);
+    printf("wgt backend = %d, norm strat = %d, wgt indx bits = %d:\n", 
+            wgt_backend, norm_strat, wgt_indx_bits);
     int res = run_qmdd_tests();
 
     sylvan_quit();
@@ -367,7 +376,11 @@ int runtests()
 {
     for (int backend = 0; backend < n_backends; backend++) {
         for (int norm_strat = 0; norm_strat < n_norm_strategies; norm_strat++) {
-            if (test_with(backend, norm_strat)) return 1;
+            if (test_with(backend, norm_strat, 11)) return 1;
+            if (backend == COMP_HASHMAP) {
+                // test with edge wgt index > 23 bits
+                if (test_with(backend, norm_strat, 24)) return 1;
+            }
         }
     }
     return 0;

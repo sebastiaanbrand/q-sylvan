@@ -21,8 +21,7 @@ void final_measure(QMDD qmdd, int* measurements, C_struct c_s, bool* results);
  * RETURN:
  * - The Sylvan GATEID which corresponds to <gate>
  */
-#define get_gate_id(gate) (CALL(get_gate_id,gate));
-TASK_DECL_1(BDDVAR, get_gate_id, Gate);
+uint32_t get_gate_id(Gate gate);
 
 /**
  * Applies controlled <gate> to <qmdd> on the qubit with index <i>.
@@ -35,8 +34,7 @@ TASK_DECL_1(BDDVAR, get_gate_id, Gate);
  * RETURN:
  * - The statevector qmdd where controlled <gate> has been applied on the qubit with index <i>
  */
-#define apply_controlled_gate(qmdd,gate,i,n) (CALL(apply_controlled_gate,qmdd,gate,i,n));
-TASK_DECL_4(QMDD, apply_controlled_gate, QMDD, Gate, BDDVAR, BDDVAR);
+QMDD apply_controlled_gate(QMDD qmdd, Gate gate, BDDVAR i, BDDVAR n);
 
 /**
  * Applies <gate> to <qmdd> on the qubit with index <i>.
@@ -49,8 +47,7 @@ TASK_DECL_4(QMDD, apply_controlled_gate, QMDD, Gate, BDDVAR, BDDVAR);
  * RETURN:
  * - The statevector qmdd where <gate> has been applied on the qubit with index <i>
  */
-#define apply_gate(qmdd,gate,i,n) (CALL(apply_gate,qmdd,gate,i,n));
-TASK_DECL_4(QMDD, apply_gate, QMDD, Gate, BDDVAR, BDDVAR);
+QMDD apply_gate(QMDD qmdd, Gate gate, BDDVAR i, BDDVAR n);
 
 /**
  * Generates a gate QMDD with <n> qubits that represents <gate> applied to qubit <k>
@@ -63,8 +60,7 @@ TASK_DECL_4(QMDD, apply_gate, QMDD, Gate, BDDVAR, BDDVAR);
  * RETURN:
  * - The gate QMDD with <n> qubits that represents <gate> applied to qubit <k>
  */
-#define handle_control_matrix(gate,k,n) (CALL(handle_control_matrix,gate,k,n));
-TASK_DECL_3(QMDD, handle_control_matrix, Gate, BDDVAR, BDDVAR);
+QMDD handle_control_matrix(Gate gate, BDDVAR k, BDDVAR n);
 
 /**
  * Generates a gate QMDD with <n> qubits that represents a swap operation between <qubit1> and <qubit2>
@@ -77,8 +73,7 @@ TASK_DECL_3(QMDD, handle_control_matrix, Gate, BDDVAR, BDDVAR);
  * RETURN:
  * - The gate QMDD with <n> qubits that represents a swap operation between <qubit1> and <qubit2>
  */
-#define circuit_swap_matrix(qubit1,qubit2,n) (CALL(circuit_swap_matrix,qubit1,qubit2,n));
-TASK_DECL_3(QMDD, circuit_swap_matrix, BDDVAR, BDDVAR, BDDVAR);
+QMDD circuit_swap_matrix(BDDVAR qubit1, BDDVAR qubit2, BDDVAR n);
 
 /**
  * Checks if the measuring gate at position (<qubit>,<depth>) in <c_s> is the last gate on that qubit
@@ -91,8 +86,7 @@ TASK_DECL_3(QMDD, circuit_swap_matrix, BDDVAR, BDDVAR, BDDVAR);
  * RETURN:
  * - true if it is the last gate, else false
  */
-#define is_final_measure(c_s,qubit,depth) (CALL(is_final_measure,c_s,qubit,depth));
-TASK_DECL_3(bool, is_final_measure, C_struct, BDDVAR, BDDVAR);
+bool is_final_measure(C_struct c_s, BDDVAR qubit, uint32_t depth);
 
 /**
  * Checks if the classical register contains the expected value of the classical if statement
@@ -105,8 +99,7 @@ TASK_DECL_3(bool, is_final_measure, C_struct, BDDVAR, BDDVAR);
  * RETURN:
  * - true if they are equal, else false
  */
-#define check_classical_if(bits,gate,actual_list) (CALL(check_classical_if,bits,gate,actual_list));
-TASK_DECL_3(bool, check_classical_if, BDDVAR, Gate, bool*);
+bool check_classical_if(uint32_t bits, Gate gate, bool* actual_list);
 
 /**
  * Checks if the circuit has intermediate measuring gates, or if the circuit is only

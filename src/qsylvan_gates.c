@@ -1,83 +1,117 @@
 #include <qsylvan_gates.h>
 #include <sylvan_int.h>
+#include <sylvan_edge_weights_complex.h>
 
 
 static long double Pi;    // set value of global Pi
 
-uint64_t gates[n_predef_gates+256+256+1000][4];
+uint64_t gates[n_predef_gates+256+256][4];
 
 /********************** <dynamic custom rotation gates> ***********************/
 
-uint32_t next_custom_id; // set to 0 in init
+
+// store complex values of dynamic gate to re-initialize gate after gc
+complex_t dynamic_gate[4];
 
 uint32_t
-get_custom_gate_id()
+GATEID_Rz(fl_t theta)
 {
-    next_custom_id++;
-    if (next_custom_id >= num_dynamic_gates) {
-        // max custom gates used, reset ID counter to 0 and clear opcache
-        next_custom_id = 0;
-        sylvan_clear_cache();
-    }
-    return num_static_gates + next_custom_id; // index offset by num_static_gates
+    // clear cache to invalidate cached results for GATEID_dynamic
+    sylvan_clear_cache();
+
+    // initialize (and store for gc)
+    dynamic_gate[0] = cmake_angle(-theta/2.0, 1);
+    dynamic_gate[1] = czero();
+    dynamic_gate[2] = czero();
+    dynamic_gate[3] = cmake_angle(theta/2.0, 1);
+    gates[GATEID_dynamic][0] = weight_lookup(&dynamic_gate[0]); // u00
+    gates[GATEID_dynamic][1] = weight_lookup(&dynamic_gate[1]); // u01
+    gates[GATEID_dynamic][2] = weight_lookup(&dynamic_gate[2]); // u10
+    gates[GATEID_dynamic][3] = weight_lookup(&dynamic_gate[3]); // u11
+
+    // return (temporary) gate_id for this gate
+    return GATEID_dynamic;
+}
+
+
+uint32_t
+GATEID_Rx(fl_t theta)
+{
+    // clear cache to invalidate cached results for GATEID_dynamic
+    sylvan_clear_cache();
+
+    // initialize (and store for gc)
+    dynamic_gate[0] = cmake(flt_cos(theta/2.0), 0.0);
+    dynamic_gate[1] = cmake(0.0, -flt_sin(theta/2.0));
+    dynamic_gate[2] = cmake(0.0, -flt_sin(theta/2.0));
+    dynamic_gate[3] = cmake(flt_cos(theta/2.0), 0.0);
+    gates[GATEID_dynamic][0] = weight_lookup(&dynamic_gate[0]); // u00
+    gates[GATEID_dynamic][1] = weight_lookup(&dynamic_gate[1]); // u01
+    gates[GATEID_dynamic][2] = weight_lookup(&dynamic_gate[2]); // u10
+    gates[GATEID_dynamic][3] = weight_lookup(&dynamic_gate[3]); // u11
+
+    // return (temporary) gate_id for this gate
+    return GATEID_dynamic;
 }
 
 uint32_t
-GATEID_Rz(fl_t a)
+GATEID_Ry(fl_t theta)
 {
-    // get gate id for this gate
-    uint32_t gate_id = get_custom_gate_id();
+    // clear cache to invalidate cached results for GATEID_dynamic
+    sylvan_clear_cache();
 
-    // initialize gate
-    double theta_over_2 = Pi * a;
-    AMP u00, u11;
-    u00 = weight_lookup(cmake_angle(-theta_over_2, 1));
-    u11 = weight_lookup(cmake_angle(theta_over_2, 1));
-    gates[gate_id][0] = u00;    gates[gate_id][1] = AADD_ZERO;
-    gates[gate_id][2] = AADD_ZERO; gates[gate_id][3] = u11;
+    // initialize (and store for gc)
+    dynamic_gate[0] = cmake( flt_cos(theta/2.0), 0.0);
+    dynamic_gate[1] = cmake(-flt_sin(theta/2.0), 0.0);
+    dynamic_gate[2] = cmake( flt_sin(theta/2.0), 0.0);
+    dynamic_gate[3] = cmake( flt_cos(theta/2.0), 0.0);
+    gates[GATEID_dynamic][0] = weight_lookup(&dynamic_gate[0]); // u00
+    gates[GATEID_dynamic][1] = weight_lookup(&dynamic_gate[1]); // u01
+    gates[GATEID_dynamic][2] = weight_lookup(&dynamic_gate[2]); // u10
+    gates[GATEID_dynamic][3] = weight_lookup(&dynamic_gate[3]); // u11
 
     // return (temporary) gate_id for this gate
-    return gate_id;
+    return GATEID_dynamic;
 }
 
 uint32_t
-GATEID_Rx(fl_t a)
+GATEID_Phase(fl_t theta)
 {
-    // get gate id for this gate
-    uint32_t gate_id = get_custom_gate_id();
-
-    // initialize gate
-    fl_t theta_over_2 = Pi * a;
-    AMP u00, u01, u10, u11;
-    u00 = weight_lookup(cmake(flt_cos(theta_over_2), 0.0));
-    u01 = weight_lookup(cmake(0.0, -flt_sin(theta_over_2)));
-    u10 = weight_lookup(cmake(0.0, -flt_sin(theta_over_2)));
-    u11 = weight_lookup(cmake(flt_cos(theta_over_2), 0.0));
-    gates[gate_id][0] = u00; gates[gate_id][1] = u01;
-    gates[gate_id][2] = u10; gates[gate_id][3] = u11;
+    // clear cache to invalidate cached results for GATEID_dynamic
+    sylvan_clear_cache();
+    
+    // initialize (and store for gc)
+    dynamic_gate[0] = cmake(1.0, 0.0);
+    dynamic_gate[1] = cmake(0.0, 0.0);
+    dynamic_gate[2] = cmake(0.0, 0.0);
+    dynamic_gate[3] = cmake_angle(theta, 1);
+    gates[GATEID_dynamic][0] = weight_lookup(&dynamic_gate[0]); // u00
+    gates[GATEID_dynamic][1] = weight_lookup(&dynamic_gate[1]); // u01
+    gates[GATEID_dynamic][2] = weight_lookup(&dynamic_gate[2]); // u10
+    gates[GATEID_dynamic][3] = weight_lookup(&dynamic_gate[3]); // u11
 
     // return (temporary) gate_id for this gate
-    return gate_id;
+    return GATEID_dynamic;
 }
 
 uint32_t
-GATEID_Ry(fl_t a)
+GATEID_U(fl_t theta, fl_t phi, fl_t lambda)
 {
-    // get gate id for this gate
-    uint32_t gate_id = get_custom_gate_id();
+    // clear cache to invalidate cached results for GATEID_dynamic
+    sylvan_clear_cache();
 
-    // initialize gate
-    fl_t theta_over_2 = Pi * a;
-    AMP u00, u01, u10, u11;
-    u00 = weight_lookup(cmake(flt_cos(theta_over_2),  0.0));
-    u01 = weight_lookup(cmake(-flt_sin(theta_over_2), 0.0));
-    u10 = weight_lookup(cmake(flt_sin(theta_over_2),  0.0));
-    u11 = weight_lookup(cmake(flt_cos(theta_over_2),  0.0));
-    gates[gate_id][0] = u00; gates[gate_id][1] = u01;
-    gates[gate_id][2] = u10; gates[gate_id][3] = u11;
+    // initialize (and store for gc)
+    dynamic_gate[0] = cmake(flt_cos(theta/2.0), 0.0);
+    dynamic_gate[1] = cmul(cmake_angle(lambda,1), cmake(-flt_sin(theta/2.0), 0));
+    dynamic_gate[2] = cmul(cmake_angle(phi,1), cmake(flt_sin(theta/2.0), 0));
+    dynamic_gate[3] = cmul(cmake_angle(phi+lambda,1), cmake(flt_cos(theta/2.0), 0));
+    gates[GATEID_dynamic][0] = weight_lookup(&dynamic_gate[0]); // u00
+    gates[GATEID_dynamic][1] = weight_lookup(&dynamic_gate[1]); // u01
+    gates[GATEID_dynamic][2] = weight_lookup(&dynamic_gate[2]); // u10
+    gates[GATEID_dynamic][3] = weight_lookup(&dynamic_gate[3]); // u11
 
     // return (temporary) gate_id for this gate
-    return gate_id;
+    return GATEID_dynamic;
 }
 
 /********************* </dynamic custom rotation gates> ***********************/
@@ -102,52 +136,58 @@ qmdd_gates_init()
     gates[k][2] = AADD_ONE;  gates[k][3] = AADD_ZERO;
 
     k = GATEID_Y;
-    gates[k][0] = AADD_ZERO; gates[k][1] = weight_lookup(cmake(0.0, -1.0));
-    gates[k][2] = weight_lookup(cmake(0.0, 1.0));  gates[k][3] = AADD_ZERO;
+    gates[k][0] = AADD_ZERO; gates[k][1] = complex_lookup(0.0, -1.0);
+    gates[k][2] = complex_lookup(0.0, 1.0);  gates[k][3] = AADD_ZERO;
 
     k = GATEID_Z;
     gates[k][0] = AADD_ONE;  gates[k][1] = AADD_ZERO;
     gates[k][2] = AADD_ZERO; gates[k][3] = AADD_MIN_ONE;
 
     k = GATEID_H;
-    gates[k][0] = gates[k][1] = gates[k][2] = weight_lookup(cmake(1.0/flt_sqrt(2.0),0));
-    gates[k][3] = weight_lookup(cmake(-1.0/flt_sqrt(2.0),0));
+    gates[k][0] = gates[k][1] = gates[k][2] = complex_lookup(1.0/flt_sqrt(2.0),0);
+    gates[k][3] = complex_lookup(-1.0/flt_sqrt(2.0),0);
 
     k = GATEID_S;
     gates[k][0] = AADD_ONE;  gates[k][1] = AADD_ZERO;
-    gates[k][2] = AADD_ZERO; gates[k][3] = weight_lookup(cmake(0.0, 1.0));
+    gates[k][2] = AADD_ZERO; gates[k][3] = complex_lookup(0.0, 1.0);
 
     k = GATEID_Sdag;
     gates[k][0] = AADD_ONE;  gates[k][1] = AADD_ZERO;
-    gates[k][2] = AADD_ZERO; gates[k][3] = weight_lookup(cmake(0.0, -1.0));
+    gates[k][2] = AADD_ZERO; gates[k][3] = complex_lookup(0.0, -1.0);
 
     k = GATEID_T;
     gates[k][0] = AADD_ONE;  gates[k][1] = AADD_ZERO;
-    gates[k][2] = AADD_ZERO; gates[k][3] = weight_lookup(cmake(1.0/flt_sqrt(2.0), 1.0/flt_sqrt(2.0)));
+    gates[k][2] = AADD_ZERO; gates[k][3] = complex_lookup(1.0/flt_sqrt(2.0), 1.0/flt_sqrt(2.0));
 
     k = GATEID_Tdag;
     gates[k][0] = AADD_ONE;  gates[k][1] = AADD_ZERO;
-    gates[k][2] = AADD_ZERO; gates[k][3] = weight_lookup(cmake(1.0/flt_sqrt(2.0), -1.0/flt_sqrt(2.0)));
+    gates[k][2] = AADD_ZERO; gates[k][3] = complex_lookup(1.0/flt_sqrt(2.0), -1.0/flt_sqrt(2.0));
 
     k = GATEID_sqrtX;
-    gates[k][0] = weight_lookup(cmake(0.5, 0.5)); gates[k][1] = weight_lookup(cmake(0.5,-0.5));
-    gates[k][2] = weight_lookup(cmake(0.5,-0.5)); gates[k][3] = weight_lookup(cmake(0.5, 0.5));
+    gates[k][0] = complex_lookup(0.5, 0.5); gates[k][1] = complex_lookup(0.5,-0.5);
+    gates[k][2] = complex_lookup(0.5,-0.5); gates[k][3] = complex_lookup(0.5, 0.5);
 
     k = GATEID_sqrtXdag;
-    gates[k][0] = weight_lookup(cmake(0.5,-0.5)); gates[k][1] = weight_lookup(cmake(0.5, 0.5));
-    gates[k][2] = weight_lookup(cmake(0.5, 0.5)); gates[k][3] = weight_lookup(cmake(0.5,-0.5));
+    gates[k][0] = complex_lookup(0.5,-0.5); gates[k][1] = complex_lookup(0.5, 0.5);
+    gates[k][2] = complex_lookup(0.5, 0.5); gates[k][3] = complex_lookup(0.5,-0.5);
 
     k = GATEID_sqrtY;
-    gates[k][0] = weight_lookup(cmake(0.5, 0.5)); gates[k][1] = weight_lookup(cmake(-0.5,-0.5));
-    gates[k][2] = weight_lookup(cmake(0.5, 0.5)); gates[k][3] = weight_lookup(cmake(0.5, 0.5));
+    gates[k][0] = complex_lookup(0.5, 0.5); gates[k][1] = complex_lookup(-0.5,-0.5);
+    gates[k][2] = complex_lookup(0.5, 0.5); gates[k][3] = complex_lookup(0.5, 0.5);
 
     k = GATEID_sqrtYdag;
-    gates[k][0] = weight_lookup(cmake(0.5,-0.5)); gates[k][1] = weight_lookup(cmake(0.5,-0.5));
-    gates[k][2] = weight_lookup(cmake(-0.5,0.5)); gates[k][3] = weight_lookup(cmake(0.5,-0.5));
+    gates[k][0] = complex_lookup(0.5,-0.5); gates[k][1] = complex_lookup(0.5,-0.5);
+    gates[k][2] = complex_lookup(-0.5,0.5); gates[k][3] = complex_lookup(0.5,-0.5);
 
     qmdd_phase_gates_init(255);
 
-    next_custom_id = 0;
+    // init dynamic gate 
+    // (necessary when qmdd_gates_init() is called after gc to re-init all gates)
+    k = GATEID_dynamic;
+    gates[k][0] = weight_lookup(&dynamic_gate[0]);
+    gates[k][1] = weight_lookup(&dynamic_gate[1]);
+    gates[k][2] = weight_lookup(&dynamic_gate[2]);
+    gates[k][3] = weight_lookup(&dynamic_gate[3]);
 }
 
 void
@@ -164,13 +204,13 @@ qmdd_phase_gates_init(int n)
         cartesian = cmake_angle(angle, 1);
         gate_id = GATEID_Rk(k);
         gates[gate_id][0] = AADD_ONE;  gates[gate_id][1] = AADD_ZERO;
-        gates[gate_id][2] = AADD_ZERO; gates[gate_id][3] = weight_lookup(cartesian);
+        gates[gate_id][2] = AADD_ZERO; gates[gate_id][3] = weight_lookup(&cartesian);
 
         // backward rotation
         angle = -2*Pi / (fl_t)(1<<k);
         cartesian = cmake_angle(angle, 1);
         gate_id = GATEID_Rk_dag(k);
         gates[gate_id][0] = AADD_ONE;  gates[gate_id][1] = AADD_ZERO;
-        gates[gate_id][2] = AADD_ZERO; gates[gate_id][3] = weight_lookup(cartesian);
+        gates[gate_id][2] = AADD_ZERO; gates[gate_id][3] = weight_lookup(&cartesian);
     }
 }

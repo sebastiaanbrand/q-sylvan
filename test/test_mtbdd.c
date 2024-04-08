@@ -101,6 +101,11 @@ test_mtbdd_makenodes_and_leafs_boolean()
     MTBDD index_leaf_10 = mtbdd_makeleaf(terminal_type, value_low_10);
     MTBDD index_leaf_11 = mtbdd_makeleaf(terminal_type, value_high_11);
 
+    printf("index_leaf_00 = %"PRIu64" \n", index_leaf_00);
+    printf("index_leaf_01 = %"PRIu64" \n", index_leaf_01);
+    printf("index_leaf_10 = %"PRIu64" \n", index_leaf_10);
+    printf("index_leaf_11 = %"PRIu64" \n", index_leaf_11);
+
     // Identical terminals must have the same index
     test_assert(index_leaf_00 == index_leaf_10);
     test_assert(index_leaf_01 == index_leaf_11);
@@ -110,12 +115,17 @@ test_mtbdd_makenodes_and_leafs_boolean()
     MTBDD index_x1_low  = mtbdd_makenode(index_x2, index_leaf_00, index_leaf_01);
     MTBDD index_x1_high = mtbdd_makenode(index_x2, index_leaf_10, index_leaf_11);
 
+    printf("index_x1_low  = %"PRIu64" \n", index_x1_low);
+    printf("index_x1_high = %"PRIu64" \n", index_x1_high);
+
     // The indices of x1 should be identical
     test_assert(index_x1_low == index_x1_high);
 
     // Make non-terminal nodes - root layer, so variable x1
     uint32_t index_x1 = 1;
     MTBDD index_root_node = mtbdd_makenode(index_x1, index_x1_low, index_x1_high);
+
+    printf("index_root_node = %"PRIu64" \n", index_root_node);
 
     // The index of root should be the indices of x1
     test_assert(index_root_node == index_x1_low);
@@ -160,6 +170,11 @@ test_mtbdd_makenodes_and_leafs_integer()
     MTBDD index_leaf_10 = mtbdd_makeleaf(terminal_type, value_low_10);
     MTBDD index_leaf_11 = mtbdd_makeleaf(terminal_type, value_high_11);
 
+    printf("index_leaf_00 = %"PRIu64" \n", index_leaf_00);
+    printf("index_leaf_01 = %"PRIu64" \n", index_leaf_01);
+    printf("index_leaf_10 = %"PRIu64" \n", index_leaf_10);
+    printf("index_leaf_11 = %"PRIu64" \n", index_leaf_11);
+
     // Different terminals should have different indices
     test_assert(index_leaf_00 != index_leaf_10); 
     test_assert(index_leaf_01 != index_leaf_11);
@@ -169,12 +184,17 @@ test_mtbdd_makenodes_and_leafs_integer()
     MTBDD index_x1_low  = mtbdd_makenode(index_x2, index_leaf_00, index_leaf_01);
     MTBDD index_x1_high = mtbdd_makenode(index_x2, index_leaf_10, index_leaf_11);
 
+    printf("index_x1_low  = %"PRIu64" \n", index_x1_low);
+    printf("index_x1_high = %"PRIu64" \n", index_x1_high);
+
     // The indices of x1 should be different
     test_assert(index_x1_low != index_x1_high);
 
     // Make root node (= non terminal node) - top layer, so variable x1
     uint32_t index_x1 = 1;
     MTBDD index_root_node = mtbdd_makenode(index_x1, index_x1_low, index_x1_high);
+
+    printf("index_root_node = %"PRIu64" \n", index_root_node);
 
     // The index of root should be the indices of x1
     test_assert(index_root_node != index_x1_low);
@@ -424,14 +444,6 @@ test_mtbdd_arithmic_functions_double()
     MTBDD index_leaf_01 = mtbdd_double(value_01);
     MTBDD index_leaf_10 = mtbdd_double(value_10);
     MTBDD index_leaf_11 = mtbdd_double(value_11);
-
-    if(true) {
-        printf("index_leaf_00 = %ld \n", index_leaf_00);
-        printf("index_leaf_01 = %ld \n", index_leaf_01);
-        printf("index_leaf_10 = %ld \n", index_leaf_10);
-        printf("index_leaf_11 = %ld \n", index_leaf_11);
-        printf(">>>> type = %d\n", mtbdd_gettype(index_leaf_00));
-    }
 
     // Make non-terminal nodes - middle layer, so variable x2
     uint32_t index_x2 = 2;
@@ -1018,24 +1030,24 @@ test_mtbdd_abstract_plus_function_2_double()
     MTBDD index_leaf_10 = mtbdd_double(0.35);
     MTBDD index_leaf_11 = mtbdd_double(0.75);
 
-    printf("index_leaf_00 = %ld \n", index_leaf_00);
-    printf("index_leaf_01 = %ld \n", index_leaf_01);
-    printf("index_leaf_10 = %ld \n", index_leaf_10);
-    printf("index_leaf_11 = %ld \n", index_leaf_11);
+    printf("index_leaf_00 = %"PRIu64" \n", index_leaf_00);
+    printf("index_leaf_01 = %"PRIu64" \n", index_leaf_01);
+    printf("index_leaf_10 = %"PRIu64" \n", index_leaf_10);
+    printf("index_leaf_11 = %"PRIu64" \n", index_leaf_11);
 
     // Make non-terminal nodes - middle layer, so variable x2
     uint32_t index_x2 = 2;
     MTBDD index_x0_low  = mtbdd_makenode(index_x2, index_leaf_00, index_leaf_01);
     MTBDD index_x0_high = mtbdd_makenode(index_x2, index_leaf_10, index_leaf_11);
 
-    printf("index_x0_low  = %ld \n", index_x0_low);
-    printf("index_x0_high = %ld \n", index_x0_high);
+    printf("index_x0_low  = %"PRIu64" \n", index_x0_low);
+    printf("index_x0_high = %"PRIu64" \n", index_x0_high);
 
     // Make root node (= non terminal node) - top layer, so variable x1
     uint32_t index_x1 = 1;
     MTBDD index_x0 = mtbdd_makenode(index_x1, index_x0_low, index_x0_high);
 
-    printf("index_x0 = %ld \n", index_x0);
+    printf("index_x0 = %"PRIu64" \n", index_x0);
 
     dd = index_x0;
 
@@ -1065,12 +1077,12 @@ test_mtbdd_abstract_plus_function_2_double()
     //fclose(out);
 
     // Print all kinds of gets
-    printf("dd_plus       = %ld\n", dd_plus);
+    printf("dd_plus       = %"PRIu64"\n", dd_plus);
     printf("getnumer      = %d \n", mtbdd_getnumer(dd_plus));
     printf("getdouble     = %lf\n", mtbdd_getdouble(dd_plus));
-    printf("getvalue      = %ld\n", mtbdd_getvalue(dd_plus));
-    printf("getlow        = %ld\n", mtbdd_getlow(dd_plus));
-    printf("gethigh       = %ld\n", mtbdd_gethigh(dd_plus));
+    printf("getvalue      = %"PRIu64"\n", mtbdd_getvalue(dd_plus));
+    printf("getlow        = %"PRIu64"\n", mtbdd_getlow(dd_plus));
+    printf("gethigh       = %"PRIu64"\n", mtbdd_gethigh(dd_plus));
     printf("getvar        = %d \n", mtbdd_getvar(dd_plus));  // index_x1 (index_x0)
 
     printf("getlow(low)   00 = %lf\n", mtbdd_getdouble( mtbdd_getlow(dd_plus)));
@@ -1127,24 +1139,24 @@ test_mtbdd_abstract_plus_min_max_times_function_3_double()
     MTBDD index_leaf_10 = mtbdd_double(0.35);
     MTBDD index_leaf_11 = mtbdd_double(0.75);
 
-    printf("index_leaf_00 = %ld \n", index_leaf_00);
-    printf("index_leaf_01 = %ld \n", index_leaf_01);
-    printf("index_leaf_10 = %ld \n", index_leaf_10);
-    printf("index_leaf_11 = %ld \n", index_leaf_11);
+    printf("index_leaf_00 = %"PRIu64" \n", index_leaf_00);
+    printf("index_leaf_01 = %"PRIu64" \n", index_leaf_01);
+    printf("index_leaf_10 = %"PRIu64" \n", index_leaf_10);
+    printf("index_leaf_11 = %"PRIu64" \n", index_leaf_11);
 
     // Make non-terminal nodes - middle layer, so variable x2
     uint32_t index_x2 = 2;
     MTBDD index_x0_low  = mtbdd_makenode(index_x2, index_leaf_00, index_leaf_01);
     MTBDD index_x0_high = mtbdd_makenode(index_x2, index_leaf_10, index_leaf_11);
 
-    printf("index_x0_low  = %ld \n", index_x0_low);
-    printf("index_x0_high = %ld \n", index_x0_high);
+    printf("index_x0_low  = %"PRIu64" \n", index_x0_low);
+    printf("index_x0_high = %"PRIu64" \n", index_x0_high);
 
     // Make root node (= non terminal node) - top layer, so variable x1
     uint32_t index_x1 = 1;
     MTBDD index_x0 = mtbdd_makenode(index_x1, index_x0_low, index_x0_high);
 
-    printf("index_x0 = %ld \n", index_x0);
+    printf("index_x0 = %"PRIu64" \n", index_x0);
 
     dd = index_x0;
 
@@ -1174,12 +1186,12 @@ test_mtbdd_abstract_plus_min_max_times_function_3_double()
     //fclose(out);
 
     // Print all kinds of gets
-    printf("dd_plus       = %ld\n", dd_plus);
+    printf("dd_plus       = %"PRIu64"\n", dd_plus);
     printf("getnumer      = %d \n", mtbdd_getnumer(dd_plus));
     printf("getdouble     = %lf\n", mtbdd_getdouble(dd_plus));
-    printf("getvalue      = %ld\n", mtbdd_getvalue(dd_plus));
-    printf("getlow        = %ld\n", mtbdd_getlow(dd_plus));
-    printf("gethigh       = %ld\n", mtbdd_gethigh(dd_plus));
+    printf("getvalue      = %"PRIu64"\n", mtbdd_getvalue(dd_plus));
+    printf("getlow        = %"PRIu64"\n", mtbdd_getlow(dd_plus));
+    printf("gethigh       = %"PRIu64"\n", mtbdd_gethigh(dd_plus));
     printf("getvar        = %d \n", mtbdd_getvar(dd_plus));  // index_x0 undefined
 
     test_assert(mtbdd_getdouble(dd_plus)  == 2.1);

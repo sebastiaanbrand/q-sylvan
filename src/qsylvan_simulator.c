@@ -46,15 +46,15 @@ GATE_OPID_64(uint32_t gateid, BDDVAR a, BDDVAR b, BDDVAR c, BDDVAR d, BDDVAR e)
 /******************************<Initialization>********************************/
 
 void
-qsylvan_init_simulator(size_t wgt_tab_size, double wgt_tab_tolerance, int edge_weigth_backend, int norm_strat)
+qsylvan_init_simulator(size_t min_tablesize, size_t max_tablesize, double wgt_tab_tolerance, int edge_weigth_backend, int norm_strat)
 {
-    sylvan_init_aadd(wgt_tab_size, wgt_tab_tolerance, edge_weigth_backend, norm_strat, &qmdd_gates_init);
+    sylvan_init_aadd(min_tablesize, max_tablesize, wgt_tab_tolerance, edge_weigth_backend, norm_strat, &qmdd_gates_init);
 }
 
 void
 qsylvan_init_defaults(size_t wgt_tab_size)
 {
-    qsylvan_init_simulator(wgt_tab_size, -1, COMP_HASHMAP, NORM_LOW);
+    qsylvan_init_simulator(wgt_tab_size, wgt_tab_size, -1, COMP_HASHMAP, NORM_LOW);
 }
 
 /*****************************</Initialization>********************************/
@@ -578,8 +578,12 @@ TASK_IMPL_6(QMDD, qmdd_cgate_range_rec, QMDD, q, gate_id_t, gate, BDDVAR, c_firs
 QMDD
 qmdd_circuit_swap(QMDD qmdd, BDDVAR qubit1, BDDVAR qubit2)
 {
-    assert (qubit1 < qubit2);
-    
+    if (qubit1 > qubit2) {
+        BDDVAR tmp = qubit2;
+        qubit2 = qubit1;
+        qubit1 = tmp;
+    }
+
     QMDD res;
 
     // CNOT
@@ -837,7 +841,7 @@ qmdd_measure_q0(QMDD qmdd, BDDVAR nvars, int *m, double *p)
     }
 
     // flip a coin
-    float rnd = ((float)rand())/RAND_MAX;
+    float rnd = ((float)rand())/((float)RAND_MAX);
     *m = (rnd < prob_low) ? 0 : 1;
     *p = prob_low;
 
@@ -904,7 +908,7 @@ qmdd_measure_all(QMDD qmdd, BDDVAR n, bool* ms, double *p)
         }
 
         // flip a coin
-        float rnd = ((float)rand())/RAND_MAX;
+        float rnd = ((float)rand())/((float)RAND_MAX);
         ms[k] = (rnd < prob_low) ? 0 : 1;
 
         // Get next edge
@@ -983,10 +987,14 @@ TASK_IMPL_3(double, qmdd_unnormed_prob, QMDD, qmdd, BDDVAR, topvar, BDDVAR, nvar
 }
 
 complex_t
-qmdd_get_amplitude(QMDD q, bool *basis_state)
+qmdd_get_amplitude(QMDD q, bool *x, BDDVAR nqubits)
 {
+    // QMDD is indexed q_0, ..., q_{n-1} but |x> is assumed q_{n-1}, ..., q_0,
+    // so we temporarily reverse x.
+    reverse_bit_array(x, nqubits);
     complex_t res;
-    weight_value(aadd_getvalue(q, basis_state), &res);
+    weight_value(aadd_getvalue(q, x), &res);
+    reverse_bit_array(x, nqubits);
     return res;
 }
 
@@ -1005,7 +1013,7 @@ qmdd_amp_from_prob(double a)
     complex_t c;
     c.r = flt_sqrt(a);
     c.i = 0;
-    return weight_lookup(c);
+    return weight_lookup(&c);
 }
 
 /**********************</Measurements and probabilities>***********************/

@@ -2,6 +2,7 @@
 #include <time.h>
 
 #include "qsylvan.h"
+#include <sylvan_edge_weights_complex.h>
 #include "test_assert.h"
 
 bool VERBOSE = true;
@@ -13,8 +14,8 @@ int test_wgt_norm_L2()
     complex_t wa, wb, wc, wr, wref, wref2;
 
     // a = 1/sqrt(2), b = 1/sqrt(2) (squares already sum to 1)
-    a = weight_lookup(cmake(1.0/flt_sqrt(2.0), 0));
-    b = weight_lookup(cmake(1.0/flt_sqrt(2.0), 0));
+    a = complex_lookup(1.0/flt_sqrt(2.0), 0);
+    b = complex_lookup(1.0/flt_sqrt(2.0), 0);
     _a = a;
     _b = b;
     c = wgt_norm_L2(&a, &b);
@@ -35,8 +36,8 @@ int test_wgt_norm_L2()
     test_assert(a_recomputed == a);
 
     // a = 1/sqrt(2), b = -1/sqrt(2) (squares already sum to 1)
-    a = weight_lookup(cmake(1.0/flt_sqrt(2.0), 0));
-    b = weight_lookup(cmake(-1.0/flt_sqrt(2.0), 0));
+    a = complex_lookup(1.0/flt_sqrt(2.0), 0);
+    b = complex_lookup(-1.0/flt_sqrt(2.0), 0);
     _a = a;
     _b = b;
     c = wgt_norm_L2(&a, &b);
@@ -56,8 +57,8 @@ int test_wgt_norm_L2()
     test_assert(a_recomputed == a);
 
     // a = -1/sqrt(2), b = 1/sqrt(2) (squares already sum to 1, but a not in R)
-    a = weight_lookup(cmake(-1.0/flt_sqrt(2.0), 0));
-    b = weight_lookup(cmake(1.0/flt_sqrt(2.0), 0));
+    a = complex_lookup(-1.0/flt_sqrt(2.0), 0);
+    b = complex_lookup(1.0/flt_sqrt(2.0), 0);
     _a = a;
     _b = b;
     c = wgt_norm_L2(&a, &b);
@@ -77,8 +78,8 @@ int test_wgt_norm_L2()
     test_assert(a_recomputed == a);
 
     // a = 5, b = 3 (squares of a and b don't sum to 1)
-    a = weight_lookup(cmake(5, 0));
-    b = weight_lookup(cmake(3, 0));
+    a = complex_lookup(5, 0);
+    b = complex_lookup(3, 0);
     c = wgt_norm_L2(&a, &b);
     a_recomputed = wgt_get_low_L2normed(b);
 
@@ -102,8 +103,8 @@ int test_wgt_norm_L2()
     test_assert(a_recomputed == a);
 
     // a = 5, b = 0
-    a = weight_lookup(cmake(5, 0));
-    b = weight_lookup(cmake(0, 0));
+    a = complex_lookup(5, 0);
+    b = complex_lookup(0, 0);
     c = wgt_norm_L2(&a, &b);
     a_recomputed = wgt_get_low_L2normed(b);
 
@@ -120,8 +121,8 @@ int test_wgt_norm_L2()
     test_assert(a_recomputed == a);
 
     // a = 0, b = 0.3
-    a = weight_lookup(cmake(0, 0));
-    b = weight_lookup(cmake(0.3, 0));
+    a = complex_lookup(0, 0);
+    b = complex_lookup(0.3, 0);
     c = wgt_norm_L2(&a, &b);
     a_recomputed = wgt_get_low_L2normed(b);
 
@@ -138,7 +139,7 @@ int test_wgt_norm_L2()
     test_assert(a_recomputed == a);
 
     // a = 2, b = 1
-    a = weight_lookup(cmake(2, 0));
+    a = complex_lookup(2, 0);
     b = AADD_ONE;
     c = wgt_norm_L2(&a, &b);
     a_recomputed = wgt_get_low_L2normed(b);
@@ -155,7 +156,7 @@ int test_wgt_norm_L2()
 
     // a = 1, b = i
     a = AADD_ONE;
-    b = weight_lookup(cmake(0, 1));
+    b = complex_lookup(0, 1);
     c = wgt_norm_L2(&a, &b);
     a_recomputed = wgt_get_low_L2normed(b);
 
@@ -170,8 +171,8 @@ int test_wgt_norm_L2()
     test_assert(a_recomputed == a);
 
     // a = (1 + i)/2, b = (1 - i)/2 (magnitude 1/sqrt(2) phase difference of -i)
-    a = weight_lookup(cmake(0.5, 0.5));
-    b = weight_lookup(cmake(0.5, -0.5));
+    a = complex_lookup(0.5, 0.5);
+    b = complex_lookup(0.5, -0.5);
     c = wgt_norm_L2(&a, &b);
     a_recomputed = wgt_get_low_L2normed(b);
 
@@ -191,7 +192,7 @@ int test_wgt_norm_L2()
 
 int runtests() 
 {
-    sylvan_init_edge_weights(1LL<<11, -1, WGT_COMPLEX_128, COMP_HASHMAP);
+    sylvan_init_edge_weights(1LL<<11, 1LL<<11, -1, WGT_COMPLEX_128, COMP_HASHMAP);
 
     // test amp normalization
     if (test_wgt_norm_L2()) return 1;

@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdint.h>
 
 #include <sylvan_edge_weights.h>
 #include <sylvan_edge_weights_complex.h>
@@ -8,13 +9,14 @@
 void *wgt_storage; // TODO: move to source file?
 void *wgt_storage_new;
 
-AADD_WGT AADD_ONE;
 AADD_WGT AADD_ZERO;
+AADD_WGT AADD_ONE;
 AADD_WGT AADD_MIN_ONE;
+AADD_WGT AADD_IMG;
+AADD_WGT AADD_MIN_IMG;
+AADD_WGT AADD_SQRT_TWO;
 
-/**********************<Managing the edge weight table>************************/
-
-void sylvan_init_edge_weights(size_t size, double tol, edge_weight_type_t edge_weight_type, wgt_storage_backend_t backend);
+void sylvan_init_edge_weights(size_t min_tablesize, size_t max_tablesize, double tol, edge_weight_type_t edge_weight_type, wgt_storage_backend_t backend);
 void init_edge_weight_functions(edge_weight_type_t edge_weight_type);
 void init_edge_weight_storage(size_t size, double tol, wgt_storage_backend_t backend, void **wgt_store);
 void (*init_wgt_table_entries)(); // set by sylvan_init_aadd
@@ -25,29 +27,27 @@ void sylvan_edge_weights_free();
 
 /******************<Interface for different edge_weight_types>*****************/
 
-weight_t (*weight_malloc)();
-void (*_weight_value)(); // weight_value(WGT a, weight_type * res)
-AADD_WGT (*weight_lookup)(); // weight_lookup_(weight_type a)
-AADD_WGT (*_weight_lookup_ptr)(); // _weight_lookup_ptr(weight_type *a, void *wgt_store)
-void (*init_one_zero)();
+weight_malloc_f 		weight_malloc;
+_weight_value_f 		_weight_value;
 
-/* Arithmetic operations on edge weights */
-void (*weight_abs)(); // a <-- |a|
-void (*weight_neg)(); // a <-- -a
-void (*weight_sqr)(); // a <-- a^2
-void (*weight_add)(); // a <-- a + b
-void (*weight_sub)(); // a <-- a - b
-void (*weight_mul)(); // a <-- a * b
-void (*weight_div)(); // a <-- a / b
-bool (*weight_eq)(); // returns true iff a == b
-bool (*weight_eps_close)(); // returns true iff dist(a,b) < eps
-bool (*weight_greater)(); // returns true iff a > b
+weight_lookup_f 		weight_lookup;
+_weight_lookup_ptr_f	_weight_lookup_ptr;
+init_one_zero_f 		init_one_zero;
+weight_abs_f 			weight_abs;
+weight_neg_f 			weight_neg;
+weight_sqr_f 			weight_sqr;
+weight_add_f 			weight_add;
+weight_sub_f 			weight_sub;
+weight_mul_f 			weight_mul;
+weight_div_f 			weight_div;
+weight_eq_f 			weight_eq;
+weight_eps_close_f 		weight_eps_close;
+weight_greater_f		weight_greater;
 
-/* Normalization methods */
-AADD_WGT (*wgt_norm_L2)(); // wgt_norm_L2(AADD_WGT *low, AADD_WGT *high)
-AADD_WGT (*wgt_get_low_L2normed)(); // wgt_get_low_L2normed(AADD_WGT high)
+wgt_norm_L2_f			wgt_norm_L2;
+wgt_get_low_L2normed_f	wgt_get_low_L2normed;
 
-void (*weight_fprint)(); // weight_fprint(FILE *stream, weight_t a)
+weight_fprint_f 		weight_fprint;
 
 /**********************<Managing the edge weight table>************************/
 
@@ -55,12 +55,17 @@ void (*weight_fprint)(); // weight_fprint(FILE *stream, weight_t a)
 static const double default_tolerance = 1e-14;
 static double tolerance;
 static wgt_storage_backend_t wgt_backend;
-size_t table_size;
+size_t table_size; // current
+size_t min_tablesize; // initial
+size_t max_tablesize; // maximum
 
-void sylvan_init_edge_weights(size_t size, double tol, edge_weight_type_t edge_weight_type, wgt_storage_backend_t backend)
+void sylvan_init_edge_weights(size_t _min_tablesize, size_t _max_tablesize, double tol,
+                              edge_weight_type_t edge_weight_type, wgt_storage_backend_t backend)
 {
+    min_tablesize = _min_tablesize;
+    max_tablesize = _max_tablesize;
     init_edge_weight_functions(edge_weight_type);
-    init_edge_weight_storage(size, tol, backend, &wgt_storage);
+    init_edge_weight_storage(min_tablesize, tol, backend, &wgt_storage);
     init_edge_weight_storage_gc();
 }
 
@@ -69,24 +74,24 @@ void init_edge_weight_functions(edge_weight_type_t edge_weight_type)
     switch (edge_weight_type)
     {
     case WGT_COMPLEX_128:
-        weight_malloc       = &weight_complex_malloc;
-        _weight_value       = &_weight_complex_value;
-        weight_lookup       = &weight_complex_lookup;
-        _weight_lookup_ptr  = &_weight_complex_lookup_ptr;
-        init_one_zero       = &init_complex_one_zero;
-        weight_abs          = &weight_complex_abs;
-        weight_neg          = &weight_complex_neg;
-        weight_sqr          = &weight_complex_sqr;
-        weight_add          = &weight_complex_add;
-        weight_sub          = &weight_complex_sub;
-        weight_mul          = &weight_complex_mul;
-        weight_div          = &weight_complex_div;
-        weight_eq           = &weight_complex_eq;
-        weight_eps_close    = &weight_complex_eps_close;
-        weight_greater      = &weight_complex_greater;
-        wgt_norm_L2         = &wgt_complex_norm_L2;
-        wgt_get_low_L2normed= &wgt_complex_get_low_L2normed;
-        weight_fprint       = &weight_complex_fprint;
+        weight_malloc       = (weight_malloc_f) &weight_complex_malloc;
+        _weight_value       = (_weight_value_f) &_weight_complex_value;
+        weight_lookup       = (weight_lookup_f) &weight_complex_lookup;
+        _weight_lookup_ptr  = (_weight_lookup_ptr_f) &_weight_complex_lookup_ptr;
+        init_one_zero       = (init_one_zero_f) &init_complex_one_zero;
+        weight_abs          = (weight_abs_f) &weight_complex_abs;
+        weight_neg          = (weight_neg_f) &weight_complex_neg;
+        weight_sqr          = (weight_sqr_f) &weight_complex_sqr;
+        weight_add          = (weight_add_f) &weight_complex_add;
+        weight_sub          = (weight_sub_f) &weight_complex_sub;
+        weight_mul          = (weight_mul_f) &weight_complex_mul;
+        weight_div          = (weight_div_f) &weight_complex_div;
+        weight_eq           = (weight_eq_f) &weight_complex_eq;
+        weight_eps_close    = (weight_eps_close_f) &weight_complex_eps_close;
+        weight_greater      = (weight_greater_f) &weight_complex_greater;
+        wgt_norm_L2         = (wgt_norm_L2_f) &wgt_complex_norm_L2;
+        wgt_get_low_L2normed= (wgt_get_low_L2normed_f) &wgt_complex_get_low_L2normed;
+        weight_fprint       = (weight_fprint_f) &weight_complex_fprint;
         break;
     default:
         printf("ERROR: Unrecognized weight type = %d\n", edge_weight_type);
@@ -183,7 +188,11 @@ void wgt_table_gc_inc_entries_estimate()
 void
 wgt_table_gc_init_new(void (*init_wgt_table_entries)())
 {
-    // init new (empty) edge weight storage
+    // init new (empty) edge weight storage (double previous size if under max_size)
+    table_size = 2*table_size;
+    if (table_size > max_tablesize) {
+        table_size = max_tablesize;
+    }
     init_edge_weight_storage(table_size, tolerance, wgt_backend, &wgt_storage_new);
 
     // reset estimate entries counters

@@ -394,7 +394,7 @@ int main()
     // Simple Sylvan initialization
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    qsylvan_init_simulator(1LL<<16, TOLERANCE, COMP_HASHMAP, NORM_LARGEST);
+    qsylvan_init_simulator(1LL<<16, 1LL<<16, TOLERANCE, COMP_HASHMAP, NORM_LARGEST);
     qmdd_set_testing_mode(true); // turn on internal sanity tests
 
     int res = runtests();
