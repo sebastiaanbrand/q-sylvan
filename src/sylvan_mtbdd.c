@@ -1369,7 +1369,7 @@ TASK_IMPL_2(MTBDD, mtbdd_op_times, MTBDD*, pa, MTBDD*, pb)
  */
 TASK_IMPL_2(MTBDD, mtbdd_op_min, MTBDD*, pa, MTBDD*, pb)
 {
-    printf("1\n");
+    //printf("1\n");
 
     MTBDD a = *pa, b = *pb;
     if (a == mtbdd_true) return b;
@@ -1401,7 +1401,7 @@ TASK_IMPL_2(MTBDD, mtbdd_op_min, MTBDD*, pa, MTBDD*, pb)
             double va = *(double*)&val_a;
             double vb = *(double*)&val_b;
 
-            printf("3  %lf  %lf \n", va, vb);
+            //printf("3  %lf  %lf \n", va, vb);
 
             return va < vb ? a : b;
         
@@ -3862,6 +3862,8 @@ free_matrix_array(MatArr_t **W_arr, int n)
 int
 print_vector_array(VecArr_t *v_arr, int n)
 {
+    return 0; // switch off printing
+
     if(n<0)
         return 1;
 
@@ -3877,6 +3879,8 @@ print_vector_array(VecArr_t *v_arr, int n)
 int
 print_matrix_array(MatArr_t **W_arr, int n)
 {
+    return 0; // switch off printing
+
     if(n<0)
         return 1;
 
@@ -4118,7 +4122,7 @@ void mtbdd_to_matrix_array(MTBDD M, int n, row_column_mode_t mode, MatArr_t **W)
                 if(mtbdd_getlow(node) != MTBDD_ZERO && mtbdd_isleaf(node) == 0) 
                     node = mtbdd_getlow(node);
                 
-                printf("row=%d getlow()\n", row);
+                //printf("row=%d getlow()\n", row);
             }
             else {
                 if(mtbdd_gethigh(node) != MTBDD_ZERO && mtbdd_isleaf(node) == 0) 
@@ -4217,7 +4221,7 @@ MTBDD mtbdd_is_result_in_cache_3(uint64_t function, uint64_t num1, uint64_t num2
     MTBDD result = MTBDD_ZERO;
 
     if(!cache_get3(function, num1, num2, num3, &result)) {
-        printf("Error in cache_get4()\n");
+        printf("Error in cache_get3()\n");
         return result; //exit(0);
     }
 
@@ -4227,7 +4231,7 @@ MTBDD mtbdd_is_result_in_cache_3(uint64_t function, uint64_t num1, uint64_t num2
 void mtbdd_put_result_in_cache_3(uint64_t function, uint64_t num1, uint64_t num2, uint64_t num3, uint64_t result)
 {
     if(!cache_put3(function, num1, num2, num3, result)) {
-        printf("Error in cache_put4()\n");
+        printf("Error in cache_put3()\n");
         return; //exit(0);
     }
     return;
@@ -4398,7 +4402,7 @@ void mtbdd_get_children_of_var(MTBDD M, MTBDD *M_low, MTBDD *M_high, uint32_t va
         return;
     }
 
-    if(mtbdd_getvar(M) < var) { // NOTE: This may not happen!
+    if(mtbdd_getvar(M) < var) {
         printf("Error in mtbdd_get_children_of_var(): var(M) < var\n");
         // exit(0);
         return; 
@@ -4753,9 +4757,9 @@ MTBDD mtbdd_matvec_mult(MTBDD M, MTBDD v, int nvars, int currentvar)
 
     mtbdd_split_mtbdd_into_four_parts(M, &M_00, &M_01, &M_10, &M_11, currentvar);
 
-    maxvar = -1; minvar = 100; leafcount = 0;
-    determine_top_var_and_leafcount(M, &minvar, &maxvar, &leafcount);
-    printf("M: maxvar = %d, minvar = %d, leaves = %d\n", maxvar, minvar, leafcount);
+    //maxvar = -1; minvar = 100; leafcount = 0;
+    //determine_top_var_and_leafcount(M, &minvar, &maxvar, &leafcount);
+    //printf("M: maxvar = %d, minvar = %d, leaves = %d\n", maxvar, minvar, leafcount);
 
     MTBDD v_0 = v;
     MTBDD v_1 = v;

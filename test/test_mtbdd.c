@@ -101,10 +101,12 @@ test_mtbdd_makenodes_and_leafs_boolean()
     MTBDD index_leaf_10 = mtbdd_makeleaf(terminal_type, value_low_10);
     MTBDD index_leaf_11 = mtbdd_makeleaf(terminal_type, value_high_11);
 
-    printf("index_leaf_00 = %"PRIu64" \n", index_leaf_00);
-    printf("index_leaf_01 = %"PRIu64" \n", index_leaf_01);
-    printf("index_leaf_10 = %"PRIu64" \n", index_leaf_10);
-    printf("index_leaf_11 = %"PRIu64" \n", index_leaf_11);
+    if(false) {
+        printf("index_leaf_00 = %"PRIu64" \n", index_leaf_00);
+        printf("index_leaf_01 = %"PRIu64" \n", index_leaf_01);
+        printf("index_leaf_10 = %"PRIu64" \n", index_leaf_10);
+        printf("index_leaf_11 = %"PRIu64" \n", index_leaf_11);
+    }
 
     // Identical terminals must have the same index
     test_assert(index_leaf_00 == index_leaf_10);
@@ -115,8 +117,10 @@ test_mtbdd_makenodes_and_leafs_boolean()
     MTBDD index_x1_low  = mtbdd_makenode(index_x2, index_leaf_00, index_leaf_01);
     MTBDD index_x1_high = mtbdd_makenode(index_x2, index_leaf_10, index_leaf_11);
 
-    printf("index_x1_low  = %"PRIu64" \n", index_x1_low);
-    printf("index_x1_high = %"PRIu64" \n", index_x1_high);
+    if(false) {
+        printf("index_x1_low  = %"PRIu64" \n", index_x1_low);
+        printf("index_x1_high = %"PRIu64" \n", index_x1_high);
+    }
 
     // The indices of x1 should be identical
     test_assert(index_x1_low == index_x1_high);
@@ -125,7 +129,9 @@ test_mtbdd_makenodes_and_leafs_boolean()
     uint32_t index_x1 = 1;
     MTBDD index_root_node = mtbdd_makenode(index_x1, index_x1_low, index_x1_high);
 
-    printf("index_root_node = %"PRIu64" \n", index_root_node);
+    if(false) {
+        printf("index_root_node = %"PRIu64" \n", index_root_node);
+    }
 
     // The index of root should be the indices of x1
     test_assert(index_root_node == index_x1_low);
@@ -170,10 +176,12 @@ test_mtbdd_makenodes_and_leafs_integer()
     MTBDD index_leaf_10 = mtbdd_makeleaf(terminal_type, value_low_10);
     MTBDD index_leaf_11 = mtbdd_makeleaf(terminal_type, value_high_11);
 
-    printf("index_leaf_00 = %"PRIu64" \n", index_leaf_00);
-    printf("index_leaf_01 = %"PRIu64" \n", index_leaf_01);
-    printf("index_leaf_10 = %"PRIu64" \n", index_leaf_10);
-    printf("index_leaf_11 = %"PRIu64" \n", index_leaf_11);
+    if(false) {
+        printf("index_leaf_00 = %"PRIu64" \n", index_leaf_00);
+        printf("index_leaf_01 = %"PRIu64" \n", index_leaf_01);
+        printf("index_leaf_10 = %"PRIu64" \n", index_leaf_10);
+        printf("index_leaf_11 = %"PRIu64" \n", index_leaf_11);
+    }
 
     // Different terminals should have different indices
     test_assert(index_leaf_00 != index_leaf_10); 
@@ -184,8 +192,10 @@ test_mtbdd_makenodes_and_leafs_integer()
     MTBDD index_x1_low  = mtbdd_makenode(index_x2, index_leaf_00, index_leaf_01);
     MTBDD index_x1_high = mtbdd_makenode(index_x2, index_leaf_10, index_leaf_11);
 
-    printf("index_x1_low  = %"PRIu64" \n", index_x1_low);
-    printf("index_x1_high = %"PRIu64" \n", index_x1_high);
+    if(false) {
+        printf("index_x1_low  = %"PRIu64" \n", index_x1_low);
+        printf("index_x1_high = %"PRIu64" \n", index_x1_high);
+    }
 
     // The indices of x1 should be different
     test_assert(index_x1_low != index_x1_high);
@@ -194,7 +204,9 @@ test_mtbdd_makenodes_and_leafs_integer()
     uint32_t index_x1 = 1;
     MTBDD index_root_node = mtbdd_makenode(index_x1, index_x1_low, index_x1_high);
 
-    printf("index_root_node = %"PRIu64" \n", index_root_node);
+    if(false) {
+        printf("index_root_node = %"PRIu64" \n", index_root_node);
+    }
 
     // The index of root should be the indices of x1
     test_assert(index_root_node != index_x1_low);
@@ -324,37 +336,35 @@ test_mtbdd_makenodes_and_leafs_complex()
 
     mpc_init2(value_00, MPC_PRECISION);
     mpc_set_d_d(value_00, 0.25, 0.25, MPC_ROUNDING);
-    mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, value_00, MPC_ROUNDING);
-    putchar('\n');
 
     mpc_t value_01;
     mpc_init2(value_01, MPC_PRECISION);
     mpc_set_d_d(value_01, 0.25, 0.25, MPC_ROUNDING);
-    mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, value_01, MPC_ROUNDING);
-    putchar('\n');
 
     mpc_t value_10;
     mpc_init2(value_10, MPC_PRECISION);
     mpc_set_d_d(value_10, 0.75, 0.0, MPC_ROUNDING);
-    mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, value_10, MPC_ROUNDING);
-    putchar('\n');
 
     mpc_t value_11;
     mpc_init2(value_11, MPC_PRECISION);
     mpc_set_d_d(value_11, -0.25, 0.0, MPC_ROUNDING);
-    mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, value_11, MPC_ROUNDING);
-    putchar('\n');
+
+    if(false) {
+        mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, value_00, MPC_ROUNDING);
+        putchar('\n');
+        mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, value_01, MPC_ROUNDING);
+        putchar('\n');
+        mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, value_10, MPC_ROUNDING);
+        putchar('\n');
+        mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, value_11, MPC_ROUNDING);
+        putchar('\n');
+    }
 
     MTBDD index_leaf_00 = mtbdd_makeleaf(MPC_TYPE, (size_t)value_00);
     MTBDD index_leaf_00_cp = mtbdd_makeleaf(MPC_TYPE, (size_t)value_00);
     MTBDD index_leaf_01 = mtbdd_makeleaf(MPC_TYPE, (size_t)value_01);
     MTBDD index_leaf_10 = mtbdd_makeleaf(MPC_TYPE, (size_t)value_10);
     MTBDD index_leaf_11 = mtbdd_makeleaf(MPC_TYPE, (size_t)value_11);
-
-    printf("index_leaf_00 = %ld \n", index_leaf_00);
-    printf("index_leaf_01 = %ld \n", index_leaf_01);
-    printf("index_leaf_10 = %ld \n", index_leaf_10);
-    printf("index_leaf_11 = %ld \n", index_leaf_11);
 
     // Different terminals should have different indices
     test_assert(index_leaf_00 == index_leaf_00_cp);
@@ -554,28 +564,14 @@ test_mtbdd_arithmic_plus_sub_times_functions_complex()
     MTBDD index_leaf_10 = mtbdd_makeleaf(MPC_TYPE, (size_t)value_10);
     MTBDD index_leaf_11 = mtbdd_makeleaf(MPC_TYPE, (size_t)value_11);
 
-    if(true) {
-        printf("index_leaf_00 = %ld \n", index_leaf_00);
-        printf("index_leaf_01 = %ld \n", index_leaf_01);
-        printf("index_leaf_10 = %ld \n", index_leaf_10);
-        printf("index_leaf_11 = %ld \n", index_leaf_11);
-    }
-
     // Make non-terminal nodes - middle layer, so variable x2
     uint32_t index_x2 = 2;
     MTBDD index_x1_low  = mtbdd_makenode(index_x2, index_leaf_00, index_leaf_01);
     MTBDD index_x1_high = mtbdd_makenode(index_x2, index_leaf_10, index_leaf_11);
 
-    if(false) {
-        printf("index_x1_low  = %ld \n", index_x1_low);
-        printf("index_x1_high = %ld \n", index_x1_high);
-    }
-
     // Make root node (= non terminal node) - top layer, so variable x1
     uint32_t index_x1 = 1;
     MTBDD index_root_node = mtbdd_makenode(index_x1, index_x1_low, index_x1_high);
-
-    printf("index_root_node = %ld \n", index_root_node);
 
     dd1 = index_root_node;
 
@@ -596,7 +592,7 @@ test_mtbdd_arithmic_plus_sub_times_functions_complex()
     mpc_init2(add_11, MPC_PRECISION);
     mpc_add(add_11, value_11, value_11, MPC_ROUNDING);
 
-    if(true) {
+    if(false) {
         mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, (mpc_ptr)add_00, MPC_ROUNDING);
         putchar('\n');
         mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, (mpc_ptr)add_01, MPC_ROUNDING);
@@ -620,7 +616,6 @@ test_mtbdd_arithmic_plus_sub_times_functions_complex()
     // Compute a . b
     //dd_times = mpc_times(dd1, dd1);
     dd_times = mtbdd_times(dd1, dd1);
-    printf("dd_times = %ld \n", dd_times);
 
     mpc_t times_00;
     mpc_init2(times_00, MPC_PRECISION);
@@ -635,7 +630,7 @@ test_mtbdd_arithmic_plus_sub_times_functions_complex()
     mpc_init2(times_11, MPC_PRECISION);
     mpc_mul(times_11, value_11, value_11, MPC_ROUNDING);
 
-    if(true) {
+    if(false) {
         mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, (mpc_ptr)times_00, MPC_ROUNDING);
         putchar('\n');
         mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, (mpc_ptr)times_01, MPC_ROUNDING);
@@ -658,7 +653,6 @@ test_mtbdd_arithmic_plus_sub_times_functions_complex()
 
     // Compute a - b
     dd_minus = mpc_minus(dd1, dd1);
-    printf("dd_minus = %ld \n", dd_minus);
 
     mpc_t sub_00;
     mpc_init2(sub_00, MPC_PRECISION);
@@ -673,7 +667,7 @@ test_mtbdd_arithmic_plus_sub_times_functions_complex()
     mpc_init2(sub_11, MPC_PRECISION);
     mpc_sub(sub_11, value_11, value_11, MPC_ROUNDING);
 
-    if(true) {
+    if(false) {
         mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, (mpc_ptr)sub_00, MPC_ROUNDING);
         putchar('\n');
         mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, (mpc_ptr)sub_01, MPC_ROUNDING);
@@ -745,14 +739,6 @@ test_mtbdd_arithmic_min_max_functions_complex()
     MTBDD index_leaf_10 = mtbdd_makeleaf(MPC_TYPE, (size_t)value_10);
     MTBDD index_leaf_11 = mtbdd_makeleaf(MPC_TYPE, (size_t)value_11);
 
-    if(false) {
-        printf("index_leaf_00 = %ld \n", index_leaf_00);
-        printf("index_leaf_01 = %ld \n", index_leaf_01);
-        printf("index_leaf_10 = %ld \n", index_leaf_10);
-        printf("index_leaf_11 = %ld \n", index_leaf_11);
-        printf(">>>> type = %d\n", mtbdd_gettype(index_leaf_00));
-    }
-
     // Make non-terminal nodes - middle layer, so variable x2
     uint32_t index_x2 = 2;
     MTBDD index_x1_low  = mtbdd_makenode(index_x2, index_leaf_00, index_leaf_01);
@@ -770,10 +756,6 @@ test_mtbdd_arithmic_min_max_functions_complex()
     
     MTBDD index_leaf_0 = mtbdd_makeleaf(MPC_TYPE, (size_t)value_0);
 
-    if(true) {
-        printf("index_leaf_0 = %ld \n", index_leaf_0);
-    }
-
     // Make non-terminal nodes - middle layer, so variable x2
     index_x2 = 2;
     index_x1_low  = mtbdd_makenode(index_x2, index_leaf_0, index_leaf_0);
@@ -788,8 +770,6 @@ test_mtbdd_arithmic_min_max_functions_complex()
     // Compute minimum of a and b
     MTBDD dd_min = mpc_min(dd1, dd2);
     MTBDD dd_max = mpc_max(dd1, dd2);
-    printf("dd_min = %ld \n", dd_min);
-    printf("dd_max = %ld \n", dd_max);
 
     // Compute the answers
     mpc_t min_00;
@@ -1030,24 +1010,28 @@ test_mtbdd_abstract_plus_function_2_double()
     MTBDD index_leaf_10 = mtbdd_double(0.35);
     MTBDD index_leaf_11 = mtbdd_double(0.75);
 
-    printf("index_leaf_00 = %"PRIu64" \n", index_leaf_00);
-    printf("index_leaf_01 = %"PRIu64" \n", index_leaf_01);
-    printf("index_leaf_10 = %"PRIu64" \n", index_leaf_10);
-    printf("index_leaf_11 = %"PRIu64" \n", index_leaf_11);
+    if(false) {
+        printf("index_leaf_00 = %"PRIu64" \n", index_leaf_00);
+        printf("index_leaf_01 = %"PRIu64" \n", index_leaf_01);
+        printf("index_leaf_10 = %"PRIu64" \n", index_leaf_10);
+        printf("index_leaf_11 = %"PRIu64" \n", index_leaf_11);
+    }
 
     // Make non-terminal nodes - middle layer, so variable x2
     uint32_t index_x2 = 2;
     MTBDD index_x0_low  = mtbdd_makenode(index_x2, index_leaf_00, index_leaf_01);
     MTBDD index_x0_high = mtbdd_makenode(index_x2, index_leaf_10, index_leaf_11);
 
-    printf("index_x0_low  = %"PRIu64" \n", index_x0_low);
-    printf("index_x0_high = %"PRIu64" \n", index_x0_high);
+    if(false) {
+        printf("index_x0_low  = %"PRIu64" \n", index_x0_low);
+        printf("index_x0_high = %"PRIu64" \n", index_x0_high);
+    }
 
     // Make root node (= non terminal node) - top layer, so variable x1
     uint32_t index_x1 = 1;
     MTBDD index_x0 = mtbdd_makenode(index_x1, index_x0_low, index_x0_high);
 
-    printf("index_x0 = %"PRIu64" \n", index_x0);
+    //printf("index_x0 = %"PRIu64" \n", index_x0);
 
     dd = index_x0;
 
@@ -1077,16 +1061,18 @@ test_mtbdd_abstract_plus_function_2_double()
     //fclose(out);
 
     // Print all kinds of gets
-    printf("dd_plus       = %"PRIu64"\n", dd_plus);
-    printf("getnumer      = %d \n", mtbdd_getnumer(dd_plus));
-    printf("getdouble     = %lf\n", mtbdd_getdouble(dd_plus));
-    printf("getvalue      = %"PRIu64"\n", mtbdd_getvalue(dd_plus));
-    printf("getlow        = %"PRIu64"\n", mtbdd_getlow(dd_plus));
-    printf("gethigh       = %"PRIu64"\n", mtbdd_gethigh(dd_plus));
-    printf("getvar        = %d \n", mtbdd_getvar(dd_plus));  // index_x1 (index_x0)
+    if(false) {
+        printf("dd_plus       = %"PRIu64"\n", dd_plus);
+        printf("getnumer      = %d \n", mtbdd_getnumer(dd_plus));
+        printf("getdouble     = %lf\n", mtbdd_getdouble(dd_plus));
+        printf("getvalue      = %"PRIu64"\n", mtbdd_getvalue(dd_plus));
+        printf("getlow        = %"PRIu64"\n", mtbdd_getlow(dd_plus));
+        printf("gethigh       = %"PRIu64"\n", mtbdd_gethigh(dd_plus));
+        printf("getvar        = %d \n", mtbdd_getvar(dd_plus));  // index_x1 (index_x0)
 
-    printf("getlow(low)   00 = %lf\n", mtbdd_getdouble( mtbdd_getlow(dd_plus)));
-    printf("getlow(high)  10 = %lf\n", mtbdd_getdouble( mtbdd_gethigh(dd_plus)));
+        printf("getlow(low)   00 = %lf\n", mtbdd_getdouble( mtbdd_getlow(dd_plus)));
+        printf("getlow(high)  10 = %lf\n", mtbdd_getdouble( mtbdd_gethigh(dd_plus)));
+    }
 
     test_assert(mtbdd_getdouble(mtbdd_getlow(dd_plus))  == 1.0);
     test_assert(mtbdd_getdouble(mtbdd_gethigh(dd_plus)) == 1.1);
@@ -1139,24 +1125,14 @@ test_mtbdd_abstract_plus_min_max_times_function_3_double()
     MTBDD index_leaf_10 = mtbdd_double(0.35);
     MTBDD index_leaf_11 = mtbdd_double(0.75);
 
-    printf("index_leaf_00 = %"PRIu64" \n", index_leaf_00);
-    printf("index_leaf_01 = %"PRIu64" \n", index_leaf_01);
-    printf("index_leaf_10 = %"PRIu64" \n", index_leaf_10);
-    printf("index_leaf_11 = %"PRIu64" \n", index_leaf_11);
-
     // Make non-terminal nodes - middle layer, so variable x2
     uint32_t index_x2 = 2;
     MTBDD index_x0_low  = mtbdd_makenode(index_x2, index_leaf_00, index_leaf_01);
     MTBDD index_x0_high = mtbdd_makenode(index_x2, index_leaf_10, index_leaf_11);
 
-    printf("index_x0_low  = %"PRIu64" \n", index_x0_low);
-    printf("index_x0_high = %"PRIu64" \n", index_x0_high);
-
     // Make root node (= non terminal node) - top layer, so variable x1
     uint32_t index_x1 = 1;
     MTBDD index_x0 = mtbdd_makenode(index_x1, index_x0_low, index_x0_high);
-
-    printf("index_x0 = %"PRIu64" \n", index_x0);
 
     dd = index_x0;
 
@@ -1185,28 +1161,16 @@ test_mtbdd_abstract_plus_min_max_times_function_3_double()
     //mtbdd_fprintdot(out, dd_plus);
     //fclose(out);
 
-    // Print all kinds of gets
-    printf("dd_plus       = %"PRIu64"\n", dd_plus);
-    printf("getnumer      = %d \n", mtbdd_getnumer(dd_plus));
-    printf("getdouble     = %lf\n", mtbdd_getdouble(dd_plus));
-    printf("getvalue      = %"PRIu64"\n", mtbdd_getvalue(dd_plus));
-    printf("getlow        = %"PRIu64"\n", mtbdd_getlow(dd_plus));
-    printf("gethigh       = %"PRIu64"\n", mtbdd_gethigh(dd_plus));
-    printf("getvar        = %d \n", mtbdd_getvar(dd_plus));  // index_x0 undefined
-
     test_assert(mtbdd_getdouble(dd_plus)  == 2.1);
 
     // Other operations
     MTBDD dd_min = mtbdd_abstract_min(dd, var_set);
-    printf("getdouble     = %lf\n", mtbdd_getdouble(dd_min));
     test_assert(mtbdd_getdouble(dd_min) == 0.25);
 
     MTBDD dd_max = mtbdd_abstract_max(dd, var_set);
-    printf("getdouble     = %lf\n", mtbdd_getdouble(dd_max));
     test_assert(mtbdd_getdouble(dd_max) == 0.75);
 
     MTBDD dd_times = mtbdd_abstract_times(dd, var_set);
-    printf("getdouble     = %lf\n", mtbdd_getdouble(dd_times));
     test_assert(mtbdd_getdouble(dd_times) == 0.25 * 0.75 * 0.35 * 0.75 );
 
     return 0;
@@ -2153,10 +2117,12 @@ test_mtbdd_matrix_matrix_multiplication_1_double()
     print_matrix_array(M_arr, n);
     print_matrix_array(W_arr, n);
 
-    printf("W[0][0]: %lf %lf\n", W_arr[0][0], K_arr[0][0] * M_arr[0][0] + K_arr[0][1] * M_arr[1][0]);
-    printf("W[0][1]: %lf %lf\n", W_arr[0][1], K_arr[0][0] * M_arr[0][1] + K_arr[0][1] * M_arr[1][1]);
-    printf("W[1][0]: %lf %lf\n", W_arr[1][0], K_arr[1][0] * M_arr[0][0] + K_arr[1][1] * M_arr[1][0]);
-    printf("W[1][1]: %lf %lf\n", W_arr[1][1], K_arr[1][0] * M_arr[0][1] + K_arr[1][1] * M_arr[1][1]);
+    if(false) {
+        printf("W[0][0]: %lf %lf\n", W_arr[0][0], K_arr[0][0] * M_arr[0][0] + K_arr[0][1] * M_arr[1][0]);
+        printf("W[0][1]: %lf %lf\n", W_arr[0][1], K_arr[0][0] * M_arr[0][1] + K_arr[0][1] * M_arr[1][1]);
+        printf("W[1][0]: %lf %lf\n", W_arr[1][0], K_arr[1][0] * M_arr[0][0] + K_arr[1][1] * M_arr[1][0]);
+        printf("W[1][1]: %lf %lf\n", W_arr[1][1], K_arr[1][0] * M_arr[0][1] + K_arr[1][1] * M_arr[1][1]);
+    }
 
     test_assert(W_arr[0][0] == K_arr[0][0] * M_arr[0][0] + K_arr[0][1] * M_arr[1][0]);
     test_assert(W_arr[0][1] == K_arr[0][0] * M_arr[0][1] + K_arr[0][1] * M_arr[1][1]);
@@ -2204,10 +2170,12 @@ test_mtbdd_matrix_matrix_multiplication_2_double()
     print_matrix_array(M_arr, n);
     print_matrix_array(W_arr, n);
 
-    printf("W[0][0]: %lf %lf\n", W_arr[0][0], K_arr[0][0] * M_arr[0][0] + K_arr[0][1] * M_arr[1][0]);
-    printf("W[0][1]: %lf %lf\n", W_arr[0][1], K_arr[0][0] * M_arr[0][1] + K_arr[0][1] * M_arr[1][1]);
-    printf("W[1][0]: %lf %lf\n", W_arr[1][0], K_arr[1][0] * M_arr[0][0] + K_arr[1][1] * M_arr[1][0]);
-    printf("W[1][1]: %lf %lf\n", W_arr[1][1], K_arr[1][0] * M_arr[0][1] + K_arr[1][1] * M_arr[1][1]);
+    if(false) {
+        printf("W[0][0]: %lf %lf\n", W_arr[0][0], K_arr[0][0] * M_arr[0][0] + K_arr[0][1] * M_arr[1][0]);
+        printf("W[0][1]: %lf %lf\n", W_arr[0][1], K_arr[0][0] * M_arr[0][1] + K_arr[0][1] * M_arr[1][1]);
+        printf("W[1][0]: %lf %lf\n", W_arr[1][0], K_arr[1][0] * M_arr[0][0] + K_arr[1][1] * M_arr[1][0]);
+        printf("W[1][1]: %lf %lf\n", W_arr[1][1], K_arr[1][0] * M_arr[0][1] + K_arr[1][1] * M_arr[1][1]);
+    }
 
     test_assert(W_arr[0][0] == K_arr[0][0] * M_arr[0][0] + K_arr[0][1] * M_arr[1][0]);
     test_assert(W_arr[0][1] == K_arr[0][0] * M_arr[0][1] + K_arr[0][1] * M_arr[1][1]);
@@ -2505,7 +2473,7 @@ TASK_0(int, runtests)
     if (test_mtbdd_to_matrix_array_double()) return 1;
 
     // Test 6.2
-    printf("\nTesting vector and matrix array conversion functions double\n");
+    printf("\nTesting vector and matrix array conversion functions double.\n");
     // if (test_vector_array_to_mtbdd_complex()) return 1;
     // if (test_matrix_array_to_mtbdd_complex()) return 1;
     // if (test_mtbdd_to_matrix_array_complex()) return 1;
@@ -2525,7 +2493,7 @@ TASK_0(int, runtests)
     if (test_mtbdd_get_children_of_var_double()) return 1;
 
     // Test 8.2
-    printf("\nTesting supporting functions for vector matrix multiplication complex\n");
+    printf("\nTesting supporting functions for vector matrix multiplication complex.\n");
     // if (test_renumber_variables_complex()) return 1;
     // if (test_determine_top_var_and_leafcount_complex()) return 1;
     // if (test_mtbdd_get_children_of_var_complex()) return 1;
@@ -2568,12 +2536,12 @@ int main()
     
     sylvan_init_mtbdd();
 
+    printf("Mtbdd initialization complete.\n\n");
+
     uint32_t mpc_type = mpc_init();
-    printf("mpc_type = %d\n", mpc_type);
+    printf("Mtbdd mpc type initialization complete, mpc_type = %d.\n\n", mpc_type);
 
     test_assert(mpc_type == MPC_TYPE);
-
-    printf("Sylvan initialization complete.\n");
 
     int result = RUN(runtests);
 

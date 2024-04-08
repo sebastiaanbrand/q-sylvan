@@ -498,9 +498,6 @@ VOID_TASK_IMPL_1(llmsset_destroy_unmarked, llmsset_t, dbs)
 void llmsset_set_custom(const llmsset_t dbs, llmsset_hash_cb hash_cb, llmsset_equals_cb equals_cb, llmsset_create_cb create_cb, llmsset_destroy_cb destroy_cb)
 {
     dbs->hash_cb = hash_cb;
-
-printf("sylvan_table.c llmsset_set_custom() dbs->hash_cb = %p\n", dbs->hash_cb);
-
     dbs->equals_cb = equals_cb;
     dbs->create_cb = create_cb;
     dbs->destroy_cb = destroy_cb;

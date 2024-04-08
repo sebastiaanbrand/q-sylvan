@@ -364,6 +364,8 @@ free_matrix_array_mpc(mpc_ptr **W_arr, int n)
 int
 print_vector_array_mpc(mpc_ptr *v_arr, int n)
 {
+    return 0; // Switch printing off
+
     if(n<0)
         return 1;
 
@@ -382,6 +384,8 @@ print_vector_array_mpc(mpc_ptr *v_arr, int n)
 int
 print_matrix_array_mpc(mpc_ptr **W_arr, int n)
 {
+    return 0; // Switch printing off
+
     if(n<0)
         return 1;
 
@@ -626,7 +630,7 @@ void mtbdd_to_matrix_array_mpc(MTBDD M, int n, row_column_mode_t mode, mpc_ptr *
                 if(mtbdd_getlow(node) != MTBDD_ZERO && mtbdd_isleaf(node) == 0) 
                     node = mtbdd_getlow(node);
                 
-                printf("row=%d getlow()\n", row);
+                //printf("row=%d getlow()\n", row);
             }
             else {
                 if(mtbdd_gethigh(node) != MTBDD_ZERO && mtbdd_isleaf(node) == 0) 
