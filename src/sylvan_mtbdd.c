@@ -4211,54 +4211,6 @@ void array_matrix_matrix_product(MatArr_t **M1, MatArr_t **M2, int n, MatArr_t *
 }
 
 /**
- * 
- * Util functions for matrix multiplication
- * 
- */
-
-MTBDD mtbdd_is_result_in_cache_3(uint64_t function, uint64_t num1, uint64_t num2, uint64_t num3)
-{
-    MTBDD result = MTBDD_ZERO;
-
-    if(!cache_get3(function, num1, num2, num3, &result)) {
-        printf("Error in cache_get3()\n");
-        return result; //exit(0);
-    }
-
-    return result;
-}
-
-void mtbdd_put_result_in_cache_3(uint64_t function, uint64_t num1, uint64_t num2, uint64_t num3, uint64_t result)
-{
-    if(!cache_put3(function, num1, num2, num3, result)) {
-        printf("Error in cache_put3()\n");
-        return; //exit(0);
-    }
-    return;
-}
-
-MTBDD mtbdd_is_result_in_cache_4(uint64_t function, uint64_t num1, uint64_t num2, uint64_t num3, uint64_t num4)
-{
-    MTBDD result = MTBDD_ZERO;
-
-    if(!cache_get4(function, num1, num2, num3, num4, &result)) {
-        printf("Error in cache_get4()\n");
-        return result; //exit(0);
-    }
-
-    return result;
-}
-
-void mtbdd_put_result_in_cache_4(uint64_t function, uint64_t num1, uint64_t num2, uint64_t num3, uint64_t num4, uint64_t result)
-{
-    if(!cache_put4(function, num1, num2, num3, num4, result)) {
-        printf("Error in cache_put4()\n");
-        return; //exit(0);
-    }
-    return;
-}
-
-/**
  * Renumber vars in a decision diagram to let it start from new_var.
  * 
  * So, the var_set = {2, 3, ..., n} to a decision diagram 
@@ -4282,9 +4234,9 @@ MTBDD mtbdd_renumber_variables(MTBDD M, uint32_t new_var)
     MTBDD getlow = mtbdd_getlow(M);
     MTBDD gethigh = mtbdd_gethigh(M);
 
-    result = mtbdd_is_result_in_cache_3(CACHE_MTBDD_RENUMBER_VARS, new_var, getlow, gethigh);
-    if(result != MTBDD_ZERO)
+    if(cache_get3(CACHE_MTBDD_RENUMBER_VARS, new_var, getlow, gethigh, &result)) {
         return result;
+    }
 
     MTBDD low = mtbdd_renumber_variables(getlow, new_var + 1);
     MTBDD high = mtbdd_renumber_variables(gethigh, new_var + 1);
@@ -4293,7 +4245,7 @@ MTBDD mtbdd_renumber_variables(MTBDD M, uint32_t new_var)
 
     //printf("I was here new var = %d, low = %ld, high = %ld!\n", new_var, low, high);
 
-    mtbdd_put_result_in_cache_3(CACHE_MTBDD_RENUMBER_VARS, new_var, low, high, result);
+    cache_put3(CACHE_MTBDD_RENUMBER_VARS, new_var, low, high, result);
 
     return result;
 }
@@ -4455,9 +4407,9 @@ MTBDD mtbdd_matvec_mult_alt(MTBDD M, MTBDD v, int n)
         return result;
 
     // Check if result already in cache
-    result = mtbdd_is_result_in_cache_3(CACHE_MTBDD_MATVEC_MULT, M, v, n);
-    if(result != MTBDD_ZERO)
+    if(cache_get3(CACHE_MTBDD_MATVEC_MULT, M, v, n, &result)) {
         return result;
+    }
 
     // Calculate M with size 1 x 1, and v with size 1
     if(n == 0 && mtbdd_isleaf(M) && mtbdd_isleaf(v)) {
@@ -4514,7 +4466,7 @@ MTBDD mtbdd_matvec_mult_alt(MTBDD M, MTBDD v, int n)
         result = mtbdd_and_abstract_plus(M, v, var_set);
 
         // Put result in cache
-        mtbdd_put_result_in_cache_3(CACHE_MTBDD_MATVEC_MULT, M, v, n, result);
+        cache_put3(CACHE_MTBDD_MATVEC_MULT, M, v, n, result);
 
         return result;
     }
@@ -4561,9 +4513,7 @@ MTBDD mtbdd_matmat_mult_alt(MTBDD M1, MTBDD M2, int n)
         return result;
 
     // Check if result already in cache
-    result = mtbdd_is_result_in_cache_3(CACHE_MTBDD_MATMAT_MULT, M1, M2, n);
-    if(result != MTBDD_ZERO) {
-        printf("Result was cached (M1, M2, n) = (%ld, %ld, %d) !\n", M1, M2, n);
+    if(cache_get3(CACHE_MTBDD_MATMAT_MULT, M1, M2, n, &result)) {
         return result;
     }
 
@@ -4633,7 +4583,7 @@ MTBDD mtbdd_matmat_mult_alt(MTBDD M1, MTBDD M2, int n)
         result = mtbdd_makenode(0, low, high);
 
         // Put result in cache
-        mtbdd_put_result_in_cache_3(CACHE_MTBDD_MATMAT_MULT, M1, M2, n, result);
+        cache_put3(CACHE_MTBDD_MATMAT_MULT, M1, M2, n, result);
 
         return result;
     }
@@ -4697,7 +4647,7 @@ MTBDD mtbdd_matmat_mult_alt(MTBDD M1, MTBDD M2, int n)
     result = mtbdd_renumber_variables(result, 0);
  
     // Put result in cache
-    mtbdd_put_result_in_cache_3(CACHE_MTBDD_MATMAT_MULT, M1, M2, n-2, result);
+    cache_put3(CACHE_MTBDD_MATMAT_MULT, M1, M2, n-2, result);
 
     return result;
 }
@@ -4743,11 +4693,9 @@ MTBDD mtbdd_matvec_mult(MTBDD M, MTBDD v, int nvars, int currentvar)
     }
 
     // Check if result already in cache
-    //result = mtbdd_is_result_in_cache_4(CACHE_MTBDD_MATVEC_MULT, M, v, currentvar, nvars);
-    //if(result != MTBDD_ZERO) {
-    //    printf("Result was cached based on (M, v, currentvar, nvars) = (%ld, %ld, %d, %d) !\n", M, v, currentvar, nvars);
-    //    return result;
-    //}
+    if(cache_get4(CACHE_MTBDD_MATVEC_MULT, M, v, currentvar, nvars, &result)) {
+        return result;
+    }
 
     // Multiply recursive, reduce M1 and M2 with two vars
     MTBDD M_00 = M;
@@ -4786,7 +4734,7 @@ MTBDD mtbdd_matvec_mult(MTBDD M, MTBDD v, int nvars, int currentvar)
     result = mtbdd_makenode(currentvar, w_0, w_1);
 
     // Put result in cache
-    //mtbdd_put_result_in_cache_4(CACHE_MTBDD_MATVEC_MULT, M, v, currentvar, nvars, result);
+    cache_put4(CACHE_MTBDD_MATVEC_MULT, M, v, currentvar, nvars, result);
 
     return result;
 }
@@ -4840,9 +4788,7 @@ MTBDD mtbdd_matmat_mult(MTBDD M1, MTBDD M2, int nvars, int currentvar)
     }
 
     // Check if result already in cache
-    result = mtbdd_is_result_in_cache_4(CACHE_MTBDD_MATMAT_MULT, M1, M2, currentvar, nvars);
-    if(result != MTBDD_ZERO) {
-        printf("Result was cached based on (M1, M2, currentvar, nvars) = (%ld, %ld, %d, %d) !\n", M1, M2, currentvar, nvars);
+    if(cache_get4(CACHE_MTBDD_MATMAT_MULT, M1, M2, currentvar, nvars, &result)) {
         return result;
     }
 
@@ -4902,7 +4848,7 @@ MTBDD mtbdd_matmat_mult(MTBDD M1, MTBDD M2, int nvars, int currentvar)
     result = mtbdd_makenode(currentvar, low, high);
 
     // Put result in cache
-    mtbdd_put_result_in_cache_4(CACHE_MTBDD_MATMAT_MULT, M1, M2, currentvar, nvars, result);
+    cache_put4(CACHE_MTBDD_MATMAT_MULT, M1, M2, currentvar, nvars, result);
 
     return result;
 }

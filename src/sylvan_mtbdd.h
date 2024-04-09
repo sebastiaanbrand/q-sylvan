@@ -1292,12 +1292,6 @@ void array_matrix_matrix_product(MatArr_t **M, MatArr_t **V, int n, MatArr_t **W
 #define MTBDD_ZERO 0
 
 // Utils
-uint64_t mtbdd_is_result_in_cache_3(uint64_t f, uint64_t num1, uint64_t num2, uint64_t num3);
-void mtbdd_put_result_in_cache_3(uint64_t f, uint64_t num1, uint64_t num2, uint64_t num3, uint64_t result);
-
-uint64_t mtbdd_is_result_in_cache_4(uint64_t f, uint64_t num1, uint64_t num2, uint64_t num3, uint64_t num4);
-void mtbdd_put_result_in_cache_4(uint64_t f, uint64_t num1, uint64_t num2, uint64_t num3, uint64_t num4, uint64_t result);
-
 MTBDD mtbdd_renumber_variables(MTBDD M, uint32_t new_var);
 void determine_top_var_and_leafcount(MTBDD M, int *botvar, int *topvar, int *leafcount);
 
