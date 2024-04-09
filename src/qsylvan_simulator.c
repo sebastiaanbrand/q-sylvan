@@ -221,58 +221,53 @@ qmdd_create_controlled_gate(BDDVAR n, BDDVAR c, BDDVAR t, gate_id_t gateid)
 }
 
 QMDD
-qmdd_create_multi_cgate_rec(BDDVAR n, int *c_options, gate_id_t gateid, BDDVAR k)
+qmdd_create_multi_cgate(BDDVAR n, int *c_options, gate_id_t gateid)
 {
-    // (assumes controls above target)
     // c_options[k] = -1 -> ignore qubit k (apply I)
     // c_options[k] =  0 -> control on q_k = |0>
     // c_options[k] =  1 -> control on q_k = |1>
     // c_options[k] =  2 -> target qubit (for now assume 1 target)
 
-    // Terminal case
-    if (k == n) {
-        return aadd_bundle(AADD_TERMINAL, AADD_ONE);
-    }
+    // C_1 C_2 C_3 U_0 =  U \tensor |111><111| +    (U_proj)
+    //                    I^{\tensor 4} +           (I)
+    //                   -I \tensor |111><111|      (proj)
 
-    // TODO: catching GATEID_I avoids exp number of recrusive calls, but this 
-    // entire function might be handled in a better way(?)
-    if (gateid == GATEID_I) {
-        QMDD identities = aadd_bundle(AADD_TERMINAL, AADD_ONE);
-        for (int j = n-1; j >= (int) k; j--) {
-            identities = qmdd_stack_matrix(identities, j, GATEID_I);
+    // TODO: protect from gc?
+    QMDD U_proj = aadd_bundle(AADD_TERMINAL, AADD_ONE);
+    QMDD proj   = aadd_bundle(AADD_TERMINAL, AADD_ONE);
+    QMDD I      = qmdd_create_all_identity_matrix(n);
+
+    for (int k = n-1; k >= 0; k--) {
+        // -1 : Ignore qubit (apply I)
+        if (c_options[k] == -1) {
+            U_proj = qmdd_stack_matrix(U_proj, k, GATEID_I);
+            proj   = qmdd_stack_matrix(proj,   k, GATEID_I);
         }
-        return identities;
+        // 0 : control on q_k = |0>
+        else if (c_options[k] == 0) {
+            U_proj = qmdd_stack_matrix(U_proj, k, GATEID_proj0);
+            proj   = qmdd_stack_matrix(proj,   k, GATEID_proj0);
+        }
+        // 1 : control on q_k = |1>
+        else if (c_options[k] == 1) {
+            U_proj = qmdd_stack_matrix(U_proj, k, GATEID_proj1);
+            proj   = qmdd_stack_matrix(proj,   k, GATEID_proj1);
+        }
+        // 2 : target qubit
+        else if (c_options[k] == 2) {
+            U_proj = qmdd_stack_matrix(U_proj, k, gateid);
+            proj   = qmdd_stack_matrix(proj,   k, GATEID_I);
+        }
+        else {
+            printf("Invalid option %d for qubit %d (options = {-1,0,1,2}\n", c_options[k], k);
+            exit(1);
+        }
     }
 
-    // Recursively build matrix
-    BDDVAR next_k = k + 1;
+    // multiply root edge of proj with -1
+    proj = aadd_bundle(AADD_TARGET(proj), wgt_neg(AADD_WEIGHT(proj)));
 
-    // -1 : Ignore qubit (apply I)
-    if (c_options[k] == -1) {
-        QMDD below = qmdd_create_multi_cgate_rec(n, c_options, gateid, next_k);
-        return qmdd_stack_matrix(below, k, GATEID_I);
-    }
-    // 0 : control on q_k = |0> (apply gateid to low branch)
-    else if (c_options[k] == 0) {
-        QMDD case0 = qmdd_create_multi_cgate_rec(n, c_options, gateid, next_k);
-        QMDD case1 = qmdd_create_multi_cgate_rec(n, c_options, GATEID_I, next_k);
-        return qmdd_stack_control(case0, case1, k);
-    }
-    // 1 : control on q_k = |1> (apply gateid to high branch)
-    else if (c_options[k] == 1) {
-        QMDD case0 = qmdd_create_multi_cgate_rec(n, c_options, GATEID_I, next_k);
-        QMDD case1 = qmdd_create_multi_cgate_rec(n, c_options, gateid, next_k);
-        return qmdd_stack_control(case0, case1, k);
-    }
-    // 2 : target qubit
-    else if (c_options[k] == 2) {
-        QMDD below = qmdd_create_multi_cgate_rec(n, c_options, gateid, next_k);
-        return qmdd_stack_matrix(below, k, gateid);
-    }
-    else {
-        printf("Invalid option %d for qubit %d (options = {-1,0,1,2}\n", c_options[k], k);
-        exit(1);
-    }
+    return aadd_plus(U_proj, aadd_plus(I, proj));
 }
 
 QMDD

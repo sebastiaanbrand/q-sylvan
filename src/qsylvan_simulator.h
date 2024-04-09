@@ -128,20 +128,19 @@ QMDD qmdd_create_controlled_gate(BDDVAR n, BDDVAR c, BDDVAR t, gate_id_t gateid)
 
 /**
  * Creates a controlled-`gateid` gate which acts on the qubits as specified by
- * `c_options`.
+ * `c_options`. (Independent of order of controls and targets.)
  * 
  * @param n Total number of qubits.
  * @param c_options Array of length n with option for each qubit k: {
  *        -1 : ignore qubit k (apply I), 
- *         0 : control on q_k = |0>
- *         1 : control on q_k = |1>
+ *         0 : control on q_k = |0>,
+ *         1 : control on q_k = |1>,
  *         2 : target qubit }
  * @param gateid Gate ID of predefined single qubit gate U.
  * 
  * @return A matrix QMDD encoding of the multi-controlled gate on given qubits.
  */
-#define qmdd_create_multi_cgate(n,c_options,gateid) qmdd_create_multi_cgate_rec(n,c_options,gateid,0)
-QMDD qmdd_create_multi_cgate_rec(BDDVAR n, int *c_options, gate_id_t gateid, BDDVAR k);
+QMDD qmdd_create_multi_cgate(BDDVAR n, int *c_options, gate_id_t gateid);
 
 /**
  * Creates an n-qubit controlled Z gate, controlled on all qubits. 

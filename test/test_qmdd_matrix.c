@@ -605,9 +605,26 @@ int test_multi_cgate()
         test_assert(qTest == qRef);
     }
 
+    // controls below target
+    nqubits = 3;
+    qInit   = qmdd_create_all_zero_state(nqubits);
+    qInit   = qmdd_gate(qInit, GATEID_H, 0);
+    qInit   = qmdd_gate(qInit, GATEID_X, 1);
+    qInit   = qmdd_gate(qInit, GATEID_H, 2);
+    for (uint32_t i = 0; i < len(test_gates); i++) {
+        // t = 0, c1 = 1, c2 = 2 
+        int c_options[] = {2, 1, 1};
+        qRef = qmdd_circuit_swap(qInit, 0, 2);
+        qRef = qmdd_cgate2(qRef, test_gates[i], 0, 1, 2);
+        qRef = qmdd_circuit_swap(qRef, 0, 2);
+        matrix = qmdd_create_multi_cgate(nqubits, c_options, test_gates[i]);
+        qTest = aadd_matvec_mult(matrix, qInit, nqubits);
+        test_assert(aadd_equivalent(qRef, qTest, nqubits, false, false));
+        test_assert(aadd_equivalent(qRef, qTest, nqubits, true, false));
+        test_assert(qTest == qRef);
+    }
 
     // TODO: more tests
-
 
     if(VERBOSE) printf("matrix qmdd multi-cgate:     ok so far (WIP)\n");
     return 0;
