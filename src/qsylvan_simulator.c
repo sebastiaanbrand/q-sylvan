@@ -341,28 +341,12 @@ TASK_IMPL_3(QMDD, qmdd_gate, QMDD, qmdd, gate_id_t, gate, BDDVAR, target)
     return qmdd_gate_rec(qmdd, gate, target);
 }
 
-/* Wrapper for applying a controlled gate with 1 control qubit. */
-TASK_IMPL_4(QMDD, qmdd_cgate, QMDD, qmdd, gate_id_t, gate, BDDVAR, c, BDDVAR, t)
+/* Wrapper for applying controlled gates with 1, 2, or 3 control qubits. */
+TASK_IMPL_6(QMDD, _qmdd_cgate, QMDD, state, gate_id_t, gate, BDDVAR, c1, BDDVAR, c2, BDDVAR, c3, BDDVAR, t)
 {
-    qmdd_do_before_gate(&qmdd);
-    BDDVAR cs[4] = {c, AADD_INVALID_VAR, AADD_INVALID_VAR, AADD_INVALID_VAR};
-    return qmdd_cgate_rec(qmdd, gate, cs, t);
-}
-
-/* Wrapper for applying a controlled gate with 2 control qubits. */
-TASK_IMPL_5(QMDD, qmdd_cgate2, QMDD, qmdd, gate_id_t, gate, BDDVAR, c1, BDDVAR, c2, BDDVAR, t)
-{
-    qmdd_do_before_gate(&qmdd);
-    BDDVAR cs[4] = {c1, c2, AADD_INVALID_VAR, AADD_INVALID_VAR};
-    return qmdd_cgate_rec(qmdd, gate, cs, t);
-}
-
-/* Wrapper for applying a controlled gate with 3 control qubits. */
-TASK_IMPL_6(QMDD, qmdd_cgate3, QMDD, qmdd, gate_id_t, gate, BDDVAR, c1, BDDVAR, c2, BDDVAR, c3, BDDVAR, t)
-{
-    qmdd_do_before_gate(&qmdd);
-    BDDVAR cs[4] = {c1, c2, c3, AADD_INVALID_VAR}; // last pos is a buffer
-    return qmdd_cgate_rec(qmdd, gate, cs, t);
+    qmdd_do_before_gate(&state);
+    BDDVAR cs[4] = {c1, c2, c3, AADD_INVALID_VAR}; // last pos is to mark end
+    return qmdd_cgate_rec(state, gate, cs, t);
 }
 
 /* Wrapper for applying a controlled gate where the controls are a range. */
