@@ -334,6 +334,15 @@ qmdd_do_before_gate(QMDD* qmdd)
     qmdd_stats_log(*qmdd);
 }
 
+static bool
+check_ctrls_before_targ(BDDVAR c1, BDDVAR c2, BDDVAR c3, BDDVAR t)
+{
+    if (c1 != AADD_INVALID_VAR && c1 > t) return false;
+    if (c2 != AADD_INVALID_VAR && c2 > t) return false;
+    if (c3 != AADD_INVALID_VAR && c3 > t) return false;
+    return true;
+}
+
 /* Wrapper for applying a single qubit gate. */
 TASK_IMPL_3(QMDD, qmdd_gate, QMDD, qmdd, gate_id_t, gate, BDDVAR, target)
 {
@@ -342,11 +351,26 @@ TASK_IMPL_3(QMDD, qmdd_gate, QMDD, qmdd, gate_id_t, gate, BDDVAR, target)
 }
 
 /* Wrapper for applying controlled gates with 1, 2, or 3 control qubits. */
-TASK_IMPL_6(QMDD, _qmdd_cgate, QMDD, state, gate_id_t, gate, BDDVAR, c1, BDDVAR, c2, BDDVAR, c3, BDDVAR, t)
+QMDD _qmdd_cgate(QMDD state, gate_id_t gate, BDDVAR c1, BDDVAR c2, BDDVAR c3, BDDVAR t, BDDVAR n)
 {
     qmdd_do_before_gate(&state);
-    BDDVAR cs[4] = {c1, c2, c3, AADD_INVALID_VAR}; // last pos is to mark end
-    return qmdd_cgate_rec(state, gate, cs, t);
+
+    if (check_ctrls_before_targ(c1, c2, c3, t)) {
+        BDDVAR cs[4] = {c1, c2, c3, AADD_INVALID_VAR}; // last pos is to mark end
+        return qmdd_cgate_rec(state, gate, cs, t);
+    }
+    else {
+        assert(n != 0 && "ERROR: when ctrls > targ, nqubits must be passed to cgate() function.");
+        int *c_options = malloc(sizeof(int)*n);
+        for (uint32_t k = 0; k < n; k++) c_options[k] = -1;
+        if (c1 != AADD_INVALID_VAR) c_options[c1] = 1;
+        if (c2 != AADD_INVALID_VAR) c_options[c2] = 1;
+        if (c3 != AADD_INVALID_VAR) c_options[c3] = 1;
+        c_options[t] = 2;
+        QMDD gate_matrix = qmdd_create_multi_cgate(n, c_options, gate);
+        free(c_options);
+        return aadd_matvec_mult(gate_matrix, state, n);
+    }
 }
 
 /* Wrapper for applying a controlled gate where the controls are a range. */

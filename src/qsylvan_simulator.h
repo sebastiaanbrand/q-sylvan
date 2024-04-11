@@ -241,11 +241,14 @@ AMP qmdd_amp_from_prob(double a);
 #define qmdd_gate(qmdd,gate,target) (RUN(qmdd_gate,qmdd,gate,target))
 TASK_DECL_3(QMDD, qmdd_gate, QMDD, gate_id_t, BDDVAR);
 
-/* Applies given controlled gate to |q>. */
-#define qmdd_cgate(state,gate,c,t) (RUN(_qmdd_cgate,state,gate,c,AADD_INVALID_VAR,AADD_INVALID_VAR,t))
-#define qmdd_cgate2(state,gate,c1,c2,t) (RUN(_qmdd_cgate,state,gate,c1,c2,AADD_INVALID_VAR,t))
-#define qmdd_cgate3(state,gate,c1,c2,c3,t) (RUN(_qmdd_cgate,state,gate,c1,c2,c3,t))
-TASK_DECL_6(QMDD, _qmdd_cgate, QMDD, gate_id_t, BDDVAR, BDDVAR, BDDVAR, BDDVAR);
+/**
+ * Applies given controlled gate to |q>. When controls !<= target, the total
+ * number of qubits needs to be passed as last argument.
+*/
+#define qmdd_cgate(state,gate,c,t,...) _qmdd_cgate(state,gate,c,AADD_INVALID_VAR,AADD_INVALID_VAR,t,(0, ##__VA_ARGS__))
+#define qmdd_cgate2(state,gate,c1,c2,t,...) (_qmdd_cgate(state,gate,c1,c2,AADD_INVALID_VAR,t,(0, ##__VA_ARGS__)))
+#define qmdd_cgate3(state,gate,c1,c2,c3,t,...) (_qmdd_cgate(state,gate,c1,c2,c3,t,(0, ##__VA_ARGS__)))
+QMDD _qmdd_cgate(QMDD state, gate_id_t gate, BDDVAR c1, BDDVAR c2, BDDVAR c3, BDDVAR t, BDDVAR n);
 
 /* Applies given controlled gate to |q>. */
 #define qmdd_cgate_range(qmdd,gate,c_first,c_last,t) (RUN(qmdd_cgate_range,qmdd,gate,c_first,c_last,t))

@@ -473,11 +473,12 @@ int test_pauli_rotation_gates()
 int test_cx_gate()
 {
     QMDD qBell;
+    BDDVAR nqubits = 2;
     bool x2[] = {0,0};
     AMP a;
 
     // Test Bell state
-    x2[1] = 0; x2[0] = 0; qBell = qmdd_create_basis_state(2, x2);
+    x2[1] = 0; x2[0] = 0; qBell = qmdd_create_basis_state(nqubits, x2);
     qBell = qmdd_gate(qBell, GATEID_H, 0);
     
     x2[1] = 0; x2[0] = 0; a = aadd_getvalue(qBell, x2); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
@@ -494,6 +495,22 @@ int test_cx_gate()
     x2[1] = 1; x2[0] = 1; a = aadd_getvalue(qBell, x2); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
     test_assert(aadd_countnodes(qBell) == 4);
 
+    // Test Bell state with CX upside down
+    x2[1] = 0; x2[0] = 0; qBell = qmdd_create_basis_state(nqubits, x2);
+    qBell = qmdd_gate(qBell, GATEID_H, 1);
+
+    x2[1] = 0; x2[0] = 0; a = aadd_getvalue(qBell, x2); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
+    x2[1] = 0; x2[0] = 1; a = aadd_getvalue(qBell, x2); test_assert(a == AADD_ZERO);
+    x2[1] = 1; x2[0] = 0; a = aadd_getvalue(qBell, x2); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
+    x2[1] = 1; x2[0] = 1; a = aadd_getvalue(qBell, x2); test_assert(a == AADD_ZERO);
+
+    qBell = qmdd_cgate(qBell, GATEID_X, 1, 0, nqubits);
+
+    x2[1] = 0; x2[0] = 0; a = aadd_getvalue(qBell, x2); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
+    x2[1] = 0; x2[0] = 1; a = aadd_getvalue(qBell, x2); test_assert(a == AADD_ZERO);
+    x2[1] = 1; x2[0] = 0; a = aadd_getvalue(qBell, x2); test_assert(a == AADD_ZERO);
+    x2[1] = 1; x2[0] = 1; a = aadd_getvalue(qBell, x2); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
+
     // TODO: more tests
 
     if(VERBOSE) printf("qmdd cnot gates:           ok\n");
@@ -503,11 +520,12 @@ int test_cx_gate()
 int test_cz_gate()
 {
     QMDD qGraph;
+    BDDVAR nqubits = 2;
     bool x2[] = {0, 0};
     AMP a;
 
     // 2 qubit graph state
-    x2[1] = 0; x2[0] = 0; qGraph =qmdd_create_basis_state(2, x2);
+    x2[1] = 0; x2[0] = 0; qGraph =qmdd_create_basis_state(nqubits, x2);
     qGraph = qmdd_gate(qGraph, GATEID_H, 0);
     qGraph = qmdd_gate(qGraph, GATEID_H, 1);
 
@@ -525,6 +543,25 @@ int test_cz_gate()
     x2[1] = 1; x2[0] = 1; a = aadd_getvalue(qGraph, x2); test_assert(a == complex_lookup(-0.5,0));
     test_assert(aadd_countnodes(qGraph) == 3);
 
+    // same 2 qubit graph state but with control and target arguments swapped
+    x2[1] = 0; x2[0] = 0; qGraph =qmdd_create_basis_state(nqubits, x2);
+    qGraph = qmdd_gate(qGraph, GATEID_H, 0);
+    qGraph = qmdd_gate(qGraph, GATEID_H, 1);
+
+    x2[1] = 0; x2[0] = 0; a = aadd_getvalue(qGraph, x2); test_assert(a == complex_lookup(0.5, 0));
+    x2[1] = 0; x2[0] = 1; a = aadd_getvalue(qGraph, x2); test_assert(a == complex_lookup(0.5, 0));
+    x2[1] = 1; x2[0] = 0; a = aadd_getvalue(qGraph, x2); test_assert(a == complex_lookup(0.5, 0));
+    x2[1] = 1; x2[0] = 1; a = aadd_getvalue(qGraph, x2); test_assert(a == complex_lookup(0.5, 0));
+    test_assert(aadd_countnodes(qGraph) == 1);
+
+    qGraph = qmdd_cgate(qGraph, GATEID_Z, 1, 0, nqubits);
+
+    x2[1] = 0; x2[0] = 0; a = aadd_getvalue(qGraph, x2); test_assert(a == complex_lookup(0.5, 0));
+    x2[1] = 0; x2[0] = 1; a = aadd_getvalue(qGraph, x2); test_assert(a == complex_lookup(0.5, 0));
+    x2[1] = 1; x2[0] = 0; a = aadd_getvalue(qGraph, x2); test_assert(a == complex_lookup(0.5, 0));
+    x2[1] = 1; x2[0] = 1; a = aadd_getvalue(qGraph, x2); test_assert(a == complex_lookup(-0.5,0));
+    test_assert(aadd_countnodes(qGraph) == 3);
+
     if(VERBOSE) printf("qmdd CZ gates:             ok\n");
     return 0;
 }
@@ -532,17 +569,20 @@ int test_cz_gate()
 int test_ccz_gate()
 {
     QMDD q3;
+    BDDVAR nqubits = 3;
     bool x3[] = {0,0,0};
     AMP a, aRef;
+    complex_t mone = cmone();
 
-    q3 = qmdd_create_basis_state(3, x3);
+    // Test CCZ using qmdd_all_control_phase()
+    q3 = qmdd_create_all_zero_state(nqubits);
     q3 = qmdd_gate(q3, GATEID_H, 0);
     q3 = qmdd_gate(q3, GATEID_H, 1);
     q3 = qmdd_gate(q3, GATEID_H, 2);
-    aRef = aadd_getvalue(q3, x3);
 
-    complex_t mone = cmone();
-    x3[2]=1; x3[1]=0; x3[0]=1; q3 = qmdd_all_control_phase(q3, 3, x3);
+    x3[2] = 0; x3[1] = 0; x3[0] = 0; aRef = aadd_getvalue(q3, x3);
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; q3 = qmdd_all_control_phase(q3, nqubits, x3);
+
     x3[2] = 0; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q3, x3); test_assert(a == aRef);
     x3[2] = 0; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q3, x3); test_assert(a == aRef);
     x3[2] = 0; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q3, x3); test_assert(a == aRef);
@@ -553,7 +593,45 @@ int test_ccz_gate()
     x3[2] = 1; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q3, x3); test_assert(a == aRef);
     test_assert(aadd_is_ordered(q3, 3));
 
-    // TODO: few more tests
+    // Test CCZ using qmdd_cgate2()
+    q3 = qmdd_create_all_zero_state(nqubits);
+    q3 = qmdd_gate(q3, GATEID_H, 0);
+    q3 = qmdd_gate(q3, GATEID_H, 1);
+    q3 = qmdd_gate(q3, GATEID_H, 2);
+
+    x3[2] = 0; x3[1] = 0; x3[0] = 0; aRef = aadd_getvalue(q3, x3);
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; q3 = qmdd_cgate2(q3, GATEID_Z, 0, 1, 2);
+
+    x3[2] = 0; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q3, x3); test_assert(a == aRef);
+    x3[2] = 0; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q3, x3); test_assert(a == aRef);
+    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q3, x3); test_assert(a == aRef);
+    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q3, x3); test_assert(a == aRef);
+    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q3, x3); test_assert(a == aRef);    
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q3, x3); test_assert(a == aRef);
+    x3[2] = 1; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q3, x3); test_assert(a == aRef);
+    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q3, x3); test_assert(a == wgt_mul(aRef,weight_lookup(&mone)));
+    test_assert(aadd_is_ordered(q3, 3));
+
+    // Test CCZ using qmdd_cgate2() with target between controls
+    q3 = qmdd_create_all_zero_state(nqubits);
+    q3 = qmdd_gate(q3, GATEID_H, 0);
+    q3 = qmdd_gate(q3, GATEID_H, 1);
+    q3 = qmdd_gate(q3, GATEID_H, 2);
+
+    x3[2] = 0; x3[1] = 0; x3[0] = 0; aRef = aadd_getvalue(q3, x3);
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; q3 = qmdd_cgate2(q3, GATEID_Z, 0, 2, 1, nqubits);
+
+    x3[2] = 0; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q3, x3); test_assert(a == aRef);
+    x3[2] = 0; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q3, x3); test_assert(a == aRef);
+    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q3, x3); test_assert(a == aRef);
+    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q3, x3); test_assert(a == aRef);
+    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q3, x3); test_assert(a == aRef);    
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q3, x3); test_assert(a == aRef);
+    x3[2] = 1; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q3, x3); test_assert(a == aRef);
+    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q3, x3); test_assert(a == wgt_mul(aRef,weight_lookup(&mone)));
+    test_assert(aadd_is_ordered(q3, 3));
+
+    // TODO: more tests?
 
     if(VERBOSE) printf("qmdd all-control z gate:   ok\n");
     return 0;
