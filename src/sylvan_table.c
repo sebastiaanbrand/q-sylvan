@@ -18,7 +18,7 @@
 #include <sylvan_int.h>
 #include <sylvan_align.h>
 
-#include <errno.h>  // for errno
+#include <errno.h>
 #include <string.h> // memset
 
 DECLARE_THREAD_LOCAL(my_region, uint64_t);
@@ -117,8 +117,12 @@ static inline uint64_t
 llmsset_lookup2(const llmsset_t dbs, uint64_t a, uint64_t b, int* created, const int custom)
 {
     uint64_t hash_rehash = 14695981039346656037LLU;
-    if (custom) hash_rehash = dbs->hash_cb(a, b, hash_rehash);
-    else hash_rehash = sylvan_tabhash16(a, b, hash_rehash);
+    if (custom) {
+        hash_rehash = dbs->hash_cb(a, b, hash_rehash);
+    }
+    else {
+        hash_rehash = sylvan_tabhash16(a, b, hash_rehash);
+    }
 
     const uint64_t step = (((hash_rehash >> 20) | 1) << 3);
     const uint64_t hash = hash_rehash & MASK_HASH;
@@ -140,8 +144,9 @@ llmsset_lookup2(const llmsset_t dbs, uint64_t a, uint64_t b, int* created, const
                 // Claim data bucket and write data
                 cidx = claim_data_bucket(dbs);
                 if (cidx == (uint64_t)-1) return 0; // failed to claim a data bucket
-                if (custom) dbs->create_cb(&a, &b);
+                if (custom) dbs->create_cb(&a, &b); // a is the node, b is the value
                 uint64_t *d_ptr = ((uint64_t*)dbs->data) + 2*cidx;
+
                 d_ptr[0] = a;
                 d_ptr[1] = b;
             }
@@ -156,6 +161,7 @@ llmsset_lookup2(const llmsset_t dbs, uint64_t a, uint64_t b, int* created, const
             uint64_t d_idx = v & MASK_INDEX;
             uint64_t *d_ptr = ((uint64_t*)dbs->data) + 2*d_idx;
             if (custom) {
+
                 if (dbs->equals_cb(a, b, d_ptr[0], d_ptr[1])) {
                     if (cidx != 0) {
                         dbs->destroy_cb(a, b);
@@ -188,6 +194,7 @@ llmsset_lookup2(const llmsset_t dbs, uint64_t a, uint64_t b, int* created, const
 #else
             last = idx = hash_rehash % dbs->table_size;
 #endif
+
         }
     }
 }

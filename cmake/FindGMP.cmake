@@ -10,9 +10,11 @@ pkg_check_modules(PC_GMP QUIET gmp)
 
 set(GMP_DEFINITIONS ${PC_GMP_CFLAGS_OTHER})
 
+# Find path of Sylvan file
 find_path(GMP_INCLUDE_DIR gmp.h
           HINTS ${PC_GMP_INCLUDEDIR} ${PC_GMP_INCLUDE_DIRS})
 
+# Find GMP library
 find_library(GMP_LIBRARIES NAMES gmp libgmp
              HINTS ${PC_GMP_LIBDIR} ${PC_GMP_LIBRARY_DIRS})
 
