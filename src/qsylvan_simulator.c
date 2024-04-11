@@ -361,7 +361,7 @@ QMDD _qmdd_cgate(QMDD state, gate_id_t gate, BDDVAR c1, BDDVAR c2, BDDVAR c3, BD
     }
     else {
         assert(n != 0 && "ERROR: when ctrls > targ, nqubits must be passed to cgate() function.");
-        int *c_options = malloc(sizeof(int)*n);
+        int *c_options = malloc(sizeof(int)*(n+1));
         for (uint32_t k = 0; k < n; k++) c_options[k] = -1;
         if (c1 != AADD_INVALID_VAR) c_options[c1] = 1;
         if (c2 != AADD_INVALID_VAR) c_options[c2] = 1;
