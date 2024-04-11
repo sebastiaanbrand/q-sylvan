@@ -539,7 +539,8 @@ QMDD greedy_run_circuit(C_struct c_s, int* measurements, bool* results, bool exp
 
 QMDD run_circuit_matrix(C_struct c_s, int* measurements, bool* results, int limit, bool experiments)
 {
-    // Inisialise variables
+    // Initialise variables
+    // LACE_ME;
     Gate gate;
     bool final, satisfied, palindrome = false;
     for (BDDVAR i = 0; i < c_s.bits; i++) results[i] = 0;

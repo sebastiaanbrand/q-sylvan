@@ -18,7 +18,7 @@ test_wgt_storage
 *.a
 *.dylib
 CMakeFiles/
-*.cmake
+#*.cmake
 *Makefile
 CMakeCache.txt
 qsylvan.pc

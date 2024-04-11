@@ -24,6 +24,14 @@
  * Handling of custom leaves "registry"
  */
 
+// The register the supported leaf types 0,1,2
+#define CL_REGISTRY_COUNT 3
+
+// The register element size (= number of max leaf types)
+// If cl_register_size < cl_register_count allocate more memory
+#define CL_REGISTRY_SIZE 8
+
+// Callbacks for one custom leaf type
 typedef struct
 {
     sylvan_mt_hash_cb hash_cb;
@@ -33,6 +41,7 @@ typedef struct
     sylvan_mt_to_str_cb to_str_cb;
     sylvan_mt_write_binary_cb write_binary_cb;
     sylvan_mt_read_binary_cb read_binary_cb;
+
 } customleaf_t;
 
 static customleaf_t *cl_registry;
@@ -55,10 +64,14 @@ sylvan_mt_from_node(uint64_t a, uint64_t b)
     (void)b;
 }
 
+/**
+ * Mapper to convert arguments of callbacks
+*/
 static void
 _sylvan_create_cb(uint64_t *a, uint64_t *b)
 {
     customleaf_t *c = sylvan_mt_from_node(*a, *b);
+
     if (c->create_cb != NULL) c->create_cb(b);
 }
 
@@ -74,6 +87,7 @@ static uint64_t
 _sylvan_hash_cb(uint64_t a, uint64_t b, uint64_t seed)
 {
     customleaf_t *c = sylvan_mt_from_node(a, b);
+
     if (c->hash_cb != NULL) return c->hash_cb(b, seed ^ a);
     else return sylvan_tabhash16(a, b, seed);
 }
@@ -83,6 +97,7 @@ _sylvan_equals_cb(uint64_t a, uint64_t b, uint64_t aa, uint64_t bb)
 {
     if (a != aa) return 0;
     customleaf_t *c = sylvan_mt_from_node(a, b);
+
     if (c->equals_cb != NULL) return c->equals_cb(b, bb);
     else return b == bb ? 1 : 0;
 }
@@ -145,13 +160,13 @@ void sylvan_mt_set_read_binary(uint32_t type, sylvan_mt_read_binary_cb read_bina
  * Initialize and quit functions
  */
 
-static int mt_initialized = 0;
+static int g_mt_initialized = 0;
 
 static void
 sylvan_mt_quit()
 {
-    if (mt_initialized == 0) return;
-    mt_initialized = 0;
+    if (g_mt_initialized == 0) return;
+    g_mt_initialized = 0;
 
     free(cl_registry);
     cl_registry = NULL;
@@ -160,10 +175,10 @@ sylvan_mt_quit()
 }
 
 void
-sylvan_init_mt() //TODO: here you can define another custom leaf type
+sylvan_init_mt()
 {
-    if (mt_initialized) return;
-    mt_initialized = 1;
+    if (g_mt_initialized) return;
+    g_mt_initialized = 1;
 
     // Register quit handler to free structures
     sylvan_register_quit(sylvan_mt_quit);
@@ -172,9 +187,9 @@ sylvan_init_mt() //TODO: here you can define another custom leaf type
     llmsset_set_custom(nodes, _sylvan_hash_cb, _sylvan_equals_cb, _sylvan_create_cb, _sylvan_destroy_cb);
 
     // Initialize data structures
-    cl_registry_size = 8;
+    cl_registry_size = CL_REGISTRY_SIZE;
     cl_registry = (customleaf_t *)calloc(sizeof(customleaf_t), cl_registry_size);
-    cl_registry_count = 3; // 0, 1, 2 are taken
+    cl_registry_count = CL_REGISTRY_COUNT;
 }
 
 /**
@@ -185,6 +200,7 @@ sylvan_mt_has_custom_hash(uint32_t type)
 {
     assert(type < cl_registry_count);
     customleaf_t *c = cl_registry + type;
+
     return c->hash_cb != NULL ? 1 : 0;
 }
 
@@ -197,6 +213,7 @@ sylvan_mt_to_str(int complement, uint32_t type, uint64_t value, char* buf, size_
 {
     assert(type < cl_registry_count);
     customleaf_t *c = cl_registry + type;
+
     if (type == 0) {
         size_t required = (size_t)snprintf(NULL, 0, "%" PRId64, (int64_t)value);
         char *ptr = buf;
@@ -206,6 +223,7 @@ sylvan_mt_to_str(int complement, uint32_t type, uint64_t value, char* buf, size_
         }
         if (ptr != NULL) snprintf(ptr, buflen, "%" PRId64, (int64_t)value);
         return ptr;
+    
     } else if (type == 1) {
         size_t required = (size_t)snprintf(NULL, 0, "%f", *(double*)&value);
         char *ptr = buf;
@@ -215,6 +233,7 @@ sylvan_mt_to_str(int complement, uint32_t type, uint64_t value, char* buf, size_
         }
         if (ptr != NULL) snprintf(ptr, buflen, "%f", *(double*)&value);
         return ptr;
+    
     } else if (type == 2) {
         int32_t num = (int32_t)(value>>32);
         uint32_t denom = value&0xffffffff;
@@ -226,8 +245,10 @@ sylvan_mt_to_str(int complement, uint32_t type, uint64_t value, char* buf, size_
         }
         if (ptr != NULL) snprintf(ptr, buflen, "%" PRId32 "/%" PRIu32, num, denom);
         return ptr;
+    
     } else if (c->to_str_cb != NULL) {
         return c->to_str_cb(complement, value, buf, buflen);
+    
     } else {
         return NULL;
     }
@@ -238,6 +259,7 @@ sylvan_mt_hash(uint32_t type, uint64_t value, uint64_t seed)
 {
     assert(type < cl_registry_count);
     customleaf_t *c = cl_registry + type;
+
     if (c->hash_cb != NULL) return c->hash_cb(value, seed);
     else return sylvan_tabhash16((uint64_t)type, value, seed);
 }

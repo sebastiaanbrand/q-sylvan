@@ -9,8 +9,12 @@ Q-Sylvan extends the parallel decision diagram library [Sylvan](https://github.c
 ## Installation
 
 ### Dependencies
-Q-Sylvan requires the`GMP` library (and Cmake for compilation). On Ubuntu it should be possible to install these with
+
+Q-Sylvan requires the following libraries: `popt`, `GMP`, `MPFR` and `MPC`. On Ubuntu it should be possible to install these with
+- `sudo apt-get install libpopt-dev`
 - `sudo apt-get install libgmp-dev`
+- `sudo apt-get install libmpfr-dev`
+- `sudo apt-get install libmpc-dev`
 - `sudo apt-get install cmake`
 
 
@@ -21,7 +25,13 @@ After downloading or cloning the repository, from the repository folder the code
 3. `cmake ..`
 4. `make`
 
-Test can be run with `make test`. 
+Test can be run with `make test` or `ctest`, or a specific test such as `./test/test_mtbdd`.
+
+Debugging can be activated with `gdb ./test/test_mtbdd`.
+
+The GNU GDB Debugger accepts command as `(gdb) run` or `(gdb) backtrace` or `(gdb) exit`.
+
+See also https://cs.brown.edu/courses/cs033/docs/guides/gdb.pdf.
 
 For output on failure use `ctest -output-on-failure`.
 
