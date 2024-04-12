@@ -15,7 +15,7 @@
  * sylvan_init_aadd().
  * TODO: Maybe handle this in a cleaner way than with global variables?
  */
-// using [wgts,ptr] [33,30] bits (default [23,40])
+// using [wgts,ptr] [33,30] bits if set to true (default [23,40])
 extern bool larger_wgt_indices;
 extern int weight_norm_strat;
 extern AADD_WGT (*normalize_weights)(AADD_WGT *, AADD_WGT *);
@@ -24,30 +24,55 @@ extern AADD_WGT (*normalize_weights)(AADD_WGT *, AADD_WGT *);
 /*****************<Bit level manipulation of AADD / aaddnode_t>****************/
 
 /**
+ * When edge weight table <= 2^23 (larger_wgt_indices = false)
+ * -----------------------------------------------------------------------------
  * AADD edge structure (64 bits)
- *       1 bit:  marked/unmarked flag (same place as MTBDD)
- *      33 bits: index of edge weight in ctable (AADD_WGT)
- *      30 bits: index of next node in node table (AADD_TARG)
+ *       1 bit:  unused
+ *      23 bits: index of edge weight in weight table (AADD_WGT)
+ *      40 bits: index of next node in node table (AADD_TARG)
  * 
  * AADD node structure (128 bits)
  * (note: because of normalization of the edge weights, we only need 1 weight
  *  per node, the other will always be 0 or 1 or dependent on the first value.)
  * 
  * 64 bits low:
- *       1 bit:  marked/unmarked flag (same place as MTBDD)
+ *       1 bit:  unused
  *       8 bits: variable/qubit number of this node
  *       1 bit:  if 0 (1) normalized WGT is on low (high)
  *       1 bit:  if 0 (1) normalized WGT is AADD_ZERO (AADD_ONE)
  *      13 bits: unused
+ *      40 bits: low edge pointer to next node (AADD_TARG)
+ * 64 bits high:
+ *       1 bit:  marked/unmarked flag
+ *      23 bits: index of edge weight of high edge in ctable (AADD_WGT)
+ *      40 bits: high edge pointer to next node (AADD_TARG)
+ * -----------------------------------------------------------------------------
+ * 
+ * 
+ * When edge weight table > 2^23 (larger_wgt_indices = true)
+ * -----------------------------------------------------------------------------
+ * AADD edge structure (64 bits)
+ *       1 bit:  unused
+ *      23 bits: index of edge weight in weight table (AADD_WGT)
+ *      40 bits: index of next node in node table (AADD_TARG)
+ * 
+ * AADD node structure (128 bits)
+ * 64 bits low:
+ *       1 bit:  unused
+ *       8 bits: variable/qubit number of this node
+ *       1 bit:  if 0 (1) normalized WGT is on low (high)
+ *       1 bit:  if 0 (1) normalized WGT is AADD_ZERO (AADD_ONE)
+ *      23 bits: unused
  *      30 bits: low edge pointer to next node (AADD_TARG)
  * 64 bits high:
- *       1 bit:  marked/unmarked flag (same place as MTBDD)
+ *       1 bit:  marked/unmarked flag
  *      33 bits: index of edge weight of high edge in ctable (AADD_WGT)
  *      30 bits: high edge pointer to next node (AADD_TARG)
+ * -----------------------------------------------------------------------------
  */
 typedef struct __attribute__((packed)) aaddnode {
     AADD low, high;
-} *aaddnode_t; // 16 bytes // TODO: move to sylvan_aadd_int.h
+} *aaddnode_t; // 16 bytes
 
 static const AADD aadd_marked_mask  = 0x8000000000000000LL;
 static const AADD aadd_var_mask_low = 0x7f80000000000000LL;
