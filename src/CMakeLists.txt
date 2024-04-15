@@ -6,6 +6,7 @@ target_sources(qsylvan
     sha2.c
     qsylvan_gates.c
     qsylvan_simulator.c
+    qsylvan_simulator_mtbdd.c
     sylvan_aadd.c
     sylvan_bdd.c
     sylvan_cache.c
@@ -28,6 +29,7 @@ target_sources(qsylvan
     qsylvan.h
     qsylvan_gates.h
     qsylvan_simulator.h
+    qsylvan_simulator_mtbdd.h
     sylvan_aadd.h
     sylvan_aadd_int.h
     sylvan_bdd.h

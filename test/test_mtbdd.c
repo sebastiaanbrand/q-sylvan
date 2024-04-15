@@ -689,6 +689,11 @@ test_mtbdd_arithmic_plus_sub_times_functions_complex()
     mpc_clear(sub_10);
     mpc_clear(sub_11);
 
+    mpc_clear(value_00);
+    mpc_clear(value_01);
+    mpc_clear(value_10);
+    mpc_clear(value_11);
+
     return 0;
 }
 
@@ -859,6 +864,13 @@ test_mtbdd_arithmic_min_max_functions_complex()
     test_assert( mpc_compare( mtbdd_getvalue(mtbdd_gethigh(mtbdd_getlow(  dd_max ))), (uint64_t)max_01));
     test_assert( mpc_compare( mtbdd_getvalue(mtbdd_getlow( mtbdd_gethigh( dd_max ))), (uint64_t)max_10));
     test_assert( mpc_compare( mtbdd_getvalue(mtbdd_gethigh(mtbdd_gethigh( dd_max ))), (uint64_t)max_11));
+
+    mpc_clear(value_00);
+    mpc_clear(value_01);
+    mpc_clear(value_10);
+    mpc_clear(value_11);
+
+    mpc_clear(value_0);
 
     mpc_clear(min_00);
     mpc_clear(min_01);
@@ -1805,7 +1817,17 @@ test_mtbdd_matrix_kronecker_multiplication_complex()
     test_assert( mpc_compare( (uint64_t)W_arr[3][3], (uint64_t)W03 ) );
 
     free_matrix_array_mpc(W_arr, n);
-    
+
+    mpc_clear(K00);
+    mpc_clear(K01);
+    mpc_clear(K10);
+    mpc_clear(K11);
+
+    mpc_clear(L00);
+    mpc_clear(L01);
+    mpc_clear(L10);
+    mpc_clear(L11);
+
     mpc_clear(W00);
     mpc_clear(W01);
     mpc_clear(W02);
@@ -2069,6 +2091,14 @@ test_mtbdd_matrix_vector_multiplication_complex()
     test_assert( mpc_compare( (uint64_t)W_arr[1], (uint64_t)W10 ) );
 
     free_matrix_array_mpc(K_arr, n);
+
+    mpc_clear(K00);
+    mpc_clear(K01);
+    mpc_clear(K10);
+    mpc_clear(K11);
+
+    mpc_clear(L00);
+    mpc_clear(L10);
 
     mpc_clear(X00);
     mpc_clear(X10);
@@ -2385,6 +2415,16 @@ test_mtbdd_matrix_matrix_multiplication_1_complex()
     free_matrix_array_mpc(K_arr, n);
     free_matrix_array_mpc(L_arr, n);
     free_matrix_array_mpc(W_arr, n);
+
+    mpc_clear(K00);
+    mpc_clear(K01);
+    mpc_clear(K10);
+    mpc_clear(K11);
+
+    mpc_clear(L00);
+    mpc_clear(L01);
+    mpc_clear(L10);
+    mpc_clear(L11);
 
     mpc_clear(X00);
     mpc_clear(X01);
