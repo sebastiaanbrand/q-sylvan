@@ -3862,8 +3862,6 @@ free_matrix_array(MatArr_t **W_arr, int n)
 int
 print_vector_array(VecArr_t *v_arr, int n)
 {
-    return 0; // switch off printing
-
     if(n<0)
         return 1;
 
@@ -3879,8 +3877,6 @@ print_vector_array(VecArr_t *v_arr, int n)
 int
 print_matrix_array(MatArr_t **W_arr, int n)
 {
-    return 0; // switch off printing
-
     if(n<0)
         return 1;
 

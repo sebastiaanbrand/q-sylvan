@@ -364,8 +364,6 @@ free_matrix_array_mpc(mpc_ptr **W_arr, int n)
 int
 print_vector_array_mpc(mpc_ptr *v_arr, int n)
 {
-    return 0; // Switch printing off
-
     if(n<0)
         return 1;
 
@@ -384,8 +382,6 @@ print_vector_array_mpc(mpc_ptr *v_arr, int n)
 int
 print_matrix_array_mpc(mpc_ptr **W_arr, int n)
 {
-    return 0; // Switch printing off
-
     if(n<0)
         return 1;
 

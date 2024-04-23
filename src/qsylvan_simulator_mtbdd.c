@@ -31,31 +31,122 @@
  *          x(n-1)
  *  0.0+i0.0      0.0+i0.0
  *
-*/
+ */
 MTBDD
-mtbdd_create_all_zero_state(BDDVAR n)
+mtbdd_create_all_zero_state_double(BDDVAR n)
 {
     bool x[n];
     for (BDDVAR k=0; k<n; k++) x[k] = 0;
-    return mtbdd_create_basis_state(n, x);
+    return mtbdd_create_basis_state_double(n, x);
+}
+
+MTBDD
+mtbdd_create_all_zero_state_mpc(BDDVAR n)
+{
+    bool x[n];
+    for (BDDVAR k=0; k<n; k++) x[k] = 0;
+    return mtbdd_create_basis_state_mpc(n, x);
 }
 
 /**
- * Convert one state vector x[] = {0.0, ..., 1.0, 0.0} to MTBDD 
  * 
- * This results in an MTBDD with mpc complex leafs, deepness n
+ * Convert one state column vector s = (0.0, 1.0, ..., 0.0, 0.0) 
+ * to MTBDD
  * 
- *              x0
- *          x1      0.0+i0.0
- *  ...
- *          x(n-1)
- *  0.0+i0.0      1.0+i0.0
+ * Example:
+ * 
+ *   |101> = |(0,0,0,0,1,0,0,0) = |4+1> = |5>
+ * 
+ * Equivalent with:
+ * 
+ *   x[n] = {false, false, ..., false}
+ * 
+ * This results in an MTBDD with mpc complex leafs, deepness n,
+ * so number of leafs 2 ** n.
+ * 
+ * The vars are even {0,2,4,...} to align linear algebra operations.
+ * 
+ *                          x0
+ * 
+ *             x2                        x2
+ *  
+ *        ....                         ....
+ * 
+ *   x(2**(n-1))  x(2**(n-1))  x(2**(n-1))  x(2**(n-1))
+ * 
+ *   0.0   0.0    0.0   0.0    1.0   0.0    0.0   0.0
+ * 
+ * This will be reduced to
+ * 
+ *                    x0
+ * 
+ *             x2            0.0
+ *  
+ *          /        0.0
+ * 
+ *   x(2**(n-1))  
+ * 
+ *   0.0      0.0 
+ * 
+ * We will build the reduced mtbdd directly starting at the bottom where we place a 1 leaf.
+ * 
+ *      n       highest var
+ *      0       0
+ *      1       n-1 = 0
+ *      2       n+0 = 2
+ *      3       n+1 = 4
+ *      4       n+2 = 6 
+ *         ...
+ *      n       n+n-2 = 2n-2, n > 0
  * 
  */
 MTBDD
-mtbdd_create_basis_state(BDDVAR n, bool* x)
+mtbdd_create_basis_state_double(BDDVAR n, bool* x)
 {
-    MTBDD low, high, prev;
+    if(n==0)
+        return MTBDD_ZERO;
+
+    uint32_t var = 2*n-2;
+
+    double double_zero = 0.0;
+    double double_one = 1.0;
+
+    MTBDD zero = mtbdd_double(double_zero);
+    MTBDD one = mtbdd_double(double_one);
+
+    MTBDD node = one;
+
+    //
+    // Start with the least significant qubit first, x[n-1]
+    //
+    // Build a path from the bottom (place one leaf = 1.0) leaf to the root.
+    //
+    // If the qubit is 0 choose the low edge, otherwise the high edge
+    //
+    for(int i = (int)n - 1; i>=0; i--)
+    {
+        printf("x[%d] = %d, var = %d\n", i, x[i], var);
+
+        if(x[i] == 0)
+            node = mtbdd_makenode(var, node, zero);
+
+        if(x[i] == 1)
+            node = mtbdd_makenode(var, zero, node);
+
+        // var of node always even
+        var = var - 2;
+    }
+
+    return node;
+}
+
+MTBDD
+mtbdd_create_basis_state_mpc(BDDVAR n, bool* x)
+{
+    if(n==0)
+        return MTBDD_ZERO;
+
+    uint32_t var = 2*n-2;
 
     mpc_t mpc_zero;
     mpc_init2(mpc_zero, MPC_PRECISION);
@@ -65,28 +156,36 @@ mtbdd_create_basis_state(BDDVAR n, bool* x)
     mpc_init2(mpc_one, MPC_PRECISION);
     mpc_assign(mpc_one, 1.0, 0.0);
 
-    for (uint32_t k = n-1; k != (uint32_t)0; k--) {
-        if (x[k] == 0) {
-            if(k == (n-1))
-                low = mtbdd_makeleaf(MPC_TYPE, (size_t)mpc_one);
-            else
-                low = prev;
-            high = mtbdd_makeleaf(MPC_TYPE, (size_t)mpc_zero);
-        }
-        else if (x[k] == 1) {
-            if(k == (n-1))
-                low = mtbdd_makeleaf(MPC_TYPE, (size_t)mpc_zero);
-            else
-                low = prev;
-            high = mtbdd_makeleaf(MPC_TYPE, (size_t)mpc_one);
-        }
-        prev = mtbdd_makenode(k, low, high);
+    MTBDD zero = mtbdd_makeleaf(MPC_TYPE, (size_t)mpc_zero);
+    MTBDD one = mtbdd_makeleaf(MPC_TYPE, (size_t)mpc_one);
+
+    MTBDD node = one;
+
+    //
+    // Start with the least significant qubit first, x[n-1]
+    //
+    // Build a path from the bottom (place one leaf = 1.0) leaf to the root.
+    //
+    // If the qubit is 0 choose the low edge, otherwise the high edge
+    //
+    for(int i = (int)n - 1; i>=0; i--)
+    {
+        printf("x[%d] = %d, var = %d\n", i, x[i], var);
+
+        if(x[i] == 0)
+            node = mtbdd_makenode(var, node, zero);
+
+        if(x[i] == 1)
+            node = mtbdd_makenode(var, zero, node);
+
+        // var of node always even
+        var = var - 2;
     }
 
     mpc_clear(mpc_zero);
     mpc_clear(mpc_one);
 
-    return prev;
+    return node;
 }
 
 /**
