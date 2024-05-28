@@ -863,8 +863,7 @@ qmdd_measure_q0(QMDD qmdd, BDDVAR nvars, int *m, double *p)
     prob_low  *= prob_root;
     prob_high *= prob_root;
     if (fabs(prob_low + prob_high - 1.0) > 1e-6) {
-        printf("WARNING: prob sum = %.10lf (%.5lf + %.5lf)\n", prob_low + prob_high, prob_low, prob_high);
-        //assert("probabilities don't sum to 1" && false);
+        fprintf(stderr, "WARNING: prob sum = %.14lf\n", prob_low + prob_high);
     }
 
     // flip a coin
@@ -929,9 +928,8 @@ qmdd_measure_all(QMDD qmdd, BDDVAR n, bool* ms, double *p)
         prob_high = prob_high * prob_roots / prob_path;
         prob_low  = prob_low  * prob_roots / prob_path;
 
-        if (fabs(prob_low + prob_high - 1.0) > sylvan_edge_weights_tolerance()) {
-            printf("prob sum = %.10lf\n", prob_low + prob_high);
-            // printf("probabilities don't sum to 1" && false);
+        if (fabs(prob_low + prob_high - 1.0) > 1e-6) {
+            fprintf(stderr, "WARNING: prob sum = %.14lf\n", prob_low + prob_high);
         }
 
         // flip a coin
