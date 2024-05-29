@@ -20,6 +20,7 @@ static size_t wgt_tab_size = 1LL<<23;
 static double tolerance = 1e-14;
 static int wgt_table_type = COMP_HASHMAP;
 static int wgt_norm_strat = NORM_LARGEST;
+static int reorder_qubits = 0;
 static char* qasm_inputfile = NULL;
 static char* json_outputfile = NULL;
 
@@ -33,6 +34,8 @@ static struct argp_option options[] =
     {"json", 'j', "<filename>", 0, "Write stats to given filename as json", 0},
     {"count-nodes", 'c', 0, 0, "Track maximum number of nodes", 0},
     {"state-vector", 'v', 0, 0, "Also output the complete state vector", 0},
+    {"allow-reorder", 10, 0, 0, "Reorders the qubits once such that (most) controls occur before targets in the variable order.", 0},
+    {"allow-reorder-swaps", 11, 0, 0, "Reorders the qubits such that all controls occur before targets (requires inserting SWAP gates).", 0},
     {0, 0, 0, 0, 0, 0}
 };
 static error_t
@@ -62,6 +65,12 @@ parse_opt(int key, char *arg, struct argp_state *state)
         break;
     case 'v':
         output_vector = true;
+        break;
+    case 10:
+        reorder_qubits = 1;
+        break;
+    case 11:
+        reorder_qubits = 2;
         break;
     case ARGP_KEY_ARG:
         if (state->arg_num >= 1) argp_usage(state);
@@ -144,7 +153,7 @@ wctime()
 }
 
 
-QMDD apply_gate(QMDD state, quantum_op_t* gate)
+QMDD apply_gate(QMDD state, quantum_op_t* gate, BDDVAR nqubits)
 {
     // This looks very ugly, but we need some way to match the name of a gate to
     // the GATEID, and since this is C we don't really have easy access to
@@ -204,43 +213,43 @@ QMDD apply_gate(QMDD state, quantum_op_t* gate)
         return qmdd_gate(state, GATEID_U(gate->angle[0], gate->angle[1], gate->angle[2]), gate->targets[0]);
     }
     else if (strcmp(gate->name, "cx") == 0) {
-        return qmdd_cgate(state, GATEID_X, gate->ctrls[0], gate->targets[0]);
+        return qmdd_cgate(state, GATEID_X, gate->ctrls[0], gate->targets[0], nqubits);
     }
     else if (strcmp(gate->name, "cy") == 0) {
-        return qmdd_cgate(state, GATEID_Y, gate->ctrls[0], gate->targets[0]);
+        return qmdd_cgate(state, GATEID_Y, gate->ctrls[0], gate->targets[0], nqubits);
     }
     else if (strcmp(gate->name, "cz") == 0) {
-        return qmdd_cgate(state, GATEID_Z, gate->ctrls[0], gate->targets[0]);
+        return qmdd_cgate(state, GATEID_Z, gate->ctrls[0], gate->targets[0], nqubits);
     }
     else if (strcmp(gate->name, "ch") == 0) {
-        return qmdd_cgate(state, GATEID_H, gate->ctrls[0], gate->targets[0]);
+        return qmdd_cgate(state, GATEID_H, gate->ctrls[0], gate->targets[0], nqubits);
     }
     else if (strcmp(gate->name, "csx") == 0) {
-        return qmdd_cgate(state, GATEID_sqrtX, gate->ctrls[0], gate->targets[0]);
+        return qmdd_cgate(state, GATEID_sqrtX, gate->ctrls[0], gate->targets[0], nqubits);
     }
     else if (strcmp(gate->name, "crx") == 0) {
-        return qmdd_cgate(state, GATEID_Rx(gate->angle[0]), gate->ctrls[0], gate->targets[0]);
+        return qmdd_cgate(state, GATEID_Rx(gate->angle[0]), gate->ctrls[0], gate->targets[0], nqubits);
     }
     else if (strcmp(gate->name, "cry") == 0) {
-        return qmdd_cgate(state, GATEID_Ry(gate->angle[0]), gate->ctrls[0], gate->targets[0]);
+        return qmdd_cgate(state, GATEID_Ry(gate->angle[0]), gate->ctrls[0], gate->targets[0], nqubits);
     }
     else if (strcmp(gate->name, "crz") == 0) {
-        return qmdd_cgate(state, GATEID_Rz(gate->angle[0]), gate->ctrls[0], gate->targets[0]);
+        return qmdd_cgate(state, GATEID_Rz(gate->angle[0]), gate->ctrls[0], gate->targets[0], nqubits);
     }
     else if (strcmp(gate->name, "cp") == 0) {
-        return qmdd_cgate(state, GATEID_Phase(gate->angle[0]), gate->ctrls[0], gate->targets[0]);
+        return qmdd_cgate(state, GATEID_Phase(gate->angle[0]), gate->ctrls[0], gate->targets[0], nqubits);
     }
     else if (strcmp(gate->name, "cu") == 0) {
-        return qmdd_cgate(state, GATEID_U(gate->angle[0], gate->angle[1], gate->angle[2]), gate->ctrls[0], gate->targets[0]);
+        return qmdd_cgate(state, GATEID_U(gate->angle[0], gate->angle[1], gate->angle[2]), gate->ctrls[0], gate->targets[0], nqubits);
     }
     else if (strcmp(gate->name, "ccx") == 0) {
-        return qmdd_cgate2(state, GATEID_X, gate->ctrls[0], gate->ctrls[1], gate->targets[0]);
+        return qmdd_cgate2(state, GATEID_X, gate->ctrls[0], gate->ctrls[1], gate->targets[0], nqubits);
     }
     else if (strcmp(gate->name, "c3x") == 0) {
-        return qmdd_cgate3(state, GATEID_X, gate->ctrls[0], gate->ctrls[1], gate->ctrls[2], gate->targets[0]);
+        return qmdd_cgate3(state, GATEID_X, gate->ctrls[0], gate->ctrls[1], gate->ctrls[2], gate->targets[0], nqubits);
     }
     else if (strcmp(gate->name, "c3sx") == 0) {
-        return qmdd_cgate3(state, GATEID_sqrtX, gate->ctrls[0], gate->ctrls[1], gate->ctrls[2], gate->targets[0]);
+        return qmdd_cgate3(state, GATEID_sqrtX, gate->ctrls[0], gate->ctrls[1], gate->ctrls[2], gate->targets[0], nqubits);
     }
     else if (strcmp(gate->name, "swap") == 0) {
         // no native SWAP gates in Q-Sylvan
@@ -251,30 +260,30 @@ QMDD apply_gate(QMDD state, quantum_op_t* gate)
         // no native CSWAP gates in Q-Sylvan
         stats.applied_gates += 4;
         // CCNOT
-        state = qmdd_cgate2(state, GATEID_X, gate->ctrls[0], gate->targets[0], gate->targets[1]);
+        state = qmdd_cgate2(state, GATEID_X, gate->ctrls[0], gate->targets[0], gate->targets[1], nqubits);
         // upside down CCNOT (equivalent)
-        state = qmdd_cgate(state, GATEID_H, gate->ctrls[0], gate->targets[0]);
-        state = qmdd_cgate2(state, GATEID_Z, gate->ctrls[0], gate->targets[0], gate->targets[1]);
-        state = qmdd_cgate(state, GATEID_H, gate->ctrls[0], gate->targets[0]);
+        state = qmdd_cgate(state, GATEID_H, gate->ctrls[0], gate->targets[0], nqubits);
+        state = qmdd_cgate2(state, GATEID_Z, gate->ctrls[0], gate->targets[0], gate->targets[1], nqubits);
+        state = qmdd_cgate(state, GATEID_H, gate->ctrls[0], gate->targets[0], nqubits);
         // CCNOT
-        state = qmdd_cgate2(state, GATEID_X, gate->ctrls[0], gate->targets[0], gate->targets[1]);
+        state = qmdd_cgate2(state, GATEID_X, gate->ctrls[0], gate->targets[0], gate->targets[1], nqubits);
         return state;
     }
     else if (strcmp(gate->name, "rccx") == 0) {
         // no native RCCX (simplified Toffoli) gates in Q-Sylvan
         stats.applied_gates += 3;
-        state = qmdd_cgate2(state, GATEID_X, gate->ctrls[0], gate->ctrls[1], gate->targets[0]);
+        state = qmdd_cgate2(state, GATEID_X, gate->ctrls[0], gate->ctrls[1], gate->targets[0], nqubits);
         state = qmdd_gate(state, GATEID_X, gate->ctrls[1]);
-        state = qmdd_cgate2(state, GATEID_Z, gate->ctrls[0], gate->ctrls[1], gate->targets[0]);
+        state = qmdd_cgate2(state, GATEID_Z, gate->ctrls[0], gate->ctrls[1], gate->targets[0], nqubits);
         state = qmdd_gate(state, GATEID_X, gate->ctrls[1]);
         return state;
     }
     else if (strcmp(gate->name, "rzz") == 0 ) {
         // no native RZZ gates in Q-Sylvan
         stats.applied_gates += 2;
-        state = qmdd_cgate(state, GATEID_X, gate->targets[0], gate->targets[1]);
+        state = qmdd_cgate(state, GATEID_X, gate->targets[0], gate->targets[1], nqubits);
         state = qmdd_gate(state, GATEID_Phase(gate->angle[0]), gate->targets[1]);
-        state = qmdd_cgate(state, GATEID_X, gate->targets[0], gate->targets[1]);
+        state = qmdd_cgate(state, GATEID_X, gate->targets[0], gate->targets[1], nqubits);
         return state;
     }
     else if (strcmp(gate->name, "rxx") == 0) {
@@ -283,9 +292,9 @@ QMDD apply_gate(QMDD state, quantum_op_t* gate)
         stats.applied_gates += 6;
         state = qmdd_gate(state, GATEID_U(pi/2.0, gate->angle[0], 0), gate->targets[0]);
         state = qmdd_gate(state, GATEID_H, gate->targets[1]);
-        state = qmdd_cgate(state, GATEID_X, gate->targets[0], gate->targets[1]);
+        state = qmdd_cgate(state, GATEID_X, gate->targets[0], gate->targets[1], nqubits);
         state = qmdd_gate(state, GATEID_Phase(-(gate->angle[0])), gate->targets[1]);
-        state = qmdd_cgate(state, GATEID_X, gate->targets[0], gate->targets[1]);
+        state = qmdd_cgate(state, GATEID_X, gate->targets[0], gate->targets[1], nqubits);
         state = qmdd_gate(state, GATEID_H, gate->targets[1]);
         state = qmdd_gate(state, GATEID_U(pi/2.0, -pi, pi-gate->angle[0]), gate->targets[0]);
         return state;
@@ -315,7 +324,7 @@ void simulate_circuit(quantum_circuit_t* circuit)
     quantum_op_t *op = circuit->operations;
     while (op != NULL) {
         if (op->type == op_gate) {
-            state = apply_gate(state, op);
+            state = apply_gate(state, op, circuit->qreg_size);
         }
         else if (op->type == op_measurement) {
             if (circuit->has_intermediate_measurements) {
@@ -349,7 +358,8 @@ int main(int argc, char *argv[])
 {
     argp_parse(&argp, argc, argv, 0, 0, 0);
     quantum_circuit_t* circuit = parse_qasm_file(qasm_inputfile);
-    optimize_qubit_order(circuit);
+    if (reorder_qubits)
+        optimize_qubit_order(circuit, reorder_qubits == 2);
 
     if (rseed == 0) rseed = time(NULL);
     srand(rseed);

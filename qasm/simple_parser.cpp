@@ -664,7 +664,7 @@ void reverse_order(quantum_circuit_t *circuit)
 }
 
 
-void optimize_qubit_order(quantum_circuit_t *circuit)
+void optimize_qubit_order(quantum_circuit_t *circuit, bool allow_swaps)
 {
     order_cphase_gates(circuit); // order phase gates before counting
     quantum_op_t* head = circuit->operations;
@@ -684,7 +684,9 @@ void optimize_qubit_order(quantum_circuit_t *circuit)
         reverse_order(circuit);
         order_cphase_gates(circuit); // order phase gates again
     }
-    insert_required_swaps(circuit);
+    if (allow_swaps) {
+        insert_required_swaps(circuit);
+    }
 }
 
 
