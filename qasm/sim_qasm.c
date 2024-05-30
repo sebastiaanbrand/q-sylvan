@@ -139,6 +139,7 @@ void fprint_stats(FILE *stream, quantum_circuit_t* circuit)
     fprintf(stream, "    \"max_nodes\": %" PRIu64 ",\n", stats.max_nodes);
     fprintf(stream, "    \"n_qubits\": %d,\n", circuit->qreg_size);
     fprintf(stream, "    \"norm\": %.5e,\n", stats.norm);
+    fprintf(stream, "    \"reorder\": %d,\n", reorder_qubits);
     fprintf(stream, "    \"seed\": %d,\n", rseed);
     fprintf(stream, "    \"shots\": %" PRIu64 ",\n", stats.shots);
     fprintf(stream, "    \"simulation_time\": %lf,\n", stats.simulation_time);
