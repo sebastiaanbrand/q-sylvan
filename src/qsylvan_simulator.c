@@ -376,10 +376,10 @@ QMDD _qmdd_cgate(QMDD state, gate_id_t gate, BDDVAR c1, BDDVAR c2, BDDVAR c3, BD
         assert(n != 0 && "ERROR: when ctrls > targ, nqubits must be passed to cgate() function.");
         int *c_options = malloc(sizeof(int)*(n+1));
         for (uint32_t k = 0; k < n; k++) c_options[k] = -1;
-        if (c1 != AADD_INVALID_VAR) c_options[c1] = 1;
-        if (c2 != AADD_INVALID_VAR) c_options[c2] = 1;
-        if (c3 != AADD_INVALID_VAR) c_options[c3] = 1;
-        c_options[t] = 2;
+        if (c1 != AADD_INVALID_VAR && c1 < n) c_options[c1] = 1;
+        if (c2 != AADD_INVALID_VAR && c2 < n) c_options[c2] = 1;
+        if (c3 != AADD_INVALID_VAR && c3 < n) c_options[c3] = 1;
+        if (t  != AADD_INVALID_VAR && t  < n) c_options[t] = 2;
         QMDD gate_matrix = qmdd_create_multi_cgate(n, c_options, gate);
         free(c_options);
         return aadd_matvec_mult(gate_matrix, state, n);
