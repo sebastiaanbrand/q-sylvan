@@ -20,6 +20,7 @@ static size_t wgt_tab_size = 1LL<<23;
 static double tolerance = 1e-14;
 static int wgt_table_type = COMP_HASHMAP;
 static int wgt_norm_strat = NORM_LARGEST;
+static bool wgt_inv_caching = false;
 static int reorder_qubits = 0;
 static char* qasm_inputfile = NULL;
 static char* json_outputfile = NULL;
@@ -36,6 +37,7 @@ static struct argp_option options[] =
     {"state-vector", 'v', 0, 0, "Also output the complete state vector", 0},
     {"allow-reorder", 10, 0, 0, "Reorders the qubits once such that (most) controls occur before targets in the variable order.", 0},
     {"allow-reorder-swaps", 11, 0, 0, "Reorders the qubits such that all controls occur before targets (requires inserting SWAP gates).", 0},
+    {"disable-inv-caching", 12, 0, 0, "Disable storing inverse of MUL and DIV in cache.", 0},
     {0, 0, 0, 0, 0, 0}
 };
 static error_t
@@ -71,6 +73,9 @@ parse_opt(int key, char *arg, struct argp_state *state)
         break;
     case 11:
         reorder_qubits = 2;
+        break;
+    case 12:
+        wgt_inv_caching = false;
         break;
     case ARGP_KEY_ARG:
         if (state->arg_num >= 1) argp_usage(state);
@@ -138,6 +143,7 @@ void fprint_stats(FILE *stream, quantum_circuit_t* circuit)
     fprintf(stream, "    \"shots\": %" PRIu64 ",\n", stats.shots);
     fprintf(stream, "    \"simulation_time\": %lf,\n", stats.simulation_time);
     fprintf(stream, "    \"tolerance\": %.5e,\n", tolerance);
+    fprintf(stream, "    \"wgt_inv_caching\": %d,\n", wgt_inv_caching);
     fprintf(stream, "    \"wgt_norm_strat\": %d,\n", wgt_norm_strat);
     fprintf(stream, "    \"workers\": %d\n", workers);
     fprintf(stream, "  }\n");
@@ -371,6 +377,7 @@ int main(int argc, char *argv[])
     sylvan_set_sizes(min_tablesize, max_tablesize, min_cachesize, max_cachesize);
     sylvan_init_package();
     qsylvan_init_simulator(wgt_tab_size, wgt_tab_size, tolerance, COMP_HASHMAP, wgt_norm_strat);
+    wgt_set_inverse_chaching(wgt_inv_caching);
 
     simulate_circuit(circuit);
 
