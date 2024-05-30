@@ -334,12 +334,25 @@ qmdd_do_before_gate(QMDD* qmdd)
     qmdd_stats_log(*qmdd);
 }
 
-static bool
-check_ctrls_before_targ(BDDVAR c1, BDDVAR c2, BDDVAR c3, BDDVAR t)
+static void swap(BDDVAR *a, BDDVAR *b)
 {
-    if (c1 != AADD_INVALID_VAR && c1 > t) return false;
-    if (c2 != AADD_INVALID_VAR && c2 > t) return false;
-    if (c3 != AADD_INVALID_VAR && c3 > t) return false;
+    BDDVAR tmp = *a;
+    *a = *b;
+    *b = tmp;
+}
+
+static bool
+check_ctrls_before_targ(BDDVAR *c1, BDDVAR *c2, BDDVAR *c3, BDDVAR t)
+{
+    // sort controls
+    if (*c1 > *c3) swap(c1, c2);
+    if (*c1 > *c2) swap(c1, c2);
+    if (*c2 > *c3) swap(c2, c3);
+
+    // check if controls before target
+    if (*c1 != AADD_INVALID_VAR && *c1 > t) return false;
+    if (*c2 != AADD_INVALID_VAR && *c2 > t) return false;
+    if (*c3 != AADD_INVALID_VAR && *c3 > t) return false;
     return true;
 }
 
@@ -355,7 +368,7 @@ QMDD _qmdd_cgate(QMDD state, gate_id_t gate, BDDVAR c1, BDDVAR c2, BDDVAR c3, BD
 {
     qmdd_do_before_gate(&state);
 
-    if (check_ctrls_before_targ(c1, c2, c3, t)) {
+    if (check_ctrls_before_targ(&c1, &c2, &c3, t)) {
         BDDVAR cs[4] = {c1, c2, c3, AADD_INVALID_VAR}; // last pos is to mark end
         return qmdd_cgate_rec(state, gate, cs, t);
     }
