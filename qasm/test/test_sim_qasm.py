@@ -34,7 +34,9 @@ def get_vector(qasm_file : str, args : list):
     return vector
 
 
-@pytest.mark.parametrize("cl_args", [[], ["--allow-reorder"], ["--allow-reorder-swap"]])
+@pytest.mark.parametrize("cl_args",
+                         [['-s', 'low'], ['-s', 'largest'], ['-s', 'l2'],
+                          ['--allow-reorder'], ['--allow-reorder-swap']])
 class TestCircuits:
     """
     Test sim_qasm on all given circuits, with CL arguments given above.
@@ -315,7 +317,7 @@ class TestCircuits:
         ref = np.array([-0.44546064-0.1658815j , -0.16261527-0.26478867j,
                         -0.16759538-0.09325885j,  0.12584213+0.35336909j,
                         -0.16261527-0.26478867j, -0.44546064-0.1658815j ,
-                        0.12584213+0.35336909j, -0.16759538-0.09325885j])
+                         0.12584213+0.35336909j, -0.16759538-0.09325885j])
         assert abs(fidelity(vector, ref) - 1) < TOLERANCE
 
 
@@ -325,11 +327,11 @@ class TestCircuits:
         """
         vector = get_vector('qft_n4.qasm', cl_args)
         ref = np.array([ 2.50000000e-01+0.j       , -1.76776695e-01-0.1767767j,
-                        1.53080850e-17+0.25j     ,  1.76776695e-01-0.1767767j,
+                         1.53080850e-17+0.25j     ,  1.76776695e-01-0.1767767j,
                         -2.50000000e-01+0.j       ,  1.76776695e-01+0.1767767j,
                         -1.53080850e-17-0.25j     , -1.76776695e-01+0.1767767j,
-                        2.50000000e-01+0.j       , -1.76776695e-01-0.1767767j,
-                        1.53080850e-17+0.25j     ,  1.76776695e-01-0.1767767j,
+                         2.50000000e-01+0.j       , -1.76776695e-01-0.1767767j,
+                         1.53080850e-17+0.25j     ,  1.76776695e-01-0.1767767j,
                         -2.50000000e-01+0.j       ,  1.76776695e-01+0.1767767j,
                         -1.53080850e-17-0.25j     , -1.76776695e-01+0.1767767j])
         assert abs(fidelity(vector, ref) - 1) < TOLERANCE
