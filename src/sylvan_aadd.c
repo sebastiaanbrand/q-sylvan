@@ -484,11 +484,14 @@ sylvan_init_aadd(size_t min_wgt_tablesize, size_t max_wgt_tablesize,
     weight_norm_strat = norm_strat;
     switch (norm_strat)
     {
-    case NORM_LARGEST:
-        normalize_weights = &wgt_norm_largest;
-        break;
     case NORM_LOW:
         normalize_weights = &wgt_norm_low;
+        break;
+    case NORM_MAX:
+        normalize_weights = &wgt_norm_max;
+        break;
+    case NORM_MIN:
+        normalize_weights = &wgt_norm_min;
         break;
     case NORM_L2:
         normalize_weights = wgt_norm_L2;

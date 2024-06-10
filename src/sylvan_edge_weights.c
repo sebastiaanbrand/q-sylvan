@@ -588,7 +588,7 @@ wgt_norm_low(AADD_WGT *low, AADD_WGT *high)
 }
 
 AADD_WGT
-wgt_norm_largest(AADD_WGT *low, AADD_WGT *high)
+wgt_norm_max(AADD_WGT *low, AADD_WGT *high)
 {
     AADD_WGT norm;
     if (*low == *high) {
@@ -619,6 +619,68 @@ wgt_norm_largest(AADD_WGT *low, AADD_WGT *high)
 
     free(wl);
     free(wh);
+    return norm;
+}
+
+AADD_WGT
+wgt_norm_min(AADD_WGT *low, AADD_WGT *high)
+{
+    AADD_WGT norm;
+    if (*low == *high) {
+        norm  = *low;
+        *low  = AADD_ONE;
+        *high = AADD_ONE;
+        return norm;
+    }
+    // Since min(a, b) could be 0, norm using non-zero to avoid dividing by 0
+    if (*low == AADD_ZERO) {
+        norm  = *high;
+        *high = AADD_ONE;
+        return norm;
+    }
+    if (*high == AADD_ZERO) {
+        norm  = *low;
+        *low  = AADD_ONE;
+        return norm;
+    }
+
+    // Normalize using the absolute smallest value
+    weight_t wl = weight_malloc();
+    weight_t wh = weight_malloc();
+    weight_t wl_abs = weight_malloc();
+    weight_t wh_abs = weight_malloc();
+    weight_value(*low,  wl);
+    weight_value(*high, wh);
+    weight_value(*low,  wl_abs);
+    weight_value(*high, wh_abs);
+    weight_abs(wl_abs);
+    weight_abs(wh_abs);
+
+    // To help avoid canonicity issues, 
+    // handle case where magnitudes are (almost) equal separately
+    if (weight_approx_eq(wl_abs, wh_abs)) {
+        // |low| ~= |high|, divide by low
+        *high = wgt_div(*high, *low);
+        norm = *low;
+        *low  = AADD_ONE;
+    }
+    else if (weight_greater(wl, wh)) {
+        // |high| < |low|, divide both by high
+        *low = wgt_div(*low, *high);
+        norm  = *high;
+        *high = AADD_ONE;
+    }
+    else {
+        // |low| < |high|, divide both by low
+        *high = wgt_div(*high, *low);
+        norm = *low;
+        *low  = AADD_ONE;
+    }
+
+    free(wl);
+    free(wh);
+    free(wl_abs);
+    free(wh_abs);
     return norm;
 }
 

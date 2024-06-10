@@ -78,7 +78,7 @@ typedef void (*weight_mul_f)(weight_t a, weight_t b); // a <-- a * b
 typedef void (*weight_div_f)(weight_t a, weight_t b); // a <-- a / b
 typedef bool (*weight_eq_f)(weight_t a, weight_t b); // returns true iff a == b
 typedef bool (*weight_eps_close_f)(weight_t a, weight_t b, double eps); // returns true iff dist(a,b) < eps
-typedef bool (*weight_greater_f)(weight_t a, weight_t b); // returns true iff a > b
+typedef bool (*weight_greater_f)(weight_t a, weight_t b); // returns true iff |a| > |b|
 
 /* Normalization methods */
 typedef AADD_WGT (*wgt_norm_L2_f)(AADD_WGT *low, AADD_WGT *high);
@@ -162,7 +162,8 @@ bool wgt_approx_eq(AADD_WGT a, AADD_WGT b);
 /*************************<Edge weight normalization>**************************/
 
 AADD_WGT wgt_norm_low(AADD_WGT *low, AADD_WGT *high);
-AADD_WGT wgt_norm_largest(AADD_WGT *low, AADD_WGT *high);
+AADD_WGT wgt_norm_max(AADD_WGT *low, AADD_WGT *high);
+AADD_WGT wgt_norm_min(AADD_WGT *low, AADD_WGT *high);
 // wgt_norm_L2() is in the interface because it's too complicated to implement
 // without assumptions on the underlying data type of the edge weights.
 

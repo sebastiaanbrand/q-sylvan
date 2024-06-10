@@ -741,7 +741,7 @@ int main(int argc, char *argv[])
     int flag_help = -1;
     char *filename;
     int workers = 1;
-    int wgt_norm_strat = NORM_LARGEST;
+    int wgt_norm_strat = NORM_MAX;
     unsigned int runs = 1;
     unsigned int seed = 0;
     int matrix = 0;

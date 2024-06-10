@@ -49,7 +49,7 @@ int test_table_size_increase()
     double tol = 0;
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    qsylvan_init_simulator(min_wgt_tablesize, max_wgt_tablesize, -1, COMP_HASHMAP, NORM_LARGEST);
+    qsylvan_init_simulator(min_wgt_tablesize, max_wgt_tablesize, -1, COMP_HASHMAP, NORM_MAX);
     qmdd_set_testing_mode(true); // turn on internal sanity tests
 
     // check that wgt_tablesize doubles after gc, but not beyond max_wgt_tablesize
@@ -80,7 +80,7 @@ int test_custom_gate_gc_protection()
     double tol = 1e-14;
     sylvan_set_sizes(1LL<<25, 1LL<<25, 1LL<<16, 1LL<<16);
     sylvan_init_package();
-    qsylvan_init_simulator(min_wgt_tablesize, max_wgt_tablesize, -1, COMP_HASHMAP, NORM_LARGEST);
+    qsylvan_init_simulator(min_wgt_tablesize, max_wgt_tablesize, -1, COMP_HASHMAP, NORM_MAX);
     qmdd_set_testing_mode(true); // turn on internal sanity tests
 
 

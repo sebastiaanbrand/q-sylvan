@@ -223,7 +223,7 @@ static void __attribute__((unused))
 aaddnode_pack(aaddnode_t n, BDDVAR var, AADD_TARG low, AADD_TARG high, AADD_WGT a, AADD_WGT b)
 {
     // We only want to store 1 edge weight per node (which has 2 outgoing
-    // edges). For NORM_LOW and NORM_LARGEST this is relatively easy because in
+    // edges). For NORM_LOW and NORM_MAX this is relatively easy because in
     // both those cases there is at least one edge weight equal to 1 or 0.
     //
     // For NORM_L2 it is a bit more complicated: both edge weights can be
@@ -244,7 +244,7 @@ aaddnode_pack(aaddnode_t n, BDDVAR var, AADD_TARG low, AADD_TARG high, AADD_WGT 
         wgt_high = b; // we can derive a from b
     }
     else {
-        /// weight_norm_strat == NORM_LOW or NORM_LARGEST
+        /// weight_norm_strat == NORM_LOW or NORM_MAX or NORM_MIN
         assert(a == AADD_ZERO || a == AADD_ONE || b == AADD_ZERO || b == AADD_ONE);
         norm_pos = (a == AADD_ZERO || a == AADD_ONE) ? 0 : 1;
         if (norm_pos == 0) {

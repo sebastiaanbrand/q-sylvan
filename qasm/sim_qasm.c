@@ -19,7 +19,7 @@ static size_t max_cachesize = 1LL<<16;
 static size_t wgt_tab_size = 1LL<<23;
 static double tolerance = 1e-14;
 static int wgt_table_type = COMP_HASHMAP;
-static int wgt_norm_strat = NORM_LARGEST;
+static int wgt_norm_strat = NORM_MAX;
 static bool wgt_inv_caching = true;
 static int reorder_qubits = 0;
 static char* qasm_inputfile = NULL;
@@ -30,7 +30,7 @@ static struct argp_option options[] =
 {
     {"workers", 'w', "<workers>", 0, "Number of workers/threads (default=1)", 0},
     {"rseed", 'r', "<random-seed>", 0, "Set random seed", 0},
-    {"norm-strat", 's', "<low|largest|l2>", 0, "Edge weight normalization strategy", 0},
+    {"norm-strat", 's', "<low|max|min|l2>", 0, "Edge weight normalization strategy", 0},
     {"tol", 't', "<tolerance>", 0, "Tolerance for deciding edge weights equal (default=1e-14)", 0},
     {"json", 'j', "<filename>", 0, "Write stats to given filename as json", 0},
     {"count-nodes", 'c', 0, 0, "Track maximum number of nodes", 0},
@@ -52,7 +52,8 @@ parse_opt(int key, char *arg, struct argp_state *state)
         break;
     case 's':
         if (strcmp(arg, "low")==0) wgt_norm_strat = NORM_LOW;
-        else if (strcmp(arg, "largest")==0) wgt_norm_strat = NORM_LARGEST;
+        else if (strcmp(arg, "max")==0) wgt_norm_strat = NORM_MAX;
+        else if (strcmp(arg, "min")==0) wgt_norm_strat = NORM_MIN;
         else if (strcasecmp(arg, "l2")==0) wgt_norm_strat = NORM_L2;
         else argp_usage(state);
         break;
