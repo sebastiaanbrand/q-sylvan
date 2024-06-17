@@ -426,16 +426,14 @@ TASK_IMPL_3(QMDD, qmdd_gate_rec, QMDD, q, gate_id_t, gate, BDDVAR, target)
         high1 = aadd_bundle(AADD_TARGET(low), a_u10);
         high2 = aadd_bundle(AADD_TARGET(high),b_u11);
         aadd_refs_spawn(SPAWN(aadd_plus, high1, high2));
-        low = CALL(aadd_plus, low1, low2);
-        aadd_refs_push(low);
+        low = aadd_refs_push(CALL(aadd_plus, low1, low2));
         high = aadd_refs_sync(SYNC(aadd_plus));
         aadd_refs_pop(1);
         res = aadd_makenode(target, low, high);
     }
     else { // var < target: not at target qubit yet, recursive calls down
         aadd_refs_spawn(SPAWN(qmdd_gate_rec, high, gate, target));
-        low = CALL(qmdd_gate_rec, low, gate, target);
-        aadd_refs_push(low);
+        low = aadd_refs_push(CALL(qmdd_gate_rec, low, gate, target));
         high = aadd_refs_sync(SYNC(qmdd_gate_rec));
         aadd_refs_pop(1);
         res  = aadd_makenode(var, low, high);
@@ -486,15 +484,12 @@ TASK_IMPL_5(QMDD, qmdd_cgate_rec, QMDD, q, gate_id_t, gate, BDDVAR*, cs, uint32_
     // If current node is (one of) the control qubit(s), 
     // control on q_c = |1> (high edge)
     if (var == c) {
-        ci++;
-        high = CALL(qmdd_cgate_rec, high, gate, cs, ci, t);
-        ci--;
+        high = CALL(qmdd_cgate_rec, high, gate, cs, ci+1, t);
     }
     // Not at control qubit yet, apply to both childeren.
     else {
         aadd_refs_spawn(SPAWN(qmdd_cgate_rec, high, gate, cs, ci, t));
-        low = CALL(qmdd_cgate_rec, low, gate, cs, ci, t);
-        aadd_refs_push(low);
+        low = aadd_refs_push(CALL(qmdd_cgate_rec, low, gate, cs, ci, t));
         high = aadd_refs_sync(SYNC(qmdd_cgate_rec));
         aadd_refs_pop(1);
     }
@@ -558,8 +553,7 @@ TASK_IMPL_6(QMDD, qmdd_cgate_range_rec, QMDD, q, gate_id_t, gate, BDDVAR, c_firs
     // Not at first control qubit yet, apply to both children
     if (var < c_first) {
         aadd_refs_spawn(SPAWN(qmdd_cgate_range_rec, high, gate, c_first, c_last, t, nextvar));
-        low = CALL(qmdd_cgate_range_rec, low, gate, c_first, c_last, t, var);
-        aadd_refs_push(low);
+        low = aadd_refs_push(CALL(qmdd_cgate_range_rec, low, gate, c_first, c_last, t, nextvar));
         high = aadd_refs_sync(SYNC(qmdd_cgate_range_rec));
         aadd_refs_pop(1);
     }
