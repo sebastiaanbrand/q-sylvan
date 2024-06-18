@@ -35,8 +35,8 @@ static struct argp_option options[] =
     {"json", 'j', "<filename>", 0, "Write stats to given filename as json", 0},
     {"count-nodes", 'c', 0, 0, "Track maximum number of nodes", 0},
     {"state-vector", 'v', 0, 0, "Also output the complete state vector", 0},
-    {"allow-reorder", 10, 0, 0, "Reorders the qubits once such that (most) controls occur before targets in the variable order.", 0},
-    {"allow-reorder-swaps", 11, 0, 0, "Reorders the qubits such that all controls occur before targets (requires inserting SWAP gates).", 0},
+    {"reorder", 10, 0, 0, "Reorders the qubits once such that (most) controls occur before targets in the variable order.", 0},
+    {"reorder-swaps", 11, 0, 0, "Reorders the qubits such that all controls occur before targets (requires inserting SWAP gates).", 0},
     {"disable-inv-caching", 12, 0, 0, "Disable storing inverse of MUL and DIV in cache.", 0},
     {0, 0, 0, 0, 0, 0}
 };

@@ -36,7 +36,7 @@ def get_vector(qasm_file : str, args : list):
 
 @pytest.mark.parametrize("cl_args",
                          [['-s', 'low'], ['-s', 'max'], ['-s', 'min'], ['-s', 'l2'],
-                          ['--allow-reorder'], ['--allow-reorder-swap']])
+                          ['--reorder'], ['--reorder-swap']])
 class TestCircuits:
     """
     Test sim_qasm on all given circuits, with CL arguments given above.
