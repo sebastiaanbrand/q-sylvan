@@ -383,11 +383,12 @@ int main(int argc, char *argv[])
 
     simulate_circuit(circuit);
 
-    fprint_stats(stdout, circuit);
     if (json_outputfile != NULL) {
         FILE *fp = fopen(json_outputfile, "w");
         fprint_stats(fp, circuit);
         fclose(fp);
+    } else {
+        fprint_stats(stdout, circuit);
     }
 
     sylvan_quit();
