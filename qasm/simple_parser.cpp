@@ -649,7 +649,11 @@ void reverse_order(quantum_circuit_t *circuit)
     quantum_op_t* head = circuit->operations;
     while (head != NULL) {
         if (head->type == op_gate || head->type == op_measurement) {
-            head->targets[0] = (circuit->qreg_size - 1) - head->targets[0];
+            for (int j = 0; j < 2; j++) {
+                if (head->targets[j] != -1) {
+                    head->targets[j] = (circuit->qreg_size - 1) - head->targets[j];
+                }
+            }
             for (int j = 0; j < 3; j++) {
                 if (head->ctrls[j] != -1) {
                     head->ctrls[j] = (circuit->qreg_size - 1) - head->ctrls[j];
