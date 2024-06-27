@@ -163,9 +163,8 @@ wctime()
 
 QMDD apply_gate(QMDD state, quantum_op_t* gate, BDDVAR nqubits)
 {
-    // This looks very ugly, but we need some way to match the name of a gate to
-    // the GATEID, and since this is C we don't really have easy access to
-    // data structures like a dictionary.
+    // TODO: move this relation between parsed quantum_op and internal gate
+    // somewhere else?
     stats.applied_gates++;
     if (strcmp(gate->name, "id") == 0) {
         stats.applied_gates--;

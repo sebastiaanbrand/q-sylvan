@@ -9,16 +9,69 @@
 
 #define max(a,b) ((a > b) ? a : b)
 
+
+/**********************<Arguments (configured via argp)>***********************/
+
 static int workers = 1;
-static size_t min_tablesize = 1LL<<18;
-static size_t max_tablesize = 1LL<<20;
+static size_t min_tablesize = 1LL<<20;
+static size_t max_tablesize = 1LL<<25;
 static size_t min_cachesize = 1LL<<16;
 static size_t max_cachesize = 1LL<<18;
-static size_t wgt_tab_size = 1LL<<15;
+static size_t wgt_tab_size = 1LL<<23;
 static double tolerance = 1e-14;
 static int wgt_table_type = COMP_HASHMAP;
 static int wgt_norm_strat = NORM_MAX;
-static int count_nodes = 1;
+static bool count_nodes = false;
+static quantum_circuit_t* circuit_U;
+static quantum_circuit_t* circuit_V;
+
+static struct argp_option options[] =
+{
+    {"workers", 'w', "<workers>", 0, "Number of workers/threads (default=1)", 0},
+    {"norm-strat", 's', "<low|max|min|l2>", 0, "Edge weight normalization strategy (default=max)", 0},
+    {"tol", 't', "<tolerance>", 0, "Tolerance for deciding edge weights equal (default=1e-14)", 0},
+    {"count-nodes", 'c', 0, 0, "Track maximum number of nodes", 0},
+    {0, 0, 0, 0, 0, 0}
+};
+static error_t
+parse_opt(int key, char *arg, struct argp_state *state)
+{
+    switch (key) {
+    case 'w':
+        workers = atoi(arg);
+        break;
+    case 's':
+        if (strcmp(arg, "low")==0) wgt_norm_strat = NORM_LOW;
+        else if (strcmp(arg, "max")==0) wgt_norm_strat = NORM_MAX;
+        else if (strcmp(arg, "min")==0) wgt_norm_strat = NORM_MIN;
+        else if (strcasecmp(arg, "l2")==0) wgt_norm_strat = NORM_L2;
+        else argp_usage(state);
+        break;
+    case 't':
+        tolerance = atof(arg);
+        break;
+    case 'c':
+        count_nodes = true;
+        break;
+    case ARGP_KEY_ARG:
+        if (state->arg_num == 0)
+            circuit_U = parse_qasm_file(arg);
+        else if (state->arg_num == 1)
+            circuit_V = parse_qasm_file(arg);
+        else
+            argp_usage(state);
+        break;
+    case ARGP_KEY_END:
+        if (state->arg_num < 1) argp_usage(state);
+        break;
+    default:
+        return ARGP_ERR_UNKNOWN;
+    }
+    return 0;
+}
+static struct argp argp = { options, parse_opt, "<U.qasm> <V.qasm>", 0, 0, 0, 0 };
+
+/*********************</Arguments (configured via argp)>***********************/
 
 
 typedef struct stats_s {
@@ -31,9 +84,6 @@ typedef struct stats_s {
     size_t max_nodes_V;
 } stats_t;
 stats_t stats = {0};
-
-quantum_circuit_t* circuit_U;
-quantum_circuit_t* circuit_V;
 
 
 void print_stats() {
@@ -70,6 +120,8 @@ wctime()
 
 
 QMDD get_gate_matrix(quantum_op_t* gate, BDDVAR nqubits, bool dag) {
+    // TODO: move this relation between parsed quantum_op and internal gate
+    // somewhere else?
     if (strcmp(gate->name, "id") == 0) {
         return qmdd_create_all_identity_matrix(nqubits);
     }
@@ -182,24 +234,9 @@ QMDD compute_UPUdag(quantum_circuit_t *circuit, gate_id_t P, BDDVAR k) {
     }
 }
 
-int main(int argc, char *argv[]) {
-
-    if (argc != 3) {
-        printf("Expected ./circuit_eq file1.qasm file2.qasm\n");
-        exit(EXIT_FAILURE);
-    }
-
-    char fileName1[200];
-    char fileName2[200];
-    strcpy(fileName1, argv[1]);
-    strcpy(fileName2, argv[2]);
-
-    circuit_U = parse_qasm_file(fileName1);
-    circuit_V = parse_qasm_file(fileName2);
-    optimize_qubit_order(circuit_U, false); // TODO: remove
-    optimize_qubit_order(circuit_V, false);
-    // TODO: instead: make make qmdd_create_cgate independent of order
-    //       of c and t (or make it a wrapper which calls create_multi_cgate)
+int main(int argc, char *argv[])
+{
+    argp_parse(&argp, argc, argv, 0, 0, 0);
 
     // Init
     lace_start(workers, 0);
