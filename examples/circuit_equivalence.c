@@ -100,10 +100,10 @@ QMDD get_gate_matrix(quantum_op_t* gate, BDDVAR nqubits, bool dag) {
         else     return qmdd_create_single_qubit_gate(nqubits, gate->targets[0], GATEID_Tdag);
     }
     else if (strcmp(gate->name, "cx") == 0) {
-        return qmdd_create_controlled_gate(nqubits, gate->ctrls[0], gate->targets[0], GATEID_X);
+        return qmdd_create_cgate(nqubits, gate->ctrls[0], gate->targets[0], GATEID_X);
     }
     else if (strcmp(gate->name, "cz") == 0) {
-        return qmdd_create_controlled_gate(nqubits, gate->ctrls[0], gate->targets[0], GATEID_Z);
+        return qmdd_create_cgate(nqubits, gate->ctrls[0], gate->targets[0], GATEID_Z);
     }
     else {
         fprintf(stderr, "Gate '%s' currently unsupported\n", gate->name);
@@ -195,7 +195,7 @@ int main(int argc, char *argv[]) {
     circuit_V = parse_qasm_file(fileName2);
     optimize_qubit_order(circuit_U, false); // TODO: remove
     optimize_qubit_order(circuit_V, false);
-    // TODO: instead: make make qmdd_create_controlled_gate independent of order
+    // TODO: instead: make make qmdd_create_cgate independent of order
     //       of c and t (or make it a wrapper which calls create_multi_cgate)
 
     // Init

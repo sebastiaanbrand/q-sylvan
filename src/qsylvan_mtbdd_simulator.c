@@ -222,7 +222,7 @@ qmdd_create_single_qubit_gates_same(BDDVAR n, gate_id_t gateid)
 }
 
 QMDD
-qmdd_create_controlled_gate(BDDVAR n, BDDVAR c, BDDVAR t, gate_id_t gateid)
+qmdd_create_cgate(BDDVAR n, BDDVAR c, BDDVAR t, gate_id_t gateid)
 {
     // for now, assume t > c
     assert(t > c);

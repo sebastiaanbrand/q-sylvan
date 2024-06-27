@@ -124,7 +124,10 @@ QMDD qmdd_create_single_qubit_gates_same(BDDVAR n, gate_id_t gateid);
  * 
  * @return A matrix QMDD encoding of the controlled gate on given qubits.
  */
-QMDD qmdd_create_controlled_gate(BDDVAR n, BDDVAR c, BDDVAR t, gate_id_t gateid);
+#define qmdd_create_cgate(n, c, t, gateid) _qmdd_create_cgate(n, c, AADD_INVALID_VAR, AADD_INVALID_VAR, t, gateid)
+#define qmdd_create_cgate2(n, c1, c2, t, gateid) _qmdd_create_cgate(n, c1, c2, AADD_INVALID_VAR, t, gateid)
+#define qmdd_create_cgate3(n, c1, c2, c3, t, gateid) _qmdd_create_cgate(n, c1, c2, c3, t, gateid)
+QMDD _qmdd_create_cgate(BDDVAR n, BDDVAR c1, BDDVAR c2, BDDVAR c3, BDDVAR t, gate_id_t gateid);
 
 /**
  * Creates a controlled-`gateid` gate which acts on the qubits as specified by

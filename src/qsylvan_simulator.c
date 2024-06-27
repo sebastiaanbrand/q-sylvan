@@ -191,33 +191,17 @@ qmdd_create_single_qubit_gates_same(BDDVAR n, gate_id_t gateid)
 }
 
 QMDD
-qmdd_create_controlled_gate(BDDVAR n, BDDVAR c, BDDVAR t, gate_id_t gateid)
+_qmdd_create_cgate(BDDVAR n, BDDVAR c1, BDDVAR c2, BDDVAR c3, BDDVAR t, gate_id_t gateid)
 {
-    // for now, assume t > c
-    assert(t > c);
-    // Start at terminal and build backwards
-    QMDD prev = aadd_bundle(AADD_TERMINAL, AADD_ONE);
-    QMDD branch0 = AADD_TERMINAL, branch1 = AADD_TERMINAL;
-    for (int k = n-1; k>= 0; k--) {
-        if ((unsigned int)k > t || (unsigned int) k < c) {
-            prev = qmdd_stack_matrix(prev, k, GATEID_I);
-        }
-        else if ((unsigned int) k == t) {
-            branch0 = qmdd_stack_matrix(prev, k, GATEID_I);
-            branch1 = qmdd_stack_matrix(prev, k, gateid);
-        }
-        else if ((unsigned int) k < t && (unsigned int) k > c) {
-            branch0 = qmdd_stack_matrix(branch0, k, GATEID_I);
-            branch1 = qmdd_stack_matrix(branch1, k, GATEID_I);
-        }
-        else if ((unsigned int) k == c) {
-            prev = qmdd_stack_control(branch0, branch1, k);
-        }
-        else {
-            assert("all cases should have been covered" && false);
-        }
-    }
-    return prev;
+    int *c_options = malloc(sizeof(int)*(n+1));
+    for (uint32_t k = 0; k < n; k++) c_options[k] = -1;
+    if (c1 != AADD_INVALID_VAR && c1 < n) c_options[c1] = 1;
+    if (c2 != AADD_INVALID_VAR && c2 < n) c_options[c2] = 1;
+    if (c3 != AADD_INVALID_VAR && c3 < n) c_options[c3] = 1;
+    if (t  != AADD_INVALID_VAR && t  < n) c_options[t] = 2;
+    QMDD gate_matrix = qmdd_create_multi_cgate(n, c_options, gateid);
+    free(c_options);
+    return gate_matrix;
 }
 
 QMDD
@@ -374,14 +358,7 @@ QMDD _qmdd_cgate(QMDD state, gate_id_t gate, BDDVAR c1, BDDVAR c2, BDDVAR c3, BD
     }
     else {
         assert(n != 0 && "ERROR: when ctrls > targ, nqubits must be passed to cgate() function.");
-        int *c_options = malloc(sizeof(int)*(n+1));
-        for (uint32_t k = 0; k < n; k++) c_options[k] = -1;
-        if (c1 != AADD_INVALID_VAR && c1 < n) c_options[c1] = 1;
-        if (c2 != AADD_INVALID_VAR && c2 < n) c_options[c2] = 1;
-        if (c3 != AADD_INVALID_VAR && c3 < n) c_options[c3] = 1;
-        if (t  != AADD_INVALID_VAR && t  < n) c_options[t] = 2;
-        QMDD gate_matrix = qmdd_create_multi_cgate(n, c_options, gate);
-        free(c_options);
+        QMDD gate_matrix = _qmdd_create_cgate(n, c1, c2, c3, t, gate);
         return aadd_matvec_mult(gate_matrix, state, n);
     }
 }
