@@ -1,11 +1,3 @@
-set(SOURCES
-    grover_cnf.c
-    grover.c
-    random_circuit.c
-    shor.c
-    supremacy.c
-)
-
 if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     # add argp library for OSX
     find_package(Argp REQUIRED)
@@ -26,12 +18,21 @@ macro(add_example NAME SOURCE)
 endmacro(add_example)
 
 add_example(bell_state bell_state.c)
-# target_sources(bell_state PRIVATE getrss.c getrss.h)
-
 add_example(vqc vqc.c)
 
+set(ALGORITHM_EXAMPLES
+    grover_cnf.c
+    grover.c
+    random_circuit.c
+    shor.c
+    supremacy.c
+)
+
 add_example(alg_run alg_run.c)
-target_sources(alg_run PRIVATE ${SOURCES})
+target_sources(alg_run PRIVATE ${ALGORITHM_EXAMPLES})
 
 add_example(test_algs test_algs.c)
-target_sources(test_algs PRIVATE ${SOURCES})
+target_sources(test_algs PRIVATE ${ALGORITHM_EXAMPLES})
+
+add_executable(circuit_equivalence circuit_equivalence.c)
+target_link_libraries(circuit_equivalence qsylvan qsylvan_qasm_parser)
