@@ -22,7 +22,8 @@ static int count_nodes = 1;
 
 
 typedef struct stats_s {
-    bool are_equiv;
+    bool equivalent;
+    char counterexample[100];
     double cpu_time;
     double wall_time;
     size_t max_nodes_total;
@@ -39,9 +40,10 @@ void print_stats() {
     // print stats in JSON format
     printf("{\n");
     printf("  \"statistics\": {\n");
-    printf("    \"are_equiv\" : %d,\n", (int)stats.are_equiv);
     printf("    \"circuit_U\": \"%s\",\n", circuit_U->name);
     printf("    \"circuit_V\": \"%s\",\n", circuit_V->name);
+    printf("    \"counterexample\": \"%s\",\n", stats.counterexample);
+    printf("    \"equivalent\" : %d,\n", (int)stats.equivalent);
     printf("    \"max_nodes_total\": %" PRIu64 ",\n", stats.max_nodes_total);
     printf("    \"max_nodes_U\": %" PRIu64 ",\n", stats.max_nodes_U);
     printf("    \"max_nodes_V\": %" PRIu64 ",\n", stats.max_nodes_V);
@@ -151,6 +153,8 @@ QMDD compute_UPUdag(quantum_circuit_t *circuit, gate_id_t P, BDDVAR k) {
 
     BDDVAR nqubits = U->qreg_size;
 
+    stats.equivalent = true;
+
     uint64_t m = 0;
     uint32_t XZ[2] = {GATEID_X, GATEID_Z};
     char XZ_str[2] = {'X', 'Z'};
@@ -158,6 +162,7 @@ QMDD compute_UPUdag(quantum_circuit_t *circuit, gate_id_t P, BDDVAR k) {
         for (int i = 0; i < 2; i++) {
             QMDD qmdd_U = compute_UPUdag(U, XZ[i], k);
             QMDD qmdd_V = compute_UPUdag(V, XZ[i], k);
+            // TODO: ^ remove global phase?
 
             if (count_nodes) {
                 size_t nodes_U = aadd_countnodes(qmdd_U);
@@ -168,15 +173,13 @@ QMDD compute_UPUdag(quantum_circuit_t *circuit, gate_id_t P, BDDVAR k) {
             }
 
             if (qmdd_U != qmdd_V) {
-                stats.are_equiv = false;
-                printf("U*%c_%d*U^dag != V*%c_%d*V^dag (%zu nodes)\n",
-                        XZ_str[i], k, XZ_str[i], k, (size_t)m);
+                stats.equivalent = false;
+                snprintf(stats.counterexample, sizeof(stats.counterexample),
+                        "U*%c_%d*U^dag != V*%c_%d*V^dag", XZ_str[i], k, XZ_str[i], k);
                 return;
             }
         }
     }
-
-    stats.are_equiv = true;
 }
 
 int main(int argc, char *argv[]) {
