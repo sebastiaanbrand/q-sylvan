@@ -351,8 +351,8 @@ int test_cx_gate()
     mI    = qmdd_create_all_identity_matrix(nqubits);
     mH0   = qmdd_create_single_qubit_gate(nqubits, 0, GATEID_H);
     mH1   = qmdd_create_single_qubit_gate(nqubits, 1, GATEID_H);
-    mCNOT = qmdd_create_controlled_gate(nqubits, 0, 1, GATEID_X);
-    mCZ   = qmdd_create_controlled_gate(nqubits, 0, 1, GATEID_Z);
+    mCNOT = qmdd_create_cgate(nqubits, 0, 1, GATEID_X);
+    mCZ   = qmdd_create_cgate(nqubits, 0, 1, GATEID_Z);
 
     // matrix-matrix mult
     mTemp = aadd_matmat_mult(mI,    mH0,   nqubits); test_assert(mTemp == mH0);
@@ -432,7 +432,7 @@ int test_cz_gate()
     x2[1] = 0; x2[0] = 0; v0 = qmdd_create_basis_state(nqubits, x2);
     mH0 = qmdd_create_single_qubit_gate(nqubits, 0, GATEID_H);
     mH1 = qmdd_create_single_qubit_gate(nqubits, 1, GATEID_H);
-    mCZ = qmdd_create_controlled_gate(nqubits, 0, 1, GATEID_Z);
+    mCZ = qmdd_create_cgate(nqubits, 0, 1, GATEID_Z);
 
     v0 = aadd_matvec_mult(mH0, v0, nqubits);
     v0 = aadd_matvec_mult(mH1, v0, nqubits);
