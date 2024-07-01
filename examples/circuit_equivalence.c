@@ -153,6 +153,18 @@ QMDD get_gate_matrix(quantum_op_t* gate, BDDVAR nqubits, bool dag) {
         if (dag) return qmdd_create_single_qubit_gate(nqubits, gate->targets[0], GATEID_T);
         else     return qmdd_create_single_qubit_gate(nqubits, gate->targets[0], GATEID_Tdag);
     }
+    else if (strcmp(gate->name, "rx") == 0) {
+        if (dag) return qmdd_create_single_qubit_gate(nqubits, gate->targets[0], GATEID_Rx(-gate->angle[0]));
+        else     return qmdd_create_single_qubit_gate(nqubits, gate->targets[0], GATEID_Rx(gate->angle[0]));
+    }
+    else if (strcmp(gate->name, "ry") == 0) {
+        if (dag) return qmdd_create_single_qubit_gate(nqubits, gate->targets[0], GATEID_Ry(-gate->angle[0]));
+        else     return qmdd_create_single_qubit_gate(nqubits, gate->targets[0], GATEID_Ry(gate->angle[0]));
+    }
+    else if (strcmp(gate->name, "rz") == 0) {
+        if (dag) return qmdd_create_single_qubit_gate(nqubits, gate->targets[0], GATEID_Rz(-gate->angle[0]));
+        else     return qmdd_create_single_qubit_gate(nqubits, gate->targets[0], GATEID_Rz(gate->angle[0]));
+    }
     else if (strcmp(gate->name, "cx") == 0) {
         return qmdd_create_cgate(nqubits, gate->ctrls[0], gate->targets[0], GATEID_X);
     }
