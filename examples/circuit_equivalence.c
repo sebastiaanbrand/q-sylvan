@@ -211,7 +211,8 @@ QMDD compute_UPUdag(quantum_circuit_t *circuit, gate_id_t P, BDDVAR k) {
 
  void circuit_equivalence_check(quantum_circuit_t *U, quantum_circuit_t *V) {
     if (U->qreg_size != V->qreg_size) {
-        fprintf(stderr, "Circuits have different number of qubits\n");
+        snprintf(stats.counterexample, sizeof(stats.counterexample),
+                 "Circuits have different number of qubits");
         return;
     }
 
