@@ -226,7 +226,9 @@ QMDD compute_UPUdag(quantum_circuit_t *circuit, gate_id_t P, BDDVAR k) {
     for (BDDVAR k = 0; k < nqubits; k++) {
         for (int i = 0; i < 2; i++) {
             QMDD qmdd_U = compute_UPUdag(U, XZ[i], k);
+            aadd_protect(&qmdd_U);
             QMDD qmdd_V = compute_UPUdag(V, XZ[i], k);
+            aadd_unprotect(&qmdd_U);
             // TODO: ^ remove global phase?
 
             if (count_nodes) {
