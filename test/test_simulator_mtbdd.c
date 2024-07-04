@@ -34,7 +34,7 @@
 #include "qsylvan_simulator_mtbdd.h"
 
 int
-test_create_all_zero_state_double()
+test_create_all_zero_state_double() // TODO: change into complex_t
 {
     BDDVAR n = 2;
     MTBDD a = mtbdd_create_all_zero_state_double(n);
@@ -74,7 +74,7 @@ test_create_all_zero_state_complex()
 }
 
 int
-test_create_basis_state_double()
+test_create_basis_state_double() // TODO: change into complex_t
 {
     BDDVAR n = 4;
 

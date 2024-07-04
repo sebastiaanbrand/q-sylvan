@@ -18,8 +18,10 @@
 #ifndef QSYLVAN_SIMULATOR_MTBDD_H
 #define QSYLVAN_SIMULATOR_MTBDD_H
 
-#include <sylvan_int.h>
-#include <qsylvan_gates.h>
+//#include <sylvan_int.h>
+#include <qsylvan.h>
+//#include <qsylvan_gates_mtbdd_mpc.h>
+//#include <qsylvan_gates.h>
 
 
 #ifdef __cplusplus
@@ -36,7 +38,7 @@ extern "C" {
  * 
  * @return An MTBDD encoding the n-qubit state |00..0>.
  */
-MTBDD mtbdd_create_all_zero_state_double(BDDVAR n);
+MTBDD mtbdd_create_all_zero_state_double(BDDVAR n); //TODO: extend with complex_t
 MTBDD mtbdd_create_all_zero_state_mpc(BDDVAR n);
 
 /**
@@ -47,7 +49,7 @@ MTBDD mtbdd_create_all_zero_state_mpc(BDDVAR n);
  * 
  * @return An MTBDD encoding of the n-qubit state |x>.
  */
-MTBDD mtbdd_create_basis_state_double(BDDVAR n, bool* x);
+MTBDD mtbdd_create_basis_state_double(BDDVAR n, bool* x); //TODO: extend with complex_t
 MTBDD mtbdd_create_basis_state_mpc(BDDVAR n, bool* x);
 
 /**
@@ -57,17 +59,10 @@ MTBDD mtbdd_create_basis_state_mpc(BDDVAR n, bool* x);
  * @param t Target qubit for given gate.
  * @param gateid Gate ID of predefined single qubit gate U.
  * 
- * @return An MTBDD encoding of I_0 \tensor ... U_t ... \tensor I_{n-1}
- */
-MTBDD mtbdd_create_single_qubit_gate(BDDVAR n, BDDVAR t, gate_id_t gateid);
-
-/**
- *
- * 
+ * @return An MTBDD encoding of I(0) x ... x G(t) x ... x I(n-1)
  * 
  */
-MTBDD
-mtbdd_stack_matrix(BDDVAR k, gate_id_t gateid);
+MTBDD mtbdd_create_single_gate_for_qubits_mpc(BDDVAR n, BDDVAR t, MTBDD I_dd, MTBDD G_dd);
 
 #ifdef __cplusplus
 }

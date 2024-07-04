@@ -4656,6 +4656,7 @@ MTBDD mtbdd_matmat_mult_alt(MTBDD M1, MTBDD M2, int n)
  */
 MTBDD mtbdd_matvec_mult(MTBDD M, MTBDD v, int nvars, int currentvar)
 {
+/*
     int maxvar = -1;
     int minvar = 100;
     int leafcount = 0;
@@ -4665,6 +4666,7 @@ MTBDD mtbdd_matvec_mult(MTBDD M, MTBDD v, int nvars, int currentvar)
     minvar = 100;
     leafcount = 0;
     determine_top_var_and_leafcount(v, &minvar, &maxvar, &leafcount);
+*/
 
     MTBDD result = MTBDD_ZERO;
 
@@ -4970,7 +4972,7 @@ MTBDD mtbdd_M(uint32_t row, uint32_t col, uint32_t n, MTBDD a, MTBDD b)
  * Tensor product (same function for matrix or vector MTBDDs)
  * TODO: this function should be a Lace TASK so that it can be parallelized.
  */
-MTBDD mtbdd_tensor_prod(MTBDD a, MTBDD b, int leaf_var_a) // leaf_var_a == n
+MTBDD mtbdd_tensor_prod(MTBDD a, MTBDD b, int leaf_depth_of_a) // leaf_depth_of_a == nr of variables in a
 {
     mtbddnode_t na = MTBDD_GETNODE(a);
     mtbddnode_t nb = MTBDD_GETNODE(b);
@@ -4982,7 +4984,7 @@ MTBDD mtbdd_tensor_prod(MTBDD a, MTBDD b, int leaf_var_a) // leaf_var_a == n
 
     // Check cache
     MTBDD result;
-    if (cache_get3(CACHE_MTBDD_TENSOR, a, b, (uint64_t) leaf_var_a, &result)) {
+    if (cache_get3(CACHE_MTBDD_TENSOR, a, b, (uint64_t) leaf_depth_of_a, &result)) {
         return result;
     }
 
@@ -4990,19 +4992,19 @@ MTBDD mtbdd_tensor_prod(MTBDD a, MTBDD b, int leaf_var_a) // leaf_var_a == n
     BDDVAR var;
     // Recurse over A first (A \tensor B != B \tensor A)
     if (!mtbddnode_isleaf(na)) {
-        low  = mtbdd_tensor_prod(mtbddnode_getlow(na), b, leaf_var_a);
-        high = mtbdd_tensor_prod(mtbddnode_gethigh(na), b, leaf_var_a);
+        low  = mtbdd_tensor_prod(mtbddnode_getlow(na), b, leaf_depth_of_a);
+        high = mtbdd_tensor_prod(mtbddnode_gethigh(na), b, leaf_depth_of_a);
         var  = mtbddnode_getvariable(na);
     }
     else { // A is a leaf and B is not
-        low  = mtbdd_tensor_prod(a, mtbddnode_getlow(nb), leaf_var_a);
-        high = mtbdd_tensor_prod(a, mtbddnode_gethigh(nb), leaf_var_a);
-        var  = mtbddnode_getvariable(nb) + leaf_var_a; // vars in B are offset by the depth of A
+        low  = mtbdd_tensor_prod(a, mtbddnode_getlow(nb), leaf_depth_of_a);
+        high = mtbdd_tensor_prod(a, mtbddnode_gethigh(nb), leaf_depth_of_a);
+        var  = mtbddnode_getvariable(nb) + leaf_depth_of_a; // vars in B are offset by the depth of A
     }
     result = mtbdd_makenode(var, low, high);
 
     // Cache put
-    cache_put3(CACHE_MTBDD_TENSOR, a, b, (uint64_t) leaf_var_a, result);
+    cache_put3(CACHE_MTBDD_TENSOR, a, b, (uint64_t) leaf_depth_of_a, result);
 
     return result;
 }

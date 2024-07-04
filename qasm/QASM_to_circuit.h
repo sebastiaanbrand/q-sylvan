@@ -182,7 +182,7 @@ BDDVAR partition(BDDVAR* qubits, int low, int high);
  * PARAMETERS:
  * - qubits: the circuit in which to store the barrier column
  * - low: the first index of the array
- * - high: the last index of  the array
+ * - high: the last index of the array
  */
 void sort(BDDVAR* qubits, int low, int high);
 

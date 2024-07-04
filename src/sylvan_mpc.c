@@ -232,11 +232,64 @@ mpc_init()
  * Assign a complex number based on real and imaginair double
  */
 void
-mpc_assign(mpc_ptr complexnumber, double real, double imag)
+mpc_assign(mpc_ptr z, double real, double imag)
 {
-    mpc_init2(complexnumber, MPC_PRECISION);
-    mpc_set_d_d(complexnumber, real, imag, MPC_ROUNDING);
+    mpc_init2(z, MPC_PRECISION);
+    mpc_set_d_d(z, real, imag, MPC_ROUNDING);
     return;
+}
+
+/**
+ * Assign the constant Pi
+ */
+void
+mpc_assign_const_pi(mpc_ptr mpc_const_pi)
+{
+    mpfr_t mpfr_pi;
+    mpfr_init2(mpfr_pi, MPC_PRECISION);
+    mpfr_const_pi(mpfr_pi, MPC_ROUNDING);
+
+    mpc_init2(mpc_const_pi, MPC_PRECISION);
+    mpc_set_fr(mpc_const_pi, mpfr_pi, MPC_ROUNDING);
+    mpfr_clear(mpfr_pi);
+    
+    return;
+
+    //
+    // Typical use:
+    //
+    // mpc_ptr Pi;
+    // mpc_assign_const_pi(Pi);
+    //
+    // ...
+    //
+    // mpc_clear(mpc_const_pi);
+    //
+}
+
+/**
+ * Compute the sqrt of a complex number
+ */
+void
+mpc_sqrt_assign(mpc_ptr mpc_sqrt_z, double real, double imag)
+{
+    mpc_ptr z = NULL;
+    mpc_init2(z, MPC_PRECISION);
+    mpc_set_ld_ld(z, real, imag, MPC_ROUNDING);
+    mpc_sqrt(mpc_sqrt_z, z, MPC_ROUNDING);
+    
+    return;
+
+    //
+    // Typical use:
+    //
+    // mpc_ptr sqrt_2;
+    // mpc_sqrt_assign(sqrt_2, 2.0, 0.0);
+    //
+    // ...
+    //
+    // mpc_clear(sqrt_2);
+    //
 }
 
 /**
@@ -259,6 +312,18 @@ mpc_multiplication(mpc_ptr x, mpc_ptr z1, mpc_ptr z2)
 {
     mpc_init2(x, MPC_PRECISION);
     mpc_mul(x, z1, z2, MPC_ROUNDING);
+
+    return;
+}
+
+/**
+ * Divide two complex numbers with multiprecision
+ */
+void
+mpc_divide(mpc_ptr x, mpc_ptr z1, mpc_ptr z2)
+{
+    mpc_init2(x, MPC_PRECISION);
+    mpc_div(x, z1, z2, MPC_ROUNDING);
 
     return;
 }

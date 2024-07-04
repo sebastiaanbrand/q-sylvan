@@ -1336,14 +1336,13 @@ MTBDD mtbdd_mat_tensor_prod(MTBDD M1, MTBDD M2, int n);
  * 
  * @param a MTBDD encoding of a matrix or vector
  * @param b MTBDD encoding of a matrix or vector
- * @param leaf_var_a The 'level' of the leaves of 'a'. If 'a' encodes a matrix 
- *        over DD variables {0,1,2,3,4}, then 'leaf_var_a' should be 5. If 'a' 
- *        encodes a vector over DD variables {0,2,4}, then 'leaf_var_a' should 
- *        be 6.
+ * @param leaf_var_a The 'level' of the leaves of 'a'. 
+ *    If 'a' encodes a matrix over DD variables {0,1,2,3,4}, then 'leaf_depth_of_a' should be 5 = nr of variables. 
+ *    If 'a' encodes a vector over DD variables {0,2,4}, then 'leaf_depth_of_a' should be 6 = 2 * nr of variables.
  * 
  * @returns MTBDD encoding of 'a' tensor 'b'
  */
-MTBDD mtbdd_tensor_prod(MTBDD a, MTBDD b, int leaf_var_a);
+MTBDD mtbdd_tensor_prod(MTBDD a, MTBDD b, int leaf_depth_of_a);
 
 
 #ifdef __cplusplus

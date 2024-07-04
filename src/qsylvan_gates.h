@@ -41,20 +41,25 @@ void qmdd_gates_init();
 // we would like a (for example) pi/16 gate to always have the same unique ID 
 // throughout the entire run of the circuit.
 // TODO: maybe just use GATEID_dynamic for this
+
 void qmdd_phase_gates_init(int n);
+
 static inline uint32_t GATEID_Rk(int k) { return k + n_predef_gates; };
+
 // Another 255 parameterized phase gates, but this time with negative angles.
 static inline uint32_t GATEID_Rk_dag(int k){ return k + (n_predef_gates+256); };
 
 // Reserve 'num_dynamic_gates' gate IDs (comibned) for of the following: 
 // Rx, Ry, Rz. These gate IDs are re-used when a user requires more than 
 // 'num_dynamic_gates' custom gates.
+
 /**
  * Rotation around x-axis with angle theta.
  * NOTE: This GATEID is re-used for parametrized gates. The returned ID only
  * corresponds to the Rx(theta) gate until the next parametrized gate is created.
  */
 uint32_t GATEID_Rx(fl_t theta);
+
 /**
  * Rotation around y-axis with angle theta.
  * NOTE: This GATEID is re-used for parametrized gates. The returned ID only
@@ -62,18 +67,22 @@ uint32_t GATEID_Rx(fl_t theta);
  * a custom gate id.
  */
 uint32_t GATEID_Ry(fl_t theta);
+
 /**
  * Rotation around z-axis with angle theta.
  * NOTE: This GATEID is re-used for parametrized gates. The returned ID only
  * corresponds to the Rz(theta) gate until the next parametrized gate is created.
  */
+
 uint32_t GATEID_Rz(fl_t theta);
 /**
  * Rotation around z-axis with angle theta (but different global phase than Rz)
  * NOTE: This GATEID is re-used for parametrized gates. The returned ID only
  * corresponds to the P(theta) gate until the next parametrized gate is created.
  */
+
 uint32_t GATEID_Phase(fl_t theta);
+
 /**
  * Generic single-qubit rotation gate with 3 Euler angles.
  * NOTE: This GATEID is re-used for parametrized gates. The returned ID only
@@ -81,7 +90,5 @@ uint32_t GATEID_Phase(fl_t theta);
  * is created.
  */
 uint32_t GATEID_U(fl_t theta, fl_t phi, fl_t lambda);
-
-
 
 #endif

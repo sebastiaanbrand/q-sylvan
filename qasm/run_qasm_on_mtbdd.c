@@ -1,75 +1,117 @@
+/**
+ * Copyright 2024 System Verification Lab, LIACS, Leiden University
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * 
+ */
+
 #include <inttypes.h>
 #include <argp.h>
 #include <sys/time.h>
 
-#include "qsylvan.h"
+#include <qsylvan.h>
+#include <qsylvan_simulator_mtbdd.h>
+#include <qsylvan_gates_mtbdd_mpc.h>
 #include "simple_parser.h"
-
 
 /**********************<Arguments (configured via argp)>***********************/
 
-static int workers = 1;
+static int workers = 1;                     // Number of threads running on separate CPU core
 static int rseed = 0;
 static bool count_nodes = false;
 static bool output_vector = false;
+
 static size_t min_tablesize = 1LL<<25;
 static size_t max_tablesize = 1LL<<25;
 static size_t min_cachesize = 1LL<<16;
 static size_t max_cachesize = 1LL<<16;
-static size_t wgt_tab_size = 1LL<<23;
-static double tolerance = 1e-14;
-static int wgt_table_type = COMP_HASHMAP;
-static int wgt_norm_strat = NORM_LARGEST;
+static size_t wgt_tab_size = 1LL<<23;       // Remove
+
+static double tolerance = 1e-14;            // Remove
+static int wgt_table_type = COMP_HASHMAP;   // Remove
+static int wgt_norm_strat = NORM_LARGEST;   // Remove
+
 static char* qasm_inputfile = NULL;
 static char* json_outputfile = NULL;
 
-
+/**
+ * 
+ * Command Line Interface argument help list.
+ * 
+ */
 static struct argp_option options[] =
 {
     {"workers", 'w', "<workers>", 0, "Number of workers/threads (default=1)", 0},
     {"rseed", 'r', "<random-seed>", 0, "Set random seed", 0},
-    {"norm-strat", 's', "<low|largest|l2>", 0, "Edge weight normalization strategy", 0},
-    {"tol", 't', "<tolerance>", 0, "Tolerance for deciding edge weights equal (default=1e-14)", 0},
+    {"norm-strat", 's', "<low|largest|l2>", 0, "Edge weight normalization strategy", 0}, // Replace with MPC_PRECISION
+    {"tol", 't', "<tolerance>", 0, "Tolerance for deciding edge weights equal (default=1e-14)", 0}, // Replace with MPC_ROUNDING
     {"json", 'j', "<filename>", 0, "Write stats to given filename as json", 0},
     {"count-nodes", 'c', 0, 0, "Track maximum number of nodes", 0},
     {"state-vector", 'v', 0, 0, "Also output the complete state vector", 0},
     {0, 0, 0, 0, 0, 0}
 };
+
+/**
+ * 
+ * Command Line Interface argument processing.
+ * 
+ */
+
 static error_t
 parse_opt(int key, char *arg, struct argp_state *state)
 {
     switch (key) {
+
     case 'w':
         workers = atoi(arg);
         break;
+
     case 'r':
         rseed = atoi(arg);
         break;
-    case 's':
+
+    case 's': // Remove
         if (strcmp(arg, "low")==0) wgt_norm_strat = NORM_LOW;
         else if (strcmp(arg, "largest")==0) wgt_norm_strat = NORM_LARGEST;
         else if (strcasecmp(arg, "l2")==0) wgt_norm_strat = NORM_L2;
         else argp_usage(state);
         break;
-    case 't':
-        tolerance = atof(arg);
+
+    case 't': // Remove
+        tolerance = atof(arg); // ASCII to float
         break;
+
     case 'j':
         json_outputfile = arg;
         break;
+
     case 'c':
         count_nodes = true;
         break;
+
     case 'v':
         output_vector = true;
         break;
+
     case ARGP_KEY_ARG:
         if (state->arg_num >= 1) argp_usage(state);
         qasm_inputfile = arg;
         break;
+
     case ARGP_KEY_END:
         if (state->arg_num < 1) argp_usage(state);
         break;
+
     default:
         return ARGP_ERR_UNKNOWN;
     }
@@ -80,21 +122,28 @@ static struct argp argp = { options, parse_opt, "<qasm_file>", 0, 0, 0, 0 };
 /*********************</Arguments (configured via argp)>***********************/
 
 
+
 // NOTE: If there are only measurements at the end of the circuit, 'final_nodes' 
 // and 'norm' will contain the node count and the norm of the state QMDD before
 // the measurements.
+
 typedef struct stats_s {
+
     uint64_t applied_gates;
     uint64_t final_nodes;
     uint64_t max_nodes;
     uint64_t shots;
     double simulation_time;
     double norm;
-    QMDD final_state;
+    MTBDD final_state;          // MTBDD final_state;
+
 } stats_t;
+
 stats_t stats;
 
-
+/**
+ * Print the statistics after the simulation the given file.
+ */
 void fprint_stats(FILE *stream, quantum_circuit_t* circuit)
 {
     fprintf(stream, "{\n");
@@ -128,8 +177,8 @@ void fprint_stats(FILE *stream, quantum_circuit_t* circuit)
     fprintf(stream, "    \"seed\": %d,\n", rseed);
     fprintf(stream, "    \"shots\": %" PRIu64 ",\n", stats.shots);
     fprintf(stream, "    \"simulation_time\": %lf,\n", stats.simulation_time);
-    fprintf(stream, "    \"tolerance\": %.5e,\n", tolerance);
-    fprintf(stream, "    \"wgt_norm_strat\": %d,\n", wgt_norm_strat);
+    fprintf(stream, "    \"tolerance\": %.5e,\n", tolerance); // Remove
+    fprintf(stream, "    \"wgt_norm_strat\": %d,\n", wgt_norm_strat); // Remove
     fprintf(stream, "    \"workers\": %d\n", workers);
     fprintf(stream, "  }\n");
     fprintf(stream, "}\n");
@@ -143,23 +192,40 @@ wctime()
     return (tv.tv_sec + 1E-6 * tv.tv_usec);
 }
 
-
-QMDD apply_gate(QMDD state, quantum_op_t* gate)
+/**
+ * Here we match the QASM name of a gate with the MTBDD of the corresponding gate.
+ * 
+ * If the gate is supported the state vector |fi> will be applied to the matrix of the gate:
+ * 
+ *      M = (I (x) ... (x) I (x) G (x) I (x) ... (x) I) |fi> 
+ * 
+ * with I the 2x2 identity matrix, G the 2x2 choosen gate and |fi> the state vector.
+ * 
+ * The function returns the corresponding MTBDD of M.
+ * 
+ * The type of the matrix elements are complex numbers based on the GNU multiprecision complex library mpc.
+ * 
+ */
+MTBDD apply_gate(MTBDD state, quantum_op_t* gate, int n) // zie master branch
 {
-    // This looks very ugly, but we need some way to match the name of a gate to
-    // the GATEID, and since this is C we don't really have easy access to
-    // data structures like a dictionary.
     stats.applied_gates++;
+
     if (strcmp(gate->name, "id") == 0) {
         stats.applied_gates--;
         return state;
     }
+
     else if (strcmp(gate->name, "x") == 0) {
-        return qmdd_gate(state, GATEID_X, gate->targets[0]);
+        MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, X_dd);
+        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
     }
+
     else if (strcmp(gate->name, "y") == 0) {
-        return qmdd_gate(state, GATEID_Y, gate->targets[0]);
+        MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, Y_dd);
+        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
     }
+
+/*
     else if (strcmp(gate->name, "z") == 0) {
         return qmdd_gate(state, GATEID_Z, gate->targets[0]);
     }
@@ -290,49 +356,69 @@ QMDD apply_gate(QMDD state, quantum_op_t* gate)
         state = qmdd_gate(state, GATEID_U(pi/2.0, -pi, pi-gate->angle[0]), gate->targets[0]);
         return state;
     }
+*/
+
     else {
         fprintf(stderr, "Gate '%s' currently unsupported\n", gate->name);
         return state;
     }
 }
 
-
-QMDD measure(QMDD state, quantum_op_t *meas, quantum_circuit_t* circuit)
+/**
+ * 
+ * Calculate the final state after observation (measurement).
+ * 
+ */
+/* TODO: convert to MTBDD
+MTBDD measure(QMDD state, quantum_op_t *meas, quantum_circuit_t* circuit)
 {
     double p;
     int m;
     printf("measure qubit %d, store result in creg[%d]\n", meas->targets[0], meas->meas_dest);
-    qmdd_measure_qubit(state, meas->targets[0], circuit->qreg_size, &m, &p);
+    
+// qmdd_measure_qubit(state, meas->targets[0], circuit->qreg_size, &m, &p);
+    
     circuit->creg[meas->meas_dest] = m;
     return state;
 }
+*/
 
-
+/**
+ * 
+ * Simulate the circuit as parsed.
+ * 
+ */
 void simulate_circuit(quantum_circuit_t* circuit)
 {
     double t_start = wctime();
-    QMDD state = qmdd_create_all_zero_state(circuit->qreg_size);
+    MTBDD state = mtbdd_create_all_zero_state_mpc(circuit->qreg_size);
     quantum_op_t *op = circuit->operations;
     while (op != NULL) {
         if (op->type == op_gate) {
-            state = apply_gate(state, op);
+            state = apply_gate(state, op, circuit->qreg_size); // , n);
         }
         else if (op->type == op_measurement) {
+
+            assert(false && "Measurements not yet supported");
+            fprintf(stderr, "Measurements not yet supported\n");
+            exit(1);
+/*
             if (circuit->has_intermediate_measurements) {
                 state = measure(state, op, circuit);
             }
             else {
                 double p;
                 // don't set state = post measurement state
-                qmdd_measure_all(state, circuit->qreg_size, circuit->creg, &p);
+                qmdd_measure_all(state, circuit->qreg_size, circuit->creg, &p); // TODO: convert to mtbdd 
                 if (circuit->reversed_qubit_order) {
                     reverse_bit_array(circuit->creg, circuit->qreg_size);
                 }
                 break;
             }
+*/
         }
         if (count_nodes) {
-            uint64_t count = aadd_countnodes(state);
+uint64_t count = 0; // TODO: make mtbdd_countnodes(state);
             if (count > stats.max_nodes) stats.max_nodes = count;
         }
         op = op->next;
@@ -340,14 +426,19 @@ void simulate_circuit(quantum_circuit_t* circuit)
     stats.simulation_time = wctime() - t_start;
     stats.final_state = state;
     stats.shots = 1;
-    stats.final_nodes = aadd_countnodes(state);
-    stats.norm = qmdd_get_norm(state, circuit->qreg_size);
+//stats.final_nodes = mtbdd_countnodes(state);
+//stats.norm = qmdd_get_norm(state, circuit->qreg_size); // TODO: convert to mtbdd (calculate L2 norm vector), Sebastiaan
 }
 
-
+/**
+ * 
+ * Command Line Interface, parse arguments, parse QASM file, start simulation.
+ * 
+ */
 int main(int argc, char *argv[])
 {
     argp_parse(&argp, argc, argv, 0, 0, 0);
+
     quantum_circuit_t* circuit = parse_qasm_file(qasm_inputfile);
     optimize_qubit_order(circuit);
 
@@ -360,7 +451,7 @@ int main(int argc, char *argv[])
     // Simple Sylvan initialization
     sylvan_set_sizes(min_tablesize, max_tablesize, min_cachesize, max_cachesize);
     sylvan_init_package();
-    qsylvan_init_simulator(wgt_tab_size, wgt_tab_size, tolerance, COMP_HASHMAP, wgt_norm_strat);
+    sylvan_init_mtbdd();
 
     simulate_circuit(circuit);
 

@@ -16,9 +16,11 @@
  */
 
 #include <qsylvan_simulator_mtbdd.h>
+
 #include <sylvan.h>
 #include <sylvan_int.h>
 #include <sylvan_mpc.h>
+//#include <qsylvan_gates_mtbdd_mpc.h>
 
 /**
  * Convert zero state vector x[] = {0.0, 0.0, ..., 0.0} to MTBDD 
@@ -29,6 +31,7 @@
  *          x1      0.0+i0.0
  *  ...
  *          x(n-1)
+ *
  *  0.0+i0.0      0.0+i0.0
  *
  */
@@ -101,7 +104,7 @@ mtbdd_create_all_zero_state_mpc(BDDVAR n)
  * 
  */
 MTBDD
-mtbdd_create_basis_state_double(BDDVAR n, bool* x)
+mtbdd_create_basis_state_double(BDDVAR n, bool* x) // TODO: convert double to complex_t
 {
     if(n==0)
         return MTBDD_ZERO;
@@ -125,7 +128,7 @@ mtbdd_create_basis_state_double(BDDVAR n, bool* x)
     //
     for(int i = (int)n - 1; i>=0; i--)
     {
-        printf("x[%d] = %d, var = %d\n", i, x[i], var);
+        //printf("x[%d] = %d, var = %d\n", i, x[i], var);
 
         if(x[i] == 0)
             node = mtbdd_makenode(var, node, zero);
@@ -170,7 +173,7 @@ mtbdd_create_basis_state_mpc(BDDVAR n, bool* x)
     //
     for(int i = (int)n - 1; i>=0; i--)
     {
-        printf("x[%d] = %d, var = %d\n", i, x[i], var);
+        //printf("x[%d] = %d, var = %d\n", i, x[i], var);
 
         if(x[i] == 0)
             node = mtbdd_makenode(var, node, zero);
@@ -189,41 +192,82 @@ mtbdd_create_basis_state_mpc(BDDVAR n, bool* x)
 }
 
 /**
- * Create a single Qubit gate
  * 
+ * Create a single Qubit gate surrounded by I gates:
  * 
+ *  q(n-1) ----- I(n-1) -----
+ *  q(n-2) ----- I(n-2) -----
+ *  q( . ) ----- I( . ) -----
+ *  q( t ) ----- G( t ) -----
+ *  q( . ) ----- I( . ) -----
+ *  q( 0 ) ----- I( 0 ) -----
+ * 
+ *  q(i) = {0,1}, a qubit
+ * 
+ *  n is number of qubits
+ *  t is index of qubit connected to the gate G
+ * 
+ *  (I(0) x ... x G(t) x ... x I(n-1) ) | q(n-1)q(n-2)...q(t)...q0>
+ *
+ *  a x b is the tensor of a and b, with a and b matrices / vectors.
+ *  
  */
 MTBDD
-mtbdd_create_single_qubit_gate(BDDVAR n, BDDVAR t, gate_id_t gateid)
+mtbdd_create_single_gate_for_qubits_mpc(BDDVAR n, BDDVAR t, MTBDD I_dd, MTBDD G_dd) //gate_id_t gateid)
 {
+    MTBDD dd = I_dd;
+
+    for(uint32_t k=0; k<n; k++)
+    {
+        if(k==t)
+            dd = mtbdd_tensor_prod(G_dd, dd, 2); // Two vars added, so third argument = 2
+        else
+            dd = mtbdd_tensor_prod(I_dd, dd, 2); // Two vars added
+    }
+
+    return dd;
+}
+
+/*    
+    int leaf_var_dd_I;
+
+    MTBDD dd_I = mtbdd_of_identity_matrix(n);  // n is number of qubits, how do we know?
+    MTBDD dd_G = mtbdd_of_gate_matrix(GATEID_X);
+    MTBDD dd_gate = mtbdd_tensor_prod(dd_I, dd_G, leaf_var_dd_I);
+
+    //MTBDD dd_state = mtbdd_create_state(state);
+
+    return mtbdd_matvec_mult(dd_gate, state, (1 << n), 0);
+
+    mpc_t mpc_zero;
+    mpc_init2(mpc_zero, MPC_PRECISION);
+    mpc_assign(mpc_zero, 0.0, 0.0);
+
     mpc_t mpc_one;
     mpc_init2(mpc_one, MPC_PRECISION);
     mpc_assign(mpc_one, 1.0, 0.0);
 
-    MTBDD prev = mtbdd_makeleaf(MPC_TYPE, (size_t)mpc_one);
+    MTBDD node = mtbdd_makeleaf(MPC_TYPE, (size_t)mpc_one);
+
     for (int k = n-1; k >= 0; k--) {
+
         if ((unsigned int)k == t)
-            prev = mtbdd_stack_matrix(k, gateid);
+            node = mtbdd_stack_matrix(k, gateid);
         else
-            prev = mtbdd_stack_matrix(k, GATEID_I);
+            node = mtbdd_stack_matrix(k, GATEID_I);
     }
-    return prev;
+    return node;
 }
 
-/**
- * 
- * 
- * 
-*/
 MTBDD
-mtbdd_stack_matrix(BDDVAR k, gate_id_t gateid) // What does low?
+mtbdd_stack_matrix(BDDVAR k, gate_id_t gateid)
 {
     // This function effectively does a Kronecker product gate \tensor below
     BDDVAR s, t;
     MTBDD u00, u01, u10, u11, low, high, res;
 
     // Even + uneven variable are used to encode the 4 values
-    s = 2*k;
+    s = 2 * k;
     t = s + 1;
 
     // Matrix U = [u00 u01
@@ -242,3 +286,5 @@ mtbdd_stack_matrix(BDDVAR k, gate_id_t gateid) // What does low?
     // res = aadd_bundle(AADD_TARGET(res), new_root_amp);
     return res;
 }
+*/
+
