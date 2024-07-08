@@ -22,12 +22,19 @@
 #include <qsylvan.h>
 #include <qsylvan_simulator_mtbdd.h>
 #include <qsylvan_gates_mtbdd_mpc.h>
-#include "simple_parser.h"
 
-/**********************<Arguments (configured via argp)>***********************/
+#include "simple_parser.h" // TODO: rename in qsylvan_qasm_parser.h
 
-static int workers = 1;                     // Number of threads running on separate CPU core
+/**
+ * 
+ * Arguments variables of command line interface (configured via argp).
+ * 
+ */
+static int workers = 1;         // Number of threads running on separate CPU core
 static int rseed = 0;
+static int precision = 128;
+static int rounding = 0;
+
 static bool count_nodes = false;
 static bool output_vector = false;
 
@@ -35,11 +42,6 @@ static size_t min_tablesize = 1LL<<25;
 static size_t max_tablesize = 1LL<<25;
 static size_t min_cachesize = 1LL<<16;
 static size_t max_cachesize = 1LL<<16;
-static size_t wgt_tab_size = 1LL<<23;       // Remove
-
-static double tolerance = 1e-14;            // Remove
-static int wgt_table_type = COMP_HASHMAP;   // Remove
-static int wgt_norm_strat = NORM_LARGEST;   // Remove
 
 static char* qasm_inputfile = NULL;
 static char* json_outputfile = NULL;
@@ -52,12 +54,12 @@ static char* json_outputfile = NULL;
 static struct argp_option options[] =
 {
     {"workers", 'w', "<workers>", 0, "Number of workers/threads (default=1)", 0},
-    {"rseed", 'r', "<random-seed>", 0, "Set random seed", 0},
-    {"norm-strat", 's', "<low|largest|l2>", 0, "Edge weight normalization strategy", 0}, // Replace with MPC_PRECISION
-    {"tol", 't', "<tolerance>", 0, "Tolerance for deciding edge weights equal (default=1e-14)", 0}, // Replace with MPC_ROUNDING
-    {"json", 'j', "<filename>", 0, "Write stats to given filename as json", 0},
+    {"rseed", 'r', "<random-seed>", 0, "Set random seed as integer", 0},
+    {"precision", 'p', "<number of bits>", 0, "Precision of mantissa multiprecision complex float in bits (default=128)", 0},
+    {"rounding", 'o', "<...>", 0, "Rounding strategy", 0},
+    {"json", 'j', "<filename>", 0, "Write statistics in json format to <filename>", 0},
     {"count-nodes", 'c', 0, 0, "Track maximum number of nodes", 0},
-    {"state-vector", 'v', 0, 0, "Also output the complete state vector", 0},
+    {"state-vector", 'v', 0, 0, "Show the complete state vector after simulation", 0},
     {0, 0, 0, 0, 0, 0}
 };
 
@@ -80,15 +82,12 @@ parse_opt(int key, char *arg, struct argp_state *state)
         rseed = atoi(arg);
         break;
 
-    case 's': // Remove
-        if (strcmp(arg, "low")==0) wgt_norm_strat = NORM_LOW;
-        else if (strcmp(arg, "largest")==0) wgt_norm_strat = NORM_LARGEST;
-        else if (strcasecmp(arg, "l2")==0) wgt_norm_strat = NORM_L2;
-        else argp_usage(state);
+    case 'p': // Precision
+        precision = atoi(arg); // ASCII to integer, TODO: validate value
         break;
 
-    case 't': // Remove
-        tolerance = atof(arg); // ASCII to float
+    case 'o': // Rounding
+        rounding = atoi(arg);  // ASCII to float, TODO: validate value
         break;
 
     case 'j':
@@ -119,23 +118,28 @@ parse_opt(int key, char *arg, struct argp_state *state)
 }
 static struct argp argp = { options, parse_opt, "<qasm_file>", 0, 0, 0, 0 };
 
-/*********************</Arguments (configured via argp)>***********************/
 
-
-
-// NOTE: If there are only measurements at the end of the circuit, 'final_nodes' 
-// and 'norm' will contain the node count and the norm of the state QMDD before
-// the measurements.
+/**
+ * 
+ * Statistics of the simulation.
+ * 
+ * Store statistical info in struct below.
+ * 
+ * NOTE: If there are only measurements at the end of the circuit, 'final_nodes' 
+ * and 'norm' will contain the node count and the norm of the state MTBDD before
+ * the measurements.
+ * 
+ */
 
 typedef struct stats_s {
 
-    uint64_t applied_gates;
-    uint64_t final_nodes;
-    uint64_t max_nodes;
-    uint64_t shots;
-    double simulation_time;
-    double norm;
-    MTBDD final_state;          // MTBDD final_state;
+    uint64_t applied_gates;     // Number of gates used ?
+    uint64_t final_nodes;       // node count after measurements at end of circuit if any ?
+    uint64_t max_nodes;         // ?
+    uint64_t shots;             // ?
+    double simulation_time;     // Time of simulation
+    double norm;                // Norm L2 of the final state (should be 1.00000), TODO: make mpc type of this ?
+    MTBDD final_state;          // State vector MTBDD after simulation
 
 } stats_t;
 
@@ -177,8 +181,8 @@ void fprint_stats(FILE *stream, quantum_circuit_t* circuit)
     fprintf(stream, "    \"seed\": %d,\n", rseed);
     fprintf(stream, "    \"shots\": %" PRIu64 ",\n", stats.shots);
     fprintf(stream, "    \"simulation_time\": %lf,\n", stats.simulation_time);
-    fprintf(stream, "    \"tolerance\": %.5e,\n", tolerance); // Remove
-    fprintf(stream, "    \"wgt_norm_strat\": %d,\n", wgt_norm_strat); // Remove
+    fprintf(stream, "    \"precision\": %d,\n", precision); // Remove
+    fprintf(stream, "    \"rounding\": %d,\n", rounding); // Remove
     fprintf(stream, "    \"workers\": %d\n", workers);
     fprintf(stream, "  }\n");
     fprintf(stream, "}\n");
@@ -225,34 +229,53 @@ MTBDD apply_gate(MTBDD state, quantum_op_t* gate, int n) // zie master branch
         return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
     }
 
-/*
     else if (strcmp(gate->name, "z") == 0) {
-        return qmdd_gate(state, GATEID_Z, gate->targets[0]);
+        MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, Z_dd);
+        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
     }
+
     else if (strcmp(gate->name, "h") == 0) {
-        return qmdd_gate(state, GATEID_H, gate->targets[0]);
+        MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, H_dd);
+        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
     }
+
     else if (strcmp(gate->name, "s") == 0) {
-        return qmdd_gate(state, GATEID_S, gate->targets[0]);
+        MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, S_dd);
+        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
     }
+
     else if (strcmp(gate->name, "sdg") == 0) {
-        return qmdd_gate(state, GATEID_Sdag, gate->targets[0]);
+        MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, S_dag_dd);
+        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
     }
+
     else if (strcmp(gate->name, "t") == 0) {
-        return qmdd_gate(state, GATEID_T, gate->targets[0]);
+        MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, T_dd);
+        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
     }
+
     else if (strcmp(gate->name, "tdg") == 0) {
-        return qmdd_gate(state, GATEID_Tdag, gate->targets[0]);
+        MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, T_dag_dd);
+        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
     }
-    else if (strcmp(gate->name, "sx") == 0) {
-        return qmdd_gate(state, GATEID_sqrtX, gate->targets[0]);
+
+    else if (strcmp(gate->name, "sx") == 0) { // ???
+        MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, S_dd);
+        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
     }
-    else if (strcmp(gate->name, "sxdg") == 0) {
-        return qmdd_gate(state, GATEID_sqrtXdag, gate->targets[0]);
+
+    else if (strcmp(gate->name, "sxdg") == 0) { // ???
+        MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, S_dag_dd);
+        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
     }
+    
     else if (strcmp(gate->name, "rx") == 0) {
-        return qmdd_gate(state, GATEID_Rx(gate->angle[0]), gate->targets[0]);
+        MTBDD Rx_dd = mtbdd_Rx(gate->angle[0]);
+        MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, Rx_dd);
+        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
     }
+
+/*    
     else if (strcmp(gate->name, "ry") == 0) {
         return qmdd_gate(state, GATEID_Ry(gate->angle[0]), gate->targets[0]);
     }

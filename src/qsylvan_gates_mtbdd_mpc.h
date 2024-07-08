@@ -62,6 +62,12 @@ mtbdd_gate_exit_mpc();
 // throughout the entire run of the circuit.
 
 void
+mtbdd_gate_init_fixed_variables();
+
+void
+mtbdd_gate_init_dynamic_variables();
+
+void
 mtbdd_fixed_gates_init_mpc();
 
 void 

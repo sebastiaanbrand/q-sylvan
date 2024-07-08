@@ -74,6 +74,7 @@ static mpc_ptr mpc_res_sqrt_2_res_sqrt_2_min; //  cos(pi/4) - i sin(pi/4) = 1/sq
 
 static MTBDD R_dd[MAX_QUBITS], R_dag_dd[MAX_QUBITS];
 
+static mpfr_t mpfr_pi;
 static mpfr_t mpfr_zero;
 static mpfr_t mpfr_theta;
 static mpfr_t mpfr_theta_2;
@@ -99,7 +100,7 @@ static mpc_t mpc_exp_theta;             // cos(theta) + i sin(theta)
 
 static mpfr_t mpfr_phi;
 static mpfr_t mpfr_lambda;
-static mpfr_t mpfr_gamma;
+static mpfr_t mpfr_gam;
 
 static mpfr_t mpfr_min_sin_theta_2, mpfr_sin_theta_2; // -sin(theta/2)
 
@@ -113,9 +114,9 @@ static mpfr_t mpfr_cos_phi, mpfr_sin_phi; // cos(phi) + i sin(phi)
 static mpc_t mpc_exp_phi_mul_sin_theta_2, mpc_exp_phi;
 static mpfr_t mpfr_sin_theta_2;
 
-static mpc_t mpc_exp_gamma; 
-static mpfr_t mpfr_cos_gamma, mpfr_sin_gamma; // cos(gamma) + i sin(gamma)
-static mpc_t mpc_exp_gamma_mul_cos_theta_2, mpc_exp_gamma;
+static mpc_t mpc_exp_gam; 
+static mpfr_t mpfr_cos_gam, mpfr_sin_gam; // cos(gamma) + i sin(gamma)
+static mpc_t mpc_exp_gam_mul_cos_theta_2, mpc_exp_gam;
 static mpfr_t mpfr_cos_theta_2;
 
 
@@ -179,7 +180,11 @@ mtbdd_gate_exit_mpc()
 void
 mtbdd_gate_init_fixed_variables()
 {
-    mpc_assign_const_pi(mpc_pi);
+    mpfr_init2(mpfr_pi, MPC_PRECISION);
+    mpfr_const_pi(mpfr_pi, MPC_ROUNDING);
+
+    mpc_init2(mpc_pi, MPC_PRECISION);
+    mpc_set_fr(mpc_pi, mpfr_pi, MPC_ROUNDING);
 
     mpc_assign(mpc_zero, 0.0, 0.0); // 0.0 + i 0.0
     mpc_assign(mpc_re_one, 1.0, 0.0); // 1.0 + i 0.0
@@ -228,13 +233,11 @@ mtbdd_gate_init_dynamic_variables()
  * Initialize all fixed gates with mpc type.
  */
 void
-mtbdd_fixed_gates_init_mpc() // TODO: make mtbdd of the gates
+mtbdd_fixed_gates_init_mpc()
 {
-    uint32_t k;
-
     int n = 1;
-    uint64_t **G_arr = NULL;
-    allocate_matrix_array_mpc(G_arr, n);
+    mpc_ptr **G_arr = NULL;
+    allocate_matrix_array_mpc(&G_arr, n);
 
     G_arr[0][0] = mpc_re_one; 
     G_arr[0][1] = mpc_zero;
@@ -327,7 +330,7 @@ mtbdd_fixed_gates_init_mpc() // TODO: make mtbdd of the gates
 
     sqrt_Y_dag_dd = matrix_array_to_mtbdd_mpc(G_arr, n, ALTERNATE_ROW_FIRST_WISE_MODE);
 
-    free_matrix_array(G_arr, n);
+    free_matrix_array_mpc(G_arr, n);
 
     return;
 }
@@ -427,8 +430,8 @@ mtbdd_Rx(double theta) // TODO: change in mpfr!
 
     MTBDD dd = MTBDD_ZERO;
     int n = 1;
-    uint64_t **G_arr = NULL;
-    allocate_matrix_array_mpc(G_arr, n);
+    mpc_ptr **G_arr = NULL;
+    allocate_matrix_array_mpc(&G_arr, n);
 
     G_arr[0][0] = mpc_cos_theta_2;
     G_arr[0][1] = mpc_zero_sin_min_theta_2;
@@ -437,7 +440,7 @@ mtbdd_Rx(double theta) // TODO: change in mpfr!
 
     dd = matrix_array_to_mtbdd_mpc(G_arr, n, ALTERNATE_ROW_FIRST_WISE_MODE);
 
-    free_matrix_array(G_arr, n);
+    free_matrix_array_mpc(G_arr, n);
 
     return dd;
 }
@@ -464,8 +467,8 @@ mtbdd_Ry(double theta) // TODO: change in mpfr!
 
     MTBDD dd = MTBDD_ZERO;
     int n = 1;
-    uint64_t **G_arr = NULL;
-    allocate_matrix_array_mpc(G_arr, n);
+    mpc_ptr **G_arr = NULL;
+    allocate_matrix_array_mpc(&G_arr, n);
 
     G_arr[0][0] = mpc_cos_theta_2;
     G_arr[0][1] = mpc_sin_min_theta_2;
@@ -474,7 +477,7 @@ mtbdd_Ry(double theta) // TODO: change in mpfr!
 
     dd = matrix_array_to_mtbdd_mpc(G_arr, n, ALTERNATE_ROW_FIRST_WISE_MODE);
 
-    free_matrix_array(G_arr, n);
+    free_matrix_array_mpc(G_arr, n);
 
     return dd;
 }
@@ -500,8 +503,8 @@ mtbdd_Rz(double theta) // TODO: change in mpfr!
 
     MTBDD dd = MTBDD_ZERO;
     int n = 1;
-    uint64_t **G_arr = NULL;
-    allocate_matrix_array_mpc(G_arr, n);
+    mpc_ptr **G_arr = NULL;
+    allocate_matrix_array_mpc(&G_arr, n);
 
     G_arr[0][0] = mpc_exp_min_theta_2;
     G_arr[0][1] = mpc_zero;
@@ -510,7 +513,7 @@ mtbdd_Rz(double theta) // TODO: change in mpfr!
 
     dd = matrix_array_to_mtbdd_mpc(G_arr, n, ALTERNATE_ROW_FIRST_WISE_MODE);
 
-    free_matrix_array(G_arr, n);
+    free_matrix_array_mpc(G_arr, n);
 
     return dd;
 }
@@ -531,8 +534,8 @@ mtbdd_Phase(double theta) // TODO: change in mpfr!
 
     MTBDD dd = MTBDD_ZERO;
     int n = 1;
-    uint64_t **G_arr = NULL;
-    allocate_matrix_array_mpc(G_arr, n);
+    mpc_ptr **G_arr = NULL;
+    allocate_matrix_array_mpc(&G_arr, n);
 
     G_arr[0][0] = mpc_re_one; // 1.0
     G_arr[0][1] = mpc_zero; // 0.0
@@ -541,7 +544,7 @@ mtbdd_Phase(double theta) // TODO: change in mpfr!
  
     dd = matrix_array_to_mtbdd_mpc(G_arr, n, ALTERNATE_ROW_FIRST_WISE_MODE);
 
-    free_matrix_array(G_arr, n);
+    free_matrix_array_mpc(G_arr, n);
 
     return dd;
 }
@@ -554,7 +557,7 @@ mtbdd_U(double theta, double phi, double lambda)
     mpfr_set_d(mpfr_theta, theta, MPC_ROUNDING);
     mpfr_set_d(mpfr_phi, phi, MPC_ROUNDING);
     mpfr_set_d(mpfr_lambda, lambda, MPC_ROUNDING);
-    mpfr_set_d(mpfr_gamma, phi + lambda, MPC_ROUNDING);
+    mpfr_set_d(mpfr_gam, phi + lambda, MPC_ROUNDING);
 
     mpfr_div_ui(mpfr_theta_2, mpfr_theta, 2, MPC_ROUNDING);  //  theta / 2
 
@@ -568,24 +571,24 @@ mtbdd_U(double theta, double phi, double lambda)
     mpc_set_fr_fr(mpc_exp_phi, mpfr_cos_phi, mpfr_sin_phi, MPC_ROUNDING); // cos(phi) + i sin(phi)
     mpc_mul_fr(mpc_exp_phi_mul_sin_theta_2, mpc_exp_phi, mpfr_sin_theta_2, MPC_ROUNDING);
 
-    mpc_set_fr_fr(mpc_exp_gamma, mpfr_cos_gamma, mpfr_sin_gamma, MPC_ROUNDING); // cos(gamma) + i sin(gamma)
-    mpc_mul_fr(mpc_exp_gamma_mul_cos_theta_2, mpc_exp_gamma, mpfr_cos_theta_2, MPC_ROUNDING);
+    mpc_set_fr_fr(mpc_exp_gam, mpfr_cos_gam, mpfr_sin_gam, MPC_ROUNDING); // cos(gamma) + i sin(gamma)
+    mpc_mul_fr(mpc_exp_gam_mul_cos_theta_2, mpc_exp_gam, mpfr_cos_theta_2, MPC_ROUNDING);
 
     // Convert to MTBDD
 
     MTBDD dd = MTBDD_ZERO;
     int n = 1;
-    uint64_t **G_arr = NULL;
-    allocate_matrix_array_mpc(G_arr, n);
+    mpc_ptr **G_arr = NULL;
+    allocate_matrix_array_mpc(&G_arr, n);
 
     G_arr[0][0] = mpc_cos_theta_2;                       // cos(theta/2)
     G_arr[0][1] = mpc_exp_lambda_mul_min_sin_theta_2;    // (cos(lambda) + i sin(lambda)) x -sin(theta/2)
     G_arr[1][0] = mpc_exp_phi_mul_sin_theta_2;           // (cos(phi) + i sin(phi)) x sin(theta/2)
-    G_arr[1][1] = mpc_exp_gamma_mul_cos_theta_2;         // (cos(phi+lambda) + i sin(phi+lambda)) x cos(theta/2)
+    G_arr[1][1] = mpc_exp_gam_mul_cos_theta_2;           // (cos(phi+lambda) + i sin(phi+lambda)) x cos(theta/2)
 
     dd = matrix_array_to_mtbdd_mpc(G_arr, n, ALTERNATE_ROW_FIRST_WISE_MODE);
 
-    free_matrix_array(G_arr, n);
+    free_matrix_array_mpc(G_arr, n);
 
     return dd;
 }
@@ -621,7 +624,7 @@ mtbdd_phase_gates_init(int n)
     mpfr_init2(mpfr_2_power_k, MPC_PRECISION);
     mpfr_init2(mpfr_2_pi_div_2_power_k, MPC_PRECISION);
 
-    mpfr_mul_si(mpfr_2_pi, mpc_pi, 2, MPC_ROUNDING); // 2 * pi
+    mpfr_mul_si(mpfr_2_pi, mpfr_pi, 2, MPC_ROUNDING); // 2 * pi
     mpfr_set_si(mpfr_2, 2, MPC_ROUNDING);
 
     // MTBDD R_dd[n], R_dag_dd[n];
@@ -645,8 +648,8 @@ mtbdd_phase_gates_init(int n)
         R_dd[k] = MTBDD_ZERO;
         R_dag_dd[k] = MTBDD_ZERO;
 
-        uint64_t **G_arr = NULL;
-        allocate_matrix_array_mpc(G_arr, n);
+        mpc_ptr **G_arr = NULL;
+        allocate_matrix_array_mpc(&G_arr, n);
 
         G_arr[0][0] = mpc_re_one;
         G_arr[0][1] = mpc_zero;
@@ -662,7 +665,7 @@ mtbdd_phase_gates_init(int n)
  
         R_dag_dd[k] = matrix_array_to_mtbdd_mpc(G_arr, n, ALTERNATE_ROW_FIRST_WISE_MODE);
 
-        free_matrix_array(G_arr, n);
+        free_matrix_array_mpc(G_arr, n);
 
     }
 

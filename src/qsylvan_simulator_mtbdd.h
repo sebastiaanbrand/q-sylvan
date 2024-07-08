@@ -53,11 +53,12 @@ MTBDD mtbdd_create_basis_state_double(BDDVAR n, bool* x); //TODO: extend with co
 MTBDD mtbdd_create_basis_state_mpc(BDDVAR n, bool* x);
 
 /**
- * Creates an MTBDD matrix which applies gate U to qubit t and I to all others.
+ * Creates an MTBDD matrix which applies gate G to qubit t and I to all others.
  * 
  * @param n Total number of qubits.
- * @param t Target qubit for given gate.
- * @param gateid Gate ID of predefined single qubit gate U.
+ * @param t Target qubit for given gate (index connected first qubit to gate G).
+ * @param I_dd mtbdd of predefined single qubit identity gate I.
+ * @param G_dd mtbdd of predefined single qubit gate G.
  * 
  * @return An MTBDD encoding of I(0) x ... x G(t) x ... x I(n-1)
  * 
