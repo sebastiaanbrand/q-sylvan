@@ -160,7 +160,10 @@ TASK_DECL_4(AADD, aadd_matvec_mult_rec, AADD, AADD, BDDVAR, BDDVAR);
 TASK_DECL_4(AADD, aadd_matmat_mult_rec, AADD, AADD, BDDVAR, BDDVAR);
 
 
-/* Computes inner product of two vectors a, b */
+/**
+ * Computes inner product of two vectors <b|a> 
+ * (Note that if b contains complex values, the complex conjugate is taken)
+*/
 #define aadd_inner_product(a,b,nvars) (RUN(aadd_inner_product,a,b,nvars,0))
 TASK_DECL_4(AADD_WGT, aadd_inner_product, AADD, AADD, BDDVAR, BDDVAR);
 

@@ -851,7 +851,7 @@ TASK_IMPL_4(AADD_WGT, aadd_inner_product, AADD, a, AADD, b, BDDVAR, nvars, BDDVA
     // TODO: allow for skipping variables (and multiply res w/ 2^{# skipped})
     // (requires adding some wgt_from_int() function in wgt interface)
     if (nextvar == nvars) {
-        return wgt_mul(AADD_WEIGHT(a), AADD_WEIGHT(b));
+        return wgt_mul(AADD_WEIGHT(a), wgt_conj(AADD_WEIGHT(b)));
     }
 
     // Get var(a) and var(b)
@@ -869,7 +869,7 @@ TASK_IMPL_4(AADD_WGT, aadd_inner_product, AADD, a, AADD, b, BDDVAR, nvars, BDDVA
     if (cachenow) {
         if (cache_get4(CACHE_AADD_INPROD, AADD_TARGET(a), AADD_TARGET(b), nextvar, nvars, &res)) {
             res = wgt_mul(res, AADD_WEIGHT(a));
-            res = wgt_mul(res, AADD_WEIGHT(b));
+            res = wgt_mul(res, wgt_conj(AADD_WEIGHT(b)));
             return res;
         }
     }
@@ -887,9 +887,12 @@ TASK_IMPL_4(AADD_WGT, aadd_inner_product, AADD, a, AADD, b, BDDVAR, nvars, BDDVA
         cache_put4(CACHE_AADD_INPROD, AADD_TARGET(a), AADD_TARGET(b), nextvar, nvars, res);
     }
 
-    // Multiply result with product of weights of a and b
+    // Multiply result with product of weights of a and (conjugate of) b
+    // (Note that we can compute the complex conjugate of |b> by taking the 
+    // complex conjugate of all edge weights separately, since 
+    // (w1 • w2)* = (w2* • w1*) and for scalars (w2* • w1*) = (w1* • w2*).)
     res = wgt_mul(res, AADD_WEIGHT(a));
-    res = wgt_mul(res, AADD_WEIGHT(b));
+    res = wgt_mul(res, wgt_conj(AADD_WEIGHT(b)));
     return res;
 }
 

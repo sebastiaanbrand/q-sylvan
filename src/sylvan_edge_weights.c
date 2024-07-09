@@ -35,6 +35,7 @@ _weight_lookup_ptr_f	_weight_lookup_ptr;
 init_one_zero_f 		init_one_zero;
 weight_abs_f 			weight_abs;
 weight_neg_f 			weight_neg;
+weight_conj_f           weight_conj;
 weight_sqr_f 			weight_sqr;
 weight_add_f 			weight_add;
 weight_sub_f 			weight_sub;
@@ -81,6 +82,7 @@ void init_edge_weight_functions(edge_weight_type_t edge_weight_type)
         init_one_zero       = (init_one_zero_f) &init_complex_one_zero;
         weight_abs          = (weight_abs_f) &weight_complex_abs;
         weight_neg          = (weight_neg_f) &weight_complex_neg;
+        weight_conj         = (weight_conj_f) &weight_complex_conj;
         weight_sqr          = (weight_sqr_f) &weight_complex_sqr;
         weight_add          = (weight_add_f) &weight_complex_add;
         weight_sub          = (weight_sub_f) &weight_complex_sub;
@@ -388,6 +390,23 @@ wgt_neg(AADD_WGT a)
     weight_t w = weight_malloc();
     weight_value(a, w);
     weight_neg(w);
+    res = weight_lookup_ptr(w);
+    free(w);
+
+    return res; 
+}
+
+AADD_WGT 
+wgt_conj(AADD_WGT a)
+{
+    // special cases
+    if (a == AADD_ZERO || a == AADD_ONE || a == AADD_MIN_ONE) return a;
+
+    AADD_WGT res;
+
+    weight_t w = weight_malloc();
+    weight_value(a, w);
+    weight_conj(w);
     res = weight_lookup_ptr(w);
     free(w);
 

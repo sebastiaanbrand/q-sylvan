@@ -71,6 +71,7 @@ typedef void (*init_one_zero_f)(void *wgt_store);
 /* Arithmetic operations on edge weights */
 typedef void (*weight_abs_f)(weight_t a); // a <-- |a|
 typedef void (*weight_neg_f)(weight_t a); // a <-- -a
+typedef void (*weight_conj_f)(weight_t a); // a <-- a*
 typedef void (*weight_sqr_f)(weight_t a); // a <-- a^2
 typedef void (*weight_add_f)(weight_t a, weight_t b); // a <-- a + b
 typedef void (*weight_sub_f)(weight_t a, weight_t b); // a <-- a - b
@@ -96,6 +97,7 @@ extern _weight_lookup_ptr_f	_weight_lookup_ptr;
 extern init_one_zero_f 		init_one_zero;
 extern weight_abs_f 		weight_abs;
 extern weight_neg_f 		weight_neg;
+extern weight_conj_f        weight_conj;
 extern weight_sqr_f 		weight_sqr;
 extern weight_add_f 		weight_add;
 extern weight_sub_f 		weight_sub;
@@ -136,6 +138,7 @@ void wgt_set_inverse_chaching(bool on);
 /* Arithmetic operations on AADD_WGT's */
 AADD_WGT wgt_abs(AADD_WGT a); // returns |a|
 AADD_WGT wgt_neg(AADD_WGT a); // returns -a
+AADD_WGT wgt_conj(AADD_WGT a); // returns a*
 AADD_WGT wgt_add(AADD_WGT a, AADD_WGT b); // returns a + b
 AADD_WGT wgt_sub(AADD_WGT a, AADD_WGT b); // returns a - b
 AADD_WGT wgt_mul(AADD_WGT a, AADD_WGT b); // returns a * b

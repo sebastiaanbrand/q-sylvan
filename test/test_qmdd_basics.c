@@ -337,7 +337,7 @@ int test_vector_addition()
 
 int test_inner_product()
 { 
-    QMDD q0, q1, q00, q01, q10, q11, q000, q001, q010, q100;
+    QMDD q0, q1, q00, q01, q10, q11, q000, q001, q010, q100, q000i, q001i;
     bool x4[] = {0, 0, 0, 0};
     BDDVAR nqubits = 4;
 
@@ -349,6 +349,10 @@ int test_inner_product()
     q11 = aadd_plus(q1, q1);    // [0 0 0 0 0 0 0 0 0 0 0 2 0 0 0 0]
     q000 = aadd_plus(q00, q0);  // [0 0 3 0 0 0 0 0 0 0 0 0 0 0 0 0]
     q001 = aadd_plus(q00, q1);  // [0 0 2 0 0 0 0 0 0 0 0 1 0 0 0 0]
+    q000i = aadd_bundle(AADD_TARGET(q000), wgt_mul(AADD_WEIGHT(q000), complex_lookup(0,1)));
+                                // [0 0 3i 0 0 0 0 0 0 0 0 0 0 0 0 0]
+    q001i = aadd_bundle(AADD_TARGET(q001), wgt_mul(AADD_WEIGHT(q001), complex_lookup(0,1)));
+                                // [0 0 2i 0 0 0 0 0 0 0 0 i 0 0 0 0]
 
     test_assert(aadd_inner_product(q00, q00, nqubits) == complex_lookup(4.0, 0.0));
     test_assert(aadd_inner_product(q01, q01, nqubits) == complex_lookup(2.0, 0.0));
@@ -360,6 +364,9 @@ int test_inner_product()
     test_assert(aadd_inner_product(q01, q000, nqubits) == complex_lookup(3.0, 0.0));
     test_assert(aadd_inner_product(q000, q001, nqubits) == complex_lookup(6.0, 0.0));
     test_assert(aadd_inner_product(q01, q001, nqubits) == complex_lookup(3.0, 0.0));
+    test_assert(aadd_inner_product(q000i, q000i, nqubits) == complex_lookup(9.0, 0.0));
+    test_assert(aadd_inner_product(q001i, q001i, nqubits) == complex_lookup(5.0, 0.0));
+    test_assert(aadd_inner_product(q000i, q001i, nqubits) == complex_lookup(6.0, 0.0));
 
     if (VERBOSE) printf("aadd inner product:            ok\n");
     return 0;
