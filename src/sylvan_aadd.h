@@ -159,6 +159,11 @@ TASK_DECL_3(AADD, aadd_matmat_mult, AADD, AADD, BDDVAR);
 TASK_DECL_4(AADD, aadd_matvec_mult_rec, AADD, AADD, BDDVAR, BDDVAR);
 TASK_DECL_4(AADD, aadd_matmat_mult_rec, AADD, AADD, BDDVAR, BDDVAR);
 
+
+/* Computes inner product of two vectors a, b */
+#define aadd_inner_product(a,b,nvars) (RUN(aadd_inner_product,a,b,nvars,0))
+TASK_DECL_4(AADD_WGT, aadd_inner_product, AADD, AADD, BDDVAR, BDDVAR);
+
 /**
  * Increases all the variable number in AADD a by k (used for tensor product)
  * 

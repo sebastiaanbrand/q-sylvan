@@ -563,7 +563,7 @@ aadd_do_before_mult(AADD *a, AADD *b)
 }
 
 static void
-norm_plus_cache_key(AADD a, AADD b, AADD *x, AADD *y)
+norm_commuting_cache_key(AADD a, AADD b, AADD *x, AADD *y)
 {
     if (a < b) {
         *x = a;
@@ -608,7 +608,7 @@ TASK_IMPL_2(AADD, aadd_plus, AADD, a, AADD, b)
 
     // Check cache
     AADD x, y;
-    norm_plus_cache_key(a, b, &x, &y); // (a+b) = (b+a) so normalize cache key
+    norm_commuting_cache_key(a, b, &x, &y); // (a+b) = (b+a) so normalize cache key
     bool cachenow = ((topvar % granularity) == 0);
     if (cachenow) {
         if (cache_get3(CACHE_AADD_PLUS, sylvan_false, x, y, &res)) {
@@ -838,6 +838,58 @@ TASK_IMPL_4(AADD, aadd_matmat_mult_rec, AADD, a, AADD, b, BDDVAR, nvars, BDDVAR,
     AADD_WGT new_weight = wgt_mul(prod, AADD_WEIGHT(res));
     res = aadd_bundle(AADD_TARGET(res), new_weight);
 
+    return res;
+}
+
+TASK_IMPL_4(AADD_WGT, aadd_inner_product, AADD, a, AADD, b, BDDVAR, nvars, BDDVAR, nextvar)
+{
+    if (AADD_WEIGHT(a) == AADD_ZERO) return AADD_ZERO;
+    if (AADD_WEIGHT(b) == AADD_ZERO) return AADD_ZERO;
+
+    // Terminal case: currently aadd_inner_product doesn't skip variables, 
+    // so when both point to terminal, both are scalars.
+    // TODO: allow for skipping variables (and multiply res w/ 2^{# skipped})
+    // (requires adding some wgt_from_int() function in wgt interface)
+    if (nextvar == nvars) {
+        return wgt_mul(AADD_WEIGHT(a), AADD_WEIGHT(b));
+    }
+
+    // Get var(a) and var(b)
+    AADD low_a, low_b, high_a, high_b;
+    BDDVAR topvar;
+
+    // For both a and b, get children of node with var=top{topvar(a),topvar(b)}
+    aadd_get_topvar(a, nextvar, &topvar, &low_a, &high_a);
+    aadd_get_topvar(b, nextvar, &topvar, &low_b, &high_b);
+
+    // Check cache
+    // TODO: norm cache key? (<a|b> = <b|a>^\dagger)
+    AADD_WGT res;
+    bool cachenow = ((topvar % granularity) == 0);
+    if (cachenow) {
+        if (cache_get4(CACHE_AADD_INPROD, AADD_TARGET(a), AADD_TARGET(b), nextvar, nvars, &res)) {
+            res = wgt_mul(res, AADD_WEIGHT(a));
+            res = wgt_mul(res, AADD_WEIGHT(b));
+            return res;
+        }
+    }
+    
+    // Recursive calls
+    aadd_refs_spawn(SPAWN(aadd_inner_product, high_a, high_b, nvars, nextvar+1));
+    AADD_WGT res_low = aadd_refs_push(CALL(aadd_inner_product, low_a, low_b, nvars, nextvar+1));
+    AADD_WGT res_high = aadd_refs_sync(SYNC(aadd_inner_product));
+    aadd_refs_pop(1);
+
+    res = wgt_add(res_low, res_high);
+
+    // Insert in cache (before multiplication w/ root weights)
+    if (cachenow) {
+        cache_put4(CACHE_AADD_INPROD, AADD_TARGET(a), AADD_TARGET(b), nextvar, nvars, res);
+    }
+
+    // Multiply result with product of weights of a and b
+    res = wgt_mul(res, AADD_WEIGHT(a));
+    res = wgt_mul(res, AADD_WEIGHT(b));
     return res;
 }
 

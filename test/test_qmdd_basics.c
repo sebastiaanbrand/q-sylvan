@@ -331,7 +331,37 @@ int test_vector_addition()
     test_assert(q001 == q100);
     test_assert(!qmdd_is_unitvector(q001, 4));
 
-    if(VERBOSE) printf("qmdd vector addition:          ok\n");
+    if(VERBOSE) printf("aadd vector addition:          ok\n");
+    return 0;
+}
+
+int test_inner_product()
+{ 
+    QMDD q0, q1, q00, q01, q10, q11, q000, q001, q010, q100;
+    bool x4[] = {0, 0, 0, 0};
+    BDDVAR nqubits = 4;
+
+    // vectors from test_vector_addition
+    x4[3] = 0; x4[2] = 0; x4[1] = 1; x4[0] = 0; q0 = qmdd_create_basis_state(nqubits, x4);
+    x4[3] = 1; x4[2] = 0; x4[1] = 1; x4[0] = 0; q1 = qmdd_create_basis_state(nqubits, x4);
+    q00 = aadd_plus(q0, q0);    // [0 0 2 0 0 0 0 0 0 0 0 0 0 0 0 0]
+    q01 = aadd_plus(q0, q1);    // [0 0 1 0 0 0 0 0 0 0 0 1 0 0 0 0]
+    q11 = aadd_plus(q1, q1);    // [0 0 0 0 0 0 0 0 0 0 0 2 0 0 0 0]
+    q000 = aadd_plus(q00, q0);  // [0 0 3 0 0 0 0 0 0 0 0 0 0 0 0 0]
+    q001 = aadd_plus(q00, q1);  // [0 0 2 0 0 0 0 0 0 0 0 1 0 0 0 0]
+
+    test_assert(aadd_inner_product(q00, q00, nqubits) == complex_lookup(4.0, 0.0));
+    test_assert(aadd_inner_product(q01, q01, nqubits) == complex_lookup(2.0, 0.0));
+    test_assert(aadd_inner_product(q11, q11, nqubits) == complex_lookup(4.0, 0.0));
+    test_assert(aadd_inner_product(q000, q000, nqubits) == complex_lookup(9.0, 0.0));
+    test_assert(aadd_inner_product(q001, q001, nqubits) == complex_lookup(5.0, 0.0));
+    test_assert(aadd_inner_product(q00, q01, nqubits) == complex_lookup(2.0, 0.0));
+    test_assert(aadd_inner_product(q00, q000, nqubits) == complex_lookup(6.0, 0.0));
+    test_assert(aadd_inner_product(q01, q000, nqubits) == complex_lookup(3.0, 0.0));
+    test_assert(aadd_inner_product(q000, q001, nqubits) == complex_lookup(6.0, 0.0));
+    test_assert(aadd_inner_product(q01, q001, nqubits) == complex_lookup(3.0, 0.0));
+
+    if (VERBOSE) printf("aadd inner product:            ok\n");
     return 0;
 }
 
@@ -344,6 +374,7 @@ int run_qmdd_tests()
     if (test_complex_operations()) return 1;
     if (test_basis_state_creation()) return 1;
     if (test_vector_addition()) return 1;
+    if (test_inner_product()) return 1;
 
     return 0;
 }
