@@ -23,6 +23,7 @@
 #include <qsylvan_simulator_mtbdd.h>
 #include <qsylvan_gates_mtbdd_mpc.h>
 
+#include <sylvan_mpc.h>
 #include "simple_parser.h" // TODO: rename in qsylvan_qasm_parser.h
 
 /**
@@ -133,10 +134,10 @@ static struct argp argp = { options, parse_opt, "<qasm_file>", 0, 0, 0, 0 };
 
 typedef struct stats_s {
 
-    uint64_t applied_gates;     // Number of gates used ?
-    uint64_t final_nodes;       // node count after measurements at end of circuit if any ?
-    uint64_t max_nodes;         // ?
-    uint64_t shots;             // ?
+    uint64_t applied_gates;     // Number of gates used
+    uint64_t final_nodes;       // node count before the measurements
+    uint64_t max_nodes;         // maximum of nodes >= final number of nodes
+    uint64_t shots;             // Number of measurements
     double simulation_time;     // Time of simulation
     double norm;                // Norm L2 of the final state (should be 1.00000), TODO: make mpc type of this ?
     MTBDD final_state;          // State vector MTBDD after simulation
@@ -159,10 +160,9 @@ void fprint_stats(FILE *stream, quantum_circuit_t* circuit)
         fprintf(stream, "  \"state_vector\": [\n");
         for (int k = 0; k < (1<<(circuit->qreg_size)); k++) {
             bool *x = int_to_bitarray(k, circuit->qreg_size, !(circuit->reversed_qubit_order));
-            complex_t c = qmdd_get_amplitude(stats.final_state, x, circuit->qreg_size);
+            MTBDD leaf = mtbdd_getvalue_of_path(stats.final_state, x); // Perhaps reverse qubit sequence on circuit->qreg_size, see gmdd_get_amplitude
             fprintf(stream, "    [\n");
-            fprintf(stream, "      %.16lf,\n", c.r);
-            fprintf(stream, "      %.16lf\n", c.i);
+            mpc_out_str(stream, MPC_BASE_OF_FLOAT, 3, (mpc_ptr)mtbdd_getvalue(leaf), MPC_ROUNDING);
             if (k == (1<<(circuit->qreg_size))-1)
                 fprintf(stream, "    ]\n");
             else
@@ -181,8 +181,8 @@ void fprint_stats(FILE *stream, quantum_circuit_t* circuit)
     fprintf(stream, "    \"seed\": %d,\n", rseed);
     fprintf(stream, "    \"shots\": %" PRIu64 ",\n", stats.shots);
     fprintf(stream, "    \"simulation_time\": %lf,\n", stats.simulation_time);
-    fprintf(stream, "    \"precision\": %d,\n", precision); // Remove
-    fprintf(stream, "    \"rounding\": %d,\n", rounding); // Remove
+    fprintf(stream, "    \"precision\": %d,\n", precision);
+    fprintf(stream, "    \"rounding\": %d,\n", rounding);
     fprintf(stream, "    \"workers\": %d\n", workers);
     fprintf(stream, "  }\n");
     fprintf(stream, "}\n");
@@ -259,13 +259,13 @@ MTBDD apply_gate(MTBDD state, quantum_op_t* gate, int n) // zie master branch
         return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
     }
 
-    else if (strcmp(gate->name, "sx") == 0) { // ???
-        MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, S_dd);
+    else if (strcmp(gate->name, "sx") == 0) {
+        MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, sqrt_X_dd);
         return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
     }
 
-    else if (strcmp(gate->name, "sxdg") == 0) { // ???
-        MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, S_dag_dd);
+    else if (strcmp(gate->name, "sxdg") == 0) {
+        MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, sqrt_X_dag_dd);
         return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
     }
     
@@ -274,17 +274,27 @@ MTBDD apply_gate(MTBDD state, quantum_op_t* gate, int n) // zie master branch
         MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, Rx_dd);
         return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
     }
-
-/*    
+    
     else if (strcmp(gate->name, "ry") == 0) {
-        return qmdd_gate(state, GATEID_Ry(gate->angle[0]), gate->targets[0]);
+        MTBDD Ry_dd = mtbdd_Ry(gate->angle[0]);
+        MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, Ry_dd);
+        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
     }
+
     else if (strcmp(gate->name, "rz") == 0) {
-        return qmdd_gate(state, GATEID_Rz(gate->angle[0]), gate->targets[0]);
+        MTBDD Rz_dd = mtbdd_Rz(gate->angle[0]);
+        MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, Rz_dd);
+        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
     }
+
     else if (strcmp(gate->name, "p") == 0) {
+        MTBDD P_dd = mtbdd_Phase(gate->angle[0]);
+        MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, P_dd);
+        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
         return qmdd_gate(state, GATEID_Phase(gate->angle[0]), gate->targets[0]);
     }
+
+/*    
     else if (strcmp(gate->name, "u2") == 0) {
         fl_t pi_over_2 = flt_acos(0.0);
         return qmdd_gate(state, GATEID_U(pi_over_2, gate->angle[0], gate->angle[1]), gate->targets[0]);

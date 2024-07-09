@@ -5009,3 +5009,30 @@ MTBDD mtbdd_tensor_prod(MTBDD a, MTBDD b, int leaf_depth_of_a) // leaf_depth_of_
     return result;
 }
 
+/**
+ * 
+ * 
+ */
+MTBDD // index to leaf
+mtbdd_getvalue_of_path(MTBDD a, bool* path)
+{
+    MTBDD low, high;
+    for (;;) {
+       
+        // if the current edge is pointing to the terminal, we're done.
+        if (mtbdd_isleaf(a)) 
+            return a;
+
+        // now we need to choose low or high edge of next node
+        mtbddnode_t node = MTBDD_GETNODE(a);
+        BDDVAR var = mtbddnode_getvariable(node);
+        low = mtbddnode_getlow(node);
+        high = mtbddnode_getlow(node);
+
+        // Condition low/high choice on basis state vector[var]
+        a = (path[var] == 0) ? low : high;
+    }
+
+    return MTBDD_ZERO;
+}
+

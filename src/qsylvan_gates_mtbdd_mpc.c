@@ -559,20 +559,33 @@ mtbdd_U(double theta, double phi, double lambda)
     mpfr_set_d(mpfr_lambda, lambda, MPC_ROUNDING);
     mpfr_set_d(mpfr_gam, phi + lambda, MPC_ROUNDING);
 
-    mpfr_div_ui(mpfr_theta_2, mpfr_theta, 2, MPC_ROUNDING);  //  theta / 2
+    mpfr_div_ui(mpfr_theta_2, mpfr_theta, 2, MPC_ROUNDING);           // theta / 2
 
-    mpfr_cos(mpfr_cos_theta_2, mpfr_theta_2, MPC_ROUNDING);  // cos(theta/2)
-    mpfr_sin(mpfr_sin_theta_2, mpfr_theta_2, MPC_ROUNDING);  // sin(theta/2)
-    mpfr_neg(mpfr_min_sin_theta_2, mpfr_sin_theta_2, MPC_ROUNDING); // -sin(theta/2)
+    mpfr_cos(mpfr_cos_theta_2, mpfr_theta_2, MPC_ROUNDING);           // cos(theta/2)
+    mpfr_sin(mpfr_sin_theta_2, mpfr_theta_2, MPC_ROUNDING);           // sin(theta/2)
+    mpfr_neg(mpfr_min_sin_theta_2, mpfr_sin_theta_2, MPC_ROUNDING);   // -sin(theta/2)
 
-    mpc_set_fr_fr(mpc_exp_lambda, mpfr_cos_lambda, mpfr_sin_lambda, MPC_ROUNDING); // cos(lambda) + i sin(lambda)
-    mpc_mul_fr(mpc_exp_lambda_mul_min_sin_theta_2, mpc_exp_lambda, mpfr_min_sin_theta_2, MPC_ROUNDING);
+    // phi cos / sin
+    mpfr_cos(mpfr_cos_phi, mpfr_phi, MPC_ROUNDING);                   // cos(phi)
+    mpfr_sin(mpfr_sin_phi, mpfr_phi, MPC_ROUNDING);                   // sin(phi)
 
-    mpc_set_fr_fr(mpc_exp_phi, mpfr_cos_phi, mpfr_sin_phi, MPC_ROUNDING); // cos(phi) + i sin(phi)
-    mpc_mul_fr(mpc_exp_phi_mul_sin_theta_2, mpc_exp_phi, mpfr_sin_theta_2, MPC_ROUNDING);
+    // lambda cos / sin
+    mpfr_cos(mpfr_cos_lambda, mpfr_lambda, MPC_ROUNDING);             // cos(lambda)
+    mpfr_sin(mpfr_sin_lambda, mpfr_lambda, MPC_ROUNDING);             // sin(lambda)
 
-    mpc_set_fr_fr(mpc_exp_gam, mpfr_cos_gam, mpfr_sin_gam, MPC_ROUNDING); // cos(gamma) + i sin(gamma)
-    mpc_mul_fr(mpc_exp_gam_mul_cos_theta_2, mpc_exp_gam, mpfr_cos_theta_2, MPC_ROUNDING);
+    // lambda cos / sin
+    mpfr_cos(mpfr_cos_gam, mpfr_gam, MPC_ROUNDING);                   // cos(gamma)
+    mpfr_sin(mpfr_sin_gam, mpfr_gam, MPC_ROUNDING);                   // sin(gamma)
+
+
+    mpc_set_fr_fr(mpc_exp_phi, mpfr_cos_phi, mpfr_sin_phi, MPC_ROUNDING);                 // cos(phi) + i sin(phi)
+    mpc_mul_fr(mpc_exp_phi_mul_sin_theta_2, mpc_exp_phi, mpfr_sin_theta_2, MPC_ROUNDING); // (cos(phi) + i sin(phi)) x sin(theta/2)
+
+    mpc_set_fr_fr(mpc_exp_lambda, mpfr_cos_lambda, mpfr_sin_lambda, MPC_ROUNDING);                      // cos(lambda) + i sin(lambda)
+    mpc_mul_fr(mpc_exp_lambda_mul_min_sin_theta_2, mpc_exp_lambda, mpfr_min_sin_theta_2, MPC_ROUNDING); // (cos(lambda) + i sin(lambda)) x -sin(theta/2)
+
+    mpc_set_fr_fr(mpc_exp_gam, mpfr_cos_gam, mpfr_sin_gam, MPC_ROUNDING);                 // cos(gamma) + i sin(gamma)
+    mpc_mul_fr(mpc_exp_gam_mul_cos_theta_2, mpc_exp_gam, mpfr_cos_theta_2, MPC_ROUNDING); // (cos(gamma) + i sin(gamma)) x cos(theta/2)
 
     // Convert to MTBDD
 

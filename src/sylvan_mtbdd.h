@@ -48,6 +48,8 @@
 extern "C" {
 #endif /* __cplusplus */
 
+#include <stdbool.h>
+
 /**
  * A MTBDD node has a 64-bit unsigned integer type. The low 40 bits are an 
  * index into an unique table. The highest 1 bit is the complement edge, indicating negation.
@@ -1343,6 +1345,13 @@ MTBDD mtbdd_mat_tensor_prod(MTBDD M1, MTBDD M2, int n);
  * @returns MTBDD encoding of 'a' tensor 'b'
  */
 MTBDD mtbdd_tensor_prod(MTBDD a, MTBDD b, int leaf_depth_of_a);
+
+/**
+ * 
+ * 
+ */
+MTBDD // index to leaf
+mtbdd_getvalue_of_path(MTBDD a, bool* path);
 
 
 #ifdef __cplusplus
