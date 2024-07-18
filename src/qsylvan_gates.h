@@ -10,6 +10,8 @@ typedef uint64_t AMP; // TODO: replace with AADD_WGT?
 // currently 24 bits available for this number (see GATE_OPID)
 typedef enum predef_gates {
     GATEID_I,
+    GATEID_proj0, // |0><0|
+    GATEID_proj1, // |1><1|
     GATEID_X,
     GATEID_Y,
     GATEID_Z,

@@ -32,6 +32,8 @@ jobs:
         sudo apt update
         sudo apt install cmake cmake-data build-essential
         sudo apt install libgmp-dev
+        sudo apt install libmpfr-dev
+        sudo apt install libmpc-dev
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
@@ -46,3 +48,17 @@ jobs:
       # Execute tests defined by the CMake configuration.  
       # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
       run: ctest -C ${{env.BUILD_TYPE}}
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.10"
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install numpy
+        pip install pytest
+
+    - name: Test CLI
+      run: pytest

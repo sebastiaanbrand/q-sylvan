@@ -60,7 +60,7 @@ _weight_complex_lookup_ptr(complex_t *a, void *wgt_store)
     }
 
     if (!success) {
-        printf("Amplitude table full!\n");
+        fprintf(stderr, "Amplitude table full!\n");
         exit(1);
     }
     return (AADD_WGT) res; 
@@ -92,6 +92,12 @@ void
 weight_complex_neg(complex_t *a)
 {
     a->r = -(a->r);
+    a->i = -(a->i);
+}
+
+void
+weight_complex_conj(complex_t *a)
+{
     a->i = -(a->i);
 }
 

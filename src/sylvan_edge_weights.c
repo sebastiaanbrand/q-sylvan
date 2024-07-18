@@ -35,6 +35,7 @@ _weight_lookup_ptr_f	_weight_lookup_ptr;
 init_one_zero_f 		init_one_zero;
 weight_abs_f 			weight_abs;
 weight_neg_f 			weight_neg;
+weight_conj_f           weight_conj;
 weight_sqr_f 			weight_sqr;
 weight_add_f 			weight_add;
 weight_sub_f 			weight_sub;
@@ -81,6 +82,7 @@ void init_edge_weight_functions(edge_weight_type_t edge_weight_type)
         init_one_zero       = (init_one_zero_f) &init_complex_one_zero;
         weight_abs          = (weight_abs_f) &weight_complex_abs;
         weight_neg          = (weight_neg_f) &weight_complex_neg;
+        weight_conj         = (weight_conj_f) &weight_complex_conj;
         weight_sqr          = (weight_sqr_f) &weight_complex_sqr;
         weight_add          = (weight_add_f) &weight_complex_add;
         weight_sub          = (weight_sub_f) &weight_complex_sub;
@@ -394,6 +396,23 @@ wgt_neg(AADD_WGT a)
     return res; 
 }
 
+AADD_WGT 
+wgt_conj(AADD_WGT a)
+{
+    // special cases
+    if (a == AADD_ZERO || a == AADD_ONE || a == AADD_MIN_ONE) return a;
+
+    AADD_WGT res;
+
+    weight_t w = weight_malloc();
+    weight_value(a, w);
+    weight_conj(w);
+    res = weight_lookup_ptr(w);
+    free(w);
+
+    return res; 
+}
+
 AADD_WGT
 wgt_add(AADD_WGT a, AADD_WGT b)
 {
@@ -588,7 +607,7 @@ wgt_norm_low(AADD_WGT *low, AADD_WGT *high)
 }
 
 AADD_WGT
-wgt_norm_largest(AADD_WGT *low, AADD_WGT *high)
+wgt_norm_max(AADD_WGT *low, AADD_WGT *high)
 {
     AADD_WGT norm;
     if (*low == *high) {
@@ -619,6 +638,68 @@ wgt_norm_largest(AADD_WGT *low, AADD_WGT *high)
 
     free(wl);
     free(wh);
+    return norm;
+}
+
+AADD_WGT
+wgt_norm_min(AADD_WGT *low, AADD_WGT *high)
+{
+    AADD_WGT norm;
+    if (*low == *high) {
+        norm  = *low;
+        *low  = AADD_ONE;
+        *high = AADD_ONE;
+        return norm;
+    }
+    // Since min(a, b) could be 0, norm using non-zero to avoid dividing by 0
+    if (*low == AADD_ZERO) {
+        norm  = *high;
+        *high = AADD_ONE;
+        return norm;
+    }
+    if (*high == AADD_ZERO) {
+        norm  = *low;
+        *low  = AADD_ONE;
+        return norm;
+    }
+
+    // Normalize using the absolute smallest value
+    weight_t wl = weight_malloc();
+    weight_t wh = weight_malloc();
+    weight_t wl_abs = weight_malloc();
+    weight_t wh_abs = weight_malloc();
+    weight_value(*low,  wl);
+    weight_value(*high, wh);
+    weight_value(*low,  wl_abs);
+    weight_value(*high, wh_abs);
+    weight_abs(wl_abs);
+    weight_abs(wh_abs);
+
+    // To help avoid canonicity issues, 
+    // handle case where magnitudes are (almost) equal separately
+    if (weight_approx_eq(wl_abs, wh_abs)) {
+        // |low| ~= |high|, divide by low
+        *high = wgt_div(*high, *low);
+        norm = *low;
+        *low  = AADD_ONE;
+    }
+    else if (weight_greater(wl, wh)) {
+        // |high| < |low|, divide both by high
+        *low = wgt_div(*low, *high);
+        norm  = *high;
+        *high = AADD_ONE;
+    }
+    else {
+        // |low| < |high|, divide both by low
+        *high = wgt_div(*high, *low);
+        norm = *low;
+        *low  = AADD_ONE;
+    }
+
+    free(wl);
+    free(wh);
+    free(wl_abs);
+    free(wh_abs);
     return norm;
 }
 

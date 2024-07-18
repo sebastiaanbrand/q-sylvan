@@ -139,24 +139,26 @@ QMDD qmdd_create_single_qubit_gates_same(BDDVAR n, gate_id_t gateid);
  * 
  * @return A matrix QMDD encoding of the controlled gate on given qubits.
  */
-QMDD qmdd_create_controlled_gate(BDDVAR n, BDDVAR c, BDDVAR t, gate_id_t gateid);
+#define qmdd_create_cgate(n, c, t, gateid) _qmdd_create_cgate(n, c, AADD_INVALID_VAR, AADD_INVALID_VAR, t, gateid)
+#define qmdd_create_cgate2(n, c1, c2, t, gateid) _qmdd_create_cgate(n, c1, c2, AADD_INVALID_VAR, t, gateid)
+#define qmdd_create_cgate3(n, c1, c2, c3, t, gateid) _qmdd_create_cgate(n, c1, c2, c3, t, gateid)
+QMDD _qmdd_create_cgate(BDDVAR n, BDDVAR c1, BDDVAR c2, BDDVAR c3, BDDVAR t, gate_id_t gateid);
 
 /**
  * Creates a controlled-`gateid` gate which acts on the qubits as specified by
- * `c_options`.
+ * `c_options`. (Independent of order of controls and targets.)
  * 
  * @param n Total number of qubits.
  * @param c_options Array of length n with option for each qubit k: {
  *        -1 : ignore qubit k (apply I), 
- *         0 : control on q_k = |0>
- *         1 : control on q_k = |1>
+ *         0 : control on q_k = |0>,
+ *         1 : control on q_k = |1>,
  *         2 : target qubit }
  * @param gateid Gate ID of predefined single qubit gate U.
  * 
  * @return A matrix QMDD encoding of the multi-controlled gate on given qubits.
  */
-#define qmdd_create_multi_cgate(n,c_options,gateid) qmdd_create_multi_cgate_rec(n,c_options,gateid,0)
-QMDD qmdd_create_multi_cgate_rec(BDDVAR n, int *c_options, gate_id_t gateid, BDDVAR k);
+QMDD qmdd_create_multi_cgate(BDDVAR n, int *c_options, gate_id_t gateid);
 
 /**
  * Creates an n-qubit controlled Z gate, controlled on all qubits. 
@@ -253,19 +255,20 @@ AMP qmdd_amp_from_prob(double a);
 // For now we have at most 3 control qubits
 #define MAX_CONTROLS 3
 
-/* Applies given (single qubit) gate to |q>. (Wrapper function) */
+/* Applies given (single qubit) gate to |q>. */
 #define qmdd_gate(qmdd,gate,target) (RUN(qmdd_gate,qmdd,gate,target))
 TASK_DECL_3(QMDD, qmdd_gate, QMDD, gate_id_t, BDDVAR);
 
-/* Applies given controlled gate to |q>. (Wrapper function) */
-#define qmdd_cgate(qmdd,gate,c,t) (RUN(qmdd_cgate,qmdd,gate,c,t))
-#define qmdd_cgate2(qmdd,gate,c1,c2,t) (RUN(qmdd_cgate2,qmdd,gate,c1,c2,t))
-#define qmdd_cgate3(qmdd,gate,c1,c2,c3,t) (RUN(qmdd_cgate3,qmdd,gate,c1,c2,c3,t))
-TASK_DECL_4(QMDD, qmdd_cgate,  QMDD, gate_id_t, BDDVAR, BDDVAR);
-TASK_DECL_5(QMDD, qmdd_cgate2, QMDD, gate_id_t, BDDVAR, BDDVAR, BDDVAR);
-TASK_DECL_6(QMDD, qmdd_cgate3, QMDD, gate_id_t, BDDVAR, BDDVAR, BDDVAR, BDDVAR);
+/**
+ * Applies given controlled gate to |q>. When controls !<= target, the total
+ * number of qubits needs to be passed as last argument.
+*/
+#define qmdd_cgate(state,gate,c,t,...) _qmdd_cgate(state,gate,c,AADD_INVALID_VAR,AADD_INVALID_VAR,t,(0, ##__VA_ARGS__))
+#define qmdd_cgate2(state,gate,c1,c2,t,...) (_qmdd_cgate(state,gate,c1,c2,AADD_INVALID_VAR,t,(0, ##__VA_ARGS__)))
+#define qmdd_cgate3(state,gate,c1,c2,c3,t,...) (_qmdd_cgate(state,gate,c1,c2,c3,t,(0, ##__VA_ARGS__)))
+QMDD _qmdd_cgate(QMDD state, gate_id_t gate, BDDVAR c1, BDDVAR c2, BDDVAR c3, BDDVAR t, BDDVAR n);
 
-/* Applies given controlled gate to |q>. (Wrapper function) */
+/* Applies given controlled gate to |q>. */
 #define qmdd_cgate_range(qmdd,gate,c_first,c_last,t) (RUN(qmdd_cgate_range,qmdd,gate,c_first,c_last,t))
 TASK_DECL_5(QMDD, qmdd_cgate_range, QMDD, gate_id_t, BDDVAR, BDDVAR, BDDVAR);
 

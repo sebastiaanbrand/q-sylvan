@@ -641,13 +641,14 @@ void insert_required_swaps(quantum_circuit_t *circuit)
 
 void order_cphase_gates(quantum_circuit_t *circuit)
 {
-    // Since for any controlled phase gate (cz, cp, crz) cp(c,t) = c(t,c),
+    // Since for any controlled phase gate (cp, cz=cp(pi)) cp(c,t) = c(t,c),
     // change the order such that c < t
+    // Note that crz(theta) is not symmetric
     quantum_op_t* head = circuit->operations;
     while (head != NULL) {
         if (head->type == op_gate) {
             std::string name = std::string(head->name);
-            if (name == "cz" || name == "cp" || name == "crz") {
+            if (name == "cz" || name == "cp") {
                 if (head->ctrls[0] > head->targets[0]) {
                     int tmp = head->targets[0];
                     head->targets[0] = head->ctrls[0];
@@ -666,7 +667,11 @@ void reverse_order(quantum_circuit_t *circuit)
     quantum_op_t* head = circuit->operations;
     while (head != NULL) {
         if (head->type == op_gate || head->type == op_measurement) {
-            head->targets[0] = (circuit->qreg_size - 1) - head->targets[0];
+            for (int j = 0; j < 2; j++) {
+                if (head->targets[j] != -1) {
+                    head->targets[j] = (circuit->qreg_size - 1) - head->targets[j];
+                }
+            }
             for (int j = 0; j < 3; j++) {
                 if (head->ctrls[j] != -1) {
                     head->ctrls[j] = (circuit->qreg_size - 1) - head->ctrls[j];
@@ -681,7 +686,7 @@ void reverse_order(quantum_circuit_t *circuit)
 }
 
 
-void optimize_qubit_order(quantum_circuit_t *circuit)
+void optimize_qubit_order(quantum_circuit_t *circuit, bool allow_swaps)
 {
     order_cphase_gates(circuit); // order phase gates before counting
     quantum_op_t* head = circuit->operations;
@@ -701,7 +706,9 @@ void optimize_qubit_order(quantum_circuit_t *circuit)
         reverse_order(circuit);
         order_cphase_gates(circuit); // order phase gates again
     }
-    insert_required_swaps(circuit);
+    if (allow_swaps) {
+        insert_required_swaps(circuit);
+    }
 }
 
 

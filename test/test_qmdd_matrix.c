@@ -351,8 +351,8 @@ int test_cx_gate()
     mI    = qmdd_create_all_identity_matrix(nqubits);
     mH0   = qmdd_create_single_qubit_gate(nqubits, 0, GATEID_H);
     mH1   = qmdd_create_single_qubit_gate(nqubits, 1, GATEID_H);
-    mCNOT = qmdd_create_controlled_gate(nqubits, 0, 1, GATEID_X);
-    mCZ   = qmdd_create_controlled_gate(nqubits, 0, 1, GATEID_Z);
+    mCNOT = qmdd_create_cgate(nqubits, 0, 1, GATEID_X);
+    mCZ   = qmdd_create_cgate(nqubits, 0, 1, GATEID_Z);
 
     // matrix-matrix mult
     mTemp = aadd_matmat_mult(mI,    mH0,   nqubits); test_assert(mTemp == mH0);
@@ -432,7 +432,7 @@ int test_cz_gate()
     x2[1] = 0; x2[0] = 0; v0 = qmdd_create_basis_state(nqubits, x2);
     mH0 = qmdd_create_single_qubit_gate(nqubits, 0, GATEID_H);
     mH1 = qmdd_create_single_qubit_gate(nqubits, 1, GATEID_H);
-    mCZ = qmdd_create_controlled_gate(nqubits, 0, 1, GATEID_Z);
+    mCZ = qmdd_create_cgate(nqubits, 0, 1, GATEID_Z);
 
     v0 = aadd_matvec_mult(mH0, v0, nqubits);
     v0 = aadd_matvec_mult(mH1, v0, nqubits);
@@ -605,9 +605,26 @@ int test_multi_cgate()
         test_assert(qTest == qRef);
     }
 
+    // controls below target
+    nqubits = 3;
+    qInit   = qmdd_create_all_zero_state(nqubits);
+    qInit   = qmdd_gate(qInit, GATEID_H, 0);
+    qInit   = qmdd_gate(qInit, GATEID_X, 1);
+    qInit   = qmdd_gate(qInit, GATEID_H, 2);
+    for (uint32_t i = 0; i < len(test_gates); i++) {
+        // t = 0, c1 = 1, c2 = 2 
+        int c_options[] = {2, 1, 1};
+        qRef = qmdd_circuit_swap(qInit, 0, 2);
+        qRef = qmdd_cgate2(qRef, test_gates[i], 0, 1, 2);
+        qRef = qmdd_circuit_swap(qRef, 0, 2);
+        matrix = qmdd_create_multi_cgate(nqubits, c_options, test_gates[i]);
+        qTest = aadd_matvec_mult(matrix, qInit, nqubits);
+        test_assert(aadd_equivalent(qRef, qTest, nqubits, false, false));
+        test_assert(aadd_equivalent(qRef, qTest, nqubits, true, false));
+        test_assert(qTest == qRef);
+    }
 
     // TODO: more tests
-
 
     if(VERBOSE) printf("matrix qmdd multi-cgate:     ok so far (WIP)\n");
     return 0;

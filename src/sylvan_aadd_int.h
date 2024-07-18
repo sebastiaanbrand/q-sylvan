@@ -15,7 +15,7 @@
  * sylvan_init_aadd().
  * TODO: Maybe handle this in a cleaner way than with global variables?
  */
-// using [wgts,ptr] [33,30] bits (default [23,40])
+// using [wgts,ptr] [33,30] bits if set to true (default [23,40])
 extern bool larger_wgt_indices;
 extern int weight_norm_strat;
 extern AADD_WGT (*normalize_weights)(AADD_WGT *, AADD_WGT *);
@@ -24,30 +24,55 @@ extern AADD_WGT (*normalize_weights)(AADD_WGT *, AADD_WGT *);
 /*****************<Bit level manipulation of AADD / aaddnode_t>****************/
 
 /**
+ * When edge weight table <= 2^23 (larger_wgt_indices = false)
+ * -----------------------------------------------------------------------------
  * AADD edge structure (64 bits)
- *       1 bit:  marked/unmarked flag (same place as MTBDD)
- *      33 bits: index of edge weight in ctable (AADD_WGT)
- *      30 bits: index of next node in node table (AADD_TARG)
+ *       1 bit:  unused
+ *      23 bits: index of edge weight in weight table (AADD_WGT)
+ *      40 bits: index of next node in node table (AADD_TARG)
  * 
  * AADD node structure (128 bits)
  * (note: because of normalization of the edge weights, we only need 1 weight
  *  per node, the other will always be 0 or 1 or dependent on the first value.)
  * 
  * 64 bits low:
- *       1 bit:  marked/unmarked flag (same place as MTBDD)
+ *       1 bit:  unused
  *       8 bits: variable/qubit number of this node
  *       1 bit:  if 0 (1) normalized WGT is on low (high)
  *       1 bit:  if 0 (1) normalized WGT is AADD_ZERO (AADD_ONE)
  *      13 bits: unused
+ *      40 bits: low edge pointer to next node (AADD_TARG)
+ * 64 bits high:
+ *       1 bit:  marked/unmarked flag
+ *      23 bits: index of edge weight of high edge in ctable (AADD_WGT)
+ *      40 bits: high edge pointer to next node (AADD_TARG)
+ * -----------------------------------------------------------------------------
+ * 
+ * 
+ * When edge weight table > 2^23 (larger_wgt_indices = true)
+ * -----------------------------------------------------------------------------
+ * AADD edge structure (64 bits)
+ *       1 bit:  unused
+ *      23 bits: index of edge weight in weight table (AADD_WGT)
+ *      40 bits: index of next node in node table (AADD_TARG)
+ * 
+ * AADD node structure (128 bits)
+ * 64 bits low:
+ *       1 bit:  unused
+ *       8 bits: variable/qubit number of this node
+ *       1 bit:  if 0 (1) normalized WGT is on low (high)
+ *       1 bit:  if 0 (1) normalized WGT is AADD_ZERO (AADD_ONE)
+ *      23 bits: unused
  *      30 bits: low edge pointer to next node (AADD_TARG)
  * 64 bits high:
- *       1 bit:  marked/unmarked flag (same place as MTBDD)
+ *       1 bit:  marked/unmarked flag
  *      33 bits: index of edge weight of high edge in ctable (AADD_WGT)
  *      30 bits: high edge pointer to next node (AADD_TARG)
+ * -----------------------------------------------------------------------------
  */
 typedef struct __attribute__((packed)) aaddnode {
     AADD low, high;
-} *aaddnode_t; // 16 bytes // TODO: move to sylvan_aadd_int.h
+} *aaddnode_t; // 16 bytes
 
 static const AADD aadd_marked_mask  = 0x8000000000000000LL;
 static const AADD aadd_var_mask_low = 0x7f80000000000000LL;
@@ -198,7 +223,7 @@ static void __attribute__((unused))
 aaddnode_pack(aaddnode_t n, BDDVAR var, AADD_TARG low, AADD_TARG high, AADD_WGT a, AADD_WGT b)
 {
     // We only want to store 1 edge weight per node (which has 2 outgoing
-    // edges). For NORM_LOW and NORM_LARGEST this is relatively easy because in
+    // edges). For NORM_LOW and NORM_MAX this is relatively easy because in
     // both those cases there is at least one edge weight equal to 1 or 0.
     //
     // For NORM_L2 it is a bit more complicated: both edge weights can be
@@ -219,7 +244,7 @@ aaddnode_pack(aaddnode_t n, BDDVAR var, AADD_TARG low, AADD_TARG high, AADD_WGT 
         wgt_high = b; // we can derive a from b
     }
     else {
-        /// weight_norm_strat == NORM_LOW or NORM_LARGEST
+        /// weight_norm_strat == NORM_LOW or NORM_MAX or NORM_MIN
         assert(a == AADD_ZERO || a == AADD_ONE || b == AADD_ZERO || b == AADD_ONE);
         norm_pos = (a == AADD_ZERO || a == AADD_ONE) ? 0 : 1;
         if (norm_pos == 0) {
@@ -253,7 +278,7 @@ _aadd_makenode(BDDVAR var, AADD_TARG low, AADD_TARG high, AADD_WGT a, AADD_WGT b
     int created;
     AADD_TARG index = llmsset_lookup(nodes, n.low, n.high, &created);
     if (index == 0) {
-        printf("auto gc of node table triggered\n");
+        //printf("auto gc of node table triggered\n");
 
         aadd_refs_push(low);
         aadd_refs_push(high);

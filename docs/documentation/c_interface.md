@@ -9,7 +9,7 @@ NOTE: In the code we are refering to the QMDDs as QMDDs, but our QMDDs are reall
 * `qmdd_create_single_qubit_gate(int n, int t, gate_id_t gateid)` : Creates an n-qubit matrix QMDD which applies gate `gateid` to qubit t and I to all others.
 * `qmdd_create_single_qubit_gates(int n, gate_id_t *gateid)` : Creates an n-qubit matrix QMDD which applies the given list of n `gatesid`'s to n qubits.
 * `qmdd_create_single_qubit_gates_same(int n, gate_id_t gateid)` : Creates an n-qubit matrix QMDD which applies single qubit gate `gateid` to all qubits.
-* `qmdd_create_controlled_gate(int n, int c, int t, gate_id_t gateid)` : Creates an n-qubit matrix QMDD which acts as a controlled-`gateid` gate on target qubit t with control qubit c, and I on all others. (Requires c < t.)
+* `qmdd_create_cgate(int n, int c, int t, gate_id_t gateid)` : Creates an n-qubit matrix QMDD which acts as a controlled-`gateid` gate on target qubit t with control qubit c, and I on all others. (Requires c < t.)
 * `qmdd_create_multi_cgate(int n, int *c_options, gate_id_t gateid)` : Creates a controlled-`gateid` gate which acts on the qubits as specified in by the `c_options` array. `c_options[k]` can contain `-1` = ignore qubit k (apply I), `0` = control qubit k on |0>, `1` = control qubit k on |1>, and `2` = the target qubit. (Requires the index of the target qubit to be greater than the indices of the controls.)
 * `qmdd_create_all_control_phase(int n, bool *x)` : Creates an n-qubit CZ gate, controlled on all qubits. The array x specifies whether each qubit k is controlled on |0> (when x[k]=0) or on |1> (when x[k]=1).
 

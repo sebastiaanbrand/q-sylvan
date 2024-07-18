@@ -70,7 +70,8 @@ quantum_circuit_t* parse_qasm_file(char *filepath);
 /**
  * Invert qubit order if that yields less controls below target qubits.
  */
-void optimize_qubit_order(quantum_circuit_t *circuit);
+void optimize_qubit_order(quantum_circuit_t *circuit, bool allow_swaps);
+
 
 /**
  * Free all quantum elements found in quantum_op_s including 'first'. What is 'first'? 

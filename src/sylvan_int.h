@@ -110,10 +110,11 @@ static const uint64_t CACHE_MTBDD_TENSOR            = (61LL<<40);
 static const uint64_t CACHE_AADD_PLUS               = (70LL<<40);
 static const uint64_t CACHE_AADD_MATVEC_MULT        = (71LL<<40);
 static const uint64_t CACHE_AADD_MATMAT_MULT        = (72LL<<40);
-static const uint64_t CACHE_AADD_REPLACE_TERMINAL   = (73LL<<40);
-static const uint64_t CACHE_AADD_INC_VARS           = (74LL<<40);
-static const uint64_t CACHE_AADD_CLEAN_WGT_TABLE    = (75LL<<40);
-static const uint64_t CACHE_AADD_IS_ORDERED         = (76LL<<40);
+static const uint64_t CACHE_AADD_INPROD             = (73LL<<30);
+static const uint64_t CACHE_AADD_REPLACE_TERMINAL   = (74LL<<40);
+static const uint64_t CACHE_AADD_INC_VARS           = (75LL<<40);
+static const uint64_t CACHE_AADD_CLEAN_WGT_TABLE    = (76LL<<40);
+static const uint64_t CACHE_AADD_IS_ORDERED         = (77LL<<40);
 
 // Operations on AADD edge weights
 static const uint64_t CACHE_WGT_ADD                 = (80LL<<40);

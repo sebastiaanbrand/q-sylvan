@@ -23,7 +23,6 @@
 //#include <qsylvan_gates_mtbdd_mpc.h>
 //#include <qsylvan_gates.h>
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif /* __cplusplus */

@@ -206,88 +206,67 @@ qmdd_create_single_qubit_gates_same(BDDVAR n, gate_id_t gateid)
 }
 
 QMDD
-qmdd_create_controlled_gate(BDDVAR n, BDDVAR c, BDDVAR t, gate_id_t gateid)
+_qmdd_create_cgate(BDDVAR n, BDDVAR c1, BDDVAR c2, BDDVAR c3, BDDVAR t, gate_id_t gateid)
 {
-    // for now, assume t > c
-    assert(t > c);
-    // Start at terminal and build backwards
-    QMDD prev = aadd_bundle(AADD_TERMINAL, AADD_ONE);
-    QMDD branch0 = AADD_TERMINAL, branch1 = AADD_TERMINAL;
-    for (int k = n-1; k>= 0; k--) {
-        if ((unsigned int)k > t || (unsigned int) k < c) {
-            prev = qmdd_stack_matrix(prev, k, GATEID_I);
-        }
-        else if ((unsigned int) k == t) {
-            branch0 = qmdd_stack_matrix(prev, k, GATEID_I);
-            branch1 = qmdd_stack_matrix(prev, k, gateid);
-        }
-        else if ((unsigned int) k < t && (unsigned int) k > c) {
-            branch0 = qmdd_stack_matrix(branch0, k, GATEID_I);
-            branch1 = qmdd_stack_matrix(branch1, k, GATEID_I);
-        }
-        else if ((unsigned int) k == c) {
-            prev = qmdd_stack_control(branch0, branch1, k);
-        }
-        else {
-            assert("all cases should have been covered" && false);
-        }
-    }
-    return prev;
+    int *c_options = malloc(sizeof(int)*(n+1));
+    for (uint32_t k = 0; k < n; k++) c_options[k] = -1;
+    if (c1 != AADD_INVALID_VAR && c1 < n) c_options[c1] = 1;
+    if (c2 != AADD_INVALID_VAR && c2 < n) c_options[c2] = 1;
+    if (c3 != AADD_INVALID_VAR && c3 < n) c_options[c3] = 1;
+    if (t  != AADD_INVALID_VAR && t  < n) c_options[t] = 2;
+    QMDD gate_matrix = qmdd_create_multi_cgate(n, c_options, gateid);
+    free(c_options);
+    return gate_matrix;
 }
 
 QMDD
-qmdd_create_multi_cgate_rec(BDDVAR n, int *c_options, gate_id_t gateid, BDDVAR k)
+qmdd_create_multi_cgate(BDDVAR n, int *c_options, gate_id_t gateid)
 {
-    // (assumes controls above target)
     // c_options[k] = -1 -> ignore qubit k (apply I)
     // c_options[k] =  0 -> control on q_k = |0>
     // c_options[k] =  1 -> control on q_k = |1>
     // c_options[k] =  2 -> target qubit (for now assume 1 target)
 
-    // Terminal case
-    if (k == n) {
-        return aadd_bundle(AADD_TERMINAL, AADD_ONE);
-    }
+    // C_1 C_2 C_3 U_0 =  U \tensor |111><111| +    (U_proj)
+    //                    I^{\tensor 4} +           (I)
+    //                   -I \tensor |111><111|      (proj)
 
-    // TODO: catching GATEID_I avoids exp number of recrusive calls, but this 
-    // entire function might be handled in a better way(?)
-    if (gateid == GATEID_I) {
-        QMDD identities = aadd_bundle(AADD_TERMINAL, AADD_ONE);
-        for (int j = n-1; j >= (int) k; j--) {
-            identities = qmdd_stack_matrix(identities, j, GATEID_I);
+    // TODO: protect from gc?
+    QMDD U_proj = aadd_bundle(AADD_TERMINAL, AADD_ONE);
+    QMDD proj   = aadd_bundle(AADD_TERMINAL, AADD_ONE);
+    QMDD I      = qmdd_create_all_identity_matrix(n);
+
+    for (int k = n-1; k >= 0; k--) {
+        // -1 : Ignore qubit (apply I)
+        if (c_options[k] == -1) {
+            U_proj = qmdd_stack_matrix(U_proj, k, GATEID_I);
+            proj   = qmdd_stack_matrix(proj,   k, GATEID_I);
         }
-        return identities;
+        // 0 : control on q_k = |0>
+        else if (c_options[k] == 0) {
+            U_proj = qmdd_stack_matrix(U_proj, k, GATEID_proj0);
+            proj   = qmdd_stack_matrix(proj,   k, GATEID_proj0);
+        }
+        // 1 : control on q_k = |1>
+        else if (c_options[k] == 1) {
+            U_proj = qmdd_stack_matrix(U_proj, k, GATEID_proj1);
+            proj   = qmdd_stack_matrix(proj,   k, GATEID_proj1);
+        }
+        // 2 : target qubit
+        else if (c_options[k] == 2) {
+            U_proj = qmdd_stack_matrix(U_proj, k, gateid);
+            proj   = qmdd_stack_matrix(proj,   k, GATEID_I);
+        }
+        else {
+            printf("Invalid option %d for qubit %d (options = {-1,0,1,2}\n", c_options[k], k);
+            exit(1);
+        }
     }
 
-    // Recursively build matrix
-    BDDVAR next_k = k + 1;
+    // multiply root edge of proj with -1
+    proj = aadd_bundle(AADD_TARGET(proj), wgt_neg(AADD_WEIGHT(proj)));
 
-    // -1 : Ignore qubit (apply I)
-    if (c_options[k] == -1) {
-        QMDD below = qmdd_create_multi_cgate_rec(n, c_options, gateid, next_k);
-        return qmdd_stack_matrix(below, k, GATEID_I);
-    }
-    // 0 : control on q_k = |0> (apply gateid to low branch)
-    else if (c_options[k] == 0) {
-        QMDD case0 = qmdd_create_multi_cgate_rec(n, c_options, gateid, next_k);
-        QMDD case1 = qmdd_create_multi_cgate_rec(n, c_options, GATEID_I, next_k);
-        return qmdd_stack_control(case0, case1, k);
-    }
-    // 1 : control on q_k = |1> (apply gateid to high branch)
-    else if (c_options[k] == 1) {
-        QMDD case0 = qmdd_create_multi_cgate_rec(n, c_options, GATEID_I, next_k);
-        QMDD case1 = qmdd_create_multi_cgate_rec(n, c_options, gateid, next_k);
-        return qmdd_stack_control(case0, case1, k);
-    }
-    // 2 : target qubit
-    else if (c_options[k] == 2) {
-        QMDD below = qmdd_create_multi_cgate_rec(n, c_options, gateid, next_k);
-        return qmdd_stack_matrix(below, k, gateid);
-    }
-    else {
-        printf("Invalid option %d for qubit %d (options = {-1,0,1,2}\n", c_options[k], k);
-        exit(1);
-    }
+    return aadd_plus(U_proj, aadd_plus(I, proj));
 }
 
 QMDD
@@ -354,6 +333,28 @@ qmdd_do_before_gate(QMDD* qmdd)
     qmdd_stats_log(*qmdd);
 }
 
+static void swap(BDDVAR *a, BDDVAR *b)
+{
+    BDDVAR tmp = *a;
+    *a = *b;
+    *b = tmp;
+}
+
+static bool
+check_ctrls_before_targ(BDDVAR *c1, BDDVAR *c2, BDDVAR *c3, BDDVAR t)
+{
+    // sort controls
+    if (*c1 > *c3) swap(c1, c2);
+    if (*c1 > *c2) swap(c1, c2);
+    if (*c2 > *c3) swap(c2, c3);
+
+    // check if controls before target
+    if (*c1 != AADD_INVALID_VAR && *c1 > t) return false;
+    if (*c2 != AADD_INVALID_VAR && *c2 > t) return false;
+    if (*c3 != AADD_INVALID_VAR && *c3 > t) return false;
+    return true;
+}
+
 /* Wrapper for applying a single qubit gate. */
 TASK_IMPL_3(QMDD, qmdd_gate, QMDD, qmdd, gate_id_t, gate, BDDVAR, target)
 {
@@ -361,28 +362,20 @@ TASK_IMPL_3(QMDD, qmdd_gate, QMDD, qmdd, gate_id_t, gate, BDDVAR, target)
     return qmdd_gate_rec(qmdd, gate, target);
 }
 
-/* Wrapper for applying a controlled gate with 1 control qubit. */
-TASK_IMPL_4(QMDD, qmdd_cgate, QMDD, qmdd, gate_id_t, gate, BDDVAR, c, BDDVAR, t)
+/* Wrapper for applying controlled gates with 1, 2, or 3 control qubits. */
+QMDD _qmdd_cgate(QMDD state, gate_id_t gate, BDDVAR c1, BDDVAR c2, BDDVAR c3, BDDVAR t, BDDVAR n)
 {
-    qmdd_do_before_gate(&qmdd);
-    BDDVAR cs[4] = {c, AADD_INVALID_VAR, AADD_INVALID_VAR, AADD_INVALID_VAR};
-    return qmdd_cgate_rec(qmdd, gate, cs, t);
-}
+    qmdd_do_before_gate(&state);
 
-/* Wrapper for applying a controlled gate with 2 control qubits. */
-TASK_IMPL_5(QMDD, qmdd_cgate2, QMDD, qmdd, gate_id_t, gate, BDDVAR, c1, BDDVAR, c2, BDDVAR, t)
-{
-    qmdd_do_before_gate(&qmdd);
-    BDDVAR cs[4] = {c1, c2, AADD_INVALID_VAR, AADD_INVALID_VAR};
-    return qmdd_cgate_rec(qmdd, gate, cs, t);
-}
-
-/* Wrapper for applying a controlled gate with 3 control qubits. */
-TASK_IMPL_6(QMDD, qmdd_cgate3, QMDD, qmdd, gate_id_t, gate, BDDVAR, c1, BDDVAR, c2, BDDVAR, c3, BDDVAR, t)
-{
-    qmdd_do_before_gate(&qmdd);
-    BDDVAR cs[4] = {c1, c2, c3, AADD_INVALID_VAR}; // last pos is a buffer
-    return qmdd_cgate_rec(qmdd, gate, cs, t);
+    if (check_ctrls_before_targ(&c1, &c2, &c3, t)) {
+        BDDVAR cs[4] = {c1, c2, c3, AADD_INVALID_VAR}; // last pos is to mark end
+        return qmdd_cgate_rec(state, gate, cs, t);
+    }
+    else {
+        assert(n != 0 && "ERROR: when ctrls > targ, nqubits must be passed to cgate() function.");
+        QMDD gate_matrix = _qmdd_create_cgate(n, c1, c2, c3, t, gate);
+        return aadd_matvec_mult(gate_matrix, state, n);
+    }
 }
 
 /* Wrapper for applying a controlled gate where the controls are a range. */
@@ -425,16 +418,14 @@ TASK_IMPL_3(QMDD, qmdd_gate_rec, QMDD, q, gate_id_t, gate, BDDVAR, target)
         high1 = aadd_bundle(AADD_TARGET(low), a_u10);
         high2 = aadd_bundle(AADD_TARGET(high),b_u11);
         aadd_refs_spawn(SPAWN(aadd_plus, high1, high2));
-        low = CALL(aadd_plus, low1, low2);
-        aadd_refs_push(low);
+        low = aadd_refs_push(CALL(aadd_plus, low1, low2));
         high = aadd_refs_sync(SYNC(aadd_plus));
         aadd_refs_pop(1);
         res = aadd_makenode(target, low, high);
     }
     else { // var < target: not at target qubit yet, recursive calls down
         aadd_refs_spawn(SPAWN(qmdd_gate_rec, high, gate, target));
-        low = CALL(qmdd_gate_rec, low, gate, target);
-        aadd_refs_push(low);
+        low = aadd_refs_push(CALL(qmdd_gate_rec, low, gate, target));
         high = aadd_refs_sync(SYNC(qmdd_gate_rec));
         aadd_refs_pop(1);
         res  = aadd_makenode(var, low, high);
@@ -485,15 +476,12 @@ TASK_IMPL_5(QMDD, qmdd_cgate_rec, QMDD, q, gate_id_t, gate, BDDVAR*, cs, uint32_
     // If current node is (one of) the control qubit(s), 
     // control on q_c = |1> (high edge)
     if (var == c) {
-        ci++;
-        high = CALL(qmdd_cgate_rec, high, gate, cs, ci, t);
-        ci--;
+        high = CALL(qmdd_cgate_rec, high, gate, cs, ci+1, t);
     }
     // Not at control qubit yet, apply to both childeren.
     else {
         aadd_refs_spawn(SPAWN(qmdd_cgate_rec, high, gate, cs, ci, t));
-        low = CALL(qmdd_cgate_rec, low, gate, cs, ci, t);
-        aadd_refs_push(low);
+        low = aadd_refs_push(CALL(qmdd_cgate_rec, low, gate, cs, ci, t));
         high = aadd_refs_sync(SYNC(qmdd_cgate_rec));
         aadd_refs_pop(1);
     }
@@ -557,8 +545,7 @@ TASK_IMPL_6(QMDD, qmdd_cgate_range_rec, QMDD, q, gate_id_t, gate, BDDVAR, c_firs
     // Not at first control qubit yet, apply to both children
     if (var < c_first) {
         aadd_refs_spawn(SPAWN(qmdd_cgate_range_rec, high, gate, c_first, c_last, t, nextvar));
-        low = CALL(qmdd_cgate_range_rec, low, gate, c_first, c_last, t, var);
-        aadd_refs_push(low);
+        low = aadd_refs_push(CALL(qmdd_cgate_range_rec, low, gate, c_first, c_last, t, nextvar));
         high = aadd_refs_sync(SYNC(qmdd_cgate_range_rec));
         aadd_refs_pop(1);
     }
@@ -851,8 +838,7 @@ qmdd_measure_q0(QMDD qmdd, BDDVAR nvars, int *m, double *p)
     prob_low  *= prob_root;
     prob_high *= prob_root;
     if (fabs(prob_low + prob_high - 1.0) > 1e-6) {
-        printf("WARNING: prob sum = %.10lf (%.5lf + %.5lf)\n", prob_low + prob_high, prob_low, prob_high);
-        //assert("probabilities don't sum to 1" && false);
+        fprintf(stderr, "WARNING: prob sum = %.14lf\n", prob_low + prob_high);
     }
 
     // flip a coin
@@ -918,8 +904,7 @@ qmdd_measure_all(QMDD qmdd, BDDVAR n, bool* ms, double *p)
         prob_low  = prob_low  * prob_roots / prob_path;
 
         if (fabs(prob_low + prob_high - 1.0) > sylvan_edge_weights_tolerance()) {
-            printf("prob sum = %.10lf\n", prob_low + prob_high);
-            // printf("probabilities don't sum to 1" && false);
+            fprintf(stderr, "WARNING: prob sum = %.14lf\n", prob_low + prob_high);
         }
 
         // flip a coin

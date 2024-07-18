@@ -131,6 +131,14 @@ qmdd_gates_init()
     gates[k][0] = AADD_ONE;  gates[k][1] = AADD_ZERO;
     gates[k][2] = AADD_ZERO; gates[k][3] = AADD_ONE;
 
+    k = GATEID_proj0;
+    gates[k][0] = AADD_ONE;  gates[k][1] = AADD_ZERO;
+    gates[k][2] = AADD_ZERO; gates[k][3] = AADD_ZERO;
+
+    k = GATEID_proj1;
+    gates[k][0] = AADD_ZERO; gates[k][1] = AADD_ZERO;
+    gates[k][2] = AADD_ZERO; gates[k][3] = AADD_ONE;
+
     k = GATEID_X;
     gates[k][0] = AADD_ZERO; gates[k][1] = AADD_ONE;
     gates[k][2] = AADD_ONE;  gates[k][3] = AADD_ZERO;

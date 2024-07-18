@@ -52,7 +52,7 @@ VOID_TASK_IMPL_1(aadd_gc_mark_rec, AADD, a)
     if (llmsset_mark(nodes, AADD_TARGET(a))) {
         aaddnode_t n = AADD_GETNODE(AADD_TARGET(a));
         SPAWN(aadd_gc_mark_rec, aaddnode_getptrlow(n));
-        RUN(aadd_gc_mark_rec, aaddnode_getptrhigh(n));
+        CALL(aadd_gc_mark_rec, aaddnode_getptrhigh(n));
         SYNC(aadd_gc_mark_rec);
     }
 }
@@ -143,7 +143,7 @@ VOID_TASK_2(aadd_refs_mark_p_par, const AADD**, begin, size_t, count)
         }
     } else {
         SPAWN(aadd_refs_mark_p_par, begin, count / 2);
-        RUN(aadd_refs_mark_p_par, begin + (count / 2), count - count / 2);
+        CALL(aadd_refs_mark_p_par, begin + (count / 2), count - count / 2);
         SYNC(aadd_refs_mark_p_par);
     }
 }
@@ -177,7 +177,7 @@ VOID_TASK_2(aadd_refs_mark_s_par, aadd_refs_task_t, begin, size_t, count)
     } else {
         if (!TASK_IS_STOLEN(begin->t)) return;
         SPAWN(aadd_refs_mark_s_par, begin, count / 2);
-        RUN(aadd_refs_mark_s_par, begin + (count / 2), count - count / 2);
+        CALL(aadd_refs_mark_s_par, begin + (count / 2), count - count / 2);
         SYNC(aadd_refs_mark_s_par);
     }
 }
@@ -187,7 +187,7 @@ VOID_TASK_0(aadd_refs_mark_task)
     LOCALIZE_THREAD_LOCAL(aadd_refs_key, aadd_refs_internal_t);
     SPAWN(aadd_refs_mark_p_par, aadd_refs_key->pbegin, aadd_refs_key->pcur-aadd_refs_key->pbegin);
     SPAWN(aadd_refs_mark_r_par, aadd_refs_key->rbegin, aadd_refs_key->rcur-aadd_refs_key->rbegin);
-    RUN(aadd_refs_mark_s_par, aadd_refs_key->sbegin, aadd_refs_key->scur-aadd_refs_key->sbegin);
+    CALL(aadd_refs_mark_s_par, aadd_refs_key->sbegin, aadd_refs_key->scur-aadd_refs_key->sbegin);
     SYNC(aadd_refs_mark_r_par);
     SYNC(aadd_refs_mark_p_par);
 }
@@ -393,7 +393,7 @@ TASK_IMPL_1(AADD, _fill_new_wgt_table, AADD, a)
     aaddnode_t n = AADD_GETNODE(AADD_TARGET(a));
     aaddnode_getchilderen(n, &low, &high);
     aadd_refs_spawn(SPAWN(_fill_new_wgt_table, high));
-    low = RUN(_fill_new_wgt_table, low);
+    low = CALL(_fill_new_wgt_table, low);
     aadd_refs_push(low);
     high = aadd_refs_sync(SYNC(_fill_new_wgt_table));
     aadd_refs_pop(1);
@@ -484,11 +484,14 @@ sylvan_init_aadd(size_t min_wgt_tablesize, size_t max_wgt_tablesize,
     weight_norm_strat = norm_strat;
     switch (norm_strat)
     {
-    case NORM_LARGEST:
-        normalize_weights = &wgt_norm_largest;
-        break;
     case NORM_LOW:
         normalize_weights = &wgt_norm_low;
+        break;
+    case NORM_MAX:
+        normalize_weights = &wgt_norm_max;
+        break;
+    case NORM_MIN:
+        normalize_weights = &wgt_norm_min;
         break;
     case NORM_L2:
         normalize_weights = wgt_norm_L2;
@@ -547,16 +550,20 @@ aadd_getvalue(AADD a, bool* path)
 }
 
 static void
-aadd_do_before_mult()
+aadd_do_before_mult(AADD *a, AADD *b)
 {
     // check if edge weight table needs gc
     if (auto_gc_wgt_table && aadd_test_gc_wgt_table()) {
+        aadd_protect(a);
+        aadd_protect(b);
         aadd_gc_wgt_table();
+        aadd_unprotect(a);
+        aadd_unprotect(b);
     }
 }
 
 static void
-norm_plus_cache_key(AADD a, AADD b, AADD *x, AADD *y)
+norm_commuting_cache_key(AADD a, AADD b, AADD *x, AADD *y)
 {
     if (a < b) {
         *x = a;
@@ -573,6 +580,8 @@ TASK_IMPL_2(AADD, aadd_plus, AADD, a, AADD, b)
     // Trivial cases
     if(AADD_WEIGHT(a) == AADD_ZERO) return b;
     if(AADD_WEIGHT(b) == AADD_ZERO) return a;
+
+    sylvan_gc_test();
 
     // Get var(a) and var(b)
     AADD low_a, low_b, high_a, high_b, res;
@@ -599,7 +608,7 @@ TASK_IMPL_2(AADD, aadd_plus, AADD, a, AADD, b)
 
     // Check cache
     AADD x, y;
-    norm_plus_cache_key(a, b, &x, &y); // (a+b) = (b+a) so normalize cache key
+    norm_commuting_cache_key(a, b, &x, &y); // (a+b) = (b+a) so normalize cache key
     bool cachenow = ((topvar % granularity) == 0);
     if (cachenow) {
         if (cache_get3(CACHE_AADD_PLUS, sylvan_false, x, y, &res)) {
@@ -614,18 +623,16 @@ TASK_IMPL_2(AADD, aadd_plus, AADD, a, AADD, b)
     wgt_ha = wgt_mul(AADD_WEIGHT(a), AADD_WEIGHT(high_a));
     wgt_lb = wgt_mul(AADD_WEIGHT(b), AADD_WEIGHT(low_b));
     wgt_hb = wgt_mul(AADD_WEIGHT(b), AADD_WEIGHT(high_b));
-    low_a  = aadd_bundle(AADD_TARGET(low_a),  wgt_la);
-    high_a = aadd_bundle(AADD_TARGET(high_a), wgt_ha);
-    low_b  = aadd_bundle(AADD_TARGET(low_b),  wgt_lb);
-    high_b = aadd_bundle(AADD_TARGET(high_b), wgt_hb);
+    low_a  = aadd_refs_push(aadd_bundle(AADD_TARGET(low_a),  wgt_la));
+    high_a = aadd_refs_push(aadd_bundle(AADD_TARGET(high_a), wgt_ha));
+    low_b  = aadd_refs_push(aadd_bundle(AADD_TARGET(low_b),  wgt_lb));
+    high_b = aadd_refs_push(aadd_bundle(AADD_TARGET(high_b), wgt_hb));
 
     // Recursive calls down
-    AADD low, high;
     aadd_refs_spawn(SPAWN(aadd_plus, high_a, high_b));
-    low = RUN(aadd_plus, low_a, low_b);
-    aadd_refs_push(low);
-    high = aadd_refs_sync(SYNC(aadd_plus));
-    aadd_refs_pop(1);
+    AADD low = aadd_refs_push(CALL(aadd_plus, low_a, low_b));
+    AADD high = aadd_refs_sync(SYNC(aadd_plus));
+    aadd_refs_pop(5);
 
     // Put in cache, return
     res = aadd_makenode(topvar, low, high);
@@ -641,15 +648,15 @@ TASK_IMPL_2(AADD, aadd_plus, AADD, a, AADD, b)
 /* Wrapper for matrix vector multiplication. */
 TASK_IMPL_3(AADD, aadd_matvec_mult, AADD, mat, AADD, vec, BDDVAR, nvars)
 {
-    aadd_do_before_mult();
-    return RUN(aadd_matvec_mult_rec, mat, vec, nvars, 0);
+    aadd_do_before_mult(&mat, &vec);
+    return CALL(aadd_matvec_mult_rec, mat, vec, nvars, 0);
 }
 
 /* Wrapper for matrix vector multiplication. */
 TASK_IMPL_3(AADD, aadd_matmat_mult, AADD, a, AADD, b, BDDVAR, nvars)
 {
-    aadd_do_before_mult();
-    return RUN(aadd_matmat_mult_rec, a, b, nvars, 0);
+    aadd_do_before_mult(&a, &b);
+    return CALL(aadd_matmat_mult_rec, a, b, nvars, 0);
 }
 
 TASK_IMPL_4(AADD, aadd_matvec_mult_rec, AADD, mat, AADD, vec, BDDVAR, nvars, BDDVAR, nextvar)
@@ -665,6 +672,8 @@ TASK_IMPL_4(AADD, aadd_matvec_mult_rec, AADD, mat, AADD, vec, BDDVAR, nvars, BDD
         AADD_WGT prod = wgt_mul(AADD_WEIGHT(mat), AADD_WEIGHT(vec));
         return aadd_bundle(AADD_TERMINAL, prod);
     }
+
+    sylvan_gc_test();
 
     // Check cache
     AADD res;
@@ -690,26 +699,25 @@ TASK_IMPL_4(AADD, aadd_matvec_mult_rec, AADD, mat, AADD, vec, BDDVAR, nvars, BDD
     aadd_get_topvar(mat_high,2*nextvar+1, &var, &u01, &u11);
 
     // 2. propagate "in-between" weights of matrix AADD
-    u00 = aadd_bundle(AADD_TARGET(u00), wgt_mul(AADD_WEIGHT(u00), AADD_WEIGHT(mat_low)));
-    u10 = aadd_bundle(AADD_TARGET(u10), wgt_mul(AADD_WEIGHT(u10), AADD_WEIGHT(mat_low)));
-    u01 = aadd_bundle(AADD_TARGET(u01), wgt_mul(AADD_WEIGHT(u01), AADD_WEIGHT(mat_high)));
-    u11 = aadd_bundle(AADD_TARGET(u11), wgt_mul(AADD_WEIGHT(u11), AADD_WEIGHT(mat_high)));
+    u00 = aadd_refs_push(aadd_bundle(AADD_TARGET(u00), wgt_mul(AADD_WEIGHT(u00), AADD_WEIGHT(mat_low))));
+    u10 = aadd_refs_push(aadd_bundle(AADD_TARGET(u10), wgt_mul(AADD_WEIGHT(u10), AADD_WEIGHT(mat_low))));
+    u01 = aadd_refs_push(aadd_bundle(AADD_TARGET(u01), wgt_mul(AADD_WEIGHT(u01), AADD_WEIGHT(mat_high))));
+    u11 = aadd_refs_push(aadd_bundle(AADD_TARGET(u11), wgt_mul(AADD_WEIGHT(u11), AADD_WEIGHT(mat_high))));
+    aadd_refs_push(vec_low);
+    aadd_refs_push(vec_high);
 
     // 3. recursive calls (4 tasks: SPAWN 3, CALL 1)
     // |u00 u01| |vec_low | = vec_low|u00| + vec_high|u01|
     // |u10 u11| |vec_high|          |u10|           |u11|
     AADD res_low00, res_low10, res_high01, res_high11;
-    nextvar++;
-    aadd_refs_spawn(SPAWN(aadd_matvec_mult_rec, u00, vec_low,  nvars, nextvar)); // 1
-    aadd_refs_spawn(SPAWN(aadd_matvec_mult_rec, u10, vec_low,  nvars, nextvar)); // 2
-    aadd_refs_spawn(SPAWN(aadd_matvec_mult_rec, u01, vec_high, nvars, nextvar)); // 3
-    res_high11 = RUN(aadd_matvec_mult_rec, u11, vec_high, nvars, nextvar);
-    aadd_refs_push(res_high11);
+    aadd_refs_spawn(SPAWN(aadd_matvec_mult_rec, u00, vec_low,  nvars, nextvar+1)); // 1
+    aadd_refs_spawn(SPAWN(aadd_matvec_mult_rec, u10, vec_low,  nvars, nextvar+1)); // 2
+    aadd_refs_spawn(SPAWN(aadd_matvec_mult_rec, u01, vec_high, nvars, nextvar+1)); // 3
+    res_high11 = aadd_refs_push(CALL(aadd_matvec_mult_rec, u11, vec_high, nvars, nextvar+1)); // gc called in here
     res_high01 = aadd_refs_sync(SYNC(aadd_matvec_mult_rec)); // 3
     res_low10  = aadd_refs_sync(SYNC(aadd_matvec_mult_rec)); // 2
-    res_low00  = aadd_refs_sync(SYNC(aadd_matvec_mult_rec)); // 1
-    aadd_refs_pop(1);
-    nextvar--;
+    res_low00  = aadd_refs_sync(SYNC(aadd_matvec_mult_rec)); // 1 // gc called in here
+    aadd_refs_pop(6);
 
     // 4. gather results of multiplication
     AADD res_low, res_high;
@@ -717,7 +725,7 @@ TASK_IMPL_4(AADD, aadd_matvec_mult_rec, AADD, mat, AADD, vec, BDDVAR, nvars, BDD
     res_high = aadd_makenode(nextvar, res_high01, res_high11);
 
     // 5. add resulting AADDs
-    res = RUN(aadd_plus, res_low, res_high);
+    res = CALL(aadd_plus, res_low, res_high); // gc called in here
 
     // Insert in cache (before multiplication w/ root weights)
     if (cachenow) {
@@ -746,6 +754,8 @@ TASK_IMPL_4(AADD, aadd_matmat_mult_rec, AADD, a, AADD, b, BDDVAR, nvars, BDDVAR,
         AADD_WGT prod = wgt_mul(AADD_WEIGHT(a), AADD_WEIGHT(b));
         return aadd_bundle(AADD_TERMINAL, prod);
     }
+
+    sylvan_gc_test();
 
     // Check cache
     AADD res;
@@ -786,42 +796,35 @@ TASK_IMPL_4(AADD, aadd_matmat_mult_rec, AADD, a, AADD, b, BDDVAR, nvars, BDDVAR,
     // |a00 a01| |b00 b01| = b00|a00| + b10|a01| , b01|a00| + b11|a01|
     // |a10 a11| |b10 b11|      |a10|      |a11|      |a10|      |a11|
     AADD a00_b00, a00_b01, a10_b00, a10_b01, a01_b10, a01_b11, a11_b10, a11_b11;
-    nextvar++;
-    aadd_refs_spawn(SPAWN(aadd_matmat_mult_rec, a00, b00, nvars, nextvar)); // 1
-    aadd_refs_spawn(SPAWN(aadd_matmat_mult_rec, a00, b01, nvars, nextvar)); // 2
-    aadd_refs_spawn(SPAWN(aadd_matmat_mult_rec, a10, b00, nvars, nextvar)); // 3
-    aadd_refs_spawn(SPAWN(aadd_matmat_mult_rec, a10, b01, nvars, nextvar)); // 4
-    aadd_refs_spawn(SPAWN(aadd_matmat_mult_rec, a01, b10, nvars, nextvar)); // 5
-    aadd_refs_spawn(SPAWN(aadd_matmat_mult_rec, a01, b11, nvars, nextvar)); // 6
-    aadd_refs_spawn(SPAWN(aadd_matmat_mult_rec, a11, b10, nvars, nextvar)); // 7
-    a11_b11 = RUN(aadd_matmat_mult_rec, a11, b11, nvars, nextvar);
-    aadd_refs_push(a11_b11);
-    a11_b10 = aadd_refs_sync(SYNC(aadd_matmat_mult_rec)); // 7
-    a01_b11 = aadd_refs_sync(SYNC(aadd_matmat_mult_rec)); // 6
+    aadd_refs_spawn(SPAWN(aadd_matmat_mult_rec, a00, b00, nvars, nextvar+1)); // 1
+    aadd_refs_spawn(SPAWN(aadd_matmat_mult_rec, a10, b00, nvars, nextvar+1)); // 2
+    aadd_refs_spawn(SPAWN(aadd_matmat_mult_rec, a00, b01, nvars, nextvar+1)); // 3
+    aadd_refs_spawn(SPAWN(aadd_matmat_mult_rec, a10, b01, nvars, nextvar+1)); // 4
+    aadd_refs_spawn(SPAWN(aadd_matmat_mult_rec, a01, b10, nvars, nextvar+1)); // 5
+    aadd_refs_spawn(SPAWN(aadd_matmat_mult_rec, a11, b10, nvars, nextvar+1)); // 6
+    aadd_refs_spawn(SPAWN(aadd_matmat_mult_rec, a01, b11, nvars, nextvar+1)); // 7
+    a11_b11 = aadd_refs_push(CALL(aadd_matmat_mult_rec, a11, b11, nvars, nextvar+1)); // 8
+    a01_b11 = aadd_refs_sync(SYNC(aadd_matmat_mult_rec)); aadd_refs_pop(1); // 7
+    AADD rh2 = aadd_refs_push(aadd_makenode(2*nextvar+1, a01_b11, a11_b11));
+    a11_b10 = aadd_refs_sync(SYNC(aadd_matmat_mult_rec)); // 6
     a01_b10 = aadd_refs_sync(SYNC(aadd_matmat_mult_rec)); // 5
+    AADD lh2 = aadd_refs_push(aadd_makenode(2*nextvar+1, a01_b10, a11_b10));
     a10_b01 = aadd_refs_sync(SYNC(aadd_matmat_mult_rec)); // 4
-    a10_b00 = aadd_refs_sync(SYNC(aadd_matmat_mult_rec)); // 3
-    a00_b01 = aadd_refs_sync(SYNC(aadd_matmat_mult_rec)); // 2
+    a00_b01 = aadd_refs_sync(SYNC(aadd_matmat_mult_rec)); // 3
+    AADD rh1 = aadd_refs_push(aadd_makenode(2*nextvar+1, a00_b01, a10_b01));
+    a10_b00 = aadd_refs_sync(SYNC(aadd_matmat_mult_rec)); // 2
     a00_b00 = aadd_refs_sync(SYNC(aadd_matmat_mult_rec)); // 1
-    aadd_refs_pop(1);
-    nextvar--;
+    AADD lh1 = aadd_refs_push(aadd_makenode(2*nextvar+1, a00_b00, a10_b00));
 
-    // 4. gather results of multiplication
-    AADD lh1, lh2, rh1, rh2;
-    lh1 = aadd_makenode(2*nextvar+1, a00_b00, a10_b00);
-    lh2 = aadd_makenode(2*nextvar+1, a01_b10, a11_b10);
-    rh1 = aadd_makenode(2*nextvar+1, a00_b01, a10_b01);
-    rh2 = aadd_makenode(2*nextvar+1, a01_b11, a11_b11);
-
-    // 5. add resulting AADDs
+    // 4. add resulting AADDs
     AADD lh, rh;
     aadd_refs_spawn(SPAWN(aadd_plus, lh1, lh2));
     rh = CALL(aadd_plus, rh1, rh2);
     aadd_refs_push(rh);
     lh = aadd_refs_sync(SYNC(aadd_plus));
-    aadd_refs_pop(1);
+    aadd_refs_pop(5);
 
-    // 6. put left and right halves of matix together
+    // 5. put left and right halves of matix together
     res = aadd_makenode(2*nextvar, lh, rh);
 
     // Insert in cache
@@ -830,11 +833,66 @@ TASK_IMPL_4(AADD, aadd_matmat_mult_rec, AADD, a, AADD, b, BDDVAR, nvars, BDDVAR,
             sylvan_stats_count(AADD_MULT_CACHEDPUT);
     }
 
-    // 7. multiply w/ product of root weights
+    // 6. multiply w/ product of root weights
     AADD_WGT prod = wgt_mul(AADD_WEIGHT(a), AADD_WEIGHT(b));
     AADD_WGT new_weight = wgt_mul(prod, AADD_WEIGHT(res));
     res = aadd_bundle(AADD_TARGET(res), new_weight);
 
+    return res;
+}
+
+TASK_IMPL_4(AADD_WGT, aadd_inner_product, AADD, a, AADD, b, BDDVAR, nvars, BDDVAR, nextvar)
+{
+    if (AADD_WEIGHT(a) == AADD_ZERO) return AADD_ZERO;
+    if (AADD_WEIGHT(b) == AADD_ZERO) return AADD_ZERO;
+
+    // Terminal case: currently aadd_inner_product doesn't skip variables, 
+    // so when both point to terminal, both are scalars.
+    // TODO: allow for skipping variables (and multiply res w/ 2^{# skipped})
+    // (requires adding some wgt_from_int() function in wgt interface)
+    if (nextvar == nvars) {
+        return wgt_mul(AADD_WEIGHT(a), wgt_conj(AADD_WEIGHT(b)));
+    }
+
+    // Get var(a) and var(b)
+    AADD low_a, low_b, high_a, high_b;
+    BDDVAR topvar;
+
+    // For both a and b, get children of node with var=top{topvar(a),topvar(b)}
+    aadd_get_topvar(a, nextvar, &topvar, &low_a, &high_a);
+    aadd_get_topvar(b, nextvar, &topvar, &low_b, &high_b);
+
+    // Check cache
+    // TODO: norm cache key? (<a|b> = <b|a>^\dagger)
+    AADD_WGT res;
+    bool cachenow = ((topvar % granularity) == 0);
+    if (cachenow) {
+        if (cache_get4(CACHE_AADD_INPROD, AADD_TARGET(a), AADD_TARGET(b), nextvar, nvars, &res)) {
+            res = wgt_mul(res, AADD_WEIGHT(a));
+            res = wgt_mul(res, wgt_conj(AADD_WEIGHT(b)));
+            return res;
+        }
+    }
+    
+    // Recursive calls
+    aadd_refs_spawn(SPAWN(aadd_inner_product, high_a, high_b, nvars, nextvar+1));
+    AADD_WGT res_low = aadd_refs_push(CALL(aadd_inner_product, low_a, low_b, nvars, nextvar+1));
+    AADD_WGT res_high = aadd_refs_sync(SYNC(aadd_inner_product));
+    aadd_refs_pop(1);
+
+    res = wgt_add(res_low, res_high);
+
+    // Insert in cache (before multiplication w/ root weights)
+    if (cachenow) {
+        cache_put4(CACHE_AADD_INPROD, AADD_TARGET(a), AADD_TARGET(b), nextvar, nvars, res);
+    }
+
+    // Multiply result with product of weights of a and (conjugate of) b
+    // (Note that we can compute the complex conjugate of |b> by taking the 
+    // complex conjugate of all edge weights separately, since 
+    // (w1 • w2)* = (w2* • w1*) and for scalars (w2* • w1*) = (w1* • w2*).)
+    res = wgt_mul(res, AADD_WEIGHT(a));
+    res = wgt_mul(res, wgt_conj(AADD_WEIGHT(b)));
     return res;
 }
 

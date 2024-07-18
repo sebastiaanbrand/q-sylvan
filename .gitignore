@@ -23,3 +23,6 @@ CMakeFiles/
 CMakeCache.txt
 qsylvan.pc
 *.swp
+
+# Python stuff
+__pycache__/
