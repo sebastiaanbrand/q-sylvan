@@ -9,8 +9,23 @@
 
 # allow the parser to be included in other places as a library
 # (without compiling eval_expr.cpp again)
-add_library(qsylvan_qasm_parser)
-target_sources(qsylvan_qasm_parser 
+
+#add_library(qsylvan_qasm_parser)
+#target_sources(qsylvan_qasm_parser 
+#    PRIVATE
+#        simple_parser.cpp
+#        parse_math/eval_expr.cpp
+#    PUBLIC 
+#        simple_parser.h)
+#
+#add_executable(sim_qasm sim_qasm.c)
+#target_link_libraries(sim_qasm qsylvan qsylvan_qasm_parser)
+
+
+# QASM simulator with qmddd 
+
+add_library(qsylvan_qasm_parser_qmdd)
+target_sources(qsylvan_qasm_parser_qmdd 
     PRIVATE
         simple_parser.cpp
         parse_math/eval_expr.cpp
@@ -18,5 +33,18 @@ target_sources(qsylvan_qasm_parser
         simple_parser.h)
 
 add_executable(run_qasm_on_qmdd run_qasm_on_qmdd.c)
-target_link_libraries(run_qasm_on_qmdd qsylvan qsylvan_qasm_parser)
+target_link_libraries(run_qasm_on_qmdd qsylvan qsylvan_qasm_parser_qmdd)
 
+
+# QASM simulator with mtbdd
+
+add_library(qsylvan_qasm_parser_mtbdd)
+target_sources(qsylvan_qasm_parser_mtbdd 
+    PRIVATE
+        simple_parser.cpp
+        parse_math/eval_expr.cpp
+    PUBLIC 
+        simple_parser.h)
+
+add_executable(run_qasm_on_mtbdd run_qasm_on_mtbdd.c)
+target_link_libraries(run_qasm_on_mtbdd qsylvan qsylvan_qasm_parser_mtbdd)

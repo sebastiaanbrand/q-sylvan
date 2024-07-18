@@ -19,89 +19,99 @@
 #include <argp.h>
 #include <sys/time.h>
 
-#include "qsylvan.h"
-#include "simple_parser.h"
+#include <qsylvan.h>
+#include <qsylvan_simulator_mtbdd.h>
+#include <qsylvan_gates_mtbdd_mpc.h>
 
-/**********************<Arguments (configured via argp)>***********************/
+#include <sylvan_mpc.h>
+#include "simple_parser.h" // TODO: rename in qsylvan_qasm_parser.h
 
-static int workers = 1;
+/**
+ * 
+ * Arguments variables of command line interface (configured via argp).
+ * 
+ */
+static int workers = 1;         // Number of threads running on separate CPU core
 static int rseed = 0;
+static int precision = 128;
+static int rounding = 0;
+
 static bool count_nodes = false;
 static bool output_vector = false;
+
 static size_t min_tablesize = 1LL<<25;
 static size_t max_tablesize = 1LL<<25;
 static size_t min_cachesize = 1LL<<16;
 static size_t max_cachesize = 1LL<<16;
-static size_t wgt_tab_size = 1LL<<23;
-static double tolerance = 1e-14;
-static int wgt_table_type = COMP_HASHMAP;
-static int wgt_norm_strat = NORM_MAX;
-static bool wgt_inv_caching = true;
-static int reorder_qubits = 0;
+
 static char* qasm_inputfile = NULL;
 static char* json_outputfile = NULL;
 
-
+/**
+ * 
+ * Command Line Interface argument help list.
+ * 
+ */
 static struct argp_option options[] =
 {
     {"workers", 'w', "<workers>", 0, "Number of workers/threads (default=1)", 0},
-    {"rseed", 'r', "<random-seed>", 0, "Set random seed", 0},
-    {"norm-strat", 's', "<low|max|min|l2>", 0, "Edge weight normalization strategy", 0},
-    {"tol", 't', "<tolerance>", 0, "Tolerance for deciding edge weights equal (default=1e-14)", 0},
-    {"json", 'j', "<filename>", 0, "Write stats to given filename as json", 0},
+    {"rseed", 'r', "<random-seed>", 0, "Set random seed as integer", 0},
+    {"precision", 'p', "<number of bits>", 0, "Precision of mantissa multiprecision complex float in bits (default=128)", 0},
+    {"rounding", 'o', "<...>", 0, "Rounding strategy", 0},
+    {"json", 'j', "<filename>", 0, "Write statistics in json format to <filename>", 0},
     {"count-nodes", 'c', 0, 0, "Track maximum number of nodes", 0},
-    {"state-vector", 'v', 0, 0, "Also output the complete state vector", 0},
-    {"reorder", 10, 0, 0, "Reorders the qubits once such that (most) controls occur before targets in the variable order.", 0},
-    {"reorder-swaps", 11, 0, 0, "Reorders the qubits such that all controls occur before targets (requires inserting SWAP gates).", 0},
-    {"disable-inv-caching", 12, 0, 0, "Disable storing inverse of MUL and DIV in cache.", 0},
+    {"state-vector", 'v', 0, 0, "Show the complete state vector after simulation", 0},
     {0, 0, 0, 0, 0, 0}
 };
+
+/**
+ * 
+ * Command Line Interface argument processing.
+ * 
+ */
 
 static error_t
 parse_opt(int key, char *arg, struct argp_state *state)
 {
     switch (key) {
+
     case 'w':
         workers = atoi(arg);
         break;
+
     case 'r':
         rseed = atoi(arg);
         break;
-    case 's':
-        if (strcmp(arg, "low")==0) wgt_norm_strat = NORM_LOW;
-        else if (strcmp(arg, "max")==0) wgt_norm_strat = NORM_MAX;
-        else if (strcmp(arg, "min")==0) wgt_norm_strat = NORM_MIN;
-        else if (strcasecmp(arg, "l2")==0) wgt_norm_strat = NORM_L2;
-        else argp_usage(state);
+
+    case 'p': // Precision
+        precision = atoi(arg); // ASCII to integer, TODO: validate value
         break;
-    case 't':
-        tolerance = atof(arg);
+
+    case 'o': // Rounding
+        rounding = atoi(arg);  // ASCII to float, TODO: validate value
         break;
+
     case 'j':
         json_outputfile = arg;
         break;
+
     case 'c':
         count_nodes = true;
         break;
+
     case 'v':
         output_vector = true;
         break;
-    case 10:
-        reorder_qubits = 1;
-        break;
-    case 11:
-        reorder_qubits = 2;
-        break;
-    case 12:
-        wgt_inv_caching = false;
-        break;
+
     case ARGP_KEY_ARG:
         if (state->arg_num >= 1) argp_usage(state);
         qasm_inputfile = arg;
         break;
+
     case ARGP_KEY_END:
         if (state->arg_num < 1) argp_usage(state);
         break;
+
     default:
         return ARGP_ERR_UNKNOWN;
     }
@@ -109,24 +119,36 @@ parse_opt(int key, char *arg, struct argp_state *state)
 }
 static struct argp argp = { options, parse_opt, "<qasm_file>", 0, 0, 0, 0 };
 
-/*********************</Arguments (configured via argp)>***********************/
 
+/**
+ * 
+ * Statistics of the simulation.
+ * 
+ * Store statistical info in struct below.
+ * 
+ * NOTE: If there are only measurements at the end of the circuit, 'final_nodes' 
+ * and 'norm' will contain the node count and the norm of the state MTBDD before
+ * the measurements.
+ * 
+ */
 
-// NOTE: If there are only measurements at the end of the circuit, 'final_nodes' 
-// and 'norm' will contain the node count and the norm of the state QMDD before
-// the measurements.
 typedef struct stats_s {
-    uint64_t applied_gates;
-    uint64_t final_nodes;
-    uint64_t max_nodes;
-    uint64_t shots;
-    double simulation_time;
-    double norm;
-    QMDD final_state;
+
+    uint64_t applied_gates;     // Number of gates used
+    uint64_t final_nodes;       // node count before the measurements
+    uint64_t max_nodes;         // maximum of nodes >= final number of nodes
+    uint64_t shots;             // Number of measurements
+    double simulation_time;     // Time of simulation
+    double norm;                // Norm L2 of the final state (should be 1.00000), TODO: make mpc type of this ?
+    MTBDD final_state;          // State vector MTBDD after simulation
+
 } stats_t;
+
 stats_t stats;
 
-
+/**
+ * Print the statistics after the simulation the given file.
+ */
 void fprint_stats(FILE *stream, quantum_circuit_t* circuit)
 {
     fprintf(stream, "{\n");
@@ -138,10 +160,9 @@ void fprint_stats(FILE *stream, quantum_circuit_t* circuit)
         fprintf(stream, "  \"state_vector\": [\n");
         for (int k = 0; k < (1<<(circuit->qreg_size)); k++) {
             bool *x = int_to_bitarray(k, circuit->qreg_size, !(circuit->reversed_qubit_order));
-            complex_t c = qmdd_get_amplitude(stats.final_state, x, circuit->qreg_size);
+            MTBDD leaf = mtbdd_getvalue_of_path(stats.final_state, x); // Perhaps reverse qubit sequence on circuit->qreg_size, see gmdd_get_amplitude
             fprintf(stream, "    [\n");
-            fprintf(stream, "      %.16lf,\n", c.r);
-            fprintf(stream, "      %.16lf\n", c.i);
+            mpc_out_str(stream, MPC_BASE_OF_FLOAT, 3, (mpc_ptr)mtbdd_getvalue(leaf), MPC_ROUNDING);
             if (k == (1<<(circuit->qreg_size))-1)
                 fprintf(stream, "    ]\n");
             else
@@ -157,13 +178,11 @@ void fprint_stats(FILE *stream, quantum_circuit_t* circuit)
     fprintf(stream, "    \"max_nodes\": %" PRIu64 ",\n", stats.max_nodes);
     fprintf(stream, "    \"n_qubits\": %d,\n", circuit->qreg_size);
     fprintf(stream, "    \"norm\": %.5e,\n", stats.norm);
-    fprintf(stream, "    \"reorder\": %d,\n", reorder_qubits);
     fprintf(stream, "    \"seed\": %d,\n", rseed);
     fprintf(stream, "    \"shots\": %" PRIu64 ",\n", stats.shots);
     fprintf(stream, "    \"simulation_time\": %lf,\n", stats.simulation_time);
-    fprintf(stream, "    \"tolerance\": %.5e,\n", tolerance);
-    fprintf(stream, "    \"wgt_inv_caching\": %d,\n", wgt_inv_caching);
-    fprintf(stream, "    \"wgt_norm_strat\": %d,\n", wgt_norm_strat);
+    fprintf(stream, "    \"precision\": %d,\n", precision);
+    fprintf(stream, "    \"rounding\": %d,\n", rounding);
     fprintf(stream, "    \"workers\": %d\n", workers);
     fprintf(stream, "  }\n");
     fprintf(stream, "}\n");
@@ -178,61 +197,104 @@ wctime()
 }
 
 /**
- * Here we match the name of a gate in QASM to
- * the GATEID 
+ * Here we match the QASM name of a gate with the MTBDD of the corresponding gate.
+ * 
+ * If the gate is supported the state vector |fi> will be applied to the matrix of the gate:
+ * 
+ *      M = (I (x) ... (x) I (x) G (x) I (x) ... (x) I) |fi> 
+ * 
+ * with I the 2x2 identity matrix, G the 2x2 choosen gate and |fi> the state vector.
+ * 
+ * The function returns the corresponding MTBDD of M.
+ * 
+ * The type of the matrix elements are complex numbers based on the GNU multiprecision complex library mpc.
+ * 
  */
-QMDD apply_gate(QMDD state, quantum_op_t* gate, BDDVAR nqubits)
+MTBDD apply_gate(MTBDD state, quantum_op_t* gate, int n) // zie master branch
 {
-    // TODO: move this relation between parsed quantum_op and internal gate
-    // somewhere else?
     stats.applied_gates++;
 
-  if (strcmp(gate->name, "id") == 0) {
+    if (strcmp(gate->name, "id") == 0) {
         stats.applied_gates--;
         return state;
     }
+
     else if (strcmp(gate->name, "x") == 0) {
-        return qmdd_gate(state, GATEID_X, gate->targets[0]);
+        MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, X_dd);
+        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
     }
+
     else if (strcmp(gate->name, "y") == 0) {
-        return qmdd_gate(state, GATEID_Y, gate->targets[0]);
+        MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, Y_dd);
+        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
     }
+
     else if (strcmp(gate->name, "z") == 0) {
-        return qmdd_gate(state, GATEID_Z, gate->targets[0]);
+        MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, Z_dd);
+        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
     }
+
     else if (strcmp(gate->name, "h") == 0) {
-        return qmdd_gate(state, GATEID_H, gate->targets[0]);
+        MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, H_dd);
+        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
     }
+
     else if (strcmp(gate->name, "s") == 0) {
-        return qmdd_gate(state, GATEID_S, gate->targets[0]);
+        MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, S_dd);
+        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
     }
+
     else if (strcmp(gate->name, "sdg") == 0) {
-        return qmdd_gate(state, GATEID_Sdag, gate->targets[0]);
+        MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, S_dag_dd);
+        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
     }
+
     else if (strcmp(gate->name, "t") == 0) {
-        return qmdd_gate(state, GATEID_T, gate->targets[0]);
+        MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, T_dd);
+        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
     }
+
     else if (strcmp(gate->name, "tdg") == 0) {
-        return qmdd_gate(state, GATEID_Tdag, gate->targets[0]);
+        MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, T_dag_dd);
+        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
     }
+
     else if (strcmp(gate->name, "sx") == 0) {
-        return qmdd_gate(state, GATEID_sqrtX, gate->targets[0]);
+        MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, sqrt_X_dd);
+        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
     }
+
     else if (strcmp(gate->name, "sxdg") == 0) {
-        return qmdd_gate(state, GATEID_sqrtXdag, gate->targets[0]);
+        MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, sqrt_X_dag_dd);
+        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
     }
+    
     else if (strcmp(gate->name, "rx") == 0) {
-        return qmdd_gate(state, GATEID_Rx(gate->angle[0]), gate->targets[0]);
+        MTBDD Rx_dd = mtbdd_Rx(gate->angle[0]);
+        MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, Rx_dd);
+        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
     }
+    
     else if (strcmp(gate->name, "ry") == 0) {
-        return qmdd_gate(state, GATEID_Ry(gate->angle[0]), gate->targets[0]);
+        MTBDD Ry_dd = mtbdd_Ry(gate->angle[0]);
+        MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, Ry_dd);
+        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
     }
+
     else if (strcmp(gate->name, "rz") == 0) {
-        return qmdd_gate(state, GATEID_Rz(gate->angle[0]), gate->targets[0]);
+        MTBDD Rz_dd = mtbdd_Rz(gate->angle[0]);
+        MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, Rz_dd);
+        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
     }
+
     else if (strcmp(gate->name, "p") == 0) {
+        MTBDD P_dd = mtbdd_Phase(gate->angle[0]);
+        MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, P_dd);
+        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
         return qmdd_gate(state, GATEID_Phase(gate->angle[0]), gate->targets[0]);
     }
+
+/*    
     else if (strcmp(gate->name, "u2") == 0) {
         fl_t pi_over_2 = flt_acos(0.0);
         return qmdd_gate(state, GATEID_U(pi_over_2, gate->angle[0], gate->angle[1]), gate->targets[0]);
@@ -241,43 +303,43 @@ QMDD apply_gate(QMDD state, quantum_op_t* gate, BDDVAR nqubits)
         return qmdd_gate(state, GATEID_U(gate->angle[0], gate->angle[1], gate->angle[2]), gate->targets[0]);
     }
     else if (strcmp(gate->name, "cx") == 0) {
-        return qmdd_cgate(state, GATEID_X, gate->ctrls[0], gate->targets[0], nqubits);
+        return qmdd_cgate(state, GATEID_X, gate->ctrls[0], gate->targets[0]);
     }
     else if (strcmp(gate->name, "cy") == 0) {
-        return qmdd_cgate(state, GATEID_Y, gate->ctrls[0], gate->targets[0], nqubits);
+        return qmdd_cgate(state, GATEID_Y, gate->ctrls[0], gate->targets[0]);
     }
     else if (strcmp(gate->name, "cz") == 0) {
-        return qmdd_cgate(state, GATEID_Z, gate->ctrls[0], gate->targets[0], nqubits);
+        return qmdd_cgate(state, GATEID_Z, gate->ctrls[0], gate->targets[0]);
     }
     else if (strcmp(gate->name, "ch") == 0) {
-        return qmdd_cgate(state, GATEID_H, gate->ctrls[0], gate->targets[0], nqubits);
+        return qmdd_cgate(state, GATEID_H, gate->ctrls[0], gate->targets[0]);
     }
     else if (strcmp(gate->name, "csx") == 0) {
-        return qmdd_cgate(state, GATEID_sqrtX, gate->ctrls[0], gate->targets[0], nqubits);
+        return qmdd_cgate(state, GATEID_sqrtX, gate->ctrls[0], gate->targets[0]);
     }
     else if (strcmp(gate->name, "crx") == 0) {
-        return qmdd_cgate(state, GATEID_Rx(gate->angle[0]), gate->ctrls[0], gate->targets[0], nqubits);
+        return qmdd_cgate(state, GATEID_Rx(gate->angle[0]), gate->ctrls[0], gate->targets[0]);
     }
     else if (strcmp(gate->name, "cry") == 0) {
-        return qmdd_cgate(state, GATEID_Ry(gate->angle[0]), gate->ctrls[0], gate->targets[0], nqubits);
+        return qmdd_cgate(state, GATEID_Ry(gate->angle[0]), gate->ctrls[0], gate->targets[0]);
     }
     else if (strcmp(gate->name, "crz") == 0) {
-        return qmdd_cgate(state, GATEID_Rz(gate->angle[0]), gate->ctrls[0], gate->targets[0], nqubits);
+        return qmdd_cgate(state, GATEID_Rz(gate->angle[0]), gate->ctrls[0], gate->targets[0]);
     }
     else if (strcmp(gate->name, "cp") == 0) {
-        return qmdd_cgate(state, GATEID_Phase(gate->angle[0]), gate->ctrls[0], gate->targets[0], nqubits);
+        return qmdd_cgate(state, GATEID_Phase(gate->angle[0]), gate->ctrls[0], gate->targets[0]);
     }
     else if (strcmp(gate->name, "cu") == 0) {
-        return qmdd_cgate(state, GATEID_U(gate->angle[0], gate->angle[1], gate->angle[2]), gate->ctrls[0], gate->targets[0], nqubits);
+        return qmdd_cgate(state, GATEID_U(gate->angle[0], gate->angle[1], gate->angle[2]), gate->ctrls[0], gate->targets[0]);
     }
     else if (strcmp(gate->name, "ccx") == 0) {
-        return qmdd_cgate2(state, GATEID_X, gate->ctrls[0], gate->ctrls[1], gate->targets[0], nqubits);
+        return qmdd_cgate2(state, GATEID_X, gate->ctrls[0], gate->ctrls[1], gate->targets[0]);
     }
     else if (strcmp(gate->name, "c3x") == 0) {
-        return qmdd_cgate3(state, GATEID_X, gate->ctrls[0], gate->ctrls[1], gate->ctrls[2], gate->targets[0], nqubits);
+        return qmdd_cgate3(state, GATEID_X, gate->ctrls[0], gate->ctrls[1], gate->ctrls[2], gate->targets[0]);
     }
     else if (strcmp(gate->name, "c3sx") == 0) {
-        return qmdd_cgate3(state, GATEID_sqrtX, gate->ctrls[0], gate->ctrls[1], gate->ctrls[2], gate->targets[0], nqubits);
+        return qmdd_cgate3(state, GATEID_sqrtX, gate->ctrls[0], gate->ctrls[1], gate->ctrls[2], gate->targets[0]);
     }
     else if (strcmp(gate->name, "swap") == 0) {
         // no native SWAP gates in Q-Sylvan
@@ -288,32 +350,30 @@ QMDD apply_gate(QMDD state, quantum_op_t* gate, BDDVAR nqubits)
         // no native CSWAP gates in Q-Sylvan
         stats.applied_gates += 4;
         // CCNOT
-        state = qmdd_cgate2(state, GATEID_X, gate->ctrls[0], gate->targets[0], gate->targets[1], nqubits);
+        state = qmdd_cgate2(state, GATEID_X, gate->ctrls[0], gate->targets[0], gate->targets[1]);
         // upside down CCNOT (equivalent)
-        state = qmdd_cgate(state, GATEID_H, gate->ctrls[0], gate->targets[0], nqubits);
-        state = qmdd_cgate2(state, GATEID_Z, gate->ctrls[0], gate->targets[0], gate->targets[1], nqubits);
-        state = qmdd_cgate(state, GATEID_H, gate->ctrls[0], gate->targets[0], nqubits);
+        state = qmdd_cgate(state, GATEID_H, gate->ctrls[0], gate->targets[0]);
+        state = qmdd_cgate2(state, GATEID_Z, gate->ctrls[0], gate->targets[0], gate->targets[1]);
+        state = qmdd_cgate(state, GATEID_H, gate->ctrls[0], gate->targets[0]);
         // CCNOT
-        state = qmdd_cgate2(state, GATEID_X, gate->ctrls[0], gate->targets[0], gate->targets[1], nqubits);
-
+        state = qmdd_cgate2(state, GATEID_X, gate->ctrls[0], gate->targets[0], gate->targets[1]);
         return state;
     }
     else if (strcmp(gate->name, "rccx") == 0) {
         // no native RCCX (simplified Toffoli) gates in Q-Sylvan
         stats.applied_gates += 3;
-        state = qmdd_cgate2(state, GATEID_X, gate->ctrls[0], gate->ctrls[1], gate->targets[0], nqubits);
+        state = qmdd_cgate2(state, GATEID_X, gate->ctrls[0], gate->ctrls[1], gate->targets[0]);
         state = qmdd_gate(state, GATEID_X, gate->ctrls[1]);
-        state = qmdd_cgate2(state, GATEID_Z, gate->ctrls[0], gate->ctrls[1], gate->targets[0], nqubits);
+        state = qmdd_cgate2(state, GATEID_Z, gate->ctrls[0], gate->ctrls[1], gate->targets[0]);
         state = qmdd_gate(state, GATEID_X, gate->ctrls[1]);
         return state;
     }
     else if (strcmp(gate->name, "rzz") == 0 ) {
         // no native RZZ gates in Q-Sylvan
         stats.applied_gates += 2;
-        state = qmdd_cgate(state, GATEID_X, gate->targets[0], gate->targets[1], nqubits);
+        state = qmdd_cgate(state, GATEID_X, gate->targets[0], gate->targets[1]);
         state = qmdd_gate(state, GATEID_Phase(gate->angle[0]), gate->targets[1]);
-        state = qmdd_cgate(state, GATEID_X, gate->targets[0], gate->targets[1], nqubits);
-
+        state = qmdd_cgate(state, GATEID_X, gate->targets[0], gate->targets[1]);
         return state;
     }
     else if (strcmp(gate->name, "rxx") == 0) {
@@ -322,57 +382,76 @@ QMDD apply_gate(QMDD state, quantum_op_t* gate, BDDVAR nqubits)
         stats.applied_gates += 6;
         state = qmdd_gate(state, GATEID_U(pi/2.0, gate->angle[0], 0), gate->targets[0]);
         state = qmdd_gate(state, GATEID_H, gate->targets[1]);
-        state = qmdd_cgate(state, GATEID_X, gate->targets[0], gate->targets[1], nqubits);
+        state = qmdd_cgate(state, GATEID_X, gate->targets[0], gate->targets[1]);
         state = qmdd_gate(state, GATEID_Phase(-(gate->angle[0])), gate->targets[1]);
-        state = qmdd_cgate(state, GATEID_X, gate->targets[0], gate->targets[1], nqubits);
+        state = qmdd_cgate(state, GATEID_X, gate->targets[0], gate->targets[1]);
         state = qmdd_gate(state, GATEID_H, gate->targets[1]);
         state = qmdd_gate(state, GATEID_U(pi/2.0, -pi, pi-gate->angle[0]), gate->targets[0]);
         return state;
     }
+*/
+
     else {
         fprintf(stderr, "Gate '%s' currently unsupported\n", gate->name);
         return state;
     }
 }
 
-
-QMDD measure(QMDD state, quantum_op_t *meas, quantum_circuit_t* circuit)
+/**
+ * 
+ * Calculate the final state after observation (measurement).
+ * 
+ */
+/* TODO: convert to MTBDD
+MTBDD measure(QMDD state, quantum_op_t *meas, quantum_circuit_t* circuit)
 {
     double p;
     int m;
     printf("measure qubit %d, store result in creg[%d]\n", meas->targets[0], meas->meas_dest);
-    qmdd_measure_qubit(state, meas->targets[0], circuit->qreg_size, &m, &p);
+    
+// qmdd_measure_qubit(state, meas->targets[0], circuit->qreg_size, &m, &p);
+    
     circuit->creg[meas->meas_dest] = m;
     return state;
 }
+*/
 
-
+/**
+ * 
+ * Simulate the circuit as parsed.
+ * 
+ */
 void simulate_circuit(quantum_circuit_t* circuit)
 {
     double t_start = wctime();
-    QMDD state = qmdd_create_all_zero_state(circuit->qreg_size);
+    MTBDD state = mtbdd_create_all_zero_state_mpc(circuit->qreg_size);
     quantum_op_t *op = circuit->operations;
     while (op != NULL) {
         if (op->type == op_gate) {
-            state = apply_gate(state, op, circuit->qreg_size);
-
+            state = apply_gate(state, op, circuit->qreg_size); // , n);
         }
         else if (op->type == op_measurement) {
+
+            assert(false && "Measurements not yet supported");
+            fprintf(stderr, "Measurements not yet supported\n");
+            exit(1);
+/*
             if (circuit->has_intermediate_measurements) {
                 state = measure(state, op, circuit);
             }
             else {
                 double p;
                 // don't set state = post measurement state
-                qmdd_measure_all(state, circuit->qreg_size, circuit->creg, &p);
+                qmdd_measure_all(state, circuit->qreg_size, circuit->creg, &p); // TODO: convert to mtbdd 
                 if (circuit->reversed_qubit_order) {
                     reverse_bit_array(circuit->creg, circuit->qreg_size);
                 }
                 break;
             }
+*/
         }
         if (count_nodes) {
-            uint64_t count = aadd_countnodes(state);
+uint64_t count = 0; // TODO: make mtbdd_countnodes(state);
             if (count > stats.max_nodes) stats.max_nodes = count;
         }
         op = op->next;
@@ -380,17 +459,21 @@ void simulate_circuit(quantum_circuit_t* circuit)
     stats.simulation_time = wctime() - t_start;
     stats.final_state = state;
     stats.shots = 1;
-    stats.final_nodes = aadd_countnodes(state);
-    stats.norm = qmdd_get_norm(state, circuit->qreg_size);
+//stats.final_nodes = mtbdd_countnodes(state);
+//stats.norm = qmdd_get_norm(state, circuit->qreg_size); // TODO: convert to mtbdd (calculate L2 norm vector), Sebastiaan
 }
 
-
+/**
+ * 
+ * Command Line Interface, parse arguments, parse QASM file, start simulation.
+ * 
+ */
 int main(int argc, char *argv[])
 {
     argp_parse(&argp, argc, argv, 0, 0, 0);
+
     quantum_circuit_t* circuit = parse_qasm_file(qasm_inputfile);
-    if (reorder_qubits)
-        optimize_qubit_order(circuit, reorder_qubits == 2);
+    optimize_qubit_order(circuit);
 
     if (rseed == 0) rseed = time(NULL);
     srand(rseed);
@@ -401,17 +484,15 @@ int main(int argc, char *argv[])
     // Simple Sylvan initialization
     sylvan_set_sizes(min_tablesize, max_tablesize, min_cachesize, max_cachesize);
     sylvan_init_package();
-    qsylvan_init_simulator(wgt_tab_size, wgt_tab_size, tolerance, COMP_HASHMAP, wgt_norm_strat);
-    wgt_set_inverse_chaching(wgt_inv_caching);
+    sylvan_init_mtbdd();
 
     simulate_circuit(circuit);
 
+    fprint_stats(stdout, circuit);
     if (json_outputfile != NULL) {
         FILE *fp = fopen(json_outputfile, "w");
         fprint_stats(fp, circuit);
         fclose(fp);
-    } else {
-        fprint_stats(stdout, circuit);
     }
 
     sylvan_quit();

@@ -13,6 +13,12 @@ target_link_libraries(test_mtbdd PRIVATE qsylvan::sylvan)
 target_compile_features(test_mtbdd PRIVATE c_std_11)
 target_compile_options(test_mtbdd PRIVATE -Wall -Wextra -Werror -Wno-deprecated)
 
+add_executable(test_simulator_mtbdd)
+target_sources(test_simulator_mtbdd PRIVATE test_simulator_mtbdd.c)
+target_link_libraries(test_simulator_mtbdd PRIVATE qsylvan::sylvan)
+target_compile_features(test_simulator_mtbdd PRIVATE c_std_11)
+target_compile_options(test_simulator_mtbdd PRIVATE -Wall -Wextra -Werror -Wno-deprecated)
+
 add_executable(test_cxx)
 target_sources(test_cxx PRIVATE test_cxx.cpp)
 target_link_libraries(test_cxx PRIVATE qsylvan::sylvan)
@@ -25,9 +31,10 @@ target_link_libraries(test_zdd PRIVATE qsylvan::sylvan)
 target_compile_features(test_zdd PRIVATE c_std_11)
 target_compile_options(test_zdd PRIVATE -Wall -Wextra -Werror -Wno-deprecated)
 
-# tests for mtb, bdd and ldd 
+# tests for mtbdd, bdd and ldd 
 add_test(test_basic test_basic)
 add_test(test_mtbdd test_mtbdd)
+add_test(test_simulator_mtbdd test_simulator_mtbdd)
 add_test(test_cxx test_cxx)
 add_test(test_zdd test_zdd)
 

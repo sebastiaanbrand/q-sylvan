@@ -1,5 +1,4 @@
-
-/*
+/**
  * Copyright 2023 System Verification Lab, LIACS, Leiden University
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -689,6 +688,11 @@ test_mtbdd_arithmic_plus_sub_times_functions_complex()
     mpc_clear(sub_10);
     mpc_clear(sub_11);
 
+    mpc_clear(value_00);
+    mpc_clear(value_01);
+    mpc_clear(value_10);
+    mpc_clear(value_11);
+
     return 0;
 }
 
@@ -859,6 +863,13 @@ test_mtbdd_arithmic_min_max_functions_complex()
     test_assert( mpc_compare( mtbdd_getvalue(mtbdd_gethigh(mtbdd_getlow(  dd_max ))), (uint64_t)max_01));
     test_assert( mpc_compare( mtbdd_getvalue(mtbdd_getlow( mtbdd_gethigh( dd_max ))), (uint64_t)max_10));
     test_assert( mpc_compare( mtbdd_getvalue(mtbdd_gethigh(mtbdd_gethigh( dd_max ))), (uint64_t)max_11));
+
+    mpc_clear(value_00);
+    mpc_clear(value_01);
+    mpc_clear(value_10);
+    mpc_clear(value_11);
+
+    mpc_clear(value_0);
 
     mpc_clear(min_00);
     mpc_clear(min_01);
@@ -1368,7 +1379,7 @@ test_vector_array_to_mtbdd_double()
     MatArr_t **W_arr = NULL;
     allocate_matrix_array(&W_arr, n);
     mtbdd_to_matrix_array(v, n, ALTERNATE_ROW_FIRST_WISE_MODE, W_arr);
-    print_matrix_array(W_arr, n);
+    //print_matrix_array(W_arr, n);
 
     test_assert(W_arr[0][0] == 1.0);
     test_assert(W_arr[0][1] == 1.0);
@@ -1382,7 +1393,7 @@ test_vector_array_to_mtbdd_double()
 
     allocate_matrix_array(&W_arr, n);
     mtbdd_to_matrix_array(v, n, ALTERNATE_ROW_FIRST_WISE_MODE, W_arr);
-    print_matrix_array(W_arr, n);
+    //print_matrix_array(W_arr, n);
 
     test_assert(W_arr[0][0] == 1.0);
     test_assert(W_arr[0][1] == 1.0);
@@ -1395,7 +1406,7 @@ test_vector_array_to_mtbdd_double()
 
     mtbdd_to_vector_array(v, n, ALTERNATE_ROW_FIRST_WISE_MODE, v_arr);
 
-    print_vector_array(v_arr, n);
+    //print_vector_array(v_arr, n);
 
     test_assert(v_arr[0] == 1.0);
     test_assert(v_arr[1] == 2.0);
@@ -1404,7 +1415,7 @@ test_vector_array_to_mtbdd_double()
 
     mtbdd_to_vector_array(v, n, ALTERNATE_ROW_FIRST_WISE_MODE, v_arr);
 
-    print_vector_array(v_arr, n);
+    //print_vector_array(v_arr, n);
 
     test_assert(v_arr[0] == 1.0);
     test_assert(v_arr[1] == 2.0);
@@ -1441,7 +1452,7 @@ test_matrix_array_to_mtbdd_double()
 
     mtbdd_to_matrix_array(K, n, ALTERNATE_ROW_FIRST_WISE_MODE, K_arr);
 
-    print_matrix_array(K_arr, n);
+    //print_matrix_array(K_arr, n);
 
     test_assert(K_arr[0][0] == 1.0);
     test_assert(K_arr[0][1] == 3.0);
@@ -1452,7 +1463,7 @@ test_matrix_array_to_mtbdd_double()
 
     mtbdd_to_matrix_array(K, n, ALTERNATE_ROW_FIRST_WISE_MODE, K_arr);
 
-    print_matrix_array(K_arr, n);
+    //print_matrix_array(K_arr, n);
 
     test_assert(K_arr[0][0] == 1.0);
     test_assert(K_arr[0][1] == 3.0);
@@ -1492,7 +1503,7 @@ test_mtbdd_to_matrix_array_double()
 
     mtbdd_to_matrix_array(K, 1, ALTERNATE_ROW_FIRST_WISE_MODE, K_arr);
 
-    print_matrix_array(K_arr, 1);
+    //print_matrix_array(K_arr, 1);
 
     test_assert(K_arr[0][0] == 1.0);
     test_assert(K_arr[0][1] == 3.0);
@@ -1511,7 +1522,7 @@ test_mtbdd_to_matrix_array_double()
 
     mtbdd_to_matrix_array(M, n, ALTERNATE_ROW_FIRST_WISE_MODE, W_arr);
 
-    print_matrix_array(W_arr, n);
+    //print_matrix_array(W_arr, n);
 
     test_assert(W_arr[0][0] == 1.0); // First row
     test_assert(W_arr[0][1] == 0.5);
@@ -1535,7 +1546,7 @@ test_mtbdd_to_matrix_array_double()
 
     mtbdd_to_matrix_array(M, n, COLUMN_WISE_MODE, W_arr);
 
-    print_matrix_array(W_arr, n);
+    //print_matrix_array(W_arr, n);
 
     test_assert(W_arr[0][0] == 1.0); // Right Down
     test_assert(W_arr[0][1] == 0.5);
@@ -1694,7 +1705,7 @@ test_mtbdd_matrix_kronecker_multiplication_complex()
 
     mtbdd_to_matrix_array_mpc(K, 1, ALTERNATE_ROW_FIRST_WISE_MODE, K_arr);
 
-    print_matrix_array_mpc(K_arr, 1);
+    //print_matrix_array_mpc(K_arr, 1);
 
     test_assert( mpc_compare( (uint64_t)K_arr[0][0], (uint64_t)K00) );
     test_assert( mpc_compare( (uint64_t)K_arr[0][1], (uint64_t)K01) );
@@ -1709,7 +1720,7 @@ test_mtbdd_matrix_kronecker_multiplication_complex()
 
     mtbdd_to_matrix_array_mpc(M, n, COLUMN_WISE_MODE, W_arr);
 
-    print_matrix_array_mpc(W_arr, n);
+    //print_matrix_array_mpc(W_arr, n);
 
     // Row 0
     mpc_t W00, W01, W02, W03;
@@ -1758,7 +1769,7 @@ test_mtbdd_matrix_kronecker_multiplication_complex()
 
     mtbdd_to_matrix_array_mpc(M, n, ALTERNATE_ROW_FIRST_WISE_MODE, W_arr);
 
-    print_matrix_array_mpc(W_arr, n);
+    //print_matrix_array_mpc(W_arr, n);
 
     // Left Up
     mpc_multiplication(W00, K00, L00);
@@ -1805,7 +1816,17 @@ test_mtbdd_matrix_kronecker_multiplication_complex()
     test_assert( mpc_compare( (uint64_t)W_arr[3][3], (uint64_t)W03 ) );
 
     free_matrix_array_mpc(W_arr, n);
-    
+
+    mpc_clear(K00);
+    mpc_clear(K01);
+    mpc_clear(K10);
+    mpc_clear(K11);
+
+    mpc_clear(L00);
+    mpc_clear(L01);
+    mpc_clear(L10);
+    mpc_clear(L11);
+
     mpc_clear(W00);
     mpc_clear(W01);
     mpc_clear(W02);
@@ -2070,6 +2091,14 @@ test_mtbdd_matrix_vector_multiplication_complex()
 
     free_matrix_array_mpc(K_arr, n);
 
+    mpc_clear(K00);
+    mpc_clear(K01);
+    mpc_clear(K10);
+    mpc_clear(K11);
+
+    mpc_clear(L00);
+    mpc_clear(L10);
+
     mpc_clear(X00);
     mpc_clear(X10);
 
@@ -2113,9 +2142,9 @@ test_mtbdd_matrix_matrix_multiplication_1_double()
     allocate_matrix_array(&W_arr, n);
     mtbdd_to_matrix_array(product, n, COLUMN_WISE_MODE, W_arr);
 
-    print_matrix_array(K_arr, n);
-    print_matrix_array(M_arr, n);
-    print_matrix_array(W_arr, n);
+    //print_matrix_array(K_arr, n);
+    //print_matrix_array(M_arr, n);
+    //print_matrix_array(W_arr, n);
 
     if(false) {
         printf("W[0][0]: %lf %lf\n", W_arr[0][0], K_arr[0][0] * M_arr[0][0] + K_arr[0][1] * M_arr[1][0]);
@@ -2166,9 +2195,9 @@ test_mtbdd_matrix_matrix_multiplication_2_double()
     allocate_matrix_array(&W_arr, n);
     mtbdd_to_matrix_array(product, n, COLUMN_WISE_MODE, W_arr);
 
-    print_matrix_array(K_arr, n);
-    print_matrix_array(M_arr, n);
-    print_matrix_array(W_arr, n);
+    //print_matrix_array(K_arr, n);
+    //print_matrix_array(M_arr, n);
+    //print_matrix_array(W_arr, n);
 
     if(false) {
         printf("W[0][0]: %lf %lf\n", W_arr[0][0], K_arr[0][0] * M_arr[0][0] + K_arr[0][1] * M_arr[1][0]);
@@ -2241,8 +2270,8 @@ test_matrix_matrix_multiplication_4x4_double()
     allocate_matrix_array(&M_, n);
     mtbdd_to_matrix_array(M1, n, ALTERNATE_ROW_FIRST_WISE_MODE, M_);
 
-    print_matrix_array(W_, n);
-    print_matrix_array(M_, n);
+    //print_matrix_array(W_, n);
+    //print_matrix_array(M_, n);
 
     for(int col=0; col<(1<<n); col++) { // column in second matrix
         for(int row=0; row<(1<<n); row++) { // row in first matrix
@@ -2287,9 +2316,9 @@ test_mtbdd_matrix_matrix_multiplication_alt_double()
     allocate_matrix_array(&W_arr, n);
     mtbdd_to_matrix_array(product, n, ROW_WISE_MODE, W_arr);
 
-    print_matrix_array(K_arr, n);
-    print_matrix_array(M_arr, n);
-    print_matrix_array(W_arr, n);
+    //print_matrix_array(K_arr, n);
+    //print_matrix_array(M_arr, n);
+    //print_matrix_array(W_arr, n);
 
     test_assert(W_arr[0][0] == K_arr[0][0] * M_arr[0][0] + K_arr[0][1] * M_arr[1][0]);
     test_assert(W_arr[0][1] == K_arr[0][0] * M_arr[0][1] + K_arr[0][1] * M_arr[1][1]);
@@ -2354,9 +2383,9 @@ test_mtbdd_matrix_matrix_multiplication_1_complex()
     allocate_matrix_array_mpc(&W_arr, n);
     mtbdd_to_matrix_array_mpc(product, n, COLUMN_WISE_MODE, W_arr);
 
-    print_matrix_array_mpc(K_arr, n);
-    print_matrix_array_mpc(L_arr, n);
-    print_matrix_array_mpc(W_arr, n);
+    //print_matrix_array_mpc(K_arr, n);
+    //print_matrix_array_mpc(L_arr, n);
+    //print_matrix_array_mpc(W_arr, n);
 
     mpc_t X00, X01, X10, X11;
     mpc_t Y00, Y01, Y10, Y11;
@@ -2385,6 +2414,16 @@ test_mtbdd_matrix_matrix_multiplication_1_complex()
     free_matrix_array_mpc(K_arr, n);
     free_matrix_array_mpc(L_arr, n);
     free_matrix_array_mpc(W_arr, n);
+
+    mpc_clear(K00);
+    mpc_clear(K01);
+    mpc_clear(K10);
+    mpc_clear(K11);
+
+    mpc_clear(L00);
+    mpc_clear(L01);
+    mpc_clear(L10);
+    mpc_clear(L11);
 
     mpc_clear(X00);
     mpc_clear(X01);
