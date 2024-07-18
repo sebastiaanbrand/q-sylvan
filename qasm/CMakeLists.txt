@@ -17,6 +17,6 @@ target_sources(qsylvan_qasm_parser
     PUBLIC 
         simple_parser.h)
 
-add_executable(sim_qasm sim_qasm.c)
-target_link_libraries(sim_qasm qsylvan qsylvan_qasm_parser)
+add_executable(run_qasm_on_qmdd run_qasm_on_qmdd.c)
+target_link_libraries(run_qasm_on_qmdd qsylvan qsylvan_qasm_parser)
 

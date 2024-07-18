@@ -19,8 +19,8 @@
 // This code is copied in September 2023 from qsylvan_simulator.h/c made by Sebastian Brand
 //
 
-#ifndef QSYLVAN_MTBDD_SIMULATOR_H
-#define QSYLVAN_MTBDD_SIMULATOR_H
+#ifndef QSYLVAN_SIMULATOR_MTBDD_H
+#define QSYLVAN_SIMULATOR_MTBDD_H
 
 #include <sylvan_int.h>
 #include <qsylvan_mtbdd_gates.h>

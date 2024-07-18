@@ -19,7 +19,7 @@
 // This code is copied in September 2023 from qsylvan_simulator.h/c made by Sebastian Brand
 //
 
-#include <qsylvan_mtbdd_simulator.h>
+#include <qsylvan_simulator_mtbdd.h>
 
 /*
 #include <inttypes.h>
