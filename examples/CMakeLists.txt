@@ -35,4 +35,4 @@ add_example(test_algs test_algs.c)
 target_sources(test_algs PRIVATE ${ALGORITHM_EXAMPLES})
 
 add_executable(circuit_equivalence circuit_equivalence.c)
-target_link_libraries(circuit_equivalence qsylvan qsylvan_qasm_parser)
+target_link_libraries(circuit_equivalence qsylvan qsylvan_qasm_parser_qmdd)

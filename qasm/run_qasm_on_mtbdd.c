@@ -473,7 +473,7 @@ int main(int argc, char *argv[])
     argp_parse(&argp, argc, argv, 0, 0, 0);
 
     quantum_circuit_t* circuit = parse_qasm_file(qasm_inputfile);
-    optimize_qubit_order(circuit);
+    optimize_qubit_order(circuit, false);
 
     if (rseed == 0) rseed = time(NULL);
     srand(rseed);
