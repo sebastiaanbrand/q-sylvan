@@ -1,10 +1,26 @@
+/**
+ * Copyright 2024 System Verification Lab, LIACS, Leiden University
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * 
+ */
+
 #include <inttypes.h>
 #include <argp.h>
 #include <sys/time.h>
 
 #include "qsylvan.h"
 #include "simple_parser.h"
-
 
 /**********************<Arguments (configured via argp)>***********************/
 
@@ -40,6 +56,7 @@ static struct argp_option options[] =
     {"disable-inv-caching", 12, 0, 0, "Disable storing inverse of MUL and DIV in cache.", 0},
     {0, 0, 0, 0, 0, 0}
 };
+
 static error_t
 parse_opt(int key, char *arg, struct argp_state *state)
 {
@@ -160,13 +177,17 @@ wctime()
     return (tv.tv_sec + 1E-6 * tv.tv_usec);
 }
 
-
+/**
+ * Here we match the name of a gate in QASM to
+ * the GATEID 
+ */
 QMDD apply_gate(QMDD state, quantum_op_t* gate, BDDVAR nqubits)
 {
     // TODO: move this relation between parsed quantum_op and internal gate
     // somewhere else?
     stats.applied_gates++;
-    if (strcmp(gate->name, "id") == 0) {
+
+  if (strcmp(gate->name, "id") == 0) {
         stats.applied_gates--;
         return state;
     }
@@ -274,6 +295,7 @@ QMDD apply_gate(QMDD state, quantum_op_t* gate, BDDVAR nqubits)
         state = qmdd_cgate(state, GATEID_H, gate->ctrls[0], gate->targets[0], nqubits);
         // CCNOT
         state = qmdd_cgate2(state, GATEID_X, gate->ctrls[0], gate->targets[0], gate->targets[1], nqubits);
+
         return state;
     }
     else if (strcmp(gate->name, "rccx") == 0) {
@@ -291,6 +313,7 @@ QMDD apply_gate(QMDD state, quantum_op_t* gate, BDDVAR nqubits)
         state = qmdd_cgate(state, GATEID_X, gate->targets[0], gate->targets[1], nqubits);
         state = qmdd_gate(state, GATEID_Phase(gate->angle[0]), gate->targets[1]);
         state = qmdd_cgate(state, GATEID_X, gate->targets[0], gate->targets[1], nqubits);
+
         return state;
     }
     else if (strcmp(gate->name, "rxx") == 0) {
@@ -332,6 +355,7 @@ void simulate_circuit(quantum_circuit_t* circuit)
     while (op != NULL) {
         if (op->type == op_gate) {
             state = apply_gate(state, op, circuit->qreg_size);
+
         }
         else if (op->type == op_measurement) {
             if (circuit->has_intermediate_measurements) {

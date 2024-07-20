@@ -59,7 +59,19 @@ mpc_init(void);
  * Assign a MPC complex number
  */
 void 
-mpc_assign(mpc_ptr complexnumber, double real, double imag);
+mpc_assign(mpc_ptr z, double real, double imag);
+
+/**
+ * Compute the sqrt of a complex number
+ */
+void
+mpc_sqrt_assign(mpc_ptr mpc_sqrt_z, double real, double imag);
+
+/**
+ * Assign the constant Pi
+ */
+void
+mpc_assign_const_pi(mpc_ptr mpc_const_pi);
 
 /**
  * Add two complex numbers with multiprecision
@@ -72,6 +84,12 @@ mpc_addition(mpc_ptr x, mpc_ptr z1, mpc_ptr z2);
  */
 void
 mpc_multiplication(mpc_ptr x, mpc_ptr z1, mpc_ptr z2);
+
+/**
+ * Divide two complex numbers with multiprecision
+ */
+void
+mpc_divide(mpc_ptr x, mpc_ptr z1, mpc_ptr z2);
 
 /**
  * Compare MPC variables, re1 == re2 and im1 == im2
