@@ -9,7 +9,7 @@ import pytest
 
 
 TOLERANCE = 1e-6
-SIM_QASM = './build/qasm/sim_qasm'
+SIM_QASM = './build/qasm/run_qasm_on_qmdd'
 QASM_DIR = 'qasm/circuits/'
 
 

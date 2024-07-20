@@ -215,7 +215,7 @@ class QASMParser {
             case ins_type::classical_cond:
                 parse_error("Classical conditioning currently unsupported");
             default:
-                parse_error("Unsupported instruction type");
+                parse_error("Unsupported instruction type (" + line + ")");
             }
         }
 
