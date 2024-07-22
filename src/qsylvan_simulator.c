@@ -1016,6 +1016,18 @@ qmdd_amp_from_prob(double a)
     return weight_lookup(&c);
 }
 
+double qmdd_fidelity(QMDD a, QMDD b, BDDVAR nvars)
+{
+    // c = <a|b>
+    AMP prod = aadd_inner_product(a, b, nvars);
+    complex_t c;
+    weight_value(prod, &c);
+
+    // fid = |c|^2 = |c.r + c.i|^2 = sqrt(c.r^2 + c.i^2)^2 = c.r^2 + c.i^2
+    double fid = c.r*c.r + c.i*c.i;
+    return fid;
+}
+
 /**********************</Measurements and probabilities>***********************/
 
 

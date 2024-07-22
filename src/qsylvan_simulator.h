@@ -244,6 +244,11 @@ double qmdd_amp_to_prob(AMP a);
  */
 AMP qmdd_amp_from_prob(double a);
 
+/**
+ * Computes the fidelity |<a|b>|^2 for QMDDs a and b, both with nvars variables.
+ */
+double qmdd_fidelity(QMDD a, QMDD b, BDDVAR nvars);
+
 /**********************</Measurements and probabilities>***********************/
 
 
