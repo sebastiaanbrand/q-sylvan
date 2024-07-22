@@ -8,6 +8,7 @@
 #include "../qasm/qsylvan_qasm_parser.h"
 
 #define max(a,b) ((a > b) ? a : b)
+#define min(a,b) ((a < b) ? a : b)
 
 
 /**********************<Arguments (configured via argp)>***********************/
@@ -19,6 +20,7 @@ static size_t min_cachesize = 1LL<<16;
 static size_t max_cachesize = 1LL<<18;
 static size_t wgt_tab_size = 1LL<<23;
 static double tolerance = 1e-14;
+static double threshold = 1e-6;
 static int wgt_table_type = COMP_HASHMAP;
 static int wgt_norm_strat = NORM_MAX;
 static bool count_nodes = false;
@@ -30,6 +32,7 @@ static struct argp_option options[] =
     {"workers", 'w', "<workers>", 0, "Number of workers/threads (default=1)", 0},
     {"norm-strat", 's', "<low|max|min|l2>", 0, "Edge weight normalization strategy (default=max)", 0},
     {"tol", 't', "<tolerance>", 0, "Tolerance for deciding edge weights equal (default=1e-14)", 0},
+    {"threshold", 1000, "<threshold>", 0, "Threshold for deciding when two matrices are close enough to be equivalent (default=1e-6)", 0},
     {"count-nodes", 'c', 0, 0, "Track maximum number of nodes", 0},
     {0, 0, 0, 0, 0, 0}
 };
@@ -52,6 +55,9 @@ parse_opt(int key, char *arg, struct argp_state *state)
         break;
     case 'c':
         count_nodes = true;
+        break;
+    case 1000:
+        threshold = atof(arg);
         break;
     case ARGP_KEY_ARG:
         if (state->arg_num == 0)
@@ -77,6 +83,7 @@ static struct argp argp = { options, parse_opt, "<U.qasm> <V.qasm>", 0, 0, 0, 0 
 typedef struct stats_s {
     bool equivalent;
     char counterexample[100];
+    double fidelity;
     double cpu_time;
     double wall_time;
     size_t max_nodes_total;
@@ -94,6 +101,7 @@ void print_stats() {
     printf("    \"circuit_V\": \"%s\",\n", circuit_V->name);
     printf("    \"counterexample\": \"%s\",\n", stats.counterexample);
     printf("    \"equivalent\" : %d,\n", (int)stats.equivalent);
+    printf("    \"min_fidelity\" : %.20lf\n", stats.fidelity);
     printf("    \"max_nodes_total\": %" PRIu64 ",\n", stats.max_nodes_total);
     printf("    \"max_nodes_U\": %" PRIu64 ",\n", stats.max_nodes_U);
     printf("    \"max_nodes_V\": %" PRIu64 ",\n", stats.max_nodes_V);
@@ -219,6 +227,7 @@ QMDD compute_UPUdag(quantum_circuit_t *circuit, gate_id_t P, BDDVAR k) {
     BDDVAR nqubits = U->qreg_size;
 
     stats.equivalent = true;
+    stats.fidelity = 1.0;
 
     uint64_t m = 0;
     uint32_t XZ[2] = {GATEID_X, GATEID_Z};
@@ -229,7 +238,6 @@ QMDD compute_UPUdag(quantum_circuit_t *circuit, gate_id_t P, BDDVAR k) {
             aadd_protect(&qmdd_U);
             QMDD qmdd_V = compute_UPUdag(V, XZ[i], k);
             aadd_unprotect(&qmdd_U);
-            // TODO: ^ remove global phase?
 
             if (count_nodes) {
                 size_t nodes_U = aadd_countnodes(qmdd_U);
@@ -240,10 +248,18 @@ QMDD compute_UPUdag(quantum_circuit_t *circuit, gate_id_t P, BDDVAR k) {
             }
 
             if (qmdd_U != qmdd_V) {
-                stats.equivalent = false;
-                snprintf(stats.counterexample, sizeof(stats.counterexample),
-                        "U*%c_%d*U^dag != V*%c_%d*V^dag", XZ_str[i], k, XZ_str[i], k);
-                return;
+                // if not exactly equal, compute overlap
+                double norm = pow(2.0, nqubits*2);
+                double fid = qmdd_fidelity(qmdd_U, qmdd_V, nqubits*2) / norm;
+                stats.fidelity = min(stats.fidelity, fid);
+                //printf("F(U*%c_%d*U^dag,V*%c_%d*V^dag) = %.10lf\n", XZ_str[i], k, XZ_str[i], k, fid);
+
+                if (fabs(fid - 1.0) > threshold) {
+                    stats.equivalent = false;
+                    snprintf(stats.counterexample, sizeof(stats.counterexample),
+                            "U*%c_%d*U^dag != V*%c_%d*V^dag", XZ_str[i], k, XZ_str[i], k);
+                    return;
+                }
             }
         }
     }
