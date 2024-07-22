@@ -20,7 +20,7 @@
 #include <sys/time.h>
 
 #include "qsylvan.h"
-#include "simple_parser.h"
+#include "qsylvan_qasm_parser.h"
 
 /**********************<Arguments (configured via argp)>***********************/
 

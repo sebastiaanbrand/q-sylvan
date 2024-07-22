@@ -1,5 +1,5 @@
 """
-Testing running sim_qasm from command line.
+Testing running qmdd qasm simulator from command line.
 """
 import os
 import subprocess
@@ -39,7 +39,7 @@ def get_vector(qasm_file : str, args : list):
                           ['--reorder'], ['--reorder-swap']])
 class TestCircuits:
     """
-    Test sim_qasm on all given circuits, with CL arguments given above.
+    Test on all given circuits, with CL arguments given above.
     """
 
     def test_adder_n4(self, cl_args : str):

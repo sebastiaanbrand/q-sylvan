@@ -11,7 +11,6 @@
 /.vscode
 
 # Build
-sim_qasm
 test_wgt_storage
 /build
 *.so

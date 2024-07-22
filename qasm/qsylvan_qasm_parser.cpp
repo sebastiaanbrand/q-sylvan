@@ -23,7 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "simple_parser.h"
+#include "qsylvan_qasm_parser.h"
 #include "parse_math/eval_expr.hpp"
 
 /**

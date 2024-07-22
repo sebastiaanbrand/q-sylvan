@@ -5,7 +5,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <qsylvan.h>
-#include "../qasm/simple_parser.h"
+#include "../qasm/qsylvan_qasm_parser.h"
 
 #define max(a,b) ((a > b) ? a : b)
 
