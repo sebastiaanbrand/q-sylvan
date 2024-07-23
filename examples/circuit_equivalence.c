@@ -101,7 +101,8 @@ void print_stats() {
     printf("    \"circuit_V\": \"%s\",\n", circuit_V->name);
     printf("    \"counterexample\": \"%s\",\n", stats.counterexample);
     printf("    \"equivalent\" : %d,\n", (int)stats.equivalent);
-    printf("    \"min_fidelity\" : %.20lf,\n", stats.fidelity);
+    printf("    \"eq_threshold\" : %.5e,\n", threshold); 
+    printf("    \"min_fidelity\" : %.5e,\n", stats.fidelity);
     printf("    \"max_nodes_total\": %" PRIu64 ",\n", stats.max_nodes_total);
     printf("    \"max_nodes_U\": %" PRIu64 ",\n", stats.max_nodes_U);
     printf("    \"max_nodes_V\": %" PRIu64 ",\n", stats.max_nodes_V);
