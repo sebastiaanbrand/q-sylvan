@@ -107,8 +107,8 @@ void print_stats() {
     printf("    \"max_nodes_U\": %" PRIu64 ",\n", stats.max_nodes_U);
     printf("    \"max_nodes_V\": %" PRIu64 ",\n", stats.max_nodes_V);
     printf("    \"n_qubits\": %d,\n", circuit_U->qreg_size);
-    printf("    \"time_cpu\": %lf,\n", stats.cpu_time);
-    printf("    \"time_wall\": %lf,\n", stats.wall_time);
+    printf("    \"cpu_time\": %lf,\n", stats.cpu_time);
+    printf("    \"wall_time\": %lf,\n", stats.wall_time);
     printf("    \"tolerance\": %.5e,\n", tolerance);
     printf("    \"wgt_norm_strat\": %d,\n", wgt_norm_strat);
     printf("    \"workers\": %d\n", workers);
