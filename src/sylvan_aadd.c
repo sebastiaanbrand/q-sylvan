@@ -649,14 +649,20 @@ TASK_IMPL_2(AADD, aadd_plus, AADD, a, AADD, b)
 TASK_IMPL_3(AADD, aadd_matvec_mult, AADD, mat, AADD, vec, BDDVAR, nvars)
 {
     aadd_do_before_mult(&mat, &vec);
-    return CALL(aadd_matvec_mult_rec, mat, vec, nvars, 0);
+    aadd_refs_push(mat); aadd_refs_push(vec);
+    AADD res = CALL(aadd_matvec_mult_rec, mat, vec, nvars, 0);
+    aadd_refs_pop(2);
+    return res;
 }
 
 /* Wrapper for matrix vector multiplication. */
 TASK_IMPL_3(AADD, aadd_matmat_mult, AADD, a, AADD, b, BDDVAR, nvars)
 {
     aadd_do_before_mult(&a, &b);
-    return CALL(aadd_matmat_mult_rec, a, b, nvars, 0);
+    aadd_refs_push(a); aadd_refs_push(b);
+    AADD res = CALL(aadd_matmat_mult_rec, a, b, nvars, 0);
+    aadd_refs_pop(2);
+    return res;
 }
 
 TASK_IMPL_4(AADD, aadd_matvec_mult_rec, AADD, mat, AADD, vec, BDDVAR, nvars, BDDVAR, nextvar)

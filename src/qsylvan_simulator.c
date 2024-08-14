@@ -359,23 +359,32 @@ check_ctrls_before_targ(BDDVAR *c1, BDDVAR *c2, BDDVAR *c3, BDDVAR t)
 TASK_IMPL_3(QMDD, qmdd_gate, QMDD, qmdd, gate_id_t, gate, BDDVAR, target)
 {
     qmdd_do_before_gate(&qmdd);
-    return qmdd_gate_rec(qmdd, gate, target);
+    aadd_refs_push(qmdd);
+    QMDD res = qmdd_gate_rec(qmdd, gate, target);
+    aadd_refs_pop(1);
+    return res;
 }
 
 /* Wrapper for applying controlled gates with 1, 2, or 3 control qubits. */
 QMDD _qmdd_cgate(QMDD state, gate_id_t gate, BDDVAR c1, BDDVAR c2, BDDVAR c3, BDDVAR t, BDDVAR n)
 {
-    qmdd_do_before_gate(&state);
-
     if (check_ctrls_before_targ(&c1, &c2, &c3, t)) {
         BDDVAR cs[4] = {c1, c2, c3, AADD_INVALID_VAR}; // last pos is to mark end
-        return qmdd_cgate_rec(state, gate, cs, t);
+        return RUN(qmdd_cgate, state, gate, cs, t);//qmdd_cgate_rec(state, gate, cs, t);
     }
     else {
         assert(n != 0 && "ERROR: when ctrls > targ, nqubits must be passed to cgate() function.");
         QMDD gate_matrix = _qmdd_create_cgate(n, c1, c2, c3, t, gate);
         return aadd_matvec_mult(gate_matrix, state, n);
     }
+}
+TASK_IMPL_4(QMDD, qmdd_cgate, QMDD, state, gate_id_t, gate, BDDVAR*, cs, BDDVAR, t)
+{
+    qmdd_do_before_gate(&state);
+    aadd_refs_push(state);
+    QMDD res = qmdd_cgate_rec(state, gate, cs, t);
+    aadd_refs_pop(1);
+    return res;
 }
 
 /* Wrapper for applying a controlled gate where the controls are a range. */
