@@ -455,7 +455,7 @@ sylvan_init_aadd(size_t min_wgt_tablesize, size_t max_wgt_tablesize,
     if (edge_weigth_backend == REAL_TUPLES_HASHMAP || edge_weigth_backend == REAL_TREE)
         index_size = index_size*2;
     if (index_size > 33) {
-        printf("max edge weight storage size is 2^33 (2^16 when using storing r and i seperately)\n");
+        fprintf(stderr,"max edge weight storage size is 2^33 (2^16 when using storing r and i seperately)\n");
         exit(1);
     }
     if (index_size > 23) larger_wgt_indices = true;
@@ -472,6 +472,7 @@ sylvan_init_aadd(size_t min_wgt_tablesize, size_t max_wgt_tablesize,
     }
 
     // TODO: pass edge weight type to sylvan_init_aadd
+    if (min_wgt_tablesize > max_wgt_tablesize) min_wgt_tablesize = max_wgt_tablesize;
     sylvan_init_edge_weights(min_wgt_tablesize, max_wgt_tablesize, 
                              wgt_tab_tolerance, WGT_COMPLEX_128, 
                              edge_weigth_backend);

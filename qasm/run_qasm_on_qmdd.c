@@ -32,7 +32,8 @@ static size_t min_tablesize = 1LL<<25;
 static size_t max_tablesize = 1LL<<25;
 static size_t min_cachesize = 1LL<<16;
 static size_t max_cachesize = 1LL<<16;
-static size_t wgt_tab_size = 1LL<<23;
+static size_t min_wgt_tab_size = 1LL<<23;
+static size_t max_wgt_tab_size = 1LL<<23;
 static double tolerance = 1e-14;
 static int wgt_table_type = COMP_HASHMAP;
 static int wgt_norm_strat = NORM_MAX;
@@ -51,9 +52,11 @@ static struct argp_option options[] =
     {"json", 'j', "<filename>", 0, "Write stats to given filename as json", 0},
     {"count-nodes", 'c', 0, 0, "Track maximum number of nodes", 0},
     {"state-vector", 'v', 0, 0, "Also output the complete state vector", 0},
-    {"reorder", 10, 0, 0, "Reorders the qubits once such that (most) controls occur before targets in the variable order.", 0},
-    {"reorder-swaps", 11, 0, 0, "Reorders the qubits such that all controls occur before targets (requires inserting SWAP gates).", 0},
-    {"disable-inv-caching", 12, 0, 0, "Disable storing inverse of MUL and DIV in cache.", 0},
+    {"node-tab-size", 1000, "<size>", 0, "log2 of max node table size (max 40)", 0},
+    {"wgt-tab-size", 1001, "<size>", 0, "log2 of max edge weigth table size (max 30 (23 if node table >2^30))", 0},
+    {"reorder", 1002, 0, 0, "Reorders the qubits once such that (most) controls occur before targets in the variable order.", 0},
+    {"reorder-swaps", 1003, 0, 0, "Reorders the qubits such that all controls occur before targets (requires inserting SWAP gates).", 0},
+    {"disable-inv-caching", 1004, 0, 0, "Disable storing inverse of MUL and DIV in cache.", 0},
     {0, 0, 0, 0, 0, 0}
 };
 
@@ -86,13 +89,21 @@ parse_opt(int key, char *arg, struct argp_state *state)
     case 'v':
         output_vector = true;
         break;
-    case 10:
+    case 1000:
+        if (atoi(arg) > 40) argp_usage(state);
+        max_tablesize = 1LL<<(atoi(arg));
+        break;
+    case 1001:
+        if (atoi(arg) > 30) argp_usage(state);
+        max_wgt_tab_size = 1LL<<(atoi(arg));
+        break;
+    case 1002:
         reorder_qubits = 1;
         break;
-    case 11:
+    case 1003:
         reorder_qubits = 2;
         break;
-    case 12:
+    case 1004:
         wgt_inv_caching = false;
         break;
     case ARGP_KEY_ARG:
@@ -164,6 +175,10 @@ void fprint_stats(FILE *stream, quantum_circuit_t* circuit)
     fprintf(stream, "    \"tolerance\": %.5e,\n", tolerance);
     fprintf(stream, "    \"wgt_inv_caching\": %d,\n", wgt_inv_caching);
     fprintf(stream, "    \"wgt_norm_strat\": %d,\n", wgt_norm_strat);
+    fprintf(stream, "    \"min_node_tab_size\": %" PRId64 ",\n", min_tablesize);
+    fprintf(stream, "    \"max_node_tab_size\": %" PRId64 ",\n", max_tablesize);
+    fprintf(stream, "    \"min_wgt_tab_size\": %" PRId64 ",\n", min_wgt_tab_size);
+    fprintf(stream, "    \"max_wgt_tab_size\": %" PRId64 ",\n", max_wgt_tab_size);
     fprintf(stream, "    \"workers\": %d\n", workers);
     fprintf(stream, "  }\n");
     fprintf(stream, "}\n");
@@ -401,7 +416,7 @@ int main(int argc, char *argv[])
     // Simple Sylvan initialization
     sylvan_set_sizes(min_tablesize, max_tablesize, min_cachesize, max_cachesize);
     sylvan_init_package();
-    qsylvan_init_simulator(wgt_tab_size, wgt_tab_size, tolerance, COMP_HASHMAP, wgt_norm_strat);
+    qsylvan_init_simulator(min_wgt_tab_size, max_wgt_tab_size, tolerance, COMP_HASHMAP, wgt_norm_strat);
     wgt_set_inverse_chaching(wgt_inv_caching);
 
     simulate_circuit(circuit);
