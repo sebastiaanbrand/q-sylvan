@@ -115,63 +115,63 @@ QMDD qmdd_grover_matrix_multi_its(BDDVAR n, bool *flag, int t, QMDD *matrix)
 
     // H on all qubits
     all_H = qmdd_create_single_qubit_gates_same(nqubits, GATEID_H);
-    aadd_protect(&all_H);
+    evbdd_protect(&all_H);
 
     // H on first n qubits (all qubits except ancilla)
     for (BDDVAR k = 0; k < n; k++) gate_list[k] = GATEID_H;
     gate_list[n] = GATEID_I;
     first_n_H = qmdd_create_single_qubit_gates(nqubits, gate_list);
-    aadd_protect(&first_n_H);
+    evbdd_protect(&first_n_H);
 
     // oracle
     for (BDDVAR k = 0; k < n; k++) cgate_options[k] = flag[k];
     cgate_options[n] = 2; // ancilla qubit is target qubit of this multi-cgate
     oracle = qmdd_create_multi_cgate(nqubits, cgate_options, GATEID_X);
-    aadd_protect(&oracle);
+    evbdd_protect(&oracle);
 
     // X on first n qubits (all qubits except ancilla)
     for (BDDVAR k = 0; k < n; k++) gate_list[k] = GATEID_X;
     gate_list[n] = GATEID_I;
     first_n_X = qmdd_create_single_qubit_gates(nqubits, gate_list);
-    aadd_protect(&first_n_X);
+    evbdd_protect(&first_n_X);
 
     // CZ gate on all qubits except ancilla
     for (BDDVAR k = 0; k < n-1; k++) cgate_options[k] = 1; // controls"
     cgate_options[n-1] = 2; // target last qubit before ancilla
     cgate_options[n] = -1; // do nothing to ancilla
     first_n_CZ = qmdd_create_multi_cgate(nqubits, cgate_options, GATEID_Z);
-    aadd_protect(&first_n_CZ);
+    evbdd_protect(&first_n_CZ);
     
     // Grover iteration = oracle + mean inversion
     grov_it = oracle;
-    aadd_protect(&grov_it);
-    grov_it = aadd_matmat_mult(first_n_H,  grov_it, nqubits);
-    grov_it = aadd_matmat_mult(first_n_X,  grov_it, nqubits);
-    grov_it = aadd_matmat_mult(first_n_CZ, grov_it, nqubits);
-    grov_it = aadd_matmat_mult(first_n_X,  grov_it, nqubits);
-    grov_it = aadd_matmat_mult(first_n_H,  grov_it, nqubits);
+    evbdd_protect(&grov_it);
+    grov_it = evbdd_matmat_mult(first_n_H,  grov_it, nqubits);
+    grov_it = evbdd_matmat_mult(first_n_X,  grov_it, nqubits);
+    grov_it = evbdd_matmat_mult(first_n_CZ, grov_it, nqubits);
+    grov_it = evbdd_matmat_mult(first_n_X,  grov_it, nqubits);
+    grov_it = evbdd_matmat_mult(first_n_H,  grov_it, nqubits);
 
     // Compute grov_it^t (by squaring if t is a power of 2)
     grov_its = grov_it;
-    aadd_protect(&grov_its);
+    evbdd_protect(&grov_its);
     if (EXP_BY_SQUARING && ((t & (t - 1)) == 0)) {
         for (int i = 0; i < log2l(t); i++) {
-            grov_its = aadd_matmat_mult(grov_its, grov_its, nqubits);
+            grov_its = evbdd_matmat_mult(grov_its, grov_its, nqubits);
         }
     }
     else {
         for (int i = 1; i < t; i++) {
-            grov_its = aadd_matmat_mult(grov_its, grov_it, nqubits);
+            grov_its = evbdd_matmat_mult(grov_its, grov_it, nqubits);
         }
     }
     R = R / t;
     *matrix = grov_its; // return for nodecount in bench
 
-    aadd_unprotect(&first_n_H);
-    aadd_unprotect(&first_n_X);
-    aadd_unprotect(&first_n_CZ);
-    aadd_unprotect(&oracle);
-    aadd_unprotect(&grov_it);
+    evbdd_unprotect(&first_n_H);
+    evbdd_unprotect(&first_n_X);
+    evbdd_unprotect(&first_n_CZ);
+    evbdd_unprotect(&oracle);
+    evbdd_unprotect(&grov_it);
 
     // Now, actually apply the circuit:
     // 1. Start with all zero state + ancilla: |000...0>|1>
@@ -179,11 +179,11 @@ QMDD qmdd_grover_matrix_multi_its(BDDVAR n, bool *flag, int t, QMDD *matrix)
     for (BDDVAR k = 0; k < n; k++) init[k] = 0;
     init[n] = 1; 
     state = qmdd_create_basis_state(nqubits, init);
-    aadd_protect(&state);
+    evbdd_protect(&state);
 
     // 2. H on all qubits
-    state = aadd_matvec_mult(all_H, state, nqubits);
-    aadd_unprotect(&all_H);
+    state = evbdd_matvec_mult(all_H, state, nqubits);
+    evbdd_unprotect(&all_H);
 
     // 3. Grover iterations
     if (VERBOSE) {
@@ -198,19 +198,19 @@ QMDD qmdd_grover_matrix_multi_its(BDDVAR n, bool *flag, int t, QMDD *matrix)
             }
             
             // gc edge wegith table
-            aadd_gc_wgt_table();
+            evbdd_gc_wgt_table();
 
             // gc node table
             sylvan_gc();
         }
-        state = aadd_matvec_mult(grov_its, state, nqubits);
+        state = evbdd_matvec_mult(grov_its, state, nqubits);
     }
     if (VERBOSE) {
         printf("\rGrover progress %lf%%\n", 100.);
     }
 
-    aadd_unprotect(&grov_its);
-    aadd_unprotect(&state);
+    evbdd_unprotect(&grov_its);
+    evbdd_unprotect(&state);
 
     free(init);
     free(gate_list);

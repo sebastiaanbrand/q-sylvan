@@ -98,7 +98,7 @@ qmdd_phi_add_mod(QMDD qmdd, BDDVAR c1, BDDVAR c2, uint64_t a, uint64_t N)
     // are not parameterized on a)
     sylvan_clear_cache();
     shor_set_globals(a, N); // set bitvalues of a/N (N says the same though)
-    BDDVAR nc = AADD_INVALID_VAR; // no control
+    BDDVAR nc = EVBDD_INVALID_VAR; // no control
 
     // 1.  controlled(c1,c2) phi_add(a)
     qmdd = qmdd_phi_add(qmdd, shor_wires.targ_first, shor_wires.targ_last, c1, c2, shor_bits_a);
@@ -141,7 +141,7 @@ qmdd_phi_add_mod_inv(QMDD qmdd, BDDVAR c1, BDDVAR c2, uint64_t a, uint64_t N)
     // are not parameterized on a)
     sylvan_clear_cache();
     shor_set_globals(a, N); // set bitvalues of a/N (N says the same though)
-    BDDVAR nc = AADD_INVALID_VAR; // no control
+    BDDVAR nc = EVBDD_INVALID_VAR; // no control
 
     // 13. controlled(c1,c2) phi_add_inv(a)
     qmdd = qmdd_phi_add_inv(qmdd, shor_wires.targ_first, shor_wires.targ_last, c1, c2, shor_bits_a);
@@ -187,7 +187,7 @@ qmdd_cmult(QMDD qmdd, uint64_t a, uint64_t N)
 
     // 2. loop over k = {0, n-1}
     uint64_t t = a;
-    //BDDVAR cs[] = {shor_wires.top, AADD_INVALID_VAR, AADD_INVALID_VAR};
+    //BDDVAR cs[] = {shor_wires.top, EVBDD_INVALID_VAR, EVBDD_INVALID_VAR};
     for (BDDVAR c2 = shor_wires.ctrl_last; c2 >= shor_wires.ctrl_first; c2--) {
         // 2a. double controlled phi_add_mod(a* 2^k)
         qmdd = qmdd_phi_add_mod(qmdd, shor_wires.top, c2, t, N);

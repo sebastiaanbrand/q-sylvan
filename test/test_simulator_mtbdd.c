@@ -271,23 +271,23 @@ int test_basis_state_creation_mtbdd_2()
     // }
 
 
-    x3[2] = 0; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q2, x3); test_assert(a == AADD_ONE);
-    x3[2] = 0; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q2, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q2, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q2, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q2, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q2, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q2, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q2, x3); test_assert(a == AADD_ZERO);
+    x3[2] = 0; x3[1] = 0; x3[0] = 0; a = evbdd_getvalue(q2, x3); test_assert(a == EVBDD_ONE);
+    x3[2] = 0; x3[1] = 0; x3[0] = 1; a = evbdd_getvalue(q2, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = evbdd_getvalue(q2, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = evbdd_getvalue(q2, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = evbdd_getvalue(q2, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = evbdd_getvalue(q2, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 1; x3[1] = 1; x3[0] = 0; a = evbdd_getvalue(q2, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = evbdd_getvalue(q2, x3); test_assert(a == EVBDD_ZERO);
 
-    x3[2] = 0; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q3, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 0; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q3, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q3, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q3, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q3, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q3, x3); test_assert(a == AADD_ONE);  // |101> -> 2^2*1 + 2^1*0 + 2^0*1 = index 5, starts with 0
-    x3[2] = 1; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q3, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q3, x3); test_assert(a == AADD_ZERO);
+    x3[2] = 0; x3[1] = 0; x3[0] = 0; a = evbdd_getvalue(q3, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 0; x3[1] = 0; x3[0] = 1; a = evbdd_getvalue(q3, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = evbdd_getvalue(q3, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = evbdd_getvalue(q3, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = evbdd_getvalue(q3, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = evbdd_getvalue(q3, x3); test_assert(a == EVBDD_ONE);  // |101> -> 2^2*1 + 2^1*0 + 2^0*1 = index 5, starts with 0
+    x3[2] = 1; x3[1] = 1; x3[0] = 0; a = evbdd_getvalue(q3, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = evbdd_getvalue(q3, x3); test_assert(a == EVBDD_ZERO);
 
     printf("basis state creation mtrdd 2:     ok\n");
     return 0;

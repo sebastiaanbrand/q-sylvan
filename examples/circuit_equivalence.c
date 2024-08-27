@@ -189,18 +189,18 @@ QMDD get_gate_matrix(quantum_op_t* gate, BDDVAR nqubits, bool dag) {
 QMDD compute_UPUdag(quantum_circuit_t *circuit, gate_id_t P, BDDVAR k) {
     BDDVAR nqubits = circuit->qreg_size;
     QMDD circ_matrix = qmdd_create_single_qubit_gate(nqubits, k, P);
-    QMDD tmp = AADD_ZERO;
-    aadd_protect(&circ_matrix);
-    aadd_protect(&tmp);
+    QMDD tmp = EVBDD_ZERO;
+    evbdd_protect(&circ_matrix);
+    evbdd_protect(&tmp);
 
     quantum_op_t *op = circuit->operations;
     while (op != NULL) {
         switch (op->type) {
             case op_gate:
                 tmp = get_gate_matrix(op, nqubits, false);
-                circ_matrix = aadd_matmat_mult(tmp, circ_matrix, nqubits);
+                circ_matrix = evbdd_matmat_mult(tmp, circ_matrix, nqubits);
                 tmp = get_gate_matrix(op, nqubits, true);
-                circ_matrix = aadd_matmat_mult(circ_matrix, tmp, nqubits);
+                circ_matrix = evbdd_matmat_mult(circ_matrix, tmp, nqubits);
                 break;
             case op_measurement:
                 fprintf(stderr, "ERROR: Measurments not supported\n");
@@ -212,8 +212,8 @@ QMDD compute_UPUdag(quantum_circuit_t *circuit, gate_id_t P, BDDVAR k) {
         op = op->next;
     }
 
-    aadd_unprotect(&circ_matrix);
-    aadd_unprotect(&tmp);
+    evbdd_unprotect(&circ_matrix);
+    evbdd_unprotect(&tmp);
 
     return circ_matrix;
 }
@@ -236,13 +236,13 @@ QMDD compute_UPUdag(quantum_circuit_t *circuit, gate_id_t P, BDDVAR k) {
     for (BDDVAR k = 0; k < nqubits; k++) {
         for (int i = 0; i < 2; i++) {
             QMDD qmdd_U = compute_UPUdag(U, XZ[i], k);
-            aadd_protect(&qmdd_U);
+            evbdd_protect(&qmdd_U);
             QMDD qmdd_V = compute_UPUdag(V, XZ[i], k);
-            aadd_unprotect(&qmdd_U);
+            evbdd_unprotect(&qmdd_U);
 
             if (count_nodes) {
-                size_t nodes_U = aadd_countnodes(qmdd_U);
-                size_t nodes_V = aadd_countnodes(qmdd_V);
+                size_t nodes_U = evbdd_countnodes(qmdd_U);
+                size_t nodes_V = evbdd_countnodes(qmdd_V);
                 stats.max_nodes_total = max(stats.max_nodes_total,nodes_U+nodes_V);
                 stats.max_nodes_U = max(stats.max_nodes_U, nodes_U);
                 stats.max_nodes_V = max(stats.max_nodes_V, nodes_V);

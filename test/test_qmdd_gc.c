@@ -17,8 +17,8 @@ int test_grover_gc()
     QMDD qmdd = qmdd_grover(qubits, flag);
 
     // Sanity checks on final state
-    flag[qubits] = 0; AADD_WGT amp0 = aadd_getvalue(qmdd, flag);
-    flag[qubits] = 1; AADD_WGT amp1 = aadd_getvalue(qmdd, flag);
+    flag[qubits] = 0; EVBDD_WGT amp0 = evbdd_getvalue(qmdd, flag);
+    flag[qubits] = 1; EVBDD_WGT amp1 = evbdd_getvalue(qmdd, flag);
     double flag_prob = qmdd_amp_to_prob(amp0) + qmdd_amp_to_prob(amp1);
     free(flag);
 
@@ -56,7 +56,7 @@ int test_table_size_increase()
     uint64_t wgt_tablesize = min_wgt_tablesize;
     for (int i = 0; i < 10; i++) {
         test_assert(sylvan_get_edge_weight_table_size() == wgt_tablesize);
-        aadd_gc_wgt_table();
+        evbdd_gc_wgt_table();
         wgt_tablesize = 2*wgt_tablesize;
         if (wgt_tablesize > max_wgt_tablesize) {
             wgt_tablesize = max_wgt_tablesize;
@@ -95,46 +95,46 @@ int test_custom_gate_gc_protection()
     // apply the same custom gate twice (w/o gc)
     qRef  = qmdd_gate(qInit, GATEID_U(pi/2.0, -pi/2.0, pi/4.0), t);
     qTest = qmdd_gate(qInit, GATEID_U(pi/2.0, -pi/2.0, pi/4.0), t);
-    test_assert(aadd_equivalent(qRef, qTest, nqubits, false, true));
-    test_assert(aadd_equivalent(qRef, qTest, nqubits, true, false));
+    test_assert(evbdd_equivalent(qRef, qTest, nqubits, false, true));
+    test_assert(evbdd_equivalent(qRef, qTest, nqubits, true, false));
     test_assert(qTest == qRef);
 
     // apply the same custom gate twice, but with gc of node table between them
-    aadd_protect(&qRef);
-    aadd_protect(&qTest);
+    evbdd_protect(&qRef);
+    evbdd_protect(&qTest);
     qRef  = qmdd_gate(qInit, GATEID_U(pi/2.0, -pi/2.0, pi/4.0), t);
     sylvan_gc();
     qTest = qmdd_gate(qInit, GATEID_U(pi/2.0, -pi/2.0, pi/4.0), t);
-    aadd_unprotect(&qRef);
-    aadd_unprotect(&qTest);
-    test_assert(aadd_equivalent(qRef, qTest, nqubits, false, true));
-    test_assert(aadd_equivalent(qRef, qTest, nqubits, true, false));
+    evbdd_unprotect(&qRef);
+    evbdd_unprotect(&qTest);
+    test_assert(evbdd_equivalent(qRef, qTest, nqubits, false, true));
+    test_assert(evbdd_equivalent(qRef, qTest, nqubits, true, false));
     test_assert(qTest == qRef);
 
     // trigger gc of node table after defining temp gate, but before applying it
-    aadd_protect(&qRef);
-    aadd_protect(&qTest);
+    evbdd_protect(&qRef);
+    evbdd_protect(&qTest);
     tmp_gateid = GATEID_U(pi/2.0, -pi/2.0, pi/4.0);
     qRef  = qmdd_gate(qInit, tmp_gateid, t);
     sylvan_gc();
     qTest = qmdd_gate(qInit, tmp_gateid, t);
-    aadd_unprotect(&qRef);
-    aadd_unprotect(&qTest);
-    test_assert(aadd_equivalent(qRef, qTest, nqubits, false, true));
-    test_assert(aadd_equivalent(qRef, qTest, nqubits, true, false));
+    evbdd_unprotect(&qRef);
+    evbdd_unprotect(&qTest);
+    test_assert(evbdd_equivalent(qRef, qTest, nqubits, false, true));
+    test_assert(evbdd_equivalent(qRef, qTest, nqubits, true, false));
     test_assert(qTest == qRef);
 
     // trigger gc of edge wgt table after defining temp gate, but before applying it
-    aadd_protect(&qRef);
-    aadd_protect(&qTest);
+    evbdd_protect(&qRef);
+    evbdd_protect(&qTest);
     tmp_gateid = GATEID_U(pi/2.0, -pi/2.0, pi/4.0);
     qRef  = qmdd_gate(qInit, tmp_gateid, t);
-    aadd_gc_wgt_table();
+    evbdd_gc_wgt_table();
     qTest = qmdd_gate(qInit, tmp_gateid, t);
-    aadd_unprotect(&qRef);
-    aadd_unprotect(&qTest);
-    test_assert(aadd_equivalent(qRef, qTest, nqubits, false, true));
-    test_assert(aadd_equivalent(qRef, qTest, nqubits, true, false));
+    evbdd_unprotect(&qRef);
+    evbdd_unprotect(&qTest);
+    test_assert(evbdd_equivalent(qRef, qTest, nqubits, false, true));
+    test_assert(evbdd_equivalent(qRef, qTest, nqubits, true, false));
     test_assert(qTest == qRef);
 
 

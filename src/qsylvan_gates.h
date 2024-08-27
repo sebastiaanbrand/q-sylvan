@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <edge_weight_storage/flt.h>
 
-typedef uint64_t AMP; // TODO: replace with AADD_WGT?
+typedef uint64_t AMP; // TODO: replace with EVBDD_WGT?
 
 // GATE_ID's (gates are initialized in qmdd_gates_init)
 // currently 24 bits available for this number (see GATE_OPID)

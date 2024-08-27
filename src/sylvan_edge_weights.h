@@ -5,11 +5,11 @@
 #include <stdio.h>
 #include <edge_weight_storage/wgt_storage_interface.h>
 
-typedef uint64_t AADD_WGT;  // AADD edge weights (indices to table entries)
+typedef uint64_t EVBDD_WGT;  // EVBDD edge weights (indices to table entries)
 
-extern AADD_WGT AADD_ONE;
-extern AADD_WGT AADD_ZERO;
-extern AADD_WGT AADD_MIN_ONE;
+extern EVBDD_WGT EVBDD_ONE;
+extern EVBDD_WGT EVBDD_ZERO;
+extern EVBDD_WGT EVBDD_MIN_ONE;
 
 typedef void *weight_t;
 
@@ -31,7 +31,7 @@ extern void *wgt_storage_new;
 extern void sylvan_init_edge_weights(size_t min_tablesize, size_t max_tablesize, double tol, edge_weight_type_t edge_weight_type, wgt_storage_backend_t backend);
 extern void init_edge_weight_functions(edge_weight_type_t edge_weight_type);
 extern void init_edge_weight_storage(size_t size, double tol, wgt_storage_backend_t backend, void **wgt_store);
-extern void (*init_wgt_table_entries)(); // set by sylvan_init_aadd
+extern void (*init_wgt_table_entries)(); // set by sylvan_init_evbdd
 
 extern uint64_t sylvan_get_edge_weight_table_size();
 extern double sylvan_edge_weights_tolerance();
@@ -51,7 +51,7 @@ extern uint64_t wgt_table_entries_estimate();
 extern void wgt_table_gc_inc_entries_estimate();
 extern void wgt_table_gc_init_new(void (*init_wgt_table_entries)());
 extern void wgt_table_gc_delete_old();
-extern AADD_WGT wgt_table_gc_keep(AADD_WGT a);
+extern EVBDD_WGT wgt_table_gc_keep(EVBDD_WGT a);
 
 /************************</GC of edge weight table>****************************/
 
@@ -62,9 +62,9 @@ extern AADD_WGT wgt_table_gc_keep(AADD_WGT a);
 /******************<Interface for different edge_weight_types>*****************/
 
 typedef weight_t (*weight_malloc_f)();
-typedef void (*_weight_value_f)(void *wgt_store, AADD_WGT a, weight_t res);
-typedef AADD_WGT (*weight_lookup_f)(weight_t a);
-typedef AADD_WGT (*_weight_lookup_ptr_f)(weight_t a, void *wgt_store);
+typedef void (*_weight_value_f)(void *wgt_store, EVBDD_WGT a, weight_t res);
+typedef EVBDD_WGT (*weight_lookup_f)(weight_t a);
+typedef EVBDD_WGT (*_weight_lookup_ptr_f)(weight_t a, void *wgt_store);
 
 typedef void (*init_one_zero_f)(void *wgt_store);
 
@@ -82,8 +82,8 @@ typedef bool (*weight_eps_close_f)(weight_t a, weight_t b, double eps); // retur
 typedef bool (*weight_greater_f)(weight_t a, weight_t b); // returns true iff |a| > |b|
 
 /* Normalization methods */
-typedef AADD_WGT (*wgt_norm_L2_f)(AADD_WGT *low, AADD_WGT *high);
-typedef AADD_WGT (*wgt_get_low_L2normed_f)(AADD_WGT high);
+typedef EVBDD_WGT (*wgt_norm_L2_f)(EVBDD_WGT *low, EVBDD_WGT *high);
+typedef EVBDD_WGT (*wgt_get_low_L2normed_f)(EVBDD_WGT high);
 
 typedef void (*weight_fprint_f)(FILE *stream, weight_t a);
 
@@ -133,30 +133,30 @@ void wgt_set_inverse_chaching(bool on);
 
 
 
-/*********************<Arithmetic functions on AADD_WGT's>*********************/
+/*********************<Arithmetic functions on EVBDD_WGT's>*********************/
 
-/* Arithmetic operations on AADD_WGT's */
-AADD_WGT wgt_abs(AADD_WGT a); // returns |a|
-AADD_WGT wgt_neg(AADD_WGT a); // returns -a
-AADD_WGT wgt_conj(AADD_WGT a); // returns a*
-AADD_WGT wgt_add(AADD_WGT a, AADD_WGT b); // returns a + b
-AADD_WGT wgt_sub(AADD_WGT a, AADD_WGT b); // returns a - b
-AADD_WGT wgt_mul(AADD_WGT a, AADD_WGT b); // returns a * b
-AADD_WGT wgt_div(AADD_WGT a, AADD_WGT b); // returns a / b
+/* Arithmetic operations on EVBDD_WGT's */
+EVBDD_WGT wgt_abs(EVBDD_WGT a); // returns |a|
+EVBDD_WGT wgt_neg(EVBDD_WGT a); // returns -a
+EVBDD_WGT wgt_conj(EVBDD_WGT a); // returns a*
+EVBDD_WGT wgt_add(EVBDD_WGT a, EVBDD_WGT b); // returns a + b
+EVBDD_WGT wgt_sub(EVBDD_WGT a, EVBDD_WGT b); // returns a - b
+EVBDD_WGT wgt_mul(EVBDD_WGT a, EVBDD_WGT b); // returns a * b
+EVBDD_WGT wgt_div(EVBDD_WGT a, EVBDD_WGT b); // returns a / b
 
-/********************</Arithmetic functions on AADD_WGT's>*********************/
-
-
+/********************</Arithmetic functions on EVBDD_WGT's>*********************/
 
 
 
-/*************************<Comparators on AADD_WGT's>**************************/
 
-bool wgt_eq(AADD_WGT a, AADD_WGT b);
-bool wgt_eps_close(AADD_WGT a, AADD_WGT b, double eps);
-bool wgt_approx_eq(AADD_WGT a, AADD_WGT b);
 
-/************************</Comparators on AADD_WGT's>**************************/
+/*************************<Comparators on EVBDD_WGT's>**************************/
+
+bool wgt_eq(EVBDD_WGT a, EVBDD_WGT b);
+bool wgt_eps_close(EVBDD_WGT a, EVBDD_WGT b, double eps);
+bool wgt_approx_eq(EVBDD_WGT a, EVBDD_WGT b);
+
+/************************</Comparators on EVBDD_WGT's>**************************/
 
 
 
@@ -164,9 +164,9 @@ bool wgt_approx_eq(AADD_WGT a, AADD_WGT b);
 
 /*************************<Edge weight normalization>**************************/
 
-AADD_WGT wgt_norm_low(AADD_WGT *low, AADD_WGT *high);
-AADD_WGT wgt_norm_max(AADD_WGT *low, AADD_WGT *high);
-AADD_WGT wgt_norm_min(AADD_WGT *low, AADD_WGT *high);
+EVBDD_WGT wgt_norm_low(EVBDD_WGT *low, EVBDD_WGT *high);
+EVBDD_WGT wgt_norm_max(EVBDD_WGT *low, EVBDD_WGT *high);
+EVBDD_WGT wgt_norm_min(EVBDD_WGT *low, EVBDD_WGT *high);
 // wgt_norm_L2() is in the interface because it's too complicated to implement
 // without assumptions on the underlying data type of the edge weights.
 
@@ -178,7 +178,7 @@ AADD_WGT wgt_norm_min(AADD_WGT *low, AADD_WGT *high);
 
 /************************<Printing & utility functions>************************/
 
-void wgt_fprint(FILE *stream, AADD_WGT a);
+void wgt_fprint(FILE *stream, EVBDD_WGT a);
 
 /************************<Printing & utility functions>************************/
 

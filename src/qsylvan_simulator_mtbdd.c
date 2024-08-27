@@ -282,8 +282,8 @@ mtbdd_stack_matrix(BDDVAR k, gate_id_t gateid)
     res  = mtbdd_makenode(s, low, high);
 
     // Propagate common factor on previous root amp to new root amp
-    // AMP new_root_amp = wgt_mul(AADD_WEIGHT(below), AADD_WEIGHT(res));
-    // res = aadd_bundle(AADD_TARGET(res), new_root_amp);
+    // AMP new_root_amp = wgt_mul(EVBDD_WEIGHT(below), EVBDD_WEIGHT(res));
+    // res = evbdd_bundle(EVBDD_TARGET(res), new_root_amp);
     return res;
 }
 */

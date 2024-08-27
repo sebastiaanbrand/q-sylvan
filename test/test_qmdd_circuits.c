@@ -16,37 +16,37 @@ int test_swap_circuit()
 
     q = qmdd_create_basis_state(3, x3);
     q = qmdd_gate(q, GATEID_X, 2);
-    x3[2] = 0; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 0; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ONE);
-    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    test_assert(aadd_is_ordered(q, 3));
+    x3[2] = 0; x3[1] = 0; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 0; x3[1] = 0; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ONE);
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 1; x3[1] = 1; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    test_assert(evbdd_is_ordered(q, 3));
 
     q = qmdd_circuit_swap(q, 0, 2);
-    x3[2] = 0; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 0; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ONE);
-    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    test_assert(aadd_is_ordered(q, 3));
+    x3[2] = 0; x3[1] = 0; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 0; x3[1] = 0; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ONE);
+    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 1; x3[1] = 1; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    test_assert(evbdd_is_ordered(q, 3));
 
     q = qmdd_circuit_swap(q, 0, 1);
-    x3[2] = 0; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 0; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ONE);
-    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    test_assert(aadd_is_ordered(q, 3));
+    x3[2] = 0; x3[1] = 0; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 0; x3[1] = 0; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ONE);
+    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 1; x3[1] = 1; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    test_assert(evbdd_is_ordered(q, 3));
 
     // TODO: more tests
 
@@ -61,96 +61,96 @@ int test_cswap_circuit()
     AMP a;
 
     uint32_t cs[3];
-    cs[0] = 0; cs[1] = AADD_INVALID_VAR; cs[2] = AADD_INVALID_VAR; // control only on q0
+    cs[0] = 0; cs[1] = EVBDD_INVALID_VAR; cs[2] = EVBDD_INVALID_VAR; // control only on q0
 
     x3[2]=1; x3[1]=0; x3[0]=0; 
     q = qmdd_create_basis_state(3, x3);
     q = qmdd_ccircuit(q, CIRCID_swap, cs, 1, 2); // control is |0>, nothing should happen
-    x3[2] = 0; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 0; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ONE);
-    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
+    x3[2] = 0; x3[1] = 0; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 0; x3[1] = 0; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ONE);
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 1; x3[1] = 1; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
 
     x3[2]=1; x3[1]=0; x3[0]=1; 
     q = qmdd_create_basis_state(3, x3);
     q = qmdd_ccircuit(q, CIRCID_swap, cs, 1, 2); // control is |1>, should swap q1 and q2
-    x3[2] = 0; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 0; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ONE);
-    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
+    x3[2] = 0; x3[1] = 0; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 0; x3[1] = 0; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ONE);
+    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 1; x3[1] = 1; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
 
     x3[2]=1; x3[1]=0; x3[0]=0; 
     q = qmdd_create_basis_state(3, x3);
     q = qmdd_gate(q, GATEID_H, 0); // input state: |10+> = 1/sqrt(2)(|100> + |101>)
-    x3[2] = 0; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 0; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
-    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
-    x3[2] = 1; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
+    x3[2] = 0; x3[1] = 0; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 0; x3[1] = 0; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
+    x3[2] = 1; x3[1] = 1; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
     q = qmdd_ccircuit(q, CIRCID_swap, cs, 1, 2); // control is |+>, expected output: 1/sqrt(2)(|100> + |011>)
-    x3[2] = 0; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 0; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
-    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
-    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
+    x3[2] = 0; x3[1] = 0; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 0; x3[1] = 0; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
+    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 1; x3[1] = 1; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
 
     x3[2]=1; x3[1]=0; x3[0]=0; 
     q = qmdd_create_basis_state(3, x3);
     q = qmdd_gate(q, GATEID_H, 0); 
     q = qmdd_gate(q, GATEID_Z, 0); // input state: |10-> = 1/sqrt(2)(|100> - |101>)
-    x3[2] = 0; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 0; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
-    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == complex_lookup(-1.0/flt_sqrt(2.0),0));
-    x3[2] = 1; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
+    x3[2] = 0; x3[1] = 0; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 0; x3[1] = 0; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == complex_lookup(-1.0/flt_sqrt(2.0),0));
+    x3[2] = 1; x3[1] = 1; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
     q = qmdd_ccircuit(q, CIRCID_swap, cs, 1, 2); // control is |->, expected output: 1/sqrt(2)(|100> - |011>)
-    x3[2] = 0; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 0; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == complex_lookup(-1.0/flt_sqrt(2.0),0));
-    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
-    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
+    x3[2] = 0; x3[1] = 0; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 0; x3[1] = 0; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == complex_lookup(-1.0/flt_sqrt(2.0),0));
+    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 1; x3[1] = 1; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
 
     x3[2]=1; x3[1]=0; x3[0]=0; 
     q = qmdd_create_basis_state(3, x3);
     q = qmdd_gate(q, GATEID_H, 0); 
     q = qmdd_gate(q, GATEID_S, 0); // input state: |10>|+i> = 1/sqrt(2)(|100> + i|101>)
-    x3[2] = 0; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 0; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
-    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == complex_lookup(0,1.0/flt_sqrt(2.0)));
-    x3[2] = 1; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
+    x3[2] = 0; x3[1] = 0; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 0; x3[1] = 0; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == complex_lookup(0,1.0/flt_sqrt(2.0)));
+    x3[2] = 1; x3[1] = 1; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
     q = qmdd_ccircuit(q, CIRCID_swap, cs, 1, 2); // control is |+i>, expected output: 1/sqrt(2)(|100> + i|011>)
-    x3[2] = 0; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 0; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == complex_lookup(0,1.0/flt_sqrt(2.0)));
-    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
-    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 1; x3[0] = 0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
+    x3[2] = 0; x3[1] = 0; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 0; x3[1] = 0; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 0; x3[1] = 1; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 0; x3[1] = 1; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == complex_lookup(0,1.0/flt_sqrt(2.0)));
+    x3[2] = 1; x3[1] = 0; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
+    x3[2] = 1; x3[1] = 0; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 1; x3[1] = 1; x3[0] = 0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[2] = 1; x3[1] = 1; x3[0] = 1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
 
     // TODO: more tests ?
 
@@ -168,25 +168,25 @@ int test_tensor_product()
 
     q0 = qmdd_create_basis_state(3, x3);
     q1 = qmdd_create_basis_state(2, x2);
-    test_assert(aadd_countnodes(q0) == 4);
-    test_assert(aadd_countnodes(q1) == 3);
+    test_assert(evbdd_countnodes(q0) == 4);
+    test_assert(evbdd_countnodes(q1) == 3);
 
     // q0 (tensor) q1
-    qTest = aadd_vec_tensor_prod(q0, q1, 3);
+    qTest = evbdd_vec_tensor_prod(q0, q1, 3);
     qRef  = qmdd_create_basis_state(5, x3_2);
-    test_assert(aadd_is_ordered(qTest, 5));
-    test_assert(aadd_countnodes(qTest) == 6);
-    test_assert(aadd_equivalent(qTest, qRef, 5, false, true));
-    test_assert(aadd_equivalent(qTest, qRef, 5, true, true));
+    test_assert(evbdd_is_ordered(qTest, 5));
+    test_assert(evbdd_countnodes(qTest) == 6);
+    test_assert(evbdd_equivalent(qTest, qRef, 5, false, true));
+    test_assert(evbdd_equivalent(qTest, qRef, 5, true, true));
     test_assert(qTest == qRef);
 
     // q1 (tensor) q0
-    qTest = aadd_vec_tensor_prod(q1, q0, 2);
+    qTest = evbdd_vec_tensor_prod(q1, q0, 2);
     qRef  = qmdd_create_basis_state(5, x2_3);
-    test_assert(aadd_is_ordered(qTest, 5));
-    test_assert(aadd_countnodes(qTest) == 6);
-    test_assert(aadd_equivalent(qTest, qRef, 5, false, true));
-    test_assert(aadd_equivalent(qTest, qRef, 5, true, true));
+    test_assert(evbdd_is_ordered(qTest, 5));
+    test_assert(evbdd_countnodes(qTest) == 6);
+    test_assert(evbdd_equivalent(qTest, qRef, 5, false, true));
+    test_assert(evbdd_equivalent(qTest, qRef, 5, true, true));
     test_assert(qTest == qRef);
 
 
@@ -203,18 +203,18 @@ int test_measure_random_state(QMDD qmdd, BDDVAR nvars)
     QMDD qm;
     int m; double p;
 
-    test_assert(aadd_is_ordered(qmdd, nvars));
+    test_assert(evbdd_is_ordered(qmdd, nvars));
     test_assert(qmdd_is_unitvector(qmdd, nvars));
     qm = qmdd_measure_q0(qmdd, nvars, &m, &p);
-    test_assert(aadd_is_ordered(qmdd, nvars));
+    test_assert(evbdd_is_ordered(qmdd, nvars));
     test_assert(qmdd_is_unitvector(qm, nvars));
     if ((flt_abs(p - 1.0) < cmap_get_tolerance()) || (flt_abs(p - 0.0) < cmap_get_tolerance())){
         qmdd = qmdd_remove_global_phase(qmdd); // measurement removes global phase
-        test_assert(aadd_equivalent(qmdd, qm, nvars, false, false));
-        test_assert(aadd_equivalent(qmdd, qm, nvars, true,  false));
+        test_assert(evbdd_equivalent(qmdd, qm, nvars, false, false));
+        test_assert(evbdd_equivalent(qmdd, qm, nvars, true,  false));
         test_assert(qm == qmdd);
     } else {
-        test_assert(aadd_countnodes(qm) < aadd_countnodes(qmdd));
+        test_assert(evbdd_countnodes(qm) < evbdd_countnodes(qmdd));
     }
 
     return 0;
@@ -239,8 +239,8 @@ int test_measurements()
         qPM = qmdd_measure_qubit(q, 0, 3, &m, &prob);
         test_assert(m == 0);
         test_assert(prob == 1.0);
-        test_assert(aadd_equivalent(q, qPM, 3, false, false));
-        test_assert(aadd_equivalent(q, qPM, 3, true, false));
+        test_assert(evbdd_equivalent(q, qPM, 3, false, false));
+        test_assert(evbdd_equivalent(q, qPM, 3, true, false));
         test_assert(q == qPM);
 
         // |010>
@@ -249,8 +249,8 @@ int test_measurements()
         qPM = qmdd_measure_qubit(q, 0, 3, &m, &prob);
         test_assert(m == 0);
         test_assert(prob == 1.0);
-        test_assert(aadd_equivalent(q, qPM, 3, false, false));
-        test_assert(aadd_equivalent(q, qPM, 3, true, false));
+        test_assert(evbdd_equivalent(q, qPM, 3, false, false));
+        test_assert(evbdd_equivalent(q, qPM, 3, true, false));
         test_assert(q == qPM);
 
         // |011>
@@ -259,8 +259,8 @@ int test_measurements()
         qPM = qmdd_measure_qubit(q, 0, 3, &m, &prob);
         test_assert(m == 1);
         test_assert(prob == 0.0);
-        test_assert(aadd_equivalent(q, qPM, 3, false, false));
-        test_assert(aadd_equivalent(q, qPM, 3, true, false));
+        test_assert(evbdd_equivalent(q, qPM, 3, false, false));
+        test_assert(evbdd_equivalent(q, qPM, 3, true, false));
         test_assert(q == qPM);
 
         // |00+>
@@ -271,8 +271,8 @@ int test_measurements()
         test_assert(flt_abs(prob - 0.5) < cmap_get_tolerance());
         x3[2]=0; x3[1]=0; x3[0]=m; // either |000> or |001> depending on m
         q = qmdd_create_basis_state(3, x3); 
-        test_assert(aadd_equivalent(q, qPM, 3, false, true));
-        test_assert(aadd_equivalent(q, qPM, 3, true, false));
+        test_assert(evbdd_equivalent(q, qPM, 3, false, true));
+        test_assert(evbdd_equivalent(q, qPM, 3, true, false));
         test_assert(q == qPM);
 
         // |0+0>
@@ -283,8 +283,8 @@ int test_measurements()
         test_assert(flt_abs(prob - 0.5) < cmap_get_tolerance());
         x3[2]=0; x3[1]=m; x3[0]=0; // either |000> or |010> depending on m
         q = qmdd_create_basis_state(3, x3);
-        test_assert(aadd_equivalent(q, qPM, 3, false, true));
-        test_assert(aadd_equivalent(q, qPM, 3, true, false));
+        test_assert(evbdd_equivalent(q, qPM, 3, false, true));
+        test_assert(evbdd_equivalent(q, qPM, 3, true, false));
         test_assert(q == qPM);
 
         // |+00>
@@ -295,8 +295,8 @@ int test_measurements()
         test_assert(flt_abs(prob - 0.5) < cmap_get_tolerance());
         x3[2]=m; x3[1]=0; x3[0]=0; // either |000> or |100> depending on m
         q = qmdd_create_basis_state(3, x3);
-        test_assert(aadd_equivalent(q, qPM, 3, false, true));
-        test_assert(aadd_equivalent(q, qPM, 3, true, false));
+        test_assert(evbdd_equivalent(q, qPM, 3, false, true));
+        test_assert(evbdd_equivalent(q, qPM, 3, true, false));
         test_assert(q == qPM);
 
         // |00->
@@ -307,8 +307,8 @@ int test_measurements()
         test_assert(flt_abs(prob - 0.5) < cmap_get_tolerance());
         x3[2]=0; x3[1]=0; x3[0]=m; // either |000> or |001> depending on m
         q = qmdd_create_basis_state(3, x3); 
-        test_assert(aadd_equivalent(q, qPM, 3, false, true));
-        test_assert(aadd_equivalent(q, qPM, 3, true, false));
+        test_assert(evbdd_equivalent(q, qPM, 3, false, true));
+        test_assert(evbdd_equivalent(q, qPM, 3, true, false));
         test_assert(q == qPM);
         
         // |+++>, measure q0
@@ -323,8 +323,8 @@ int test_measurements()
         q = qmdd_create_basis_state(3, x3); 
         q = qmdd_gate(q, GATEID_H, 1);
         q = qmdd_gate(q, GATEID_H, 2);
-        test_assert(aadd_equivalent(q, qPM, 3, false, true));
-        test_assert(aadd_equivalent(q, qPM, 3, true, false));
+        test_assert(evbdd_equivalent(q, qPM, 3, false, true));
+        test_assert(evbdd_equivalent(q, qPM, 3, true, false));
         test_assert(q == qPM); 
 
         // |+++>, measure q1
@@ -339,8 +339,8 @@ int test_measurements()
         q = qmdd_create_basis_state(3, x3); 
         q = qmdd_gate(q, GATEID_H, 0);
         q = qmdd_gate(q, GATEID_H, 2);
-        test_assert(aadd_equivalent(q, qPM, 3, false, true));
-        test_assert(aadd_equivalent(q, qPM, 3, true, false));
+        test_assert(evbdd_equivalent(q, qPM, 3, false, true));
+        test_assert(evbdd_equivalent(q, qPM, 3, true, false));
         test_assert(q == qPM);
 
         // [1/2, 1/2, 1/2, -1/2] = 1/2(|00> + |01> + |10> - |11>)_(q1, q0)
@@ -349,23 +349,23 @@ int test_measurements()
         q   = qmdd_gate(q, GATEID_H, 0);
         q   = qmdd_gate(q, GATEID_H, 1);
         q   = qmdd_cgate(q,GATEID_Z, 0, 1);
-        x2[1]=0; x2[0]=0; a = aadd_getvalue(q, x2); test_assert(a == complex_lookup(0.5,0));
-        x2[1]=0; x2[0]=1; a = aadd_getvalue(q, x2); test_assert(a == complex_lookup(0.5,0));
-        x2[1]=1; x2[0]=0; a = aadd_getvalue(q, x2); test_assert(a == complex_lookup(0.5,0));
-        x2[1]=1; x2[0]=1; a = aadd_getvalue(q, x2); test_assert(a == complex_lookup(-0.5,0));
+        x2[1]=0; x2[0]=0; a = evbdd_getvalue(q, x2); test_assert(a == complex_lookup(0.5,0));
+        x2[1]=0; x2[0]=1; a = evbdd_getvalue(q, x2); test_assert(a == complex_lookup(0.5,0));
+        x2[1]=1; x2[0]=0; a = evbdd_getvalue(q, x2); test_assert(a == complex_lookup(0.5,0));
+        x2[1]=1; x2[0]=1; a = evbdd_getvalue(q, x2); test_assert(a == complex_lookup(-0.5,0));
         qPM = qmdd_measure_qubit(q, 0, 2, &m, &prob);
         test_assert(flt_abs(prob - 0.5) < cmap_get_tolerance());
         if (m == 0) { // expect 1/sqrt(2)(|00> + |10>)
-            x2[1]=0; x2[0]=0; a = aadd_getvalue(qPM, x2); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
-            x2[1]=0; x2[0]=1; a = aadd_getvalue(qPM, x2); test_assert(a == AADD_ZERO);
-            x2[1]=1; x2[0]=0; a = aadd_getvalue(qPM, x2); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
-            x2[1]=1; x2[0]=1; a = aadd_getvalue(qPM, x2); test_assert(a == AADD_ZERO);
+            x2[1]=0; x2[0]=0; a = evbdd_getvalue(qPM, x2); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
+            x2[1]=0; x2[0]=1; a = evbdd_getvalue(qPM, x2); test_assert(a == EVBDD_ZERO);
+            x2[1]=1; x2[0]=0; a = evbdd_getvalue(qPM, x2); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
+            x2[1]=1; x2[0]=1; a = evbdd_getvalue(qPM, x2); test_assert(a == EVBDD_ZERO);
         }
         if (m == 1) { // expect 1/sqrt(2)(|01> - |11>)
-            x2[1]=0; x2[0]=0; a = aadd_getvalue(qPM, x2); test_assert(a == AADD_ZERO);
-            x2[1]=0; x2[0]=1; a = aadd_getvalue(qPM, x2); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
-            x2[1]=1; x2[0]=0; a = aadd_getvalue(qPM, x2); test_assert(a == AADD_ZERO);
-            x2[1]=1; x2[0]=1; a = aadd_getvalue(qPM, x2); test_assert(a == complex_lookup(-1.0/flt_sqrt(2.0),0));
+            x2[1]=0; x2[0]=0; a = evbdd_getvalue(qPM, x2); test_assert(a == EVBDD_ZERO);
+            x2[1]=0; x2[0]=1; a = evbdd_getvalue(qPM, x2); test_assert(a == complex_lookup(1.0/flt_sqrt(2.0),0));
+            x2[1]=1; x2[0]=0; a = evbdd_getvalue(qPM, x2); test_assert(a == EVBDD_ZERO);
+            x2[1]=1; x2[0]=1; a = evbdd_getvalue(qPM, x2); test_assert(a == complex_lookup(-1.0/flt_sqrt(2.0),0));
         }
     }
 
@@ -382,8 +382,8 @@ int test_measurements()
         test_assert(ms[1] == 0);
         test_assert(ms[2] == 0);
         test_assert(prob == 1.0);
-        test_assert(aadd_equivalent(q, qPM, 3, false, false));
-        test_assert(aadd_equivalent(q, qPM, 3, true, false));
+        test_assert(evbdd_equivalent(q, qPM, 3, false, false));
+        test_assert(evbdd_equivalent(q, qPM, 3, true, false));
         test_assert(q == qPM);
 
         // |010>
@@ -394,8 +394,8 @@ int test_measurements()
         test_assert(ms[1] == 1);
         test_assert(ms[2] == 0);
         test_assert(prob == 1.0);
-        test_assert(aadd_equivalent(q, qPM, 3, false, false));
-        test_assert(aadd_equivalent(q, qPM, 3, true, false));
+        test_assert(evbdd_equivalent(q, qPM, 3, false, false));
+        test_assert(evbdd_equivalent(q, qPM, 3, true, false));
         test_assert(q == qPM);
 
         // |011>
@@ -406,8 +406,8 @@ int test_measurements()
         test_assert(ms[1] == 1);
         test_assert(ms[2] == 0);
         test_assert(prob == 1.0);
-        test_assert(aadd_equivalent(q, qPM, 3, false, false));
-        test_assert(aadd_equivalent(q, qPM, 3, true, false));
+        test_assert(evbdd_equivalent(q, qPM, 3, false, false));
+        test_assert(evbdd_equivalent(q, qPM, 3, true, false));
         test_assert(q == qPM);
 
        // |00+>
@@ -418,8 +418,8 @@ int test_measurements()
         test_assert(flt_abs(prob - 0.5) < cmap_get_tolerance());
         x3[2]=0; x3[1]=0; x3[0]=ms[0]; // either |000> or |001> depending on m
         q = qmdd_create_basis_state(3, x3); 
-        test_assert(aadd_equivalent(q, qPM, 3, false, true));
-        test_assert(aadd_equivalent(q, qPM, 3, true, false));
+        test_assert(evbdd_equivalent(q, qPM, 3, false, true));
+        test_assert(evbdd_equivalent(q, qPM, 3, true, false));
         test_assert(q == qPM);
         if (ms[0] == 0) m_zer[0] += 1;
 
@@ -431,8 +431,8 @@ int test_measurements()
         test_assert(flt_abs(prob - 0.5) < cmap_get_tolerance());
         x3[2]=0; x3[1]=ms[1]; x3[0]=0; // either |000> or |010> depending on m
         q = qmdd_create_basis_state(3, x3);
-        test_assert(aadd_equivalent(q, qPM, 3, false, true));
-        test_assert(aadd_equivalent(q, qPM, 3, true, false));
+        test_assert(evbdd_equivalent(q, qPM, 3, false, true));
+        test_assert(evbdd_equivalent(q, qPM, 3, true, false));
         test_assert(q == qPM);
         if (ms[1] == 0) m_zer[1] += 1;
 
@@ -444,8 +444,8 @@ int test_measurements()
         test_assert(flt_abs(prob - 0.5) < cmap_get_tolerance());
         x3[2]=ms[2]; x3[1]=0; x3[0]=0; // either |000> or |100> depending on m
         q = qmdd_create_basis_state(3, x3);
-        test_assert(aadd_equivalent(q, qPM, 3, false, true));
-        test_assert(aadd_equivalent(q, qPM, 3, true, false));
+        test_assert(evbdd_equivalent(q, qPM, 3, false, true));
+        test_assert(evbdd_equivalent(q, qPM, 3, true, false));
         test_assert(q == qPM);
         if (ms[2] == 0) m_zer[2] += 1;
     }
@@ -470,23 +470,23 @@ int test_QFT()
     q3 = qmdd_circuit(q3, CIRCID_reverse_range, 0, 2);
 
     // check approx equal against output from qiskit
-    x3[2]=0; x3[1]=0; x3[0]=0; a = aadd_getvalue(q3, x3); weight_value(a, &c); cref = cmake(3.5355339059327384e-01,-8.6595605623549353e-17);  test_assert(weight_approx_eq(&c, &cref));
-    x3[2]=0; x3[1]=0; x3[0]=1; a = aadd_getvalue(q3, x3); weight_value(a, &c); cref = cmake(-3.5355339059327384e-01,8.6595605623549353e-17);  test_assert(weight_approx_eq(&c, &cref));
-    x3[2]=0; x3[1]=1; x3[0]=0; a = aadd_getvalue(q3, x3); weight_value(a, &c); cref = cmake(-1.0824450702943669e-16,-3.5355339059327384e-01); test_assert(weight_approx_eq(&c, &cref));
-    x3[2]=0; x3[1]=1; x3[0]=1; a = aadd_getvalue(q3, x3); weight_value(a, &c); cref = cmake(1.0824450702943669e-16,3.5355339059327384e-01);   test_assert(weight_approx_eq(&c, &cref));
-    x3[2]=1; x3[1]=0; x3[0]=0; a = aadd_getvalue(q3, x3); weight_value(a, &c); cref = cmake(-2.5000000000000000e-01,2.5000000000000017e-01);  test_assert(weight_approx_eq(&c, &cref));
-    x3[2]=1; x3[1]=0; x3[0]=1; a = aadd_getvalue(q3, x3); weight_value(a, &c); cref = cmake(2.5000000000000000e-01,-2.5000000000000017e-01);  test_assert(weight_approx_eq(&c, &cref));
-    x3[2]=1; x3[1]=1; x3[0]=0; a = aadd_getvalue(q3, x3); weight_value(a, &c); cref = cmake(2.5000000000000017e-01,2.5000000000000000e-01);   test_assert(weight_approx_eq(&c, &cref));
-    x3[2]=1; x3[1]=1; x3[0]=1; a = aadd_getvalue(q3, x3); weight_value(a, &c); cref = cmake(-2.5000000000000017e-01,-2.5000000000000000e-01); test_assert(weight_approx_eq(&c, &cref));
+    x3[2]=0; x3[1]=0; x3[0]=0; a = evbdd_getvalue(q3, x3); weight_value(a, &c); cref = cmake(3.5355339059327384e-01,-8.6595605623549353e-17);  test_assert(weight_approx_eq(&c, &cref));
+    x3[2]=0; x3[1]=0; x3[0]=1; a = evbdd_getvalue(q3, x3); weight_value(a, &c); cref = cmake(-3.5355339059327384e-01,8.6595605623549353e-17);  test_assert(weight_approx_eq(&c, &cref));
+    x3[2]=0; x3[1]=1; x3[0]=0; a = evbdd_getvalue(q3, x3); weight_value(a, &c); cref = cmake(-1.0824450702943669e-16,-3.5355339059327384e-01); test_assert(weight_approx_eq(&c, &cref));
+    x3[2]=0; x3[1]=1; x3[0]=1; a = evbdd_getvalue(q3, x3); weight_value(a, &c); cref = cmake(1.0824450702943669e-16,3.5355339059327384e-01);   test_assert(weight_approx_eq(&c, &cref));
+    x3[2]=1; x3[1]=0; x3[0]=0; a = evbdd_getvalue(q3, x3); weight_value(a, &c); cref = cmake(-2.5000000000000000e-01,2.5000000000000017e-01);  test_assert(weight_approx_eq(&c, &cref));
+    x3[2]=1; x3[1]=0; x3[0]=1; a = evbdd_getvalue(q3, x3); weight_value(a, &c); cref = cmake(2.5000000000000000e-01,-2.5000000000000017e-01);  test_assert(weight_approx_eq(&c, &cref));
+    x3[2]=1; x3[1]=1; x3[0]=0; a = evbdd_getvalue(q3, x3); weight_value(a, &c); cref = cmake(2.5000000000000017e-01,2.5000000000000000e-01);   test_assert(weight_approx_eq(&c, &cref));
+    x3[2]=1; x3[1]=1; x3[0]=1; a = evbdd_getvalue(q3, x3); weight_value(a, &c); cref = cmake(-2.5000000000000017e-01,-2.5000000000000000e-01); test_assert(weight_approx_eq(&c, &cref));
     test_assert(qmdd_is_unitvector(q3, 3));
-    test_assert(aadd_is_ordered(q3, 3));
+    test_assert(evbdd_is_ordered(q3, 3));
     test_assert(fabs(qmdd_get_norm(q3, 3) - 1.0) < 1e-14);
 
     // inverse QFT
     q3 = qmdd_circuit(q3, CIRCID_reverse_range, 0, 2);
     q3 = qmdd_circuit(q3, CIRCID_QFT_inv, 0, 2);
-    test_assert(aadd_equivalent(q3, qref3, 3, false, false));
-    test_assert(aadd_equivalent(q3, qref3, 3, true, false));
+    test_assert(evbdd_equivalent(q3, qref3, 3, false, false));
+    test_assert(evbdd_equivalent(q3, qref3, 3, true, false));
     test_assert(q3 == qref3);
     test_assert(fabs(qmdd_get_norm(q3, 3) - 1.0) < 1e-14);
 
@@ -496,49 +496,49 @@ int test_QFT()
     qref5 = qmdd_create_basis_state(5, x5);
     q5 = qmdd_circuit(q5, CIRCID_QFT, 0, 4);
     q5 = qmdd_circuit(q5, CIRCID_reverse_range, 0, 4);
-    test_assert(aadd_is_ordered(q5, 5));
+    test_assert(evbdd_is_ordered(q5, 5));
 
     // check approx equal against output from qiskit
-    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=0; a = aadd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(1.7677669529663692e-01,-6.4946704217662027e-17);  test_assert(weight_approx_eq(&c, &cref));
-    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=1; a = aadd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(-1.7677669529663692e-01,6.4946704217662027e-17);  test_assert(weight_approx_eq(&c, &cref));
-    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=0; a = aadd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(7.5771154920605696e-17,1.7677669529663692e-01);   test_assert(weight_approx_eq(&c, &cref));
-    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=1; a = aadd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(-7.5771154920605696e-17,-1.7677669529663692e-01); test_assert(weight_approx_eq(&c, &cref));
-    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=0; a = aadd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(-1.2500000000000011e-01,-1.2499999999999999e-01); test_assert(weight_approx_eq(&c, &cref));
-    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=1; a = aadd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(1.2500000000000011e-01,1.2499999999999999e-01);   test_assert(weight_approx_eq(&c, &cref));
-    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=0; a = aadd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(1.2499999999999999e-01,-1.2500000000000011e-01);  test_assert(weight_approx_eq(&c, &cref));
-    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=1; a = aadd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(-1.2499999999999999e-01,1.2500000000000011e-01);  test_assert(weight_approx_eq(&c, &cref));
-    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=0; a = aadd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(6.7649512518274585e-02,-1.6332037060954713e-01);  test_assert(weight_approx_eq(&c, &cref));
-    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=1; a = aadd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(-6.7649512518274585e-02,1.6332037060954713e-01);  test_assert(weight_approx_eq(&c, &cref));
-    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=0; a = aadd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(1.6332037060954713e-01,6.7649512518274571e-02);   test_assert(weight_approx_eq(&c, &cref));
-    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=1; a = aadd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(-1.6332037060954713e-01,-6.7649512518274571e-02); test_assert(weight_approx_eq(&c, &cref));
-    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=0; a = aadd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(-1.6332037060954710e-01,6.7649512518274696e-02);  test_assert(weight_approx_eq(&c, &cref));
-    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=1; a = aadd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(1.6332037060954710e-01,-6.7649512518274696e-02);  test_assert(weight_approx_eq(&c, &cref));
-    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=0; a = aadd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(-6.7649512518274710e-02,-1.6332037060954710e-01); test_assert(weight_approx_eq(&c, &cref));
-    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=1; a = aadd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(6.7649512518274710e-02,1.6332037060954710e-01);   test_assert(weight_approx_eq(&c, &cref));
-    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=0; a = aadd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(-1.4698445030241986e-01,9.8211869798387877e-02);  test_assert(weight_approx_eq(&c, &cref));
-    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=1; a = aadd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(1.4698445030241986e-01,-9.8211869798387877e-02);  test_assert(weight_approx_eq(&c, &cref));
-    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=0; a = aadd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(-9.8211869798387877e-02,-1.4698445030241986e-01); test_assert(weight_approx_eq(&c, &cref));
-    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=1; a = aadd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(9.8211869798387877e-02,1.4698445030241986e-01);   test_assert(weight_approx_eq(&c, &cref));
-    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=0; a = aadd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(1.7337998066526852e-01,3.4487422410367806e-02);   test_assert(weight_approx_eq(&c, &cref));
-    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=1; a = aadd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(-1.7337998066526852e-01,-3.4487422410367806e-02); test_assert(weight_approx_eq(&c, &cref));
-    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=0; a = aadd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(-3.4487422410367799e-02,1.7337998066526852e-01);  test_assert(weight_approx_eq(&c, &cref));
-    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=1; a = aadd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(3.4487422410367799e-02,-1.7337998066526852e-01);  test_assert(weight_approx_eq(&c, &cref));
-    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=0; a = aadd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(3.4487422410367972e-02,1.7337998066526850e-01);   test_assert(weight_approx_eq(&c, &cref));
-    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=1; a = aadd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(-3.4487422410367972e-02,-1.7337998066526850e-01); test_assert(weight_approx_eq(&c, &cref));
-    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=0; a = aadd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(-1.7337998066526850e-01,3.4487422410367986e-02);  test_assert(weight_approx_eq(&c, &cref));
-    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=1; a = aadd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(1.7337998066526850e-01,-3.4487422410367986e-02);  test_assert(weight_approx_eq(&c, &cref));
-    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=0; a = aadd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(9.8211869798387752e-02,-1.4698445030241994e-01);  test_assert(weight_approx_eq(&c, &cref));
-    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=1; a = aadd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(-9.8211869798387752e-02,1.4698445030241994e-01);  test_assert(weight_approx_eq(&c, &cref));
-    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=0; a = aadd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(1.4698445030241994e-01,9.8211869798387752e-02);   test_assert(weight_approx_eq(&c, &cref));
-    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=1; a = aadd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(-1.4698445030241994e-01,-9.8211869798387752e-02); test_assert(weight_approx_eq(&c, &cref));
+    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=0; a = evbdd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(1.7677669529663692e-01,-6.4946704217662027e-17);  test_assert(weight_approx_eq(&c, &cref));
+    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=1; a = evbdd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(-1.7677669529663692e-01,6.4946704217662027e-17);  test_assert(weight_approx_eq(&c, &cref));
+    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=0; a = evbdd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(7.5771154920605696e-17,1.7677669529663692e-01);   test_assert(weight_approx_eq(&c, &cref));
+    x5[4]=0; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=1; a = evbdd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(-7.5771154920605696e-17,-1.7677669529663692e-01); test_assert(weight_approx_eq(&c, &cref));
+    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=0; a = evbdd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(-1.2500000000000011e-01,-1.2499999999999999e-01); test_assert(weight_approx_eq(&c, &cref));
+    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=1; a = evbdd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(1.2500000000000011e-01,1.2499999999999999e-01);   test_assert(weight_approx_eq(&c, &cref));
+    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=0; a = evbdd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(1.2499999999999999e-01,-1.2500000000000011e-01);  test_assert(weight_approx_eq(&c, &cref));
+    x5[4]=0; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=1; a = evbdd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(-1.2499999999999999e-01,1.2500000000000011e-01);  test_assert(weight_approx_eq(&c, &cref));
+    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=0; a = evbdd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(6.7649512518274585e-02,-1.6332037060954713e-01);  test_assert(weight_approx_eq(&c, &cref));
+    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=1; a = evbdd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(-6.7649512518274585e-02,1.6332037060954713e-01);  test_assert(weight_approx_eq(&c, &cref));
+    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=0; a = evbdd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(1.6332037060954713e-01,6.7649512518274571e-02);   test_assert(weight_approx_eq(&c, &cref));
+    x5[4]=0; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=1; a = evbdd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(-1.6332037060954713e-01,-6.7649512518274571e-02); test_assert(weight_approx_eq(&c, &cref));
+    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=0; a = evbdd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(-1.6332037060954710e-01,6.7649512518274696e-02);  test_assert(weight_approx_eq(&c, &cref));
+    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=1; a = evbdd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(1.6332037060954710e-01,-6.7649512518274696e-02);  test_assert(weight_approx_eq(&c, &cref));
+    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=0; a = evbdd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(-6.7649512518274710e-02,-1.6332037060954710e-01); test_assert(weight_approx_eq(&c, &cref));
+    x5[4]=0; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=1; a = evbdd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(6.7649512518274710e-02,1.6332037060954710e-01);   test_assert(weight_approx_eq(&c, &cref));
+    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=0; a = evbdd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(-1.4698445030241986e-01,9.8211869798387877e-02);  test_assert(weight_approx_eq(&c, &cref));
+    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=0; x5[0]=1; a = evbdd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(1.4698445030241986e-01,-9.8211869798387877e-02);  test_assert(weight_approx_eq(&c, &cref));
+    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=0; a = evbdd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(-9.8211869798387877e-02,-1.4698445030241986e-01); test_assert(weight_approx_eq(&c, &cref));
+    x5[4]=1; x5[3]=0; x5[2]=0; x5[1]=1; x5[0]=1; a = evbdd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(9.8211869798387877e-02,1.4698445030241986e-01);   test_assert(weight_approx_eq(&c, &cref));
+    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=0; a = evbdd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(1.7337998066526852e-01,3.4487422410367806e-02);   test_assert(weight_approx_eq(&c, &cref));
+    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=0; x5[0]=1; a = evbdd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(-1.7337998066526852e-01,-3.4487422410367806e-02); test_assert(weight_approx_eq(&c, &cref));
+    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=0; a = evbdd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(-3.4487422410367799e-02,1.7337998066526852e-01);  test_assert(weight_approx_eq(&c, &cref));
+    x5[4]=1; x5[3]=0; x5[2]=1; x5[1]=1; x5[0]=1; a = evbdd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(3.4487422410367799e-02,-1.7337998066526852e-01);  test_assert(weight_approx_eq(&c, &cref));
+    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=0; a = evbdd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(3.4487422410367972e-02,1.7337998066526850e-01);   test_assert(weight_approx_eq(&c, &cref));
+    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=0; x5[0]=1; a = evbdd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(-3.4487422410367972e-02,-1.7337998066526850e-01); test_assert(weight_approx_eq(&c, &cref));
+    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=0; a = evbdd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(-1.7337998066526850e-01,3.4487422410367986e-02);  test_assert(weight_approx_eq(&c, &cref));
+    x5[4]=1; x5[3]=1; x5[2]=0; x5[1]=1; x5[0]=1; a = evbdd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(1.7337998066526850e-01,-3.4487422410367986e-02);  test_assert(weight_approx_eq(&c, &cref));
+    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=0; a = evbdd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(9.8211869798387752e-02,-1.4698445030241994e-01);  test_assert(weight_approx_eq(&c, &cref));
+    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=0; x5[0]=1; a = evbdd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(-9.8211869798387752e-02,1.4698445030241994e-01);  test_assert(weight_approx_eq(&c, &cref));
+    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=0; a = evbdd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(1.4698445030241994e-01,9.8211869798387752e-02);   test_assert(weight_approx_eq(&c, &cref));
+    x5[4]=1; x5[3]=1; x5[2]=1; x5[1]=1; x5[0]=1; a = evbdd_getvalue(q5, x5); weight_value(a, &c); cref = cmake(-1.4698445030241994e-01,-9.8211869798387752e-02); test_assert(weight_approx_eq(&c, &cref));
     test_assert(qmdd_is_unitvector(q5, 5));
     test_assert(fabs(qmdd_get_norm(q5, 5) - 1.0) < 1e-14);
 
     // inverse QFT
     q5 = qmdd_circuit(q5, CIRCID_reverse_range, 0, 4);
     q5 = qmdd_circuit(q5, CIRCID_QFT_inv, 0, 4);
-    test_assert(aadd_equivalent(q5, qref5, 5, false, false));
-    test_assert(aadd_equivalent(q5, qref5, 5, true, false));
+    test_assert(evbdd_equivalent(q5, qref5, 5, false, false));
+    test_assert(evbdd_equivalent(q5, qref5, 5, true, false));
     test_assert(q5 == qref5);
     test_assert(fabs(qmdd_get_norm(q5, 5) - 1.0) < 1e-14);
     
@@ -578,7 +578,7 @@ int test_5qubit_circuit()
     q = qmdd_cgate(q, GATEID_Z, 0, 4);       q = qmdd_gate(q, GATEID_H, 1);       test_assert(qmdd_is_unitvector(q, 5));
     q = qmdd_gate(q, GATEID_H, 3);           q = qmdd_gate(q, GATEID_X, 1);       test_assert(qmdd_is_unitvector(q, 5));
     q = qmdd_cgate(q, GATEID_Z, 1, 2);       q = qmdd_gate(q, GATEID_Z, 1);       test_assert(qmdd_is_unitvector(q, 5));
-    node_count = aadd_countnodes(q);
+    node_count = evbdd_countnodes(q);
     if (test_measure_random_state(q, n_qubits)) return 1;
     test_assert(fabs(qmdd_get_norm(q, n_qubits) - 1.0) < 1e-14);
 
@@ -600,12 +600,12 @@ int test_5qubit_circuit()
     q = qmdd_cgate(q, GATEID_X, 1, 3);       q = qmdd_cgate(q, GATEID_Z, 3, 4);   test_assert(qmdd_is_unitvector(q, 5));
     q = qmdd_gate(q, GATEID_X, 2);           q = qmdd_cgate(q, GATEID_Z, 1, 2);   test_assert(qmdd_is_unitvector(q, 5));
 
-    test_assert(aadd_equivalent(q, qref, n_qubits, false, VERBOSE)); // check approx equiv
-    test_assert(aadd_equivalent(q, qref, n_qubits, true,  VERBOSE)); // check exact equiv
+    test_assert(evbdd_equivalent(q, qref, n_qubits, false, VERBOSE)); // check approx equiv
+    test_assert(evbdd_equivalent(q, qref, n_qubits, true,  VERBOSE)); // check exact equiv
     test_assert(q == qref);
 
     fp = fopen("5_qubit_res.dot", "w");
-    aadd_fprintdot(fp, q, true);
+    evbdd_fprintdot(fp, q, true);
     fclose(fp);
 
     if(VERBOSE) printf("qmdd 5 qubit circuit:      ok (%" PRIu64 " nodes)\n", node_count);
@@ -640,7 +640,7 @@ int test_10qubit_circuit()
     q = qmdd_cgate(q, GATEID_Z, 7, 8);       q = qmdd_gate(q, GATEID_X, 7);       test_assert(qmdd_is_unitvector(q, 10));
     q = qmdd_gate(q, GATEID_Z, 2);           q = qmdd_gate(q, GATEID_Z, 7);       test_assert(qmdd_is_unitvector(q, 10));
     q = qmdd_gate(q, GATEID_X, 6);           q = qmdd_gate(q, GATEID_X, 1);       test_assert(qmdd_is_unitvector(q, 10));
-    node_count = aadd_countnodes(q);
+    node_count = evbdd_countnodes(q);
     if (test_measure_random_state(q, 10)) return 1;
     test_assert(fabs(qmdd_get_norm(q, 10) - 1.0) < 1e-14);
 
@@ -661,8 +661,8 @@ int test_10qubit_circuit()
     q = qmdd_cgate(q, GATEID_X, 6, 9);       q = qmdd_gate(q, GATEID_X, 6);       test_assert(qmdd_is_unitvector(q, 10));
     q = qmdd_gate(q, GATEID_H, 0);           q = qmdd_cgate(q, GATEID_X, 1, 3);   test_assert(qmdd_is_unitvector(q, 10));
 
-    test_assert(aadd_equivalent(q, qref, 10, false, VERBOSE)); // check approx equiv
-    test_assert(aadd_equivalent(q, qref, 10, true,  VERBOSE)); // check exact equiv
+    test_assert(evbdd_equivalent(q, qref, 10, false, VERBOSE)); // check approx equiv
+    test_assert(evbdd_equivalent(q, qref, 10, true,  VERBOSE)); // check exact equiv
     test_assert(q == qref);
 
     if(VERBOSE) printf("qmdd 10 qubit circuit:     ok (%" PRIu64 " nodes)\n", node_count);
@@ -707,7 +707,7 @@ int test_20qubit_circuit()
     q = qmdd_cgate(q, GATEID_X, 5, 11);      q = qmdd_cgate(q, GATEID_X, 9, 17);      q = qmdd_gate(q, GATEID_Z, 3);           q = qmdd_cgate(q, GATEID_X, 11, 18);
     q = qmdd_cgate(q, GATEID_Z, 5, 15);      q = qmdd_cgate(q, GATEID_X, 0, 15);      q = qmdd_cgate(q, GATEID_X, 1, 6);       q = qmdd_cgate(q, GATEID_X, 8, 16);
     q = qmdd_cgate(q, GATEID_X, 5, 19);      q = qmdd_cgate(q, GATEID_Z, 3, 18);      q = qmdd_cgate(q, GATEID_X, 5, 8);       q = qmdd_cgate(q, GATEID_Z, 14, 18);
-    node_count = aadd_countnodes(q);
+    node_count = evbdd_countnodes(q);
     if (test_measure_random_state(q, 20)) return 1;
     test_assert(fabs(qmdd_get_norm(q, 20) - 1.0) < 1e-14);
 
@@ -738,8 +738,8 @@ int test_20qubit_circuit()
     q = qmdd_cgate(q, GATEID_Z, 13, 16);     q = qmdd_cgate(q, GATEID_Z, 1, 16);      q = qmdd_cgate(q, GATEID_Z, 0, 4);       q = qmdd_cgate(q, GATEID_Z, 9, 10);
     q = qmdd_gate(q, GATEID_Z, 4);           q = qmdd_cgate(q, GATEID_X, 1, 12);      q = qmdd_gate(q, GATEID_H, 16);          q = qmdd_cgate(q, GATEID_Z, 4, 18);
 
-    test_assert(aadd_equivalent(q, qref, 20, false, VERBOSE)); // check approx equiv
-    test_assert(aadd_equivalent(q, qref, 20, true,  VERBOSE)); // check exact equiv
+    test_assert(evbdd_equivalent(q, qref, 20, false, VERBOSE)); // check approx equiv
+    test_assert(evbdd_equivalent(q, qref, 20, true,  VERBOSE)); // check exact equiv
     test_assert(q == qref);
 
     if(VERBOSE) printf("qmdd 20 qubit circuit:     ok (%" PRIu64 " nodes)\n", node_count);

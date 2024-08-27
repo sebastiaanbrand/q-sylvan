@@ -4,7 +4,7 @@
 void ry_cz_ansatz(int nqubits, int depth)
 {
     QMDD state = qmdd_create_all_zero_state(nqubits);
-    aadd_protect(&state);
+    evbdd_protect(&state);
 
     for (int d = 0; d < depth; d++) {
         // Ry rotations
@@ -30,7 +30,7 @@ void ry_cz_ansatz(int nqubits, int depth)
     printf("> (with prob %lf)\n", prob);
 
     free(outcome);
-    aadd_unprotect(&state);
+    evbdd_unprotect(&state);
 }
 
 int main()

@@ -63,7 +63,7 @@ GATE_OPID_64(uint32_t gateid, BDDVAR a, BDDVAR b, BDDVAR c, BDDVAR d, BDDVAR e)
 void
 qsylvan_init_simulator(size_t min_tablesize, size_t max_tablesize, double wgt_tab_tolerance, int edge_weigth_backend, int norm_strat)
 {
-    sylvan_init_aadd(min_tablesize, max_tablesize, wgt_tab_tolerance, edge_weigth_backend, norm_strat, &qmdd_gates_init);
+    sylvan_init_evbdd(min_tablesize, max_tablesize, wgt_tab_tolerance, edge_weigth_backend, norm_strat, &qmdd_gates_init);
 }
 
 void
@@ -92,19 +92,19 @@ QMDD
 qmdd_create_basis_state(BDDVAR n, bool* x)
 {
     // start at terminal, and build backwards
-    QMDD low, high, prev = AADD_TERMINAL;
+    QMDD low, high, prev = EVBDD_TERMINAL;
 
     for (int k = n-1; k >= 0; k--) {
         if (x[k] == 0) {
-            low = aadd_bundle(AADD_TARGET(prev), AADD_ONE);
-            high = aadd_bundle(AADD_TERMINAL, AADD_ZERO);
+            low = evbdd_bundle(EVBDD_TARGET(prev), EVBDD_ONE);
+            high = evbdd_bundle(EVBDD_TERMINAL, EVBDD_ZERO);
         }
         else if (x[k] == 1) {
-            low = aadd_bundle(AADD_TERMINAL, AADD_ZERO);
-            high = aadd_bundle(AADD_TARGET(prev), AADD_ONE);
+            low = evbdd_bundle(EVBDD_TERMINAL, EVBDD_ZERO);
+            high = evbdd_bundle(EVBDD_TARGET(prev), EVBDD_ONE);
         }
         // add node to unique table
-        prev = aadd_makenode(k, low, high);
+        prev = evbdd_makenode(k, low, high);
     }
     return prev;
 }
@@ -122,17 +122,17 @@ qmdd_stack_matrix(QMDD below, BDDVAR k, gate_id_t gateid)
 
     // Matrix U = [u00 u01
     //             u10 u11] endoded in a small tree
-    u00 = aadd_bundle(AADD_TARGET(below), gates[gateid][0]);
-    u10 = aadd_bundle(AADD_TARGET(below), gates[gateid][2]);
-    u01 = aadd_bundle(AADD_TARGET(below), gates[gateid][1]);
-    u11 = aadd_bundle(AADD_TARGET(below), gates[gateid][3]);
-    low  = aadd_makenode(t, u00, u10);
-    high = aadd_makenode(t, u01, u11);
-    res  = aadd_makenode(s, low, high);
+    u00 = evbdd_bundle(EVBDD_TARGET(below), gates[gateid][0]);
+    u10 = evbdd_bundle(EVBDD_TARGET(below), gates[gateid][2]);
+    u01 = evbdd_bundle(EVBDD_TARGET(below), gates[gateid][1]);
+    u11 = evbdd_bundle(EVBDD_TARGET(below), gates[gateid][3]);
+    low  = evbdd_makenode(t, u00, u10);
+    high = evbdd_makenode(t, u01, u11);
+    res  = evbdd_makenode(s, low, high);
 
     // Propagate common factor on previous root amp to new root amp
-    AMP new_root_amp = wgt_mul(AADD_WEIGHT(below), AADD_WEIGHT(res));
-    res = aadd_bundle(AADD_TARGET(res), new_root_amp);
+    AMP new_root_amp = wgt_mul(EVBDD_WEIGHT(below), EVBDD_WEIGHT(res));
+    res = evbdd_bundle(EVBDD_TARGET(res), new_root_amp);
     return res;
 }
 
@@ -147,14 +147,14 @@ qmdd_stack_control(QMDD case0, QMDD case1, BDDVAR k)
     t = s + 1;
 
     u00 = case0;
-    u10 = aadd_bundle(AADD_TERMINAL, AADD_ZERO);
-    u01 = aadd_bundle(AADD_TERMINAL, AADD_ZERO);
+    u10 = evbdd_bundle(EVBDD_TERMINAL, EVBDD_ZERO);
+    u01 = evbdd_bundle(EVBDD_TERMINAL, EVBDD_ZERO);
     u11 = case1;
-    low  = aadd_makenode(t, u00, u10);
-    high = aadd_makenode(t, u01, u11);
-    res  = aadd_makenode(s, low, high);
+    low  = evbdd_makenode(t, u00, u10);
+    high = evbdd_makenode(t, u01, u11);
+    res  = evbdd_makenode(s, low, high);
 
-    // Weights of case0/case1 already dealt with by aadd_makenode
+    // Weights of case0/case1 already dealt with by evbdd_makenode
     return res;
 }
 
@@ -162,7 +162,7 @@ QMDD
 qmdd_create_all_identity_matrix(BDDVAR n)
 {
     // Start at terminal and build backwards
-    QMDD prev = aadd_bundle(AADD_TERMINAL, AADD_ONE);
+    QMDD prev = evbdd_bundle(EVBDD_TERMINAL, EVBDD_ONE);
     for (int k = n-1; k >= 0; k--) {
         prev = qmdd_stack_matrix(prev, k, GATEID_I);
     }
@@ -173,7 +173,7 @@ QMDD
 qmdd_create_single_qubit_gate(BDDVAR n, BDDVAR t, gate_id_t gateid)
 {
     // Start at terminal and build backwards
-    QMDD prev = aadd_bundle(AADD_TERMINAL, AADD_ONE);
+    QMDD prev = evbdd_bundle(EVBDD_TERMINAL, EVBDD_ONE);
     for (int k = n-1; k >= 0; k--) {
         if ((unsigned int)k == t)
             prev = qmdd_stack_matrix(prev, k, gateid);
@@ -187,7 +187,7 @@ QMDD
 qmdd_create_single_qubit_gates(BDDVAR n, gate_id_t *gateids)
 {
     // Start at terminal and build backwards
-    QMDD prev = aadd_bundle(AADD_TERMINAL, AADD_ONE);
+    QMDD prev = evbdd_bundle(EVBDD_TERMINAL, EVBDD_ONE);
     for (int k = n-1; k >= 0; k--) {
         prev = qmdd_stack_matrix(prev, k, gateids[k]);
     }
@@ -198,7 +198,7 @@ QMDD
 qmdd_create_single_qubit_gates_same(BDDVAR n, gate_id_t gateid)
 {
     // Start at terminal and build backwards
-    QMDD prev = aadd_bundle(AADD_TERMINAL, AADD_ONE);
+    QMDD prev = evbdd_bundle(EVBDD_TERMINAL, EVBDD_ONE);
     for (int k = n-1; k >= 0; k--) {
         prev = qmdd_stack_matrix(prev, k, gateid);
     }
@@ -210,10 +210,10 @@ _qmdd_create_cgate(BDDVAR n, BDDVAR c1, BDDVAR c2, BDDVAR c3, BDDVAR t, gate_id_
 {
     int *c_options = malloc(sizeof(int)*(n+1));
     for (uint32_t k = 0; k < n; k++) c_options[k] = -1;
-    if (c1 != AADD_INVALID_VAR && c1 < n) c_options[c1] = 1;
-    if (c2 != AADD_INVALID_VAR && c2 < n) c_options[c2] = 1;
-    if (c3 != AADD_INVALID_VAR && c3 < n) c_options[c3] = 1;
-    if (t  != AADD_INVALID_VAR && t  < n) c_options[t] = 2;
+    if (c1 != EVBDD_INVALID_VAR && c1 < n) c_options[c1] = 1;
+    if (c2 != EVBDD_INVALID_VAR && c2 < n) c_options[c2] = 1;
+    if (c3 != EVBDD_INVALID_VAR && c3 < n) c_options[c3] = 1;
+    if (t  != EVBDD_INVALID_VAR && t  < n) c_options[t] = 2;
     QMDD gate_matrix = qmdd_create_multi_cgate(n, c_options, gateid);
     free(c_options);
     return gate_matrix;
@@ -232,8 +232,8 @@ qmdd_create_multi_cgate(BDDVAR n, int *c_options, gate_id_t gateid)
     //                   -I \tensor |111><111|      (proj)
 
     // TODO: protect from gc?
-    QMDD U_proj = aadd_bundle(AADD_TERMINAL, AADD_ONE);
-    QMDD proj   = aadd_bundle(AADD_TERMINAL, AADD_ONE);
+    QMDD U_proj = evbdd_bundle(EVBDD_TERMINAL, EVBDD_ONE);
+    QMDD proj   = evbdd_bundle(EVBDD_TERMINAL, EVBDD_ONE);
     QMDD I      = qmdd_create_all_identity_matrix(n);
 
     for (int k = n-1; k >= 0; k--) {
@@ -264,16 +264,16 @@ qmdd_create_multi_cgate(BDDVAR n, int *c_options, gate_id_t gateid)
     }
 
     // multiply root edge of proj with -1
-    proj = aadd_bundle(AADD_TARGET(proj), wgt_neg(AADD_WEIGHT(proj)));
+    proj = evbdd_bundle(EVBDD_TARGET(proj), wgt_neg(EVBDD_WEIGHT(proj)));
 
-    return aadd_plus(U_proj, aadd_plus(I, proj));
+    return evbdd_plus(U_proj, evbdd_plus(I, proj));
 }
 
 QMDD
 qmdd_create_all_control_phase(BDDVAR n, bool *x)
 {
-    QMDD identity = aadd_bundle(AADD_TERMINAL, AADD_ONE);
-    QMDD ccphase  = aadd_bundle(AADD_TERMINAL, AADD_ONE);
+    QMDD identity = evbdd_bundle(EVBDD_TERMINAL, EVBDD_ONE);
+    QMDD ccphase  = evbdd_bundle(EVBDD_TERMINAL, EVBDD_ONE);
 
     // Start with (-1)Z gate on last qubit. Z if control on 1 and -Z if 0.
     if (x[n-1] == 1) {
@@ -281,7 +281,7 @@ qmdd_create_all_control_phase(BDDVAR n, bool *x)
     }
     else if (x[n-1] == 0) {
         ccphase = qmdd_stack_matrix(ccphase, n-1, GATEID_Z);
-        ccphase = aadd_bundle(AADD_TARGET(ccphase), wgt_neg(AADD_WEIGHT(ccphase)));
+        ccphase = evbdd_bundle(EVBDD_TARGET(ccphase), wgt_neg(EVBDD_WEIGHT(ccphase)));
     }
 
     // Stack remaining controls
@@ -314,18 +314,18 @@ static void
 qmdd_do_before_gate(QMDD* qmdd)
 {
     // check if ctable needs gc
-    if (aadd_test_gc_wgt_table()) {
-        aadd_protect(qmdd);
-        aadd_gc_wgt_table();
-        aadd_unprotect(qmdd);
+    if (evbdd_test_gc_wgt_table()) {
+        evbdd_protect(qmdd);
+        evbdd_gc_wgt_table();
+        evbdd_unprotect(qmdd);
     }
 
     if (periodic_gc_nodetable) {
         gate_counter++;
         if (gate_counter % periodic_gc_nodetable == 0) {
-            aadd_protect(qmdd);
+            evbdd_protect(qmdd);
             sylvan_gc();
-            aadd_unprotect(qmdd);
+            evbdd_unprotect(qmdd);
         }
     }
 
@@ -349,9 +349,9 @@ check_ctrls_before_targ(BDDVAR *c1, BDDVAR *c2, BDDVAR *c3, BDDVAR t)
     if (*c2 > *c3) swap(c2, c3);
 
     // check if controls before target
-    if (*c1 != AADD_INVALID_VAR && *c1 > t) return false;
-    if (*c2 != AADD_INVALID_VAR && *c2 > t) return false;
-    if (*c3 != AADD_INVALID_VAR && *c3 > t) return false;
+    if (*c1 != EVBDD_INVALID_VAR && *c1 > t) return false;
+    if (*c2 != EVBDD_INVALID_VAR && *c2 > t) return false;
+    if (*c3 != EVBDD_INVALID_VAR && *c3 > t) return false;
     return true;
 }
 
@@ -359,9 +359,9 @@ check_ctrls_before_targ(BDDVAR *c1, BDDVAR *c2, BDDVAR *c3, BDDVAR t)
 TASK_IMPL_3(QMDD, qmdd_gate, QMDD, qmdd, gate_id_t, gate, BDDVAR, target)
 {
     qmdd_do_before_gate(&qmdd);
-    aadd_refs_push(qmdd);
+    evbdd_refs_push(qmdd);
     QMDD res = qmdd_gate_rec(qmdd, gate, target);
-    aadd_refs_pop(1);
+    evbdd_refs_pop(1);
     return res;
 }
 
@@ -369,21 +369,21 @@ TASK_IMPL_3(QMDD, qmdd_gate, QMDD, qmdd, gate_id_t, gate, BDDVAR, target)
 QMDD _qmdd_cgate(QMDD state, gate_id_t gate, BDDVAR c1, BDDVAR c2, BDDVAR c3, BDDVAR t, BDDVAR n)
 {
     if (check_ctrls_before_targ(&c1, &c2, &c3, t)) {
-        BDDVAR cs[4] = {c1, c2, c3, AADD_INVALID_VAR}; // last pos is to mark end
+        BDDVAR cs[4] = {c1, c2, c3, EVBDD_INVALID_VAR}; // last pos is to mark end
         return RUN(qmdd_cgate, state, gate, cs, t);//qmdd_cgate_rec(state, gate, cs, t);
     }
     else {
         assert(n != 0 && "ERROR: when ctrls > targ, nqubits must be passed to cgate() function.");
         QMDD gate_matrix = _qmdd_create_cgate(n, c1, c2, c3, t, gate);
-        return aadd_matvec_mult(gate_matrix, state, n);
+        return evbdd_matvec_mult(gate_matrix, state, n);
     }
 }
 TASK_IMPL_4(QMDD, qmdd_cgate, QMDD, state, gate_id_t, gate, BDDVAR*, cs, BDDVAR, t)
 {
     qmdd_do_before_gate(&state);
-    aadd_refs_push(state);
+    evbdd_refs_push(state);
     QMDD res = qmdd_cgate_rec(state, gate, cs, t);
-    aadd_refs_pop(1);
+    evbdd_refs_pop(1);
     return res;
 }
 
@@ -397,57 +397,57 @@ TASK_IMPL_5(QMDD, qmdd_cgate_range, QMDD, qmdd, gate_id_t, gate, BDDVAR, c_first
 TASK_IMPL_3(QMDD, qmdd_gate_rec, QMDD, q, gate_id_t, gate, BDDVAR, target)
 {
     // Trivial cases
-    if (AADD_WEIGHT(q) == AADD_ZERO) return q;
+    if (EVBDD_WEIGHT(q) == EVBDD_ZERO) return q;
 
     BDDVAR var;
     QMDD res, low, high;
-    aadd_get_topvar(q, target, &var, &low, &high);
+    evbdd_get_topvar(q, target, &var, &low, &high);
     assert(var <= target);
 
     // Check cache
     bool cachenow = ((var % granularity) == 0);
     if (cachenow) {
-        if (cache_get3(CACHE_QMDD_GATE, sylvan_false, AADD_TARGET(q), GATE_OPID_40(gate, target, 0), &res)) {
+        if (cache_get3(CACHE_QMDD_GATE, sylvan_false, EVBDD_TARGET(q), GATE_OPID_40(gate, target, 0), &res)) {
             sylvan_stats_count(QMDD_GATE_CACHED);
             // Multiply root of res with root of input qmdd
-            AMP new_root_amp = wgt_mul(AADD_WEIGHT(q), AADD_WEIGHT(res));
-            res = aadd_bundle(AADD_TARGET(res), new_root_amp);
+            AMP new_root_amp = wgt_mul(EVBDD_WEIGHT(q), EVBDD_WEIGHT(res));
+            res = evbdd_bundle(EVBDD_TARGET(res), new_root_amp);
             return res;
         }
     }
 
     if (var == target) {
-        AMP a_u00 = wgt_mul(AADD_WEIGHT(low), gates[gate][0]);
-        AMP a_u10 = wgt_mul(AADD_WEIGHT(low), gates[gate][2]);
-        AMP b_u01 = wgt_mul(AADD_WEIGHT(high), gates[gate][1]);
-        AMP b_u11 = wgt_mul(AADD_WEIGHT(high), gates[gate][3]);
+        AMP a_u00 = wgt_mul(EVBDD_WEIGHT(low), gates[gate][0]);
+        AMP a_u10 = wgt_mul(EVBDD_WEIGHT(low), gates[gate][2]);
+        AMP b_u01 = wgt_mul(EVBDD_WEIGHT(high), gates[gate][1]);
+        AMP b_u11 = wgt_mul(EVBDD_WEIGHT(high), gates[gate][3]);
         QMDD low1, low2, high1, high2;
-        low1  = aadd_bundle(AADD_TARGET(low), a_u00);
-        low2  = aadd_bundle(AADD_TARGET(high),b_u01);
-        high1 = aadd_bundle(AADD_TARGET(low), a_u10);
-        high2 = aadd_bundle(AADD_TARGET(high),b_u11);
-        aadd_refs_spawn(SPAWN(aadd_plus, high1, high2));
-        low = aadd_refs_push(CALL(aadd_plus, low1, low2));
-        high = aadd_refs_sync(SYNC(aadd_plus));
-        aadd_refs_pop(1);
-        res = aadd_makenode(target, low, high);
+        low1  = evbdd_bundle(EVBDD_TARGET(low), a_u00);
+        low2  = evbdd_bundle(EVBDD_TARGET(high),b_u01);
+        high1 = evbdd_bundle(EVBDD_TARGET(low), a_u10);
+        high2 = evbdd_bundle(EVBDD_TARGET(high),b_u11);
+        evbdd_refs_spawn(SPAWN(evbdd_plus, high1, high2));
+        low = evbdd_refs_push(CALL(evbdd_plus, low1, low2));
+        high = evbdd_refs_sync(SYNC(evbdd_plus));
+        evbdd_refs_pop(1);
+        res = evbdd_makenode(target, low, high);
     }
     else { // var < target: not at target qubit yet, recursive calls down
-        aadd_refs_spawn(SPAWN(qmdd_gate_rec, high, gate, target));
-        low = aadd_refs_push(CALL(qmdd_gate_rec, low, gate, target));
-        high = aadd_refs_sync(SYNC(qmdd_gate_rec));
-        aadd_refs_pop(1);
-        res  = aadd_makenode(var, low, high);
+        evbdd_refs_spawn(SPAWN(qmdd_gate_rec, high, gate, target));
+        low = evbdd_refs_push(CALL(qmdd_gate_rec, low, gate, target));
+        high = evbdd_refs_sync(SYNC(qmdd_gate_rec));
+        evbdd_refs_pop(1);
+        res  = evbdd_makenode(var, low, high);
     }
 
     // Store not yet "root normalized" result in cache
     if (cachenow) {
-        if (cache_put3(CACHE_QMDD_GATE, sylvan_false, AADD_TARGET(q), GATE_OPID_40(gate, target, 0), res)) 
+        if (cache_put3(CACHE_QMDD_GATE, sylvan_false, EVBDD_TARGET(q), GATE_OPID_40(gate, target, 0), res)) 
             sylvan_stats_count(QMDD_GATE_CACHEDPUT);
     }
     // Multiply amp res with amp of input qmdd
-    AMP new_root_amp = wgt_mul(AADD_WEIGHT(q), AADD_WEIGHT(res));
-    res = aadd_bundle(AADD_TARGET(res), new_root_amp);
+    AMP new_root_amp = wgt_mul(EVBDD_WEIGHT(q), EVBDD_WEIGHT(res));
+    res = evbdd_bundle(EVBDD_TARGET(res), new_root_amp);
     return res;
 }
 
@@ -455,7 +455,7 @@ TASK_IMPL_5(QMDD, qmdd_cgate_rec, QMDD, q, gate_id_t, gate, BDDVAR*, cs, uint32_
 {
     // Get current control qubit. If no more control qubits, apply gate here
     BDDVAR c = cs[ci];
-    if (c == AADD_INVALID_VAR || ci > MAX_CONTROLS) {
+    if (c == EVBDD_INVALID_VAR || ci > MAX_CONTROLS) {
         return CALL(qmdd_gate_rec, q, gate, t);
     }
 
@@ -465,19 +465,19 @@ TASK_IMPL_5(QMDD, qmdd_cgate_rec, QMDD, q, gate_id_t, gate, BDDVAR*, cs, uint32_
 
     BDDVAR var;
     QMDD res, low, high;
-    aadd_get_topvar(q, c, &var, &low, &high);
+    evbdd_get_topvar(q, c, &var, &low, &high);
     assert(var <= c);
 
     // Check cache
     bool cachenow = ((var % granularity) == 0);
     if (cachenow) {
-        if (cache_get3(CACHE_QMDD_CGATE, sylvan_false, AADD_TARGET(q),
+        if (cache_get3(CACHE_QMDD_CGATE, sylvan_false, EVBDD_TARGET(q),
                     GATE_OPID_64(gate, ci, cs[0], cs[1], cs[2], t),
                     &res)) {
             sylvan_stats_count(QMDD_CGATE_CACHED);
             // Multiply root amp of res with input root amp
-            AMP new_root_amp = wgt_mul(AADD_WEIGHT(q), AADD_WEIGHT(res));
-            res = aadd_bundle(AADD_TARGET(res), new_root_amp);
+            AMP new_root_amp = wgt_mul(EVBDD_WEIGHT(q), EVBDD_WEIGHT(res));
+            res = evbdd_bundle(EVBDD_TARGET(res), new_root_amp);
             return res;
         }
     }
@@ -489,24 +489,24 @@ TASK_IMPL_5(QMDD, qmdd_cgate_rec, QMDD, q, gate_id_t, gate, BDDVAR*, cs, uint32_
     }
     // Not at control qubit yet, apply to both childeren.
     else {
-        aadd_refs_spawn(SPAWN(qmdd_cgate_rec, high, gate, cs, ci, t));
-        low = aadd_refs_push(CALL(qmdd_cgate_rec, low, gate, cs, ci, t));
-        high = aadd_refs_sync(SYNC(qmdd_cgate_rec));
-        aadd_refs_pop(1);
+        evbdd_refs_spawn(SPAWN(qmdd_cgate_rec, high, gate, cs, ci, t));
+        low = evbdd_refs_push(CALL(qmdd_cgate_rec, low, gate, cs, ci, t));
+        high = evbdd_refs_sync(SYNC(qmdd_cgate_rec));
+        evbdd_refs_pop(1);
     }
-    res = aadd_makenode(var, low, high);
+    res = evbdd_makenode(var, low, high);
 
     // Store not yet "root normalized" result in cache
     if (cachenow) {
-        if (cache_put3(CACHE_QMDD_CGATE, sylvan_false, AADD_TARGET(q),
+        if (cache_put3(CACHE_QMDD_CGATE, sylvan_false, EVBDD_TARGET(q),
                     GATE_OPID_64(gate, ci, cs[0], cs[1], cs[2], t),
                     res)) {
             sylvan_stats_count(QMDD_CGATE_CACHEDPUT);
         }
     }
     // Multiply root amp of res with input root amp
-    AMP new_root_amp = wgt_mul(AADD_WEIGHT(q), AADD_WEIGHT(res));
-    res = aadd_bundle(AADD_TARGET(res), new_root_amp);
+    AMP new_root_amp = wgt_mul(EVBDD_WEIGHT(q), EVBDD_WEIGHT(res));
+    res = evbdd_bundle(EVBDD_TARGET(res), new_root_amp);
     return res;
 }
 
@@ -524,13 +524,13 @@ TASK_IMPL_6(QMDD, qmdd_cgate_range_rec, QMDD, q, gate_id_t, gate, BDDVAR, c_firs
     QMDD res;
     bool cachenow = ((k % granularity) == 0);
     if (cachenow) {
-        if (cache_get3(CACHE_QMDD_CGATE_RANGE, sylvan_false, AADD_TARGET(q),
+        if (cache_get3(CACHE_QMDD_CGATE_RANGE, sylvan_false, EVBDD_TARGET(q),
                        GATE_OPID_64(gate, c_first, c_last, k, t, 0),
                        &res)) {
             sylvan_stats_count(QMDD_CGATE_CACHED);
             // Multiply root amp of result with the input root amp
-            AMP new_root_amp = wgt_mul(AADD_WEIGHT(q), AADD_WEIGHT(res));
-            res = aadd_bundle(AADD_TARGET(res), new_root_amp);
+            AMP new_root_amp = wgt_mul(EVBDD_WEIGHT(q), EVBDD_WEIGHT(res));
+            res = evbdd_bundle(EVBDD_TARGET(res), new_root_amp);
             return res;
         }
     }
@@ -540,41 +540,41 @@ TASK_IMPL_6(QMDD, qmdd_cgate_range_rec, QMDD, q, gate_id_t, gate, BDDVAR, c_firs
     QMDD low, high;
     if (k < c_first) {
         // possibly skip to c_first if we are before c_first
-        aadd_get_topvar(q, c_first, &var, &low, &high);
+        evbdd_get_topvar(q, c_first, &var, &low, &high);
         assert(var <= c_first);
     }
     else {
         // k is a control qubit, so get node with var = k (insert if skipped)
         assert(c_first <= k && k <= c_last);
-        aadd_get_topvar(q, k, &var, &low, &high);
+        evbdd_get_topvar(q, k, &var, &low, &high);
         assert(var == k);
     }
     nextvar = var + 1;
     
     // Not at first control qubit yet, apply to both children
     if (var < c_first) {
-        aadd_refs_spawn(SPAWN(qmdd_cgate_range_rec, high, gate, c_first, c_last, t, nextvar));
-        low = aadd_refs_push(CALL(qmdd_cgate_range_rec, low, gate, c_first, c_last, t, nextvar));
-        high = aadd_refs_sync(SYNC(qmdd_cgate_range_rec));
-        aadd_refs_pop(1);
+        evbdd_refs_spawn(SPAWN(qmdd_cgate_range_rec, high, gate, c_first, c_last, t, nextvar));
+        low = evbdd_refs_push(CALL(qmdd_cgate_range_rec, low, gate, c_first, c_last, t, nextvar));
+        high = evbdd_refs_sync(SYNC(qmdd_cgate_range_rec));
+        evbdd_refs_pop(1);
     }
     // Current var is a control qubit, control on q_k = |1> (high edge)
     else {
         high = CALL(qmdd_cgate_range_rec, high, gate, c_first, c_last, t, nextvar);
     }
-    res = aadd_makenode(var, low, high);
+    res = evbdd_makenode(var, low, high);
 
     // Store not yet "root normalized" result in cache
     if (cachenow) {
-        if (cache_put3(CACHE_QMDD_CGATE_RANGE, sylvan_false, AADD_TARGET(q),
+        if (cache_put3(CACHE_QMDD_CGATE_RANGE, sylvan_false, EVBDD_TARGET(q),
                        GATE_OPID_64(gate, c_first, c_last, k, t, 0),
                        res)) {
             sylvan_stats_count(QMDD_CGATE_CACHEDPUT);
         }
     }
     // Multiply root amp of result with the input root amp
-    AMP new_root_amp = wgt_mul(AADD_WEIGHT(q), AADD_WEIGHT(res));
-    res = aadd_bundle(AADD_TARGET(res), new_root_amp);
+    AMP new_root_amp = wgt_mul(EVBDD_WEIGHT(q), EVBDD_WEIGHT(res));
+    res = evbdd_bundle(EVBDD_TARGET(res), new_root_amp);
     return res;
 }
 
@@ -681,7 +681,7 @@ qmdd_circuit(QMDD qmdd, circuit_id_t circ_id, BDDVAR t1, BDDVAR t2)
         case CIRCID_QFT_inv       : return qmdd_circuit_QFT_inv(qmdd, t1, t2);
         default :
             assert ("Invalid circuit ID" && false);
-            return AADD_TERMINAL;
+            return EVBDD_TERMINAL;
     }
 }
 
@@ -702,7 +702,7 @@ TASK_IMPL_6(QMDD, qmdd_ccircuit, QMDD, qmdd, circuit_id_t, circ_id, BDDVAR*, cs,
     BDDVAR c = cs[ci];
 
     // If no more control qubits, apply sub-circ here
-    if (c == AADD_INVALID_VAR || ci > MAX_CONTROLS) {
+    if (c == EVBDD_INVALID_VAR || ci > MAX_CONTROLS) {
         res = qmdd_circuit(qmdd, circ_id, t1, t2);
         // the gates in qmdd_circuit already took care of multiplying the input 
         // root amp with normalization, so no need to do that here again
@@ -710,7 +710,7 @@ TASK_IMPL_6(QMDD, qmdd_ccircuit, QMDD, qmdd, circuit_id_t, circ_id, BDDVAR*, cs,
     else {
         BDDVAR var;
         QMDD low, high;
-        aadd_get_topvar(qmdd, c, &var, &low, &high);
+        evbdd_get_topvar(qmdd, c, &var, &low, &high);
         assert(var <= c);
 
         if (var == c) {
@@ -720,16 +720,16 @@ TASK_IMPL_6(QMDD, qmdd_ccircuit, QMDD, qmdd, circuit_id_t, circ_id, BDDVAR*, cs,
         }
         else {
             // recursive call to both children
-            aadd_refs_spawn(SPAWN(qmdd_ccircuit, high, circ_id, cs, ci, t1, t2));
+            evbdd_refs_spawn(SPAWN(qmdd_ccircuit, high, circ_id, cs, ci, t1, t2));
             low = CALL(qmdd_ccircuit, low, circ_id, cs, ci, t1, t2);
-            aadd_refs_push(low);
-            high = aadd_refs_sync(SYNC(qmdd_ccircuit));
-            aadd_refs_pop(1);
+            evbdd_refs_push(low);
+            high = evbdd_refs_sync(SYNC(qmdd_ccircuit));
+            evbdd_refs_pop(1);
         }
-        res = aadd_makenode(var, low, high);
+        res = evbdd_makenode(var, low, high);
         // Multiply root amp of sum with input root amp 
-        AMP new_root_amp = wgt_mul(AADD_WEIGHT(qmdd), AADD_WEIGHT(res));
-        res = aadd_bundle(AADD_TARGET(res), new_root_amp);
+        AMP new_root_amp = wgt_mul(EVBDD_WEIGHT(qmdd), EVBDD_WEIGHT(res));
+        res = evbdd_bundle(EVBDD_TARGET(res), new_root_amp);
     }
     
     // Add to cache, return
@@ -747,13 +747,13 @@ qmdd_all_control_phase_rec(QMDD qmdd, BDDVAR k, BDDVAR n, bool *x)
     assert(k < n);
     
     bool skipped_k = false;
-    aaddnode_t node;
-    if (AADD_TARGET(qmdd) == AADD_TERMINAL) {
+    evbddnode_t node;
+    if (EVBDD_TARGET(qmdd) == EVBDD_TERMINAL) {
         skipped_k = true;
     }
     else {
-        node = AADD_GETNODE(AADD_TARGET(qmdd));
-        BDDVAR var = aaddnode_getvar(node);
+        node = EVBDD_GETNODE(EVBDD_TARGET(qmdd));
+        BDDVAR var = evbddnode_getvar(node);
         if(var > k) {
             skipped_k = true;
         }
@@ -762,23 +762,23 @@ qmdd_all_control_phase_rec(QMDD qmdd, BDDVAR k, BDDVAR n, bool *x)
     QMDD low, high;
     if (skipped_k) {
         // insert skipped node
-        low  = aadd_bundle(AADD_TARGET(qmdd), AADD_ONE);
-        high = aadd_bundle(AADD_TARGET(qmdd), AADD_ONE);
+        low  = evbdd_bundle(EVBDD_TARGET(qmdd), EVBDD_ONE);
+        high = evbdd_bundle(EVBDD_TARGET(qmdd), EVBDD_ONE);
     }
     else {
         // case var == k (var < k shouldn't happen)
-        aaddnode_getchilderen(node, &low, &high);
+        evbddnode_getchilderen(node, &low, &high);
     }
 
     // terminal case, apply phase depending on x[k] (control k on 0 or 1)
     if (k == (n-1)) {
         if (x[k] == 1) {
-            AMP new_amp = wgt_mul(AADD_WEIGHT(high), AADD_MIN_ONE);
-            high = aadd_bundle(AADD_TARGET(high), new_amp);
+            AMP new_amp = wgt_mul(EVBDD_WEIGHT(high), EVBDD_MIN_ONE);
+            high = evbdd_bundle(EVBDD_TARGET(high), new_amp);
         }
         else {
-            AMP new_amp = wgt_mul(AADD_WEIGHT(low), AADD_MIN_ONE);
-            low = aadd_bundle(AADD_TARGET(low), new_amp);
+            AMP new_amp = wgt_mul(EVBDD_WEIGHT(low), EVBDD_MIN_ONE);
+            low = evbdd_bundle(EVBDD_TARGET(low), new_amp);
         }
     }
     // non terminal case, choose low/high depending on x[k] (control k on 0 or 1)
@@ -795,11 +795,11 @@ qmdd_all_control_phase_rec(QMDD qmdd, BDDVAR k, BDDVAR n, bool *x)
         }
     }
 
-    QMDD res = aadd_makenode(k, low, high);
+    QMDD res = evbdd_makenode(k, low, high);
 
     // multiply by existing edge weight on qmdd
-    AMP new_root_amp = wgt_mul(AADD_WEIGHT(qmdd), AADD_WEIGHT(res));
-    res = aadd_bundle(AADD_TARGET(res), new_root_amp);
+    AMP new_root_amp = wgt_mul(EVBDD_WEIGHT(qmdd), EVBDD_WEIGHT(res));
+    res = evbdd_bundle(EVBDD_TARGET(res), new_root_amp);
     return res;
 }
 
@@ -835,7 +835,7 @@ qmdd_measure_q0(QMDD qmdd, BDDVAR nvars, int *m, double *p)
 
     QMDD low, high;
     BDDVAR var;
-    aadd_get_topvar(qmdd, 0, &var, &low, &high);
+    evbdd_get_topvar(qmdd, 0, &var, &low, &high);
 
     if (testing_mode) assert(qmdd_is_unitvector(qmdd, nvars));
 
@@ -843,7 +843,7 @@ qmdd_measure_q0(QMDD qmdd, BDDVAR nvars, int *m, double *p)
     // (e.g. by using AMPs)
     prob_low  = qmdd_unnormed_prob(low,  1, nvars);
     prob_high = qmdd_unnormed_prob(high, 1, nvars);
-    prob_root = qmdd_amp_to_prob(AADD_WEIGHT(qmdd));
+    prob_root = qmdd_amp_to_prob(EVBDD_WEIGHT(qmdd));
     prob_low  *= prob_root;
     prob_high *= prob_root;
     if (fabs(prob_low + prob_high - 1.0) > 1e-6) {
@@ -858,20 +858,20 @@ qmdd_measure_q0(QMDD qmdd, BDDVAR nvars, int *m, double *p)
     // produce post-measurement state
     AMP norm;
     if (*m == 0) {
-        high = aadd_bundle(AADD_TERMINAL, AADD_ZERO);
+        high = evbdd_bundle(EVBDD_TERMINAL, EVBDD_ZERO);
         norm = qmdd_amp_from_prob(prob_low);
     }
     else {
-        low  = aadd_bundle(AADD_TERMINAL, AADD_ZERO);
+        low  = evbdd_bundle(EVBDD_TERMINAL, EVBDD_ZERO);
         norm = qmdd_amp_from_prob(prob_high);
     }
 
-    QMDD res = aadd_makenode(0, low, high);
+    QMDD res = evbdd_makenode(0, low, high);
 
-    AMP new_root_amp = wgt_mul(AADD_WEIGHT(qmdd), AADD_WEIGHT(res));
+    AMP new_root_amp = wgt_mul(EVBDD_WEIGHT(qmdd), EVBDD_WEIGHT(res));
     new_root_amp     = wgt_div(new_root_amp, norm);
 
-    res = aadd_bundle(AADD_TARGET(res), new_root_amp);
+    res = evbdd_bundle(EVBDD_TARGET(res), new_root_amp);
     res = qmdd_remove_global_phase(res);
     return res;
 }
@@ -879,7 +879,7 @@ qmdd_measure_q0(QMDD qmdd, BDDVAR nvars, int *m, double *p)
 QMDD
 qmdd_measure_all(QMDD qmdd, BDDVAR n, bool* ms, double *p)
 {
-    aaddnode_t node;
+    evbddnode_t node;
     bool skipped;
     BDDVAR var;
     double prob_low, prob_high, prob_path = 1.0, prob_roots = 1.0;
@@ -887,28 +887,28 @@ qmdd_measure_all(QMDD qmdd, BDDVAR n, bool* ms, double *p)
     for (BDDVAR k=0; k < n; k++) {
         // find relevant node (assuming it should be the next one)
         skipped = false;
-        if (AADD_TARGET(qmdd) == AADD_TERMINAL) {
+        if (EVBDD_TARGET(qmdd) == EVBDD_TERMINAL) {
             skipped = true;
         }
         else {
-            node = AADD_GETNODE(AADD_TARGET(qmdd));
-            var = aaddnode_getvar(node);
+            node = EVBDD_GETNODE(EVBDD_TARGET(qmdd));
+            var = evbddnode_getvar(node);
             assert(var >= k);
             if (var > k) skipped = true;
         }
         QMDD low, high;
         if (skipped) {
             // if skipped q0 is a don't care, treat separately?
-            low  = aadd_bundle(AADD_TARGET(qmdd), AADD_ONE);
-            high = aadd_bundle(AADD_TARGET(qmdd), AADD_ONE);
+            low  = evbdd_bundle(EVBDD_TARGET(qmdd), EVBDD_ONE);
+            high = evbdd_bundle(EVBDD_TARGET(qmdd), EVBDD_ONE);
         }
         else {
-            aaddnode_getchilderen(node, &low, &high);
+            evbddnode_getchilderen(node, &low, &high);
         }
 
         prob_low  = qmdd_unnormed_prob(low,  k+1, n);
         prob_high = qmdd_unnormed_prob(high, k+1, n);
-        prob_roots *= qmdd_amp_to_prob(AADD_WEIGHT(qmdd));
+        prob_roots *= qmdd_amp_to_prob(EVBDD_WEIGHT(qmdd));
         prob_high = prob_high * prob_roots / prob_path;
         prob_low  = prob_low  * prob_roots / prob_path;
 
@@ -928,19 +928,19 @@ qmdd_measure_all(QMDD qmdd, BDDVAR n, bool* ms, double *p)
     *p = prob_path;
 
     //TODO: replace below ith "return qmdd_create_basis_state(n, ms);""
-    QMDD low, high, prev = AADD_TERMINAL;
+    QMDD low, high, prev = EVBDD_TERMINAL;
 
     for (int k = n-1; k >= 0; k--) {
         if (ms[k] == 0) {
-            low = aadd_bundle(AADD_TARGET(prev), AADD_ONE);
-            high = aadd_bundle(AADD_TERMINAL, AADD_ZERO);
+            low = evbdd_bundle(EVBDD_TARGET(prev), EVBDD_ONE);
+            high = evbdd_bundle(EVBDD_TERMINAL, EVBDD_ZERO);
         }
         else if (ms[k] == 1) {
-            low = aadd_bundle(AADD_TERMINAL, AADD_ZERO);
-            high = aadd_bundle(AADD_TARGET(prev), AADD_ONE);
+            low = evbdd_bundle(EVBDD_TERMINAL, EVBDD_ZERO);
+            high = evbdd_bundle(EVBDD_TARGET(prev), EVBDD_ONE);
         }
         // add node to unique table
-        prev = aadd_makenode(k, low, high);
+        prev = evbdd_makenode(k, low, high);
     }
     return prev;
 }
@@ -957,8 +957,8 @@ TASK_IMPL_3(double, qmdd_unnormed_prob, QMDD, qmdd, BDDVAR, topvar, BDDVAR, nvar
     assert(topvar <= nvars);
 
     if (topvar == nvars) {
-        assert(AADD_TARGET(qmdd) == AADD_TERMINAL);
-        return qmdd_amp_to_prob(AADD_WEIGHT(qmdd));
+        assert(EVBDD_TARGET(qmdd) == EVBDD_TERMINAL);
+        return qmdd_amp_to_prob(EVBDD_WEIGHT(qmdd));
     }
 
     // Look in cache
@@ -975,7 +975,7 @@ TASK_IMPL_3(double, qmdd_unnormed_prob, QMDD, qmdd, BDDVAR, topvar, BDDVAR, nvar
     // Check if the node we want is being skipped
     BDDVAR var;
     QMDD low, high;
-    aadd_get_topvar(qmdd, topvar, &var, &low, &high);
+    evbdd_get_topvar(qmdd, topvar, &var, &low, &high);
 
     double prob_low, prob_high, prob_root, prob_res; // "prob" = absolute amps squared
     BDDVAR nextvar = topvar + 1;
@@ -983,7 +983,7 @@ TASK_IMPL_3(double, qmdd_unnormed_prob, QMDD, qmdd, BDDVAR, topvar, BDDVAR, nvar
     SPAWN(qmdd_unnormed_prob, high, nextvar, nvars);
     prob_low  = CALL(qmdd_unnormed_prob, low, nextvar, nvars);
     prob_high = SYNC(qmdd_unnormed_prob);
-    prob_root = qmdd_amp_to_prob(AADD_WEIGHT(qmdd));
+    prob_root = qmdd_amp_to_prob(EVBDD_WEIGHT(qmdd));
     prob_res  = prob_root * (prob_low + prob_high);
 
     // Put in cache and return
@@ -1002,7 +1002,7 @@ qmdd_get_amplitude(QMDD q, bool *x, BDDVAR nqubits)
     // so we temporarily reverse x.
     reverse_bit_array(x, nqubits);
     complex_t res;
-    weight_value(aadd_getvalue(q, x), &res);
+    weight_value(evbdd_getvalue(q, x), &res);
     reverse_bit_array(x, nqubits);
     return res;
 }
@@ -1028,7 +1028,7 @@ qmdd_amp_from_prob(double a)
 double qmdd_fidelity(QMDD a, QMDD b, BDDVAR nvars)
 {
     // c = <a|b>
-    AMP prod = aadd_inner_product(a, b, nvars);
+    AMP prod = evbdd_inner_product(a, b, nvars);
     complex_t c;
     weight_value(prod, &c);
 
@@ -1049,8 +1049,8 @@ QMDD
 qmdd_remove_global_phase(QMDD qmdd)
 {
     // Remove global phase by replacing amp of qmdd with absolute value of amp
-    AMP abs = wgt_abs(AADD_WEIGHT(qmdd));
-    QMDD res = aadd_bundle(AADD_TARGET(qmdd), abs);
+    AMP abs = wgt_abs(EVBDD_WEIGHT(qmdd));
+    QMDD res = evbdd_bundle(EVBDD_TARGET(qmdd), abs);
     return res;
 }
 
@@ -1105,7 +1105,7 @@ qmdd_stats_log(QMDD qmdd)
     if (logtrycounter++ % statslog_granularity != 0) return;
 
     // Insert info
-    uint64_t num_nodes = aadd_countnodes(qmdd);
+    uint64_t num_nodes = evbdd_countnodes(qmdd);
     uint64_t num_amps  = sylvan_edge_weights_count_entries();
     fprintf(qmdd_logfile, "%" PRIu64 ",%" PRIu64 "\n", num_nodes, num_amps);
     logcounter++;
@@ -1178,7 +1178,7 @@ qmdd_is_close_to_unitvector(QMDD qmdd, BDDVAR n, double tol)
 
     double sum_abs_squares = 0.0;
     while(has_next){
-        a = aadd_getvalue(qmdd, x);
+        a = evbdd_getvalue(qmdd, x);
         sum_abs_squares += qmdd_amp_to_prob(a);
         has_next = _next_bitstring(x, n);
     }
@@ -1187,7 +1187,7 @@ qmdd_is_close_to_unitvector(QMDD qmdd, BDDVAR n, double tol)
         if (WRITE_TO_FILE) {
             FILE *fp;
             fp = fopen("is_unitvector_true.dot", "w");
-            aadd_fprintdot(fp, qmdd, false);
+            evbdd_fprintdot(fp, qmdd, false);
             fclose(fp);
         }
         return true;
@@ -1197,7 +1197,7 @@ qmdd_is_close_to_unitvector(QMDD qmdd, BDDVAR n, double tol)
         if (WRITE_TO_FILE) {
             FILE *fp;
             fp = fopen("is_unitvector_false.dot", "w");
-            aadd_fprintdot(fp, qmdd, false);
+            evbdd_fprintdot(fp, qmdd, false);
             fclose(fp);
         }
         return false;

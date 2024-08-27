@@ -702,15 +702,15 @@ mtbdd_phase_gates_init(int n)
 
         cartesian = cmake_angle(angle, 1);
         gate_id = GATEID_Rk(k);
-        gates[gate_id][0] = AADD_ONE;  gates[gate_id][1] = AADD_ZERO;
-        gates[gate_id][2] = AADD_ZERO; gates[gate_id][3] = weight_lookup(&cartesian);
+        gates[gate_id][0] = EVBDD_ONE;  gates[gate_id][1] = EVBDD_ZERO;
+        gates[gate_id][2] = EVBDD_ZERO; gates[gate_id][3] = weight_lookup(&cartesian);
 
         // backward rotation
         angle = -2*Pi / (fl_t)(1<<k);
         cartesian = cmake_angle(angle, 1);
         gate_id = GATEID_Rk_dag(k);
-        gates[gate_id][0] = AADD_ONE;  gates[gate_id][1] = AADD_ZERO;
-        gates[gate_id][2] = AADD_ZERO; gates[gate_id][3] = weight_lookup(&cartesian);
+        gates[gate_id][0] = EVBDD_ONE;  gates[gate_id][1] = EVBDD_ZERO;
+        gates[gate_id][2] = EVBDD_ZERO; gates[gate_id][3] = weight_lookup(&cartesian);
     }
 */
 

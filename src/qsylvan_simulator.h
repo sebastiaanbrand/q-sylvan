@@ -28,9 +28,9 @@
 #include <sylvan_int.h>
 #include <qsylvan_gates.h>
 
-typedef AADD QMDD; // QMDD edge (contains AMP and PTR)
-typedef AADD_WGT AMP; // edge weight index
-typedef AADD_TARG PTR; // node index
+typedef EVBDD QMDD; // QMDD edge (contains AMP and PTR)
+typedef EVBDD_WGT AMP; // edge weight index
+typedef EVBDD_TARG PTR; // node index
 
 #ifdef __cplusplus
 extern "C" {
@@ -139,8 +139,8 @@ QMDD qmdd_create_single_qubit_gates_same(BDDVAR n, gate_id_t gateid);
  * 
  * @return A matrix QMDD encoding of the controlled gate on given qubits.
  */
-#define qmdd_create_cgate(n, c, t, gateid) _qmdd_create_cgate(n, c, AADD_INVALID_VAR, AADD_INVALID_VAR, t, gateid)
-#define qmdd_create_cgate2(n, c1, c2, t, gateid) _qmdd_create_cgate(n, c1, c2, AADD_INVALID_VAR, t, gateid)
+#define qmdd_create_cgate(n, c, t, gateid) _qmdd_create_cgate(n, c, EVBDD_INVALID_VAR, EVBDD_INVALID_VAR, t, gateid)
+#define qmdd_create_cgate2(n, c1, c2, t, gateid) _qmdd_create_cgate(n, c1, c2, EVBDD_INVALID_VAR, t, gateid)
 #define qmdd_create_cgate3(n, c1, c2, c3, t, gateid) _qmdd_create_cgate(n, c1, c2, c3, t, gateid)
 QMDD _qmdd_create_cgate(BDDVAR n, BDDVAR c1, BDDVAR c2, BDDVAR c3, BDDVAR t, gate_id_t gateid);
 
@@ -268,8 +268,8 @@ TASK_DECL_3(QMDD, qmdd_gate, QMDD, gate_id_t, BDDVAR);
  * Applies given controlled gate to |q>. When controls !<= target, the total
  * number of qubits needs to be passed as last argument.
 */
-#define qmdd_cgate(state,gate,c,t,...) _qmdd_cgate(state,gate,c,AADD_INVALID_VAR,AADD_INVALID_VAR,t,(0, ##__VA_ARGS__))
-#define qmdd_cgate2(state,gate,c1,c2,t,...) (_qmdd_cgate(state,gate,c1,c2,AADD_INVALID_VAR,t,(0, ##__VA_ARGS__)))
+#define qmdd_cgate(state,gate,c,t,...) _qmdd_cgate(state,gate,c,EVBDD_INVALID_VAR,EVBDD_INVALID_VAR,t,(0, ##__VA_ARGS__))
+#define qmdd_cgate2(state,gate,c1,c2,t,...) (_qmdd_cgate(state,gate,c1,c2,EVBDD_INVALID_VAR,t,(0, ##__VA_ARGS__)))
 #define qmdd_cgate3(state,gate,c1,c2,c3,t,...) (_qmdd_cgate(state,gate,c1,c2,c3,t,(0, ##__VA_ARGS__)))
 QMDD _qmdd_cgate(QMDD state, gate_id_t gate, BDDVAR c1, BDDVAR c2, BDDVAR c3, BDDVAR t, BDDVAR n);
 TASK_DECL_4(QMDD, qmdd_cgate, QMDD, gate_id_t, BDDVAR*, BDDVAR);
@@ -344,7 +344,7 @@ QMDD qmdd_circuit(QMDD qmdd, circuit_id_t circ_id, BDDVAR t1, BDDVAR t2);
  * functions defined here.
  * @param circ_id CIRCID_something
  * @param cs BDDVAR[] of control qubits. Needs to be length 3. If using fewer
- *           controls use e.g. cs = [c1, c2, AADD_INVALID_VAR]
+ *           controls use e.g. cs = [c1, c2, EVBDD_INVALID_VAR]
  * @param t1 BDDVAR. Parameter 1 for given circuit.
  * @param t2 BDDVAR. Parameter 2 for given circuit.
  * 

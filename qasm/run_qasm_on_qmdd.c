@@ -387,7 +387,7 @@ void simulate_circuit(quantum_circuit_t* circuit)
             }
         }
         if (count_nodes) {
-            uint64_t count = aadd_countnodes(state);
+            uint64_t count = evbdd_countnodes(state);
             if (count > stats.max_nodes) stats.max_nodes = count;
         }
         op = op->next;
@@ -395,7 +395,7 @@ void simulate_circuit(quantum_circuit_t* circuit)
     stats.simulation_time = wctime() - t_start;
     stats.final_state = state;
     stats.shots = 1;
-    stats.final_nodes = aadd_countnodes(state);
+    stats.final_nodes = evbdd_countnodes(state);
     stats.norm = qmdd_get_norm(state, circuit->qreg_size);
 }
 
