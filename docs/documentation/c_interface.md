@@ -1,7 +1,5 @@
 # Q-Sylvan C interface functions
 
-NOTE: In the code we are refering to the QMDDs as QMDDs, but our QMDDs are really just QMDDs.
-
 ## Initialization of states vectors / matrices
 * `qmdd_create_all_zero_state(int n)` : Creates a QMDD for an n-qubit state |00...0>. 
 * `qmdd_create_basis_state(int n, bool* x)` : Creates a QMDD for an n-qubit state |x>.
