@@ -138,6 +138,10 @@ class QASMParser {
             std::string filename = path.substr(path.find_last_of("/\\") + 1);
             std::string circname = filename.substr(0, filename.find_last_of("."));
             std::ifstream infile(filepath);
+            if (!infile.is_open()) {
+                std::cerr << "Error opening file " << filepath << std::endl;
+                exit(EXIT_FAILURE);
+            }
 
             // create (blank) quantum circuit
             circuit = (quantum_circuit_t *) calloc(1, sizeof(quantum_circuit_t));
@@ -525,8 +529,8 @@ class QASMParser {
 
 
         void parse_error(std::string error) {
-            std::cout << "Parsing error on line " << current_line << ": ";
-            std::cout << error << std::endl;
+            std::cerr << "Parsing error on line " << current_line << ": ";
+            std::cerr << error << std::endl;
             free_quantum_circuit(circuit);
             exit(EXIT_FAILURE);
         }
