@@ -341,6 +341,24 @@ mpc_compare(const uint64_t z1, const uint64_t z2)
 }
 
 /**
+ * Implementation of mpc_cmp_abs() to facilitate compatibility with older
+ * versions of MPC
+ */
+static int
+_mpc_cmp_abs(mpc_srcptr a, mpc_srcptr b)
+{
+    mpfr_t abs_a;
+    mpfr_t abs_b;
+    mpfr_init2(abs_a, MPC_PRECISION);
+    mpfr_init2(abs_b, MPC_PRECISION);
+
+    mpc_abs(abs_a, a, MPC_PRECISION);
+    mpc_abs(abs_b, b, MPC_PRECISION);
+
+    return mpfr_cmp(abs_a, abs_b);
+}
+
+/**
  * Compare mpc leafs absolute |z1| == |z2|
  */
 int
@@ -349,7 +367,7 @@ mpc_compare_abs(const uint64_t z1, const uint64_t z2)
     mpc_ptr x = (mpc_ptr)(size_t)z1;
     mpc_ptr y = (mpc_ptr)(size_t)z2;
 
-    return !mpc_cmp_abs(x, y);  // mpc_cmp_abs == 0 if x == y
+    return !_mpc_cmp_abs(x, y);  // mpc_cmp_abs == 0 if x == y
 }
 
 /**
@@ -358,7 +376,7 @@ mpc_compare_abs(const uint64_t z1, const uint64_t z2)
 int
 mpc_minimum_abs(mpc_ptr result, mpc_ptr z1, mpc_ptr z2)
 {
-    if (mpc_cmp_abs(z1, z2) < 0) {
+    if (_mpc_cmp_abs(z1, z2) < 0) {
         mpc_set(result, z1, MPC_ROUNDING);
     } else {
         mpc_set(result, z2, MPC_ROUNDING);
@@ -373,7 +391,7 @@ mpc_minimum_abs(mpc_ptr result, mpc_ptr z1, mpc_ptr z2)
 int
 mpc_maximum_abs(mpc_ptr result, mpc_ptr z1, mpc_ptr z2)
 {
-    if (mpc_cmp_abs(z1, z2) > 0) {
+    if (_mpc_cmp_abs(z1, z2) > 0) {
         mpc_set(result, z1, MPC_ROUNDING);
     } else {
         mpc_set(result, z2, MPC_ROUNDING);
@@ -930,7 +948,7 @@ TASK_IMPL_2(MTBDD, mpc_op_min, MTBDD*, pa, MTBDD*, pb)
         mpc_ptr ma = (mpc_ptr)mtbdd_getvalue(a);
         mpc_ptr mb = (mpc_ptr)mtbdd_getvalue(b);
 
-        int cmp = mpc_cmp_abs(ma, mb);
+        int cmp = _mpc_cmp_abs(ma, mb);
     
         return cmp < 0 ? a : b;
     }
@@ -952,7 +970,7 @@ mpc_minimum_core(MTBDD a, MTBDD b)
     mpc_ptr ma = (mpc_ptr)mtbdd_getvalue(a);
     mpc_ptr mb = (mpc_ptr)mtbdd_getvalue(b);
 
-    int cmp = mpc_cmp_abs(ma, mb);
+    int cmp = _mpc_cmp_abs(ma, mb);
     
     return cmp < 0 ? a : b;
 }
@@ -981,7 +999,7 @@ TASK_IMPL_2(MTBDD, mpc_op_max, MTBDD*, pa, MTBDD*, pb)
         mpc_ptr ma = (mpc_ptr)mtbdd_getvalue(a);
         mpc_ptr mb = (mpc_ptr)mtbdd_getvalue(b);
 
-        int cmp = mpc_cmp_abs(ma, mb);
+        int cmp = _mpc_cmp_abs(ma, mb);
         
         return cmp > 0 ? a : b;
     }
@@ -1003,7 +1021,7 @@ mpc_maximum_core(MTBDD a, MTBDD b)
     mpc_ptr ma = (mpc_ptr)mtbdd_getvalue(a);
     mpc_ptr mb = (mpc_ptr)mtbdd_getvalue(b);
 
-    int cmp = mpc_cmp_abs(ma, mb);
+    int cmp = _mpc_cmp_abs(ma, mb);
     
     return cmp > 0 ? a : b;
 }
