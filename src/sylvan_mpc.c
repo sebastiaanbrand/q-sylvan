@@ -352,8 +352,8 @@ _mpc_cmp_abs(mpc_srcptr a, mpc_srcptr b)
     mpfr_init2(abs_a, MPC_PRECISION);
     mpfr_init2(abs_b, MPC_PRECISION);
 
-    mpc_abs(abs_a, a, MPC_PRECISION);
-    mpc_abs(abs_b, b, MPC_PRECISION);
+    mpc_abs(abs_a, a, MPC_ROUNDING);
+    mpc_abs(abs_b, b, MPC_ROUNDING);
 
     return mpfr_cmp(abs_a, abs_b);
 }
