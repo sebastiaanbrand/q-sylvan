@@ -64,6 +64,11 @@ MTBDD mtbdd_create_basis_state_mpc(BDDVAR n, bool* x);
  */
 MTBDD mtbdd_create_single_gate_for_qubits_mpc(BDDVAR n, BDDVAR t, MTBDD I_dd, MTBDD G_dd);
 
+/**
+ * Calculates the L2 norm of a mtbdd with leaves with mpc type.
+ */
+double mtbdd_getnorm_mpc(MTBDD dd, size_t nvars);
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

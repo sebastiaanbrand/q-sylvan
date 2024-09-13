@@ -2642,6 +2642,8 @@ TASK_IMPL_2(double, mtbdd_satcount, MTBDD, dd, size_t, nvars)
     return hack.d;
 }
 
+//TASK_IMPL_2(double, mtbdd_satcount_L2, MTBDD, dd, size_t, nvars)
+
 MTBDD
 mtbdd_enum_first(MTBDD dd, MTBDD variables, uint8_t *arr, mtbdd_enum_filter_cb filter_cb)
 {
@@ -4974,6 +4976,12 @@ MTBDD mtbdd_M(uint32_t row, uint32_t col, uint32_t n, MTBDD a, MTBDD b)
  */
 MTBDD mtbdd_tensor_prod(MTBDD a, MTBDD b, int leaf_depth_of_a) // leaf_depth_of_a == nr of variables in a
 {
+    // Check input args
+    if (a==MTBDD_ZERO && b==MTBDD_ZERO) { 
+        printf("a=%ld, b=%ld\n", a, b);
+        return MTBDD_ZERO;
+    }
+
     mtbddnode_t na = MTBDD_GETNODE(a);
     mtbddnode_t nb = MTBDD_GETNODE(b);
 
@@ -5026,8 +5034,11 @@ mtbdd_getvalue_of_path(MTBDD a, bool* path)
         // now we need to choose low or high edge of next node
         mtbddnode_t node = MTBDD_GETNODE(a);
         BDDVAR var = mtbddnode_getvariable(node);
+        assert(var % 2 == 0);  // var should be even!
+        
+        var = var / 2;
         low = mtbddnode_getlow(node);
-        high = mtbddnode_getlow(node);
+        high = mtbddnode_gethigh(node);
 
         // Condition low/high choice on basis state vector[var]
         a = (path[var] == 0) ? low : high;

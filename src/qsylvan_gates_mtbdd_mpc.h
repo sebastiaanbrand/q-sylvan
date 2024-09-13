@@ -57,9 +57,13 @@ mtbdd_gates_init_mpc();
 void
 mtbdd_gate_exit_mpc();
 
+//
+// TODO: optimize computation speed by re-use of dynamic gate
+//
 // The reason why these are initialized beforehand instead of on-demand is that 
 // we would like a (for example) pi/16 gate to always have the same unique ID 
 // throughout the entire run of the circuit.
+//
 
 void
 mtbdd_gate_init_fixed_variables();

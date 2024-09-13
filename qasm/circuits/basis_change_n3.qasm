@@ -1,5 +1,4 @@
 // Generated from Cirq v0.8.0
-
 OPENQASM 2.0;
 include "qelib1.inc";
 

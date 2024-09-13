@@ -88,7 +88,7 @@ parse_opt(int key, char *arg, struct argp_state *state)
         break;
 
     case 'o': // Rounding
-        rounding = atoi(arg);  // ASCII to float, TODO: validate value
+        rounding = atoi(arg);  // ASCII to integer, TODO: validate value
         break;
 
     case 'j':
@@ -158,6 +158,9 @@ void fprint_stats(FILE *stream, quantum_circuit_t* circuit)
     if (output_vector)
     {
         fprintf(stream, "  \"state_vector\": [\n");
+
+//printf("register size = %d\n", circuit->qreg_size);
+
         for (int k = 0; k < (1<<(circuit->qreg_size)); k++) {
             bool *x = int_to_bitarray(k, circuit->qreg_size, !(circuit->reversed_qubit_order));
             MTBDD leaf = mtbdd_getvalue_of_path(stats.final_state, x); // Perhaps reverse qubit sequence on circuit->qreg_size, see gmdd_get_amplitude
@@ -210,7 +213,7 @@ wctime()
  * The type of the matrix elements are complex numbers based on the GNU multiprecision complex library mpc.
  * 
  */
-MTBDD apply_gate(MTBDD state, quantum_op_t* gate, int n) // zie master branch
+MTBDD apply_gate(MTBDD state, quantum_op_t* gate, int n)
 {
     stats.applied_gates++;
 
@@ -291,7 +294,7 @@ MTBDD apply_gate(MTBDD state, quantum_op_t* gate, int n) // zie master branch
         MTBDD P_dd = mtbdd_Phase(gate->angle[0]);
         MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, P_dd);
         return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
-        return qmdd_gate(state, GATEID_Phase(gate->angle[0]), gate->targets[0]);
+        //return qmdd_gate(state, GATEID_Phase(gate->angle[0]), gate->targets[0]);
     }
 
 /*    
@@ -424,10 +427,14 @@ MTBDD measure(QMDD state, quantum_op_t *meas, quantum_circuit_t* circuit)
 void simulate_circuit(quantum_circuit_t* circuit)
 {
     double t_start = wctime();
+
     MTBDD state = mtbdd_create_all_zero_state_mpc(circuit->qreg_size);
+
     quantum_op_t *op = circuit->operations;
     while (op != NULL) {
+
         if (op->type == op_gate) {
+
             state = apply_gate(state, op, circuit->qreg_size); // , n);
         }
         else if (op->type == op_measurement) {
@@ -451,7 +458,9 @@ void simulate_circuit(quantum_circuit_t* circuit)
 */
         }
         if (count_nodes) {
-uint64_t count = 0; // TODO: make mtbdd_countnodes(state);
+
+uint64_t count = 0; // TODO: make mtbdd_countnodes(state);, exists.
+
             if (count > stats.max_nodes) stats.max_nodes = count;
         }
         op = op->next;
@@ -459,8 +468,11 @@ uint64_t count = 0; // TODO: make mtbdd_countnodes(state);
     stats.simulation_time = wctime() - t_start;
     stats.final_state = state;
     stats.shots = 1;
+
 //stats.final_nodes = mtbdd_countnodes(state);
-//stats.norm = qmdd_get_norm(state, circuit->qreg_size); // TODO: convert to mtbdd (calculate L2 norm vector), Sebastiaan
+
+    stats.norm = mtbdd_getnorm_mpc(state, circuit->qreg_size);
+
 }
 
 /**
@@ -472,7 +484,11 @@ int main(int argc, char *argv[])
 {
     argp_parse(&argp, argc, argv, 0, 0, 0);
 
-    quantum_circuit_t* circuit = parse_qasm_file(qasm_inputfile);
+    //quantum_circuit_t* circuit = parse_qasm_file(qasm_inputfile);
+    quantum_circuit_t* circuit = parse_qasm_file("/home/qrichard/Q-Sylvan/q-sylvan/qasm/circuits/test_circuit.qasm");
+
+    print_quantum_circuit(circuit);
+
     optimize_qubit_order(circuit, false);
 
     if (rseed == 0) rseed = time(NULL);
@@ -486,9 +502,20 @@ int main(int argc, char *argv[])
     sylvan_init_package();
     sylvan_init_mtbdd();
 
-    simulate_circuit(circuit);
+    // Set multi precision complex float type
+    uint32_t mpc_type = mpc_init();
+    assert(mpc_type == MPC_TYPE);
 
+    // Init the dd's of the gates
+    mtbdd_gates_init_mpc();
+
+    printf("Simulate\n");
+    simulate_circuit(circuit);
+    print_quantum_circuit(circuit);
+
+    printf("Statistics\n");
     fprint_stats(stdout, circuit);
+
     if (json_outputfile != NULL) {
         FILE *fp = fopen(json_outputfile, "w");
         fprint_stats(fp, circuit);

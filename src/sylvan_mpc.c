@@ -273,10 +273,12 @@ mpc_assign_const_pi(mpc_ptr mpc_const_pi)
 void
 mpc_sqrt_assign(mpc_ptr mpc_sqrt_z, double real, double imag)
 {
-    mpc_ptr z = NULL;
+    mpc_t z;
     mpc_init2(z, MPC_PRECISION);
     mpc_set_ld_ld(z, real, imag, MPC_ROUNDING);
+    mpc_init2(mpc_sqrt_z, MPC_PRECISION);
     mpc_sqrt(mpc_sqrt_z, z, MPC_ROUNDING);
+    mpc_clear(z);
     
     return;
 

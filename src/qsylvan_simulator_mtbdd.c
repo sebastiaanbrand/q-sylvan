@@ -152,11 +152,11 @@ mtbdd_create_basis_state_mpc(BDDVAR n, bool* x)
     uint32_t var = 2*n-2;
 
     mpc_t mpc_zero;
-    mpc_init2(mpc_zero, MPC_PRECISION);
+    //mpc_init2(mpc_zero, MPC_PRECISION);
     mpc_assign(mpc_zero, 0.0, 0.0);
 
     mpc_t mpc_one;
-    mpc_init2(mpc_one, MPC_PRECISION);
+    //mpc_init2(mpc_one, MPC_PRECISION);
     mpc_assign(mpc_one, 1.0, 0.0);
 
     MTBDD zero = mtbdd_makeleaf(MPC_TYPE, (size_t)mpc_zero);
@@ -173,7 +173,7 @@ mtbdd_create_basis_state_mpc(BDDVAR n, bool* x)
     //
     for(int i = (int)n - 1; i>=0; i--)
     {
-        //printf("x[%d] = %d, var = %d\n", i, x[i], var);
+        printf("x[%d] = %d, var = %d\n", i, x[i], var);
 
         if(x[i] == 0)
             node = mtbdd_makenode(var, node, zero);
@@ -219,6 +219,9 @@ mtbdd_create_single_gate_for_qubits_mpc(BDDVAR n, BDDVAR t, MTBDD I_dd, MTBDD G_
 
     for(uint32_t k=0; k<n; k++)
     {
+
+printf("k=%d, t=%d, n=%d\n", k, t, n);
+
         if(k==t)
             dd = mtbdd_tensor_prod(G_dd, dd, 2); // Two vars added, so third argument = 2
         else
@@ -227,6 +230,52 @@ mtbdd_create_single_gate_for_qubits_mpc(BDDVAR n, BDDVAR t, MTBDD I_dd, MTBDD G_
 
     return dd;
 }
+
+double
+mtbdd_getnorm_mpc(MTBDD dd, size_t nvars) // L2 norm, in accordance with the satcount function in sylvan_mtbdd.c
+{
+    /* Trivial cases */
+    //if (dd == mtbdd_false) 
+    //    return 0.0;
+
+    if (mtbdd_isleaf(dd)) {
+
+        mpc_ptr mpc_value = (mpc_ptr)mtbdd_getvalue(dd);
+        mpfr_t mpfr_abs_value;// = NULL;
+        mpfr_init2(mpfr_abs_value, MPC_PRECISION);
+        mpc_abs(mpfr_abs_value, mpc_value, MPC_ROUNDING);
+    
+        double double_value = mpfr_get_d(mpfr_abs_value, MPC_ROUNDING);
+        mpfr_clear(mpfr_abs_value);
+
+        return double_value * double_value * pow(2.0, nvars);
+       // return powl(2.0L, nvars);
+    }
+
+    /* Perhaps execute garbage collection */
+    //sylvan_gc_test(); reads only the cache, can be removed
+
+    union {   // copy bitvalues of double into 64 bit integer for cache
+        double d;
+        uint64_t s;
+    } hack;
+
+    /* Consult cache */
+    if (cache_get3(CACHE_MTBDD_GETNORM_MPC, dd, 0, nvars, &hack.s)) {
+        return hack.d;
+    }
+
+    double high = mtbdd_getnorm_mpc(mtbdd_gethigh(dd), nvars-1);
+    double low = mtbdd_getnorm_mpc(mtbdd_getlow(dd), nvars-1);
+    hack.d = low + high;
+
+    cache_put3(CACHE_MTBDD_GETNORM_MPC, dd, 0, nvars, hack.s);
+
+    return hack.d;
+}
+
+
+
 
 /*    
     int leaf_var_dd_I;
