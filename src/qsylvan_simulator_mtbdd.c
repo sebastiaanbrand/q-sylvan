@@ -20,7 +20,7 @@
 #include <sylvan.h>
 #include <sylvan_int.h>
 #include <sylvan_mpc.h>
-//#include <qsylvan_gates_mtbdd_mpc.h>
+#include <qsylvan_gates_mtbdd_mpc.h>
 
 /**
  * Convert zero state vector x[] = {0.0, 0.0, ..., 0.0} to MTBDD 
@@ -215,12 +215,13 @@ mtbdd_create_basis_state_mpc(BDDVAR n, bool* x)
 MTBDD
 mtbdd_create_single_gate_for_qubits_mpc(BDDVAR n, BDDVAR t, MTBDD I_dd, MTBDD G_dd) //gate_id_t gateid)
 {
-    MTBDD dd = I_dd;
+    //MTBDD dd = I_dd;
+    MTBDD dd = mtbdd_makeleaf(MPC_TYPE, (uint64_t)g.mpc_re_one);
 
-    for(uint32_t k=0; k<n; k++)
+    for(uint32_t k=0; k < n; k++)
     {
 
-printf("k=%d, t=%d, n=%d\n", k, t, n);
+printf("k=%d, t=%d, n=%d, dd=%ld\n", k, t, n, dd);
 
         if(k==t)
             dd = mtbdd_tensor_prod(G_dd, dd, 2); // Two vars added, so third argument = 2
@@ -240,16 +241,22 @@ mtbdd_getnorm_mpc(MTBDD dd, size_t nvars) // L2 norm, in accordance with the sat
 
     if (mtbdd_isleaf(dd)) {
 
+        mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, (mpc_ptr)mtbdd_getvalue(dd), MPC_ROUNDING);
+
         mpc_ptr mpc_value = (mpc_ptr)mtbdd_getvalue(dd);
-        mpfr_t mpfr_abs_value;// = NULL;
+        //printf("%p\n", mpc_value);
+        //mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, (mpc_ptr)mtbdd_getvalue(dd), MPC_ROUNDING);
+
+        mpfr_t mpfr_abs_value;
         mpfr_init2(mpfr_abs_value, MPC_PRECISION);
         mpc_abs(mpfr_abs_value, mpc_value, MPC_ROUNDING);
     
         double double_value = mpfr_get_d(mpfr_abs_value, MPC_ROUNDING);
         mpfr_clear(mpfr_abs_value);
 
+        printf("getnorm_mpc = %f\n", double_value * double_value * pow(2.0, nvars));
         return double_value * double_value * pow(2.0, nvars);
-       // return powl(2.0L, nvars);
+        // return powl(2.0L, nvars);
     }
 
     /* Perhaps execute garbage collection */

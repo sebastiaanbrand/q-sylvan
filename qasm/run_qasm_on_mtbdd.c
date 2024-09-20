@@ -224,76 +224,76 @@ MTBDD apply_gate(MTBDD state, quantum_op_t* gate, int n)
 
     else if (strcmp(gate->name, "x") == 0) {
         MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, X_dd);
-        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
+        return mtbdd_matvec_mult(M_dd, state, 2*n, 0);
     }
 
     else if (strcmp(gate->name, "y") == 0) {
         MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, Y_dd);
-        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
+        return mtbdd_matvec_mult(M_dd, state, 2*n, 0);
     }
 
     else if (strcmp(gate->name, "z") == 0) {
         MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, Z_dd);
-        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
+        return mtbdd_matvec_mult(M_dd, state, 2*n, 0);
     }
 
     else if (strcmp(gate->name, "h") == 0) {
         MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, H_dd);
-        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
+        return mtbdd_matvec_mult(M_dd, state, 2*n, 0);
     }
 
     else if (strcmp(gate->name, "s") == 0) {
         MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, S_dd);
-        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
+        return mtbdd_matvec_mult(M_dd, state, 2*n, 0);
     }
 
     else if (strcmp(gate->name, "sdg") == 0) {
         MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, S_dag_dd);
-        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
+        return mtbdd_matvec_mult(M_dd, state, 2*n, 0);
     }
 
     else if (strcmp(gate->name, "t") == 0) {
         MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, T_dd);
-        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
+        return mtbdd_matvec_mult(M_dd, state, 2*n, 0);
     }
 
     else if (strcmp(gate->name, "tdg") == 0) {
         MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, T_dag_dd);
-        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
+        return mtbdd_matvec_mult(M_dd, state, 2*n, 0);
     }
 
     else if (strcmp(gate->name, "sx") == 0) {
         MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, sqrt_X_dd);
-        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
+        return mtbdd_matvec_mult(M_dd, state, 2*n, 0);
     }
 
     else if (strcmp(gate->name, "sxdg") == 0) {
         MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, sqrt_X_dag_dd);
-        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
+        return mtbdd_matvec_mult(M_dd, state, 2*n, 0);
     }
     
     else if (strcmp(gate->name, "rx") == 0) {
         MTBDD Rx_dd = mtbdd_Rx(gate->angle[0]);
         MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, Rx_dd);
-        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
+        return mtbdd_matvec_mult(M_dd, state, 2*n, 0);
     }
     
     else if (strcmp(gate->name, "ry") == 0) {
         MTBDD Ry_dd = mtbdd_Ry(gate->angle[0]);
         MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, Ry_dd);
-        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
+        return mtbdd_matvec_mult(M_dd, state, 2*n, 0);
     }
 
     else if (strcmp(gate->name, "rz") == 0) {
         MTBDD Rz_dd = mtbdd_Rz(gate->angle[0]);
         MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, Rz_dd);
-        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
+        return mtbdd_matvec_mult(M_dd, state, 2*n, 0);
     }
 
     else if (strcmp(gate->name, "p") == 0) {
         MTBDD P_dd = mtbdd_Phase(gate->angle[0]);
         MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, P_dd);
-        return mtbdd_matvec_mult(M_dd, state, (1 << n), 0);
+        return mtbdd_matvec_mult(M_dd, state, 2*n, 0);
         //return qmdd_gate(state, GATEID_Phase(gate->angle[0]), gate->targets[0]);
     }
 

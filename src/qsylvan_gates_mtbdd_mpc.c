@@ -18,7 +18,7 @@
 #include <qsylvan_gates_mtbdd_mpc.h>
 //#include <sylvan_int.h>
 //#include <sylvan_edge_weights_complex.h>
-#include <sylvan_mpc.h>
+
 
 /**
  * Definition of Quantum mpc values to fill the fixed and dynamic gates.
@@ -36,79 +36,31 @@ static MTBDD R_dd[MAX_QUBITS], R_dag_dd[MAX_QUBITS];
 // All fixed 2x2 gates
 // uint64_t G[nr_predef_gates+256+256][2][2]; // G[gateid][row][col]
 
+/**
+ * 
+ * Global defined mtbdd's of fixed gates.
+ * 
+ */
+MTBDD I_dd = MTBDD_ZERO;
+MTBDD X_dd = MTBDD_ZERO;
+MTBDD Y_dd = MTBDD_ZERO;
+MTBDD Z_dd = MTBDD_ZERO;
+
+MTBDD H_dd = MTBDD_ZERO;
+MTBDD S_dd = MTBDD_ZERO;
+MTBDD S_dag_dd = MTBDD_ZERO;
+MTBDD T_dd = MTBDD_ZERO;
+MTBDD T_dag_dd = MTBDD_ZERO;
+
+MTBDD sqrt_X_dd = MTBDD_ZERO;
+MTBDD sqrt_X_dag_dd = MTBDD_ZERO;
+MTBDD sqrt_Y_dd = MTBDD_ZERO;
+MTBDD sqrt_Y_dag_dd = MTBDD_ZERO;
 
 /**
  * Collection of mpc variables to be used globally.
  */
-
-struct mpc_variables_t {
-
-    mpfr_t mpfr_zero;
-    mpfr_t mpfr_pi;
-
-    mpc_t mpc_zero;                      //  0.0 + i 0.0
-    mpc_t mpc_re_one;                    //  1.0 + i 0.0
-    mpc_t mpc_re_one_min;                //  0.0 - i 1.0
-    mpc_t mpc_im_one;                    //  0.0 + i 1.0
-    mpc_t mpc_im_one_min;                //  0.0 - i 0.0
-    mpc_t mpc_half_half;                 //  0.5 + i 0.5
-    mpc_t mpc_half_half_min;             //  0.5 - i 0.5
-    mpc_t mpc_half_min_half;             // -0.5 + i 0.5
-    mpc_t mpc_half_min_half_min;         // -0.5 - i 0.5
-
-    mpc_t mpc_sqrt_2;                    //  sqrt(2)
-    mpc_t mpc_res_sqrt_2;                //  1/sqrt(2)
-    mpc_t mpc_res_sqrt_2_min;            // -1/sqrt(2)
-    mpc_t mpc_res_sqrt_2_res_sqrt_2;     //  cos(pi/4) + i sin(pi/4) = 1/sqrt(2) + i/sqrt(2)
-    mpc_t mpc_res_sqrt_2_res_sqrt_2_min; //  cos(pi/4) - i sin(pi/4) = 1/sqrt(2) - i/sqrt(2)
-
-    mpfr_t mpfr_theta;
-    mpfr_t mpfr_theta_2;
-    mpfr_t mpfr_min_theta_2;
-    mpfr_t mpfr_cos_theta_2;
-    mpfr_t mpfr_sin_theta_2;
-
-    mpc_t mpc_cos_theta_2;              // cos(theta/2) + i 0.0
-    mpc_t mpc_zero_sin_min_theta_2;     // 0.0 - i sin(theta/2)
-
-    mpc_t mpc_sin_min_theta_2;          // -sin(theta/2) + i 0.0
-    mpc_t mpc_sin_theta_2;              // sin(theta/2) + i 0.0
-
-    mpfr_t mpfr_cos_min_theta_2;
-    mpfr_t mpfr_sin_min_theta_2;
-    mpc_t mpc_exp_min_theta_2;
-    mpc_t mpc_exp_theta_2;
-
-    mpfr_t mpfr_cos_theta;              // cos(theta)
-    mpfr_t mpfr_sin_theta;              // sin(theta/2)
-    mpc_t mpc_exp_theta;                // cos(theta) + i sin(theta)
-
-    mpfr_t mpfr_phi;
-    mpfr_t mpfr_lambda;
-    mpfr_t mpfr_gam;
-
-    mpfr_t mpfr_min_sin_theta_2;        // -sin(theta/2)
-
-    mpfr_t mpfr_cos_lambda;
-    mpfr_t mpfr_sin_lambda;
-    mpc_t mpc_exp_lambda;               // cos(lambda) + i sin(lambda) 
-
-    mpc_t mpc_exp_lambda_mul_min_sin_theta_2;
-
-    mpfr_t mpfr_cos_phi;
-    mpfr_t mpfr_sin_phi;
-    mpc_t mpc_exp_phi;                  // cos(phi) + i sin(phi)
-    
-    mpc_t mpc_exp_phi_mul_sin_theta_2;
-
-    mpfr_t mpfr_cos_gam;
-    mpfr_t mpfr_sin_gam;
-    mpc_t mpc_exp_gam;                  // cos(gamma) + i sin(gamma) 
-
-    mpc_t mpc_exp_gam_mul_cos_theta_2;
-
-};
-static struct mpc_variables_t g; // g = global
+struct mpc_variables_t g; // g = global
 
 /**
  *  "Constructor"
