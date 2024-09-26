@@ -294,20 +294,28 @@ MTBDD apply_gate(MTBDD state, quantum_op_t* gate, int n)
         MTBDD P_dd = mtbdd_Phase(gate->angle[0]);
         MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, P_dd);
         return mtbdd_matvec_mult(M_dd, state, 2*n, 0);
-        //return qmdd_gate(state, GATEID_Phase(gate->angle[0]), gate->targets[0]);
+    }
+    
+//    else if (strcmp(gate->name, "u2") == 0) {
+//        fl_t pi_over_2 = flt_acos(0.0);
+//        return qmdd_gate(state, GATEID_U(pi_over_2, gate->angle[0], gate->angle[1]), gate->targets[0]);
+//    }
+
+    else if (strcmp(gate->name, "u") == 0) {
+        MTBDD U_dd = mtbdd_U(gate->angle[0], gate->angle[1], gate->angle[2]);
+        MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, U_dd);
+        return mtbdd_matvec_mult(M_dd, state, 2*n, 0);
     }
 
-/*    
-    else if (strcmp(gate->name, "u2") == 0) {
-        fl_t pi_over_2 = flt_acos(0.0);
-        return qmdd_gate(state, GATEID_U(pi_over_2, gate->angle[0], gate->angle[1]), gate->targets[0]);
+/*
+    else if (strcmp(gate->name, "cx") == 0) 
+    {     
+        // M = I (x) |0><0| + X (x) |1><1|
+        MTBDD M_dd = mtbdd_control_single_gate_for_qubits_mpc(n, gate->ctrls[0], gate->targets[0], I_dd, X_dd);
+        return mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+        //return qmdd_cgate(state, GATEID_X, gate->ctrls[0], gate->targets[0]);
     }
-    else if (strcmp(gate->name, "u") == 0) {
-        return qmdd_gate(state, GATEID_U(gate->angle[0], gate->angle[1], gate->angle[2]), gate->targets[0]);
-    }
-    else if (strcmp(gate->name, "cx") == 0) {
-        return qmdd_cgate(state, GATEID_X, gate->ctrls[0], gate->targets[0]);
-    }
+    
     else if (strcmp(gate->name, "cy") == 0) {
         return qmdd_cgate(state, GATEID_Y, gate->ctrls[0], gate->targets[0]);
     }

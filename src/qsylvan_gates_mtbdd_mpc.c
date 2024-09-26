@@ -81,6 +81,8 @@ mtbdd_gates_init_mpc()
 void
 mtbdd_gate_exit_mpc()
 {
+    // Vars for fixed gates
+
     mpfr_clear(g.mpfr_pi);
 
     mpc_clear(g.mpc_zero);
@@ -99,15 +101,50 @@ mtbdd_gate_exit_mpc()
     mpc_clear(g.mpc_res_sqrt_2_res_sqrt_2);
     mpc_clear(g.mpc_res_sqrt_2_res_sqrt_2_min);
 
+    // Vars for dynamic gates
+
     mpfr_clear(g.mpfr_theta);
     mpfr_clear(g.mpfr_theta_2);
+    mpfr_clear(g.mpfr_min_theta_2);
     mpfr_clear(g.mpfr_cos_theta_2);
     mpfr_clear(g.mpfr_sin_theta_2);
+
+    mpc_clear(g.mpc_cos_theta_2);
+    mpc_clear(g.mpc_zero_sin_min_theta_2);
+
+    mpc_clear(g.mpc_sin_min_theta_2);
+    mpc_clear(g.mpc_sin_theta_2);
+
     mpfr_clear(g.mpfr_cos_min_theta_2);
     mpfr_clear(g.mpfr_sin_min_theta_2);
-
     mpc_clear(g.mpc_exp_min_theta_2);
     mpc_clear(g.mpc_exp_theta_2);
+
+    mpfr_clear(g.mpfr_cos_theta);
+    mpfr_clear(g.mpfr_sin_theta);
+    mpc_clear(g.mpc_exp_theta);
+
+    mpfr_clear(g.mpfr_phi);
+    mpfr_clear(g.mpfr_lambda);
+    mpfr_clear(g.mpfr_gam);
+
+    mpfr_clear(g.mpfr_min_sin_theta_2);
+
+    mpfr_clear(g.mpfr_cos_lambda);
+    mpfr_clear(g.mpfr_sin_lambda);
+    mpc_clear(g.mpc_exp_lambda);
+
+    mpfr_clear(g.mpfr_cos_phi);
+    mpfr_clear(g.mpfr_sin_phi);
+    mpc_clear(g.mpc_exp_phi);
+
+    mpfr_clear(g.mpfr_cos_gam);
+    mpfr_clear(g.mpfr_sin_gam);
+    mpc_clear(g.mpc_exp_gam);
+
+    mpc_clear(g.mpc_exp_phi_mul_sin_theta_2);
+    mpc_clear(g.mpc_exp_lambda_mul_min_sin_theta_2);
+    mpc_clear(g.mpc_exp_gam_mul_cos_theta_2);
 
     return;
 }
@@ -121,6 +158,8 @@ mtbdd_gate_init_fixed_variables()
     // pi, 0, 1, -1, ...
     mpfr_init2(g.mpfr_pi, MPC_PRECISION);
     mpfr_const_pi(g.mpfr_pi, MPC_ROUNDING);
+    mpfr_init2(g.mpfr_zero, MPC_PRECISION);
+    mpfr_set_d(g.mpfr_zero, 0.0, MPC_ROUNDING);
 
     mpc_assign(g.mpc_zero, 0.0, 0.0);
     mpc_assign(g.mpc_re_one, 1.0, 0.0);
@@ -162,13 +201,46 @@ mtbdd_gate_init_dynamic_variables()
 {
     mpfr_init2(g.mpfr_theta, MPC_PRECISION);
     mpfr_init2(g.mpfr_theta_2, MPC_PRECISION);
+    mpfr_init2(g.mpfr_min_theta_2, MPC_PRECISION);
     mpfr_init2(g.mpfr_cos_theta_2, MPC_PRECISION);
     mpfr_init2(g.mpfr_sin_theta_2, MPC_PRECISION);
+
+    mpc_init2(g.mpc_cos_theta_2, MPC_PRECISION);
+    mpc_init2(g.mpc_zero_sin_min_theta_2, MPC_PRECISION);
+
+    mpc_init2(g.mpc_sin_min_theta_2, MPC_PRECISION);
+    mpc_init2(g.mpc_sin_theta_2, MPC_PRECISION);
+
     mpfr_init2(g.mpfr_cos_min_theta_2, MPC_PRECISION);
     mpfr_init2(g.mpfr_sin_min_theta_2, MPC_PRECISION);
-
     mpc_init2(g.mpc_exp_min_theta_2, MPC_PRECISION);
     mpc_init2(g.mpc_exp_theta_2, MPC_PRECISION);
+
+    mpfr_init2(g.mpfr_cos_theta, MPC_PRECISION);
+    mpfr_init2(g.mpfr_sin_theta, MPC_PRECISION);
+    mpc_init2(g.mpc_exp_theta, MPC_PRECISION);
+
+    mpfr_init2(g.mpfr_phi, MPC_PRECISION);
+    mpfr_init2(g.mpfr_lambda, MPC_PRECISION);
+    mpfr_init2(g.mpfr_gam, MPC_PRECISION);
+
+    mpfr_init2(g.mpfr_min_sin_theta_2, MPC_PRECISION);
+
+    mpfr_init2(g.mpfr_cos_lambda, MPC_PRECISION);
+    mpfr_init2(g.mpfr_sin_lambda, MPC_PRECISION);
+    mpc_init2(g.mpc_exp_lambda, MPC_PRECISION);
+
+    mpfr_init2(g.mpfr_cos_phi, MPC_PRECISION);
+    mpfr_init2(g.mpfr_sin_phi, MPC_PRECISION);
+    mpc_init2(g.mpc_exp_phi, MPC_PRECISION);
+
+    mpfr_init2(g.mpfr_cos_gam, MPC_PRECISION);
+    mpfr_init2(g.mpfr_sin_gam, MPC_PRECISION);
+    mpc_init2(g.mpc_exp_gam, MPC_PRECISION);
+
+    mpc_init2(g.mpc_exp_phi_mul_sin_theta_2, MPC_PRECISION);
+    mpc_init2(g.mpc_exp_lambda_mul_min_sin_theta_2, MPC_PRECISION);
+    mpc_init2(g.mpc_exp_gam_mul_cos_theta_2, MPC_PRECISION);
 
     return;
 }
@@ -357,7 +429,6 @@ mtbdd_Rx(double theta) // TODO: change in mpfr!
 {
     // Calculate complex numbers for gate elements
 
-    mpfr_set_d(g.mpfr_zero, 0.0, MPC_ROUNDING);
     mpfr_set_d(g.mpfr_theta, theta, MPC_ROUNDING);
     mpfr_div_ui(g.mpfr_theta_2, g.mpfr_theta, 2, MPC_ROUNDING);  //  theta / 2
     mpfr_neg(g.mpfr_min_theta_2, g.mpfr_theta_2, MPC_ROUNDING);  // -theta / 2

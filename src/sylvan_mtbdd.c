@@ -4978,7 +4978,7 @@ MTBDD mtbdd_tensor_prod(MTBDD a, MTBDD b, int leaf_depth_of_a) // leaf_depth_of_
 {
     // Check input args
     if (a==MTBDD_ZERO && b==MTBDD_ZERO) { 
-        printf("a=%ld, b=%ld\n", a, b);
+        //printf("a=%ld, b=%ld\n", a, b);
         return MTBDD_ZERO;
     }
 
@@ -5009,7 +5009,7 @@ MTBDD mtbdd_tensor_prod(MTBDD a, MTBDD b, int leaf_depth_of_a) // leaf_depth_of_
         high = mtbdd_tensor_prod(a, mtbddnode_gethigh(nb), leaf_depth_of_a);
         var  = mtbddnode_getvariable(nb) + leaf_depth_of_a; // vars in B are offset by the depth of A
     }
-    printf("tensor prod: making node with var=%d\n", var);
+    //printf("tensor prod: making node with var=%d\n", var);
     result = mtbdd_makenode(var, low, high);
 
     // Cache put

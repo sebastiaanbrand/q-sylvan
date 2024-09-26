@@ -1,9 +1,9 @@
 OPENQASM 2.0;
 include "qelib1.inc";
 
-// 15 qubit quantum register and 2 bit classical register
-qreg q[15];
-creg c[15];
+// 16 qubit quantum register and 2 bit classical register
+qreg q[16];
+creg c[16];
 
 // Create |Phi^+>
 x q[0];
@@ -17,10 +17,11 @@ tdg q[8];
 sx q[9];
 sxdg q[10];
 rx(pi) q[11];
+rx(2*pi) q[11];
 ry(pi) q[12];
 rz(pi) q[13];
 p(pi) q[14];
-
+u(pi,pi,pi) q[15];
 
 // Measure state
 
