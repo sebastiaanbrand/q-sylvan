@@ -715,8 +715,45 @@ void optimize_qubit_order(quantum_circuit_t *circuit, bool allow_swaps)
     }
 }
 
+quantum_op_t** circuit_as_array(quantum_circuit_t *circuit, int *length)
+{
+    // loop over circuit to get lenght
+    *length = 0;
+    quantum_op_t *op = circuit->operations;
+    while (op != NULL) {
+        switch (op->type) {
+            case op_gate:
+            case op_measurement:
+                *length += 1;
+                break;
+            default:
+                break;
+        }
+        op = op->next;
+    }
+    
+    // loop over circuit and put into array
+    quantum_op_t **ops_array = (quantum_op_t**)malloc(sizeof(quantum_op_t*) * (*length));
+    int i = 0;
+    op = circuit->operations;
+    while (op != NULL) {
+        switch (op->type) {
+            case op_gate:
+            case op_measurement:
+                ops_array[i] = op;
+                i++;
+                break;
+            default:
+                break;
+        }
+        op = op->next;
+    }
 
-void print_quantum_circuit(quantum_circuit_t* circuit)
+    return ops_array;
+}
+
+
+void print_quantum_circuit(quantum_circuit_t *circuit)
 {
     printf("qreg size: %d\n", circuit->qreg_size);
     printf("creg size: %d\n", circuit->creg_size);
@@ -728,7 +765,7 @@ void print_quantum_circuit(quantum_circuit_t* circuit)
     }
 }
 
-void fprint_creg(FILE *stream, quantum_circuit_t* circuit)
+void fprint_creg(FILE *stream, quantum_circuit_t *circuit)
 {
     // print in big-endian
     for (int i = circuit->creg_size-1; i >= 0 ; i--) {

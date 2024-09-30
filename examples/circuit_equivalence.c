@@ -19,6 +19,7 @@ static size_t max_tablesize = 1LL<<25;
 static size_t min_cachesize = 1LL<<16;
 static size_t max_cachesize = 1LL<<18;
 static size_t wgt_tab_size = 1LL<<23;
+static char eqcheck_alg[20] = "alternating";
 static double tolerance = 1e-14;
 static double threshold = 1e-6;
 static int wgt_table_type = COMP_HASHMAP;
@@ -32,7 +33,8 @@ static struct argp_option options[] =
     {"workers", 'w', "<workers>", 0, "Number of workers/threads (default=1)", 0},
     {"norm-strat", 's', "<low|max|min|l2>", 0, "Edge weight normalization strategy (default=max)", 0},
     {"tol", 't', "<tolerance>", 0, "Tolerance for deciding edge weights equal (default=1e-14)", 0},
-    {"threshold", 1000, "<threshold>", 0, "Threshold for deciding when two matrices are close enough to be equivalent (default=1e-6)", 0},
+    {"algorithm", 1000, "<pauli|alternating>", 0, "Which equivalence checking algorithm to use.", 0},
+    {"threshold", 1001, "<threshold>", 0, "Threshold for deciding when two matrices are close enough to be equivalent (default=1e-6)", 0},
     {"count-nodes", 'c', 0, 0, "Track maximum number of nodes", 0},
     {0, 0, 0, 0, 0, 0}
 };
@@ -57,6 +59,11 @@ parse_opt(int key, char *arg, struct argp_state *state)
         count_nodes = true;
         break;
     case 1000:
+        if (strcmp(arg, "pauli") != 0 && strcmp(arg, "alternating") != 0)
+            argp_usage(state);
+        strncpy(eqcheck_alg, arg, 20);
+        break;
+    case 1001:
         threshold = atof(arg);
         break;
     case ARGP_KEY_ARG:
@@ -97,6 +104,7 @@ void print_stats() {
     // print stats in JSON format
     printf("{\n");
     printf("  \"statistics\": {\n");
+    printf("    \"algorithm\": \"%s\",\n", eqcheck_alg);
     printf("    \"circuit_U\": \"%s\",\n", circuit_U->name);
     printf("    \"circuit_V\": \"%s\",\n", circuit_V->name);
     printf("    \"counterexample\": \"%s\",\n", stats.counterexample);
@@ -186,6 +194,7 @@ QMDD get_gate_matrix(quantum_op_t* gate, BDDVAR nqubits, bool dag) {
     }
 }
 
+
 QMDD compute_UPUdag(quantum_circuit_t *circuit, gate_id_t P, BDDVAR k) {
     BDDVAR nqubits = circuit->qreg_size;
     QMDD circ_matrix = qmdd_create_single_qubit_gate(nqubits, k, P);
@@ -218,7 +227,13 @@ QMDD compute_UPUdag(quantum_circuit_t *circuit, gate_id_t P, BDDVAR k) {
     return circ_matrix;
 }
 
- void circuit_equivalence_check(quantum_circuit_t *U, quantum_circuit_t *V) {
+
+/**
+ * Equivalence checking based on Theorem 1 of
+ * "Fast equivalence checking of quantum circuits of Clifford gates", 
+ * D. Thanos et al., ATVA (2023)
+ */
+ void pauli_echeck(quantum_circuit_t *U, quantum_circuit_t *V) {
     if (U->qreg_size != V->qreg_size) {
         snprintf(stats.counterexample, sizeof(stats.counterexample),
                  "Circuits have different number of qubits");
@@ -266,6 +281,73 @@ QMDD compute_UPUdag(quantum_circuit_t *circuit, gate_id_t P, BDDVAR k) {
     }
 }
 
+
+/**
+ * Equivalence checking using the "alternating" algorith from
+ * "Advanced Equivalence Checking for Quantum Circuits",
+ * L. Burgholzer, R. Wille, (TCAD), 2021
+ */
+void alternating_eqcheck(quantum_circuit_t *U, quantum_circuit_t *V)
+{
+    // check number of qubits
+    if (U->qreg_size != V->qreg_size) {
+        snprintf(stats.counterexample, sizeof(stats.counterexample),
+                 "Circuits have different number of qubits");
+        return;
+    }
+    BDDVAR nqubits = U->qreg_size;
+
+    // get circuits as arrays + set U as longest circuit
+    int ngates_u, ngates_v;
+    quantum_op_t **ops_u = circuit_as_array(U, &ngates_u);
+    quantum_op_t **ops_v = circuit_as_array(V, &ngates_v);
+    if (ngates_u < ngates_v) {
+        quantum_op_t **tmp1 = ops_v; ops_v = ops_u; ops_u = tmp1;
+        int tmp2 = ngates_v; ngates_v = ngates_u; ngates_u = tmp2;
+    }
+    
+    // compute V^dagger * U from the inside out, 
+    // in steps of 1 for V, and steps of |U|/|V| for U
+    double step_u = (double)ngates_u / (double)ngates_v;
+    int i = 0;
+    double j = 0;
+    QMDD prod, vi_dag, uj;
+    prod = qmdd_create_all_identity_matrix(nqubits);
+    while (i < ngates_v) {
+        // compute V[i]^dagger * prod * U[j-step_u] * ... * U[j]
+        vi_dag = get_gate_matrix(ops_v[i], nqubits, true);
+        prod = evbdd_matmat_mult(vi_dag, prod, nqubits);
+        for (int _j = ceilf(j); (_j < j + step_u) && (_j < ngates_u) ; _j += 1) {
+            uj = get_gate_matrix(ops_u[_j], nqubits, false);
+            prod = evbdd_matmat_mult(prod, uj, nqubits);
+        }
+        i += 1;
+        j += step_u;
+    }
+    assert (i == ngates_v);
+    assert (ceilf(j) == ngates_u);
+
+    // check if results is equal to identity matrix
+    QMDD identity = qmdd_create_all_identity_matrix(nqubits);
+    if (prod == identity) {
+        stats.fidelity = 1;
+        stats.equivalent = true;
+    }
+    else {
+        // not exactly identity, check fidelity based on given threshold
+        double norm = pow(2.0, nqubits*2);
+        double fid = qmdd_fidelity(prod, identity, nqubits*2) / norm;
+        stats.fidelity = fid;
+        if (fabs(fid - 1.0) < threshold) 
+            stats.equivalent = true;
+        else
+            stats.equivalent = false;
+    }
+
+    free(ops_u);
+    free(ops_v);
+}
+
 int main(int argc, char *argv[])
 {
     argp_parse(&argp, argc, argv, 0, 0, 0);
@@ -279,7 +361,12 @@ int main(int argc, char *argv[])
     clock_t cpu_t1 = clock();
     double wall_t1 = wctime();
 
-    circuit_equivalence_check(circuit_U, circuit_V);
+    if (strcmp(eqcheck_alg, "pauli") == 0)
+        pauli_echeck(circuit_U, circuit_V);
+    else if (strcmp(eqcheck_alg, "alternating") == 0)
+        alternating_eqcheck(circuit_U, circuit_V);
+    else
+        fprintf(stderr, "Invalid arg for algorithm (should be caught by argp)\n");
         
     clock_t cpu_t2 = clock();
     double wall_t2 = wctime();
