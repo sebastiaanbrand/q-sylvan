@@ -170,6 +170,14 @@ QMDD get_gate_matrix(quantum_op_t* gate, BDDVAR nqubits, bool dag) {
         if (dag) return qmdd_create_single_qubit_gate(nqubits, gate->targets[0], GATEID_T);
         else     return qmdd_create_single_qubit_gate(nqubits, gate->targets[0], GATEID_Tdag);
     }
+    else if (strcmp(gate->name, "sx") == 0) {
+        if (dag) return qmdd_create_single_qubit_gate(nqubits, gate->targets[0], GATEID_sqrtXdag);
+        else     return qmdd_create_single_qubit_gate(nqubits, gate->targets[0], GATEID_sqrtX);
+    }
+    else if (strcmp(gate->name, "sxdg") == 0) {
+        if (dag) return qmdd_create_single_qubit_gate(nqubits, gate->targets[0], GATEID_sqrtX);
+        else     return qmdd_create_single_qubit_gate(nqubits, gate->targets[0], GATEID_sqrtXdag);
+    }
     else if (strcmp(gate->name, "rx") == 0) {
         if (dag) return qmdd_create_single_qubit_gate(nqubits, gate->targets[0], GATEID_Rx(-gate->angle[0]));
         else     return qmdd_create_single_qubit_gate(nqubits, gate->targets[0], GATEID_Rx(gate->angle[0]));
