@@ -195,25 +195,33 @@ mtbdd_create_basis_state_mpc(BDDVAR n, bool* x)
  * 
  * Create a single Qubit gate surrounded by I gates:
  * 
- *  q(n-1) ----- I(n-1) -----
- *  q(n-2) ----- I(n-2) -----
+ *  q( 0 ) ----- I( 0 ) -----
  *  q( . ) ----- I( . ) -----
  *  q( t ) ----- G( t ) -----
  *  q( . ) ----- I( . ) -----
- *  q( 0 ) ----- I( 0 ) -----
+ *  q(n-2) ----- I(n-2) -----
+ *  q(n-1) ----- I(n-1) -----
  * 
  *  q(i) = {0,1}, a qubit
  * 
  *  n is number of qubits
- *  t is index of qubit connected to the gate G
+ *  t is index of qubit connected to the G gate
  * 
- *  (I(0) x ... x G(t) x ... x I(n-1) ) | q(n-1)q(n-2)...q(t)...q0>
+ *  ( I(0) x ... x G(t) x ... x I(n-1) ) | q(n-1) q(n-2) ... q(t) ... q0 >
  *
- *  a x b is the tensor of a and b, with a and b matrices / vectors.
- *  
+ *  M_dd = (I_dd x ... x G_dd x ... I_dd) . (0,0,...,1,...0)T
+ *
+ *  a x b is the tensor of a and b, with a and b matrices or vectors.
+ * 
+ *  a . b is matrix multiplication of a and b, with a and b matrices or vectors.
+ * 
+ *  When t = 0, M-dd = G_dd . |q0> = G_dd . (1,0)T
+ * 
+ *  When t = 1, M_dd = (I_dd x G_dd) . |q1 q0>
+ * 
  */
 MTBDD
-mtbdd_create_single_gate_for_qubits_mpc(BDDVAR n, BDDVAR t, MTBDD I_dd, MTBDD G_dd) //gate_id_t gateid)
+mtbdd_create_single_gate_for_qubits_mpc(BDDVAR n, BDDVAR t, MTBDD I_dd, MTBDD G_dd)
 {
     //MTBDD dd = I_dd;
     MTBDD dd = mtbdd_makeleaf(MPC_TYPE, (uint64_t)g.mpc_re_one);
@@ -227,6 +235,56 @@ mtbdd_create_single_gate_for_qubits_mpc(BDDVAR n, BDDVAR t, MTBDD I_dd, MTBDD G_
     }
 
     return dd;
+}
+
+MTBDD
+mtbdd_create_double_single_gates_for_qubits_mpc(BDDVAR n, BDDVAR t1, BDDVAR t2, MTBDD G1_dd, MTBDD G2_dd)
+{
+    //MTBDD dd = I_dd;
+    MTBDD dd = mtbdd_makeleaf(MPC_TYPE, (uint64_t)g.mpc_re_one);
+
+    for(uint32_t k=0; k < n; k++)
+    {
+        if(k==t1)
+            dd = mtbdd_tensor_prod(G1_dd, dd, 2); // Two vars added, so third argument = 2
+        else if(k==t2)
+            dd = mtbdd_tensor_prod(G2_dd, dd, 2); // Two vars added, so third argument = 2
+        else
+            dd = mtbdd_tensor_prod(I_dd, dd, 2); // Two vars added
+    }
+
+    return dd;
+}
+
+/**
+ * The control unitary gate CG on two qubits q0 and q1 (for example in QASM "cx q0, q1;" q1 attached to X) 
+ * is defined as:
+ * 
+ *   M_dd = I_dd x |0><0| + G_dd x |1><1| = I_dd x V00_dd + G_dd x V11_dd
+ * 
+ * In effect, with x=0 or 1: 
+ * 
+ *   M_dd . |0x> = |0x>            "No change if CNOT in zero state"
+ *   M_dd . |1x> = |1> x G_dd |x>  "Change state according to G gate"
+ * 
+ * In general:
+ * 
+ *   M = [I(0) x ... I(t) x ... x V00(c) x ... x I(n-1)] + [I(0) x ... x G(t) x ... x V11(c) x ... x I(n-1)], t < c
+ * 
+ *   M = [I(0) x ... x V00(c) x ... x I(t) x ... x I(n-1)] + [I(0) x ... x V11(c) x ... x G(t) x ... x I(n-1)], c < t
+ *
+ *   with t the index of the qubit attached to the G gate and c the index to the control.
+ * 
+ */
+MTBDD
+mtbdd_create_single_control_gate_for_qubits_mpc(BDDVAR n, BDDVAR c, BDDVAR t, MTBDD I_dd, MTBDD V00_dd, MTBDD V11_dd, MTBDD G_dd)
+{
+
+printf("n=%d c=%d t=%d\n", n, c, t);
+
+    MTBDD dd1 = mtbdd_create_double_single_gates_for_qubits_mpc(n, c, t, V00_dd, I_dd); // I_dd, V00_dd);
+    MTBDD dd2 = mtbdd_create_double_single_gates_for_qubits_mpc(n, c, t, V11_dd, G_dd); // G_dd, V11_dd);
+    return mtbdd_plus(dd1,dd2);
 }
 
 double

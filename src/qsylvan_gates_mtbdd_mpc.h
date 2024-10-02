@@ -44,6 +44,9 @@ extern MTBDD sqrt_X_dag_dd;
 extern MTBDD sqrt_Y_dd;
 extern MTBDD sqrt_Y_dag_dd;
 
+extern MTBDD V00_dd;
+extern MTBDD V11_dd;
+
 struct mpc_variables_t {
 
     // Vars for fixed gates

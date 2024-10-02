@@ -296,7 +296,7 @@ MTBDD apply_gate(MTBDD state, quantum_op_t* gate, int n)
         return mtbdd_matvec_mult(M_dd, state, 2*n, 0);
     }
     
-//    else if (strcmp(gate->name, "u2") == 0) {
+//    else if (strcmp(gate->name, "u2") == 0) { // u3(a,b,c) = u(a,b,c) identical u2(b,c) = u(pi/2,b,c)
 //        fl_t pi_over_2 = flt_acos(0.0);
 //        return qmdd_gate(state, GATEID_U(pi_over_2, gate->angle[0], gate->angle[1]), gate->targets[0]);
 //    }
@@ -306,31 +306,33 @@ MTBDD apply_gate(MTBDD state, quantum_op_t* gate, int n)
         MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, U_dd);
         return mtbdd_matvec_mult(M_dd, state, 2*n, 0);
     }
-
-/*
-    else if (strcmp(gate->name, "cx") == 0) 
-    {     
-        // M = I (x) |0><0| + X (x) |1><1|
-        MTBDD M_dd = mtbdd_control_single_gate_for_qubits_mpc(n, gate->ctrls[0], gate->targets[0], I_dd, X_dd);
+    else if (strcmp(gate->name, "cx") == 0) {
+        MTBDD M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->ctrls[0], gate->targets[0], I_dd, V00_dd, V11_dd, X_dd);
         return mtbdd_matvec_mult(M_dd, state, 2*n, 0);
-        //return qmdd_cgate(state, GATEID_X, gate->ctrls[0], gate->targets[0]);
     }
-    
     else if (strcmp(gate->name, "cy") == 0) {
-        return qmdd_cgate(state, GATEID_Y, gate->ctrls[0], gate->targets[0]);
+        MTBDD M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->ctrls[0], gate->targets[0], I_dd, V00_dd, V11_dd, Y_dd);
+        return mtbdd_matvec_mult(M_dd, state, 2*n, 0);
     }
     else if (strcmp(gate->name, "cz") == 0) {
-        return qmdd_cgate(state, GATEID_Z, gate->ctrls[0], gate->targets[0]);
+        MTBDD M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->ctrls[0], gate->targets[0], I_dd, V00_dd, V11_dd, Z_dd);
+        return mtbdd_matvec_mult(M_dd, state, 2*n, 0);
     }
     else if (strcmp(gate->name, "ch") == 0) {
-        return qmdd_cgate(state, GATEID_H, gate->ctrls[0], gate->targets[0]);
+        MTBDD M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->ctrls[0], gate->targets[0], I_dd, V00_dd, V11_dd, H_dd);
+        return mtbdd_matvec_mult(M_dd, state, 2*n, 0);
     }
     else if (strcmp(gate->name, "csx") == 0) {
-        return qmdd_cgate(state, GATEID_sqrtX, gate->ctrls[0], gate->targets[0]);
-    }
+        MTBDD M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->ctrls[0], gate->targets[0], I_dd, V00_dd, V11_dd, sqrt_X_dd);
+        return mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+    }    
     else if (strcmp(gate->name, "crx") == 0) {
-        return qmdd_cgate(state, GATEID_Rx(gate->angle[0]), gate->ctrls[0], gate->targets[0]);
+        MTBDD Rx_dd = mtbdd_Rx(gate->angle[0]);
+        MTBDD M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->ctrls[0], gate->targets[0], I_dd, V00_dd, V11_dd, Rx_dd);
+        return mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+        //return qmdd_cgate(state, GATEID_Rx(gate->angle[0]), gate->ctrls[0], gate->targets[0]);
     }
+/*    
     else if (strcmp(gate->name, "cry") == 0) {
         return qmdd_cgate(state, GATEID_Ry(gate->angle[0]), gate->ctrls[0], gate->targets[0]);
     }
@@ -343,6 +345,7 @@ MTBDD apply_gate(MTBDD state, quantum_op_t* gate, int n)
     else if (strcmp(gate->name, "cu") == 0) {
         return qmdd_cgate(state, GATEID_U(gate->angle[0], gate->angle[1], gate->angle[2]), gate->ctrls[0], gate->targets[0]);
     }
+
     else if (strcmp(gate->name, "ccx") == 0) {
         return qmdd_cgate2(state, GATEID_X, gate->ctrls[0], gate->ctrls[1], gate->targets[0]);
     }
@@ -352,12 +355,14 @@ MTBDD apply_gate(MTBDD state, quantum_op_t* gate, int n)
     else if (strcmp(gate->name, "c3sx") == 0) {
         return qmdd_cgate3(state, GATEID_sqrtX, gate->ctrls[0], gate->ctrls[1], gate->ctrls[2], gate->targets[0]);
     }
-    else if (strcmp(gate->name, "swap") == 0) {
+
+    else if (strcmp(gate->name, "swap") == 0) { // swap(a,b) = cx(a,b); cx(b,a); cx(a,b)
         // no native SWAP gates in Q-Sylvan
         stats.applied_gates += 4;
         return qmdd_circuit_swap(state, gate->targets[0], gate->targets[1]);
     }
-    else if (strcmp(gate->name, "cswap") == 0) {
+
+    else if (strcmp(gate->name, "cswap") == 0) { // cswap(c,a,b) = cx(c,a,b); cx(c,b,a); cx(c,a,b)
         // no native CSWAP gates in Q-Sylvan
         stats.applied_gates += 4;
         // CCNOT
@@ -370,7 +375,8 @@ MTBDD apply_gate(MTBDD state, quantum_op_t* gate, int n)
         state = qmdd_cgate2(state, GATEID_X, gate->ctrls[0], gate->targets[0], gate->targets[1]);
         return state;
     }
-    else if (strcmp(gate->name, "rccx") == 0) {
+
+    else if (strcmp(gate->name, "rccx") == 0) { // do not implement yet
         // no native RCCX (simplified Toffoli) gates in Q-Sylvan
         stats.applied_gates += 3;
         state = qmdd_cgate2(state, GATEID_X, gate->ctrls[0], gate->ctrls[1], gate->targets[0]);
@@ -379,7 +385,7 @@ MTBDD apply_gate(MTBDD state, quantum_op_t* gate, int n)
         state = qmdd_gate(state, GATEID_X, gate->ctrls[1]);
         return state;
     }
-    else if (strcmp(gate->name, "rzz") == 0 ) {
+    else if (strcmp(gate->name, "rzz") == 0 ) { // do not implement yet
         // no native RZZ gates in Q-Sylvan
         stats.applied_gates += 2;
         state = qmdd_cgate(state, GATEID_X, gate->targets[0], gate->targets[1]);
@@ -387,7 +393,7 @@ MTBDD apply_gate(MTBDD state, quantum_op_t* gate, int n)
         state = qmdd_cgate(state, GATEID_X, gate->targets[0], gate->targets[1]);
         return state;
     }
-    else if (strcmp(gate->name, "rxx") == 0) {
+    else if (strcmp(gate->name, "rxx") == 0) { // do not implement yet
         // no native RXX gates in Q-Sylvan
         fl_t pi = flt_acos(0.0) * 2;
         stats.applied_gates += 6;

@@ -57,6 +57,9 @@ MTBDD sqrt_X_dag_dd = MTBDD_ZERO;
 MTBDD sqrt_Y_dd = MTBDD_ZERO;
 MTBDD sqrt_Y_dag_dd = MTBDD_ZERO;
 
+MTBDD V00_dd = MTBDD_ZERO; // |0><0| control matrix
+MTBDD V11_dd = MTBDD_ZERO; // |1><1| control matrix
+
 /**
  * Collection of mpc variables to be used globally.
  */
@@ -346,6 +349,20 @@ mtbdd_fixed_gates_init_mpc()
 
     sqrt_Y_dag_dd = matrix_array_to_mtbdd_mpc(G_arr, n, ALTERNATE_ROW_FIRST_WISE_MODE);
 
+    G_arr[0][0] = g.mpc_re_one;  
+    G_arr[0][1] = g.mpc_zero; 
+    G_arr[1][0] = g.mpc_zero;  
+    G_arr[1][1] = g.mpc_zero; 
+
+    V00_dd = matrix_array_to_mtbdd_mpc(G_arr, n, ALTERNATE_ROW_FIRST_WISE_MODE);
+
+    G_arr[0][0] = g.mpc_zero;  
+    G_arr[0][1] = g.mpc_zero; 
+    G_arr[1][0] = g.mpc_zero;  
+    G_arr[1][1] = g.mpc_re_one; 
+
+    V11_dd = matrix_array_to_mtbdd_mpc(G_arr, n, ALTERNATE_ROW_FIRST_WISE_MODE);
+
     free_matrix_array_mpc(G_arr, n);
 
     return;
@@ -563,6 +580,14 @@ mtbdd_Phase(double theta) // TODO: change in mpfr!
 
     return dd;
 }
+
+/*
+MTBDD
+mtbdd_U2(double phi, double lambda)
+{
+// theta = pi / 2; in MPC accuracy
+}
+*/
 
 MTBDD
 mtbdd_U(double theta, double phi, double lambda)
