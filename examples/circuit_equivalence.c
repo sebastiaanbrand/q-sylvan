@@ -317,20 +317,21 @@ void alternating_eqcheck(quantum_circuit_t *U, quantum_circuit_t *V)
     // compute V^dagger * U from the inside out, 
     // in steps of 1 for V, and steps of |U|/|V| for U
     double step_u = (double)ngates_u / (double)ngates_v;
-    int i = 0;
-    double j = 0;
+    int i = 0, j = 0;
+    double _j = step_u;
     QMDD prod, vi_dag, uj;
     prod = qmdd_create_all_identity_matrix(nqubits);
     while (i < ngates_v) {
         // compute V[i]^dagger * prod * U[j-step_u] * ... * U[j]
         vi_dag = get_gate_matrix(ops_v[i], nqubits, true);
         prod = evbdd_matmat_mult(vi_dag, prod, nqubits);
-        for (int _j = ceilf(j); (_j < j + step_u) && (_j < ngates_u) ; _j += 1) {
-            uj = get_gate_matrix(ops_u[_j], nqubits, false);
+        while ((j < _j) && (j < ngates_u)) {
+            uj = get_gate_matrix(ops_u[j], nqubits, false);
             prod = evbdd_matmat_mult(prod, uj, nqubits);
+            j += 1;
         }
         i += 1;
-        j += step_u;
+        _j += step_u;
     }
     assert (i == ngates_v);
     assert (ceilf(j) == ngates_u);
