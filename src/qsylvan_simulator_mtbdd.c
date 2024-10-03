@@ -279,11 +279,8 @@ mtbdd_create_double_single_gates_for_qubits_mpc(BDDVAR n, BDDVAR t1, BDDVAR t2, 
 MTBDD
 mtbdd_create_single_control_gate_for_qubits_mpc(BDDVAR n, BDDVAR c, BDDVAR t, MTBDD I_dd, MTBDD V00_dd, MTBDD V11_dd, MTBDD G_dd)
 {
-
-printf("n=%d c=%d t=%d\n", n, c, t);
-
-    MTBDD dd1 = mtbdd_create_double_single_gates_for_qubits_mpc(n, c, t, V00_dd, I_dd); // I_dd, V00_dd);
-    MTBDD dd2 = mtbdd_create_double_single_gates_for_qubits_mpc(n, c, t, V11_dd, G_dd); // G_dd, V11_dd);
+    MTBDD dd1 = mtbdd_create_double_single_gates_for_qubits_mpc(n, c, t, V00_dd, I_dd);
+    MTBDD dd2 = mtbdd_create_double_single_gates_for_qubits_mpc(n, c, t, V11_dd, G_dd);
     return mtbdd_plus(dd1,dd2);
 }
 
@@ -296,7 +293,7 @@ mtbdd_getnorm_mpc(MTBDD dd, size_t nvars) // L2 norm, in accordance with the sat
 
     if (mtbdd_isleaf(dd)) {
 
-        mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, (mpc_ptr)mtbdd_getvalue(dd), MPC_ROUNDING);
+        mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 6, (mpc_ptr)mtbdd_getvalue(dd), MPC_ROUNDING);
 
         mpc_ptr mpc_value = (mpc_ptr)mtbdd_getvalue(dd);
         
@@ -337,67 +334,3 @@ mtbdd_getnorm_mpc(MTBDD dd, size_t nvars) // L2 norm, in accordance with the sat
 
     return hack.d;
 }
-
-
-
-
-/*    
-    int leaf_var_dd_I;
-
-    MTBDD dd_I = mtbdd_of_identity_matrix(n);  // n is number of qubits, how do we know?
-    MTBDD dd_G = mtbdd_of_gate_matrix(GATEID_X);
-    MTBDD dd_gate = mtbdd_tensor_prod(dd_I, dd_G, leaf_var_dd_I);
-
-    //MTBDD dd_state = mtbdd_create_state(state);
-
-    return mtbdd_matvec_mult(dd_gate, state, (1 << n), 0);
-
-    mpc_t mpc_zero;
-    mpc_init2(mpc_zero, MPC_PRECISION);
-    mpc_assign(mpc_zero, 0.0, 0.0);
-
-    mpc_t mpc_one;
-    mpc_init2(mpc_one, MPC_PRECISION);
-    mpc_assign(mpc_one, 1.0, 0.0);
-
-    MTBDD node = mtbdd_makeleaf(MPC_TYPE, (size_t)mpc_one);
-
-    for (int k = n-1; k >= 0; k--) {
-
-        if ((unsigned int)k == t)
-            node = mtbdd_stack_matrix(k, gateid);
-        else
-            node = mtbdd_stack_matrix(k, GATEID_I);
-    }
-    return node;
-}
-
-MTBDD
-mtbdd_stack_matrix(BDDVAR k, gate_id_t gateid)
-{
-    // This function effectively does a Kronecker product gate \tensor below
-    BDDVAR s, t;
-    MTBDD u00, u01, u10, u11, low, high, res;
-
-    // Even + uneven variable are used to encode the 4 values
-    s = 2 * k;
-    t = s + 1;
-
-    // Matrix U = [u00 u01
-    //             u10 u11] encoded in a small tree
-    u00 = mtbdd_makeleaf(MPC_TYPE, (size_t)gates[gateid][0]);
-    u10 = mtbdd_makeleaf(MPC_TYPE, (size_t)gates[gateid][2]);
-    u01 = mtbdd_makeleaf(MPC_TYPE, (size_t)gates[gateid][1]);
-    u11 = mtbdd_makeleaf(MPC_TYPE, (size_t)gates[gateid][3]);
-
-    low  = mtbdd_makenode(t, u00, u10);
-    high = mtbdd_makenode(t, u01, u11);
-    res  = mtbdd_makenode(s, low, high);
-
-    // Propagate common factor on previous root amp to new root amp
-    // AMP new_root_amp = wgt_mul(AADD_WEIGHT(below), AADD_WEIGHT(res));
-    // res = aadd_bundle(AADD_TARGET(res), new_root_amp);
-    return res;
-}
-*/
-

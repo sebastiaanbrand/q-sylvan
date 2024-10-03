@@ -181,17 +181,37 @@ mtbdd_gate_init_fixed_variables()
     mpc_init2(g.mpc_res_sqrt_2, MPC_PRECISION);
     mpc_div(g.mpc_res_sqrt_2, g.mpc_re_one, g.mpc_sqrt_2, MPC_ROUNDING);
 
-    // -1/sqrt(2.0)
-    mpc_init2(g.mpc_res_sqrt_2_min, MPC_PRECISION);
-    mpc_div(g.mpc_res_sqrt_2_min, g.mpc_re_one_min, g.mpc_sqrt_2, MPC_ROUNDING); 
+    printf("mpc_res_sqrt_2");
+    mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 6, (mpc_ptr)g.mpc_res_sqrt_2, MPC_ROUNDING);
+    printf("\n");
+
+    // i 1/sqrt(2.0)
+    mpc_init2(g.mpc_im_res_sqrt_2, MPC_PRECISION);
+    mpc_div(g.mpc_im_res_sqrt_2, g.mpc_im_one, g.mpc_sqrt_2, MPC_ROUNDING);
+
+    printf("mpc_im_res_sqrt_2");
+    mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 6, (mpc_ptr)g.mpc_im_res_sqrt_2, MPC_ROUNDING);
+    printf("\n");
+
+    // -i 1/sqrt(2.0)
+    mpc_init2(g.mpc_im_res_sqrt_2_min, MPC_PRECISION);
+    mpc_div(g.mpc_im_res_sqrt_2_min, g.mpc_im_one_min, g.mpc_sqrt_2, MPC_ROUNDING); 
 
     // 1/sqrt(2.0) + i 1/sqrt(2.0)
     mpc_init2(g.mpc_res_sqrt_2_res_sqrt_2, MPC_PRECISION);
-    mpc_add(g.mpc_res_sqrt_2_res_sqrt_2, g.mpc_res_sqrt_2, g.mpc_res_sqrt_2, MPC_ROUNDING); 
+    mpc_add(g.mpc_res_sqrt_2_res_sqrt_2, g.mpc_res_sqrt_2, g.mpc_im_res_sqrt_2, MPC_ROUNDING); 
+
+    printf("mpc_res_sqrt_2_res_sqrt_2");
+    mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 6, (mpc_ptr)g.mpc_res_sqrt_2_res_sqrt_2, MPC_ROUNDING);
+    printf("\n");
 
     // 1/sqrt(2.0) - i 1/sqrt(2.0)
     mpc_init2(g.mpc_res_sqrt_2_res_sqrt_2_min, MPC_PRECISION);
-    mpc_add(g.mpc_res_sqrt_2_res_sqrt_2_min, g.mpc_res_sqrt_2, g.mpc_res_sqrt_2_min, MPC_ROUNDING); 
+    mpc_add(g.mpc_res_sqrt_2_res_sqrt_2_min, g.mpc_res_sqrt_2, g.mpc_im_res_sqrt_2_min, MPC_ROUNDING); 
+
+    printf("mpc_res_sqrt_2_res_sqrt_2_min");
+    mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 6, (mpc_ptr)g.mpc_res_sqrt_2_res_sqrt_2_min, MPC_ROUNDING);
+    printf("\n");
 
     return;
 }
@@ -262,105 +282,90 @@ mtbdd_fixed_gates_init_mpc()
     G_arr[0][1] = g.mpc_zero;
     G_arr[1][0] = g.mpc_zero;   
     G_arr[1][1] = g.mpc_re_one;
-
     I_dd = matrix_array_to_mtbdd_mpc(G_arr, n, ALTERNATE_ROW_FIRST_WISE_MODE);
 
     G_arr[0][0] = g.mpc_zero;   
     G_arr[0][1] = g.mpc_re_one;
     G_arr[1][0] = g.mpc_re_one; 
     G_arr[1][1] = g.mpc_zero;
-
     X_dd = matrix_array_to_mtbdd_mpc(G_arr, n, ALTERNATE_ROW_FIRST_WISE_MODE);
 
     G_arr[0][0] = g.mpc_zero;   
     G_arr[0][1] = g.mpc_im_one_min;
     G_arr[1][0] = g.mpc_im_one; 
     G_arr[1][1] = g.mpc_zero;
-
     Y_dd = matrix_array_to_mtbdd_mpc(G_arr, n, ALTERNATE_ROW_FIRST_WISE_MODE);
 
     G_arr[0][0] = g.mpc_re_one; 
     G_arr[0][1] = g.mpc_zero;
     G_arr[1][0] = g.mpc_zero;   
     G_arr[1][1] = g.mpc_re_one_min;
-
     Z_dd = matrix_array_to_mtbdd_mpc(G_arr, n, ALTERNATE_ROW_FIRST_WISE_MODE);
 
     G_arr[0][0] = g.mpc_res_sqrt_2; 
     G_arr[0][1] = g.mpc_res_sqrt_2;
     G_arr[1][0] = g.mpc_res_sqrt_2; 
     G_arr[1][1] = g.mpc_res_sqrt_2_min;
-
     H_dd = matrix_array_to_mtbdd_mpc(G_arr, n, ALTERNATE_ROW_FIRST_WISE_MODE);
 
     G_arr[0][0] = g.mpc_re_one; 
     G_arr[0][1] = g.mpc_zero;
     G_arr[1][0] = g.mpc_zero;   
     G_arr[1][1] = g.mpc_im_one;
-
     S_dd = matrix_array_to_mtbdd_mpc(G_arr, n, ALTERNATE_ROW_FIRST_WISE_MODE);
 
     G_arr[0][0] = g.mpc_re_one; 
     G_arr[0][1] = g.mpc_zero;
     G_arr[1][0] = g.mpc_zero;   
     G_arr[1][1] = g.mpc_im_one_min;
-
     S_dag_dd = matrix_array_to_mtbdd_mpc(G_arr, n, ALTERNATE_ROW_FIRST_WISE_MODE);
 
     G_arr[0][0] = g.mpc_re_one;  
     G_arr[0][1] = g.mpc_zero;
     G_arr[1][0] = g.mpc_zero;    
     G_arr[1][1] = g.mpc_res_sqrt_2_res_sqrt_2;
-
     T_dd = matrix_array_to_mtbdd_mpc(G_arr, n, ALTERNATE_ROW_FIRST_WISE_MODE);
 
     G_arr[0][0] = g.mpc_re_one;  
     G_arr[0][1] = g.mpc_zero;
     G_arr[1][0] = g.mpc_zero;    
     G_arr[1][1] = g.mpc_res_sqrt_2_res_sqrt_2_min;
-
     T_dag_dd = matrix_array_to_mtbdd_mpc(G_arr, n, ALTERNATE_ROW_FIRST_WISE_MODE);
 
     G_arr[0][0] = g.mpc_half_half;     
     G_arr[0][1] = g.mpc_half_half_min;
     G_arr[1][0] = g.mpc_half_half_min; 
     G_arr[1][1] = g.mpc_half_half;
-
     sqrt_X_dd = matrix_array_to_mtbdd_mpc(G_arr, n, ALTERNATE_ROW_FIRST_WISE_MODE);
 
     G_arr[0][0] = g.mpc_half_half_min; 
     G_arr[0][1] = g.mpc_half_half;
     G_arr[1][0] = g.mpc_half_half;     
     G_arr[1][1] = g.mpc_half_half_min;
-
     sqrt_X_dag_dd = matrix_array_to_mtbdd_mpc(G_arr, n, ALTERNATE_ROW_FIRST_WISE_MODE);
 
     G_arr[0][0] = g.mpc_half_half;     
     G_arr[0][1] = g.mpc_half_min_half_min;
     G_arr[1][0] = g.mpc_half_half;     
     G_arr[1][1] = g.mpc_half_half;
-
     sqrt_Y_dd = matrix_array_to_mtbdd_mpc(G_arr, n, ALTERNATE_ROW_FIRST_WISE_MODE);
 
     G_arr[0][0] = g.mpc_half_half_min;  
     G_arr[0][1] = g.mpc_half_half_min; 
     G_arr[1][0] = g.mpc_half_min_half;  
     G_arr[1][1] = g.mpc_half_half_min; 
-
     sqrt_Y_dag_dd = matrix_array_to_mtbdd_mpc(G_arr, n, ALTERNATE_ROW_FIRST_WISE_MODE);
 
     G_arr[0][0] = g.mpc_re_one;  
     G_arr[0][1] = g.mpc_zero; 
     G_arr[1][0] = g.mpc_zero;  
     G_arr[1][1] = g.mpc_zero; 
-
     V00_dd = matrix_array_to_mtbdd_mpc(G_arr, n, ALTERNATE_ROW_FIRST_WISE_MODE);
 
     G_arr[0][0] = g.mpc_zero;  
     G_arr[0][1] = g.mpc_zero; 
     G_arr[1][0] = g.mpc_zero;  
     G_arr[1][1] = g.mpc_re_one; 
-
     V11_dd = matrix_array_to_mtbdd_mpc(G_arr, n, ALTERNATE_ROW_FIRST_WISE_MODE);
 
     free_matrix_array_mpc(G_arr, n);

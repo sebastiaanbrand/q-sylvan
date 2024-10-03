@@ -56,9 +56,10 @@ struct mpc_variables_t {
 
     mpc_t mpc_zero;                      //  0.0 + i 0.0
     mpc_t mpc_re_one;                    //  1.0 + i 0.0
-    mpc_t mpc_re_one_min;                //  0.0 - i 1.0
+    mpc_t mpc_re_one_min;                // -1.0 + i 0.0
     mpc_t mpc_im_one;                    //  0.0 + i 1.0
-    mpc_t mpc_im_one_min;                //  0.0 - i 0.0
+    mpc_t mpc_im_one_min;                //  0.0 - i 1.0
+    
     mpc_t mpc_half_half;                 //  0.5 + i 0.5
     mpc_t mpc_half_half_min;             //  0.5 - i 0.5
     mpc_t mpc_half_min_half;             // -0.5 + i 0.5
@@ -66,7 +67,9 @@ struct mpc_variables_t {
 
     mpc_t mpc_sqrt_2;                    //  sqrt(2)
     mpc_t mpc_res_sqrt_2;                //  1/sqrt(2)
+    mpc_t mpc_im_res_sqrt_2;             //  i 1/sqrt(2)
     mpc_t mpc_res_sqrt_2_min;            // -1/sqrt(2)
+    mpc_t mpc_im_res_sqrt_2_min;         // -i 1/sqrt(2)
     mpc_t mpc_res_sqrt_2_res_sqrt_2;     //  cos(pi/4) + i sin(pi/4) = 1/sqrt(2) + i/sqrt(2)
     mpc_t mpc_res_sqrt_2_res_sqrt_2_min; //  cos(pi/4) - i sin(pi/4) = 1/sqrt(2) - i/sqrt(2)
 

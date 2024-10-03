@@ -1,39 +1,34 @@
 OPENQASM 2.0;
 include "qelib1.inc";
-
-// 16 qubit quantum register and 2 bit classical register
 qreg q[4];
-//creg c[4];
-
-// Unitary gates
+creg c[4];
+h q[3];
 x q[0];
-//y q[1];
-//z q[3];
-//h q[4];
-//s q[5];
-//sdg q[6];
-//t q[7];
-//tdg q[8];
-//sx q[9];
-//sxdg q[10];
-//rx(pi) q[11];
-//rx(2*pi) q[11];
-//ry(pi) q[12];
-//rz(pi) q[13];
-//p(pi) q[14];
-//u(pi,pi,pi) q[15];
+x q[1];
+h q[3];//3
+cx q[2],q[3];
+t q[0];
+t q[1];
+t q[2];
+tdg q[3];
+cx q[0],q[1];
+cx q[2],q[3];
+cx q[3],q[0];
+cx q[1],q[2];
+cx q[0],q[1];
+cx q[2],q[3];
+tdg q[0];
+tdg q[1];
+tdg q[2];
+t q[3];
+cx q[0],q[1];
+cx q[2],q[3];
+s q[3];
+cx q[3],q[0];
+//h q[3];
 
-// Unitary control gates
-cx q[0], q[1];
-cy q[2], q[3];
-//cz q[0], q[1];
-//ch q[1], q[2];
-//csx q[0], q[1];
-
-// Bell state
-//h q[0];
-//cx q[0], q[1];
-//x q[0];
-
-// Measure state
+measure q[0] -> c[0];
+measure q[1] -> c[1];
+measure q[2] -> c[2];
+measure q[3] -> c[3];
 
