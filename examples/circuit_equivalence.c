@@ -18,7 +18,8 @@ static size_t min_tablesize = 1LL<<20;
 static size_t max_tablesize = 1LL<<25;
 static size_t min_cachesize = 1LL<<16;
 static size_t max_cachesize = 1LL<<18;
-static size_t wgt_tab_size = 1LL<<23;
+static size_t min_wgt_tab_size = 1LL<<23;
+static size_t max_wgt_tab_size = 1LL<<23;
 static char eqcheck_alg[20] = "alternating";
 static double tolerance = 1e-14;
 static double threshold = 1e-6;
@@ -35,6 +36,8 @@ static struct argp_option options[] =
     {"tol", 't', "<tolerance>", 0, "Tolerance for deciding edge weights equal (default=1e-14)", 0},
     {"algorithm", 1000, "<pauli|alternating>", 0, "Which equivalence checking algorithm to use.", 0},
     {"threshold", 1001, "<threshold>", 0, "Threshold for deciding when two matrices are close enough to be equivalent (default=1e-6)", 0},
+    {"node-tab-size", 1002, "<size>", 0, "log2 of max node table size (max 40)", 0},
+    {"wgt-tab-size", 1003, "<size>", 0, "log2 of max edge weigth table size (max 30 (23 if node table >2^30))", 0},
     {"count-nodes", 'c', 0, 0, "Track maximum number of nodes", 0},
     {0, 0, 0, 0, 0, 0}
 };
@@ -65,6 +68,14 @@ parse_opt(int key, char *arg, struct argp_state *state)
         break;
     case 1001:
         threshold = atof(arg);
+        break;
+    case 1002:
+        if (atoi(arg) > 40) argp_usage(state);
+        max_tablesize = 1LL<<(atoi(arg));
+        break;
+    case 1003:
+        if (atoi(arg) > 30) argp_usage(state);
+        max_wgt_tab_size = 1LL<<(atoi(arg));
         break;
     case ARGP_KEY_ARG:
         if (state->arg_num == 0)
@@ -365,7 +376,7 @@ int main(int argc, char *argv[])
     lace_start(workers, 0);
     sylvan_set_sizes(min_tablesize, max_tablesize, min_cachesize, max_cachesize);
     sylvan_init_package();
-    qsylvan_init_simulator(wgt_tab_size, wgt_tab_size, tolerance, wgt_table_type, wgt_norm_strat);
+    qsylvan_init_simulator(min_wgt_tab_size, max_wgt_tab_size, tolerance, wgt_table_type, wgt_norm_strat);
 
     clock_t cpu_t1 = clock();
     double wall_t1 = wctime();
