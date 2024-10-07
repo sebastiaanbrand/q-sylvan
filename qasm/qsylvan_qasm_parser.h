@@ -82,10 +82,12 @@ void free_quantum_circuit(quantum_circuit_t *circuit);
  * Return the circuit as array of quantum_op_t's instead of linked list.
  * 'length' is used to return the length of the array (number of operations).
  * 
+ * If return_non_empty is true, an empty circuit is returned as a single identity gate.
+ * 
  * The returned array is malloced and should be freed with free().
  * The quantum_circuit_t itself should be freed separately with free_quantum_circuit().
  */
-quantum_op_t** circuit_as_array(quantum_circuit_t *circuit, int *length);
+quantum_op_t** circuit_as_array(quantum_circuit_t *circuit, bool return_non_empty, int *length);
 
 /**
  * Print operations of quantum circuit, quantum elements or control registers.

@@ -118,7 +118,6 @@ void print_stats() {
     printf("    \"algorithm\": \"%s\",\n", eqcheck_alg);
     printf("    \"circuit_U\": \"%s\",\n", circuit_U->name);
     printf("    \"circuit_V\": \"%s\",\n", circuit_V->name);
-    printf("    \"counterexample\": \"%s\",\n", stats.counterexample);
     printf("    \"equivalent\" : %d,\n", (int)stats.equivalent);
     printf("    \"eq_threshold\" : %.5e,\n", threshold); 
     printf("    \"min_fidelity\" : %.5e,\n", stats.fidelity);
@@ -247,6 +246,37 @@ QMDD compute_UPUdag(quantum_circuit_t *circuit, gate_id_t P, BDDVAR k) {
 }
 
 
+void pauli_check(quantum_circuit_t *U, quantum_circuit_t *V, gate_id_t P, BDDVAR k)
+{
+    BDDVAR nqubits = U->qreg_size;
+    QMDD qmdd_U = compute_UPUdag(U, P, k);
+    evbdd_protect(&qmdd_U);
+    QMDD qmdd_V = compute_UPUdag(V, P, k);
+    evbdd_unprotect(&qmdd_U);
+
+    if (count_nodes) {
+        size_t nodes_U = evbdd_countnodes(qmdd_U);
+        size_t nodes_V = evbdd_countnodes(qmdd_V);
+        stats.max_nodes_total = max(stats.max_nodes_total,nodes_U+nodes_V);
+        stats.max_nodes_U = max(stats.max_nodes_U, nodes_U);
+        stats.max_nodes_V = max(stats.max_nodes_V, nodes_V);
+    }
+
+    if (qmdd_U != qmdd_V) {
+        // if not exactly equal, compute overlap
+        double norm = pow(2.0, nqubits*2);
+        double fid = qmdd_fidelity(qmdd_U, qmdd_V, nqubits*2) / norm;
+        stats.fidelity = min(stats.fidelity, fid);
+
+        if (fabs(fid - 1.0) > threshold) {
+            stats.equivalent = false;
+            //lace_stop(); // terminate all workers
+            return;
+        }
+    }
+}
+
+
 /**
  * Equivalence checking based on Theorem 1 of
  * "Fast equivalence checking of quantum circuits of Clifford gates", 
@@ -269,33 +299,7 @@ QMDD compute_UPUdag(quantum_circuit_t *circuit, gate_id_t P, BDDVAR k) {
     char XZ_str[2] = {'X', 'Z'};
     for (BDDVAR k = 0; k < nqubits; k++) {
         for (int i = 0; i < 2; i++) {
-            QMDD qmdd_U = compute_UPUdag(U, XZ[i], k);
-            evbdd_protect(&qmdd_U);
-            QMDD qmdd_V = compute_UPUdag(V, XZ[i], k);
-            evbdd_unprotect(&qmdd_U);
-
-            if (count_nodes) {
-                size_t nodes_U = evbdd_countnodes(qmdd_U);
-                size_t nodes_V = evbdd_countnodes(qmdd_V);
-                stats.max_nodes_total = max(stats.max_nodes_total,nodes_U+nodes_V);
-                stats.max_nodes_U = max(stats.max_nodes_U, nodes_U);
-                stats.max_nodes_V = max(stats.max_nodes_V, nodes_V);
-            }
-
-            if (qmdd_U != qmdd_V) {
-                // if not exactly equal, compute overlap
-                double norm = pow(2.0, nqubits*2);
-                double fid = qmdd_fidelity(qmdd_U, qmdd_V, nqubits*2) / norm;
-                stats.fidelity = min(stats.fidelity, fid);
-                //printf("F(U*%c_%d*U^dag,V*%c_%d*V^dag) = %.10lf\n", XZ_str[i], k, XZ_str[i], k, fid);
-
-                if (fabs(fid - 1.0) > threshold) {
-                    stats.equivalent = false;
-                    snprintf(stats.counterexample, sizeof(stats.counterexample),
-                            "U*%c_%d*U^dag != V*%c_%d*V^dag", XZ_str[i], k, XZ_str[i], k);
-                    return;
-                }
-            }
+            pauli_check(U, V, XZ[i], k);
         }
     }
 }
@@ -317,9 +321,10 @@ void alternating_eqcheck(quantum_circuit_t *U, quantum_circuit_t *V)
     BDDVAR nqubits = U->qreg_size;
 
     // get circuits as arrays + set U as longest circuit
+    // (also handle empty circuit edge case by inserting 1 identity gate)
     int ngates_u, ngates_v;
-    quantum_op_t **ops_u = circuit_as_array(U, &ngates_u);
-    quantum_op_t **ops_v = circuit_as_array(V, &ngates_v);
+    quantum_op_t **ops_u = circuit_as_array(U, true, &ngates_u);
+    quantum_op_t **ops_v = circuit_as_array(V, true, &ngates_v);
     if (ngates_u < ngates_v) {
         quantum_op_t **tmp1 = ops_v; ops_v = ops_u; ops_u = tmp1;
         int tmp2 = ngates_v; ngates_v = ngates_u; ngates_u = tmp2;
@@ -345,7 +350,7 @@ void alternating_eqcheck(quantum_circuit_t *U, quantum_circuit_t *V)
         _j += step_u;
     }
     assert (i == ngates_v);
-    assert (ceilf(j) == ngates_u);
+    assert (j == ngates_u);
 
     // check if results is equal to identity matrix
     QMDD identity = qmdd_create_all_identity_matrix(nqubits);
@@ -397,7 +402,7 @@ int main(int argc, char *argv[])
 
     // Cleanup
     sylvan_quit();
-    lace_stop();
+    if (stats.equivalent) lace_stop();
     free_quantum_circuit(circuit_U);
     free_quantum_circuit(circuit_V);
 

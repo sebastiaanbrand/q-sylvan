@@ -715,7 +715,7 @@ void optimize_qubit_order(quantum_circuit_t *circuit, bool allow_swaps)
     }
 }
 
-quantum_op_t** circuit_as_array(quantum_circuit_t *circuit, int *length)
+quantum_op_t** circuit_as_array(quantum_circuit_t *circuit, bool return_non_empty, int *length)
 {
     // loop over circuit to get lenght
     *length = 0;
@@ -730,6 +730,16 @@ quantum_op_t** circuit_as_array(quantum_circuit_t *circuit, int *length)
                 break;
         }
         op = op->next;
+    }
+
+    if (*length == 0 && return_non_empty) {
+        quantum_op_t **ops_array = (quantum_op_t**)malloc(sizeof(quantum_op_t*));
+        quantum_op_t *id0 = (quantum_op_t*)malloc(sizeof(quantum_op_t));
+        strcpy(id0->name, "id");
+        id0->targets[0] = 0;
+        ops_array[0] = id0;
+        *length = 1;
+        return ops_array;
     }
     
     // loop over circuit and put into array
