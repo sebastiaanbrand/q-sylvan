@@ -300,7 +300,7 @@ class TestCircuits:
 
     def test_fredkin_n3(self, cl_args : str):
         """
-        Test ghz_n4.qasm
+        Test fredkin_n3.qasm
         """
         vector = get_vector('fredkin_n3.qasm', cl_args)
         ref = np.array([0.00000000e+00+0.j, 0.00000000e+00+0.j, 0.00000000e+00+0.j,

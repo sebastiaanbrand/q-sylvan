@@ -181,15 +181,23 @@ mtbdd_gate_init_fixed_variables()
     mpc_init2(g.mpc_res_sqrt_2, MPC_PRECISION);
     mpc_div(g.mpc_res_sqrt_2, g.mpc_re_one, g.mpc_sqrt_2, MPC_ROUNDING);
 
-    printf("mpc_res_sqrt_2");
+    printf("mpc_res_sqrt_2 = ");
     mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 6, (mpc_ptr)g.mpc_res_sqrt_2, MPC_ROUNDING);
+    printf("\n");
+
+    // -1/sqrt(2.0)
+    mpc_init2(g.mpc_res_sqrt_2_min, MPC_PRECISION);
+    mpc_div(g.mpc_res_sqrt_2_min, g.mpc_re_one_min, g.mpc_sqrt_2, MPC_ROUNDING);
+
+    printf("mpc_res_sqrt_2_min = ");
+    mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 6, (mpc_ptr)g.mpc_res_sqrt_2_min, MPC_ROUNDING);
     printf("\n");
 
     // i 1/sqrt(2.0)
     mpc_init2(g.mpc_im_res_sqrt_2, MPC_PRECISION);
     mpc_div(g.mpc_im_res_sqrt_2, g.mpc_im_one, g.mpc_sqrt_2, MPC_ROUNDING);
 
-    printf("mpc_im_res_sqrt_2");
+    printf("mpc_im_res_sqrt_2 = ");
     mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 6, (mpc_ptr)g.mpc_im_res_sqrt_2, MPC_ROUNDING);
     printf("\n");
 
@@ -197,11 +205,15 @@ mtbdd_gate_init_fixed_variables()
     mpc_init2(g.mpc_im_res_sqrt_2_min, MPC_PRECISION);
     mpc_div(g.mpc_im_res_sqrt_2_min, g.mpc_im_one_min, g.mpc_sqrt_2, MPC_ROUNDING); 
 
+    printf("mpc_im_res_sqrt_2_min = ");
+    mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 6, (mpc_ptr)g.mpc_im_res_sqrt_2_min, MPC_ROUNDING);
+    printf("\n");
+
     // 1/sqrt(2.0) + i 1/sqrt(2.0)
     mpc_init2(g.mpc_res_sqrt_2_res_sqrt_2, MPC_PRECISION);
     mpc_add(g.mpc_res_sqrt_2_res_sqrt_2, g.mpc_res_sqrt_2, g.mpc_im_res_sqrt_2, MPC_ROUNDING); 
 
-    printf("mpc_res_sqrt_2_res_sqrt_2");
+    printf("mpc_res_sqrt_2_res_sqrt_2 = ");
     mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 6, (mpc_ptr)g.mpc_res_sqrt_2_res_sqrt_2, MPC_ROUNDING);
     printf("\n");
 
@@ -209,7 +221,7 @@ mtbdd_gate_init_fixed_variables()
     mpc_init2(g.mpc_res_sqrt_2_res_sqrt_2_min, MPC_PRECISION);
     mpc_add(g.mpc_res_sqrt_2_res_sqrt_2_min, g.mpc_res_sqrt_2, g.mpc_im_res_sqrt_2_min, MPC_ROUNDING); 
 
-    printf("mpc_res_sqrt_2_res_sqrt_2_min");
+    printf("mpc_res_sqrt_2_res_sqrt_2_min = ");
     mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 6, (mpc_ptr)g.mpc_res_sqrt_2_res_sqrt_2_min, MPC_ROUNDING);
     printf("\n");
 
@@ -372,75 +384,6 @@ mtbdd_fixed_gates_init_mpc()
 
     return;
 }
-
-/*
-    k = GATEID_I;
-    G[k][0][0] = mpc_re_one; G[k][0][1] = mpc_zero;
-    G[k][1][0] = mpc_zero;   G[k][1][1] = mpc_re_one;
-
-    k = GATEID_X;
-    G[k][0][0] = mpc_zero;   G[k][0][1] = mpc_re_one;
-    G[k][1][0] = mpc_re_one; G[k][1][1] = mpc_zero;
-
-    k = GATEID_Y;
-    G[k][0][0] = mpc_zero;   G[k][0][1] = mpc_im_one_min;
-    G[k][1][0] = mpc_im_one; G[k][1][1] = mpc_zero;
-
-    k = GATEID_Z;
-    G[k][0][0] = mpc_re_one; G[k][0][1] = mpc_zero;
-    G[k][1][0] = mpc_zero;   G[k][1][1] = mpc_re_one_min;
-
-    k = GATEID_H;
-    G[k][0][0] = mpc_res_sqrt_2; G[k][0][1] = mpc_res_sqrt_2;
-    G[k][1][0] = mpc_res_sqrt_2; G[k][1][1] = mpc_res_sqrt_2_min;
-
-    k = GATEID_S;
-    G[k][0][0] = mpc_re_one; G[k][0][1] = mpc_zero;
-    G[k][1][0] = mpc_zero;   G[k][1][1] = mpc_im_one;
-
-    k = GATEID_Sdag;
-    G[k][0][0] = mpc_re_one; G[k][0][1] = mpc_zero;
-    G[k][1][0] = mpc_zero;   G[k][1][1] = mpc_im_one_min;
-
-    k = GATEID_T;
-    G[k][0][0] = mpc_re_one;  G[k][0][1] = mpc_zero;
-    G[k][1][0] = mpc_zero;    G[k][1][1] = mpc_res_sqrt_2_res_sqrt_2;
-
-    k = GATEID_Tdag;
-    G[k][0][0] = mpc_re_one;  G[k][0][1] = mpc_zero;
-    G[k][1][0] = mpc_zero;    G[k][1][1] = mpc_res_sqrt_2_res_sqrt_2_min;
-
-    k = GATEID_sqrtX;
-    G[k][0][0] = mpc_half_half;     G[k][0][1] = mpc_half_half_min;
-    G[k][1][0] = mpc_half_half_min; G[k][1][1] = mpc_half_half;
-
-    k = GATEID_sqrtXdag;
-    G[k][0][0] = mpc_half_half_min; G[k][0][1] = mpc_half_half;
-    G[k][1][0] = mpc_half_half;     G[k][1][1] = mpc_half_half_min;
-
-    k = GATEID_sqrtY;
-    G[k][0][0] = mpc_half_half;     G[k][0][1] = mpc_half_min_half_min;
-    G[k][1][0] = mpc_half_half;     G[k][1][1] = mpc_half_half;
-
-    k = GATEID_sqrtYdag;
-    G[k][0][0] = mpc_half_half_min;  G[k][0][1] = mpc_half_half_min; 
-    G[k][1][0] = mpc_half_min_half;  G[k][1][1] = mpc_half_half_min; 
-*/
-
-/*
-    qmdd_phase_gates_init(255);
-
-    // init dynamic gate 
-    // (necessary when qmdd_gates_init() is called after gc to re-init all gates)
-    k = GATEID_dynamic;
-    gates[k][0] = weight_lookup(&dynamic_gate[0]);
-    gates[k][1] = weight_lookup(&dynamic_gate[1]);
-    gates[k][2] = weight_lookup(&dynamic_gate[2]);
-    gates[k][3] = weight_lookup(&dynamic_gate[3]);
-
-    return;
-}
-*/
 
 /**
  *  Parameterized dynamically computed rotation gates Rx(theta), Ry(theta), Rz(theta)
@@ -606,7 +549,9 @@ mtbdd_U(double theta, double phi, double lambda)
 
     mpfr_div_ui(g.mpfr_theta_2, g.mpfr_theta, 2, MPC_ROUNDING);           // theta / 2
 
-    mpfr_cos(g.mpfr_cos_theta_2, g.mpfr_theta_2, MPC_ROUNDING);           // cos(theta/2)
+    mpfr_cos(g.mpfr_cos_theta_2, g.mpfr_theta_2, MPC_ROUNDING);              // cos(theta/2)
+    mpc_set_fr_fr(g.mpc_cos_theta_2, g.mpfr_cos_theta_2, g.mpfr_zero, MPC_ROUNDING); // cos(theta/2) + i 0.0
+
     mpfr_sin(g.mpfr_sin_theta_2, g.mpfr_theta_2, MPC_ROUNDING);           // sin(theta/2)
     mpfr_neg(g.mpfr_min_sin_theta_2, g.mpfr_sin_theta_2, MPC_ROUNDING);   // -sin(theta/2)
 
@@ -638,6 +583,21 @@ mtbdd_U(double theta, double phi, double lambda)
     int n = 1;
     mpc_ptr **G_arr = NULL;
     allocate_matrix_array_mpc(&G_arr, n);
+
+    if(0) {
+        printf("mpc_cos_theta_2 = ");
+        mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 6, (mpc_ptr)g.mpc_cos_theta_2, MPC_ROUNDING);
+        printf("\n");
+        printf("mpc_exp_lambda_mul_min_sin_theta_2 = ");
+        mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 6, (mpc_ptr)g.mpc_exp_lambda_mul_min_sin_theta_2, MPC_ROUNDING);
+        printf("\n");
+        printf("mpc_exp_phi_mul_sin_theta_2 = ");
+        mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 6, (mpc_ptr)g.mpc_exp_phi_mul_sin_theta_2, MPC_ROUNDING);
+        printf("\n");
+        printf("mpc_exp_gam_mul_cos_theta_2 = ");
+        mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 6, (mpc_ptr)g.mpc_exp_gam_mul_cos_theta_2, MPC_ROUNDING);
+        printf("\n");
+    }
 
     G_arr[0][0] = g.mpc_cos_theta_2;                       // cos(theta/2)
     G_arr[0][1] = g.mpc_exp_lambda_mul_min_sin_theta_2;    // (cos(lambda) + i sin(lambda)) x -sin(theta/2)
@@ -738,25 +698,5 @@ mtbdd_phase_gates_init(int n)
     mpfr_clear(mpfr_sin_theta_min);
 
     mpc_clear(mpc_exp_theta_min);
-
-/*
-    for (int k=0; k<=n; k++) {
-
-        // forward rotation
-        angle = 2 * Pi / (1<<k); // (2 * pi) / (2 ^ k), so if n=2 (2 qubits), k = 0,1,2, angle = 2 * pi / (1,2,4) = 2pi, pi, pi/2
-
-        cartesian = cmake_angle(angle, 1);
-        gate_id = GATEID_Rk(k);
-        gates[gate_id][0] = AADD_ONE;  gates[gate_id][1] = AADD_ZERO;
-        gates[gate_id][2] = AADD_ZERO; gates[gate_id][3] = weight_lookup(&cartesian);
-
-        // backward rotation
-        angle = -2*Pi / (fl_t)(1<<k);
-        cartesian = cmake_angle(angle, 1);
-        gate_id = GATEID_Rk_dag(k);
-        gates[gate_id][0] = AADD_ONE;  gates[gate_id][1] = AADD_ZERO;
-        gates[gate_id][2] = AADD_ZERO; gates[gate_id][3] = weight_lookup(&cartesian);
-    }
-*/
 
 }
