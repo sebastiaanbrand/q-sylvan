@@ -186,4 +186,16 @@ mtbdd_Phase(double theta);
 MTBDD 
 mtbdd_U(double theta, double phi, double lambda);
 
+/**
+ * Generic single-qubit rotation gate with 3 Euler angles, u2(phi,lambda) = u(pi/2,phi,lambda).
+ */
+MTBDD
+mtbdd_U2(double phi, double lambda);
+
+/**
+ * Generic single-qubit rotation gate with 3 Euler angles, u1(lambda) = u(0,0,lambda).
+ */
+MTBDD
+mtbdd_U1(double lambda);
+
 #endif

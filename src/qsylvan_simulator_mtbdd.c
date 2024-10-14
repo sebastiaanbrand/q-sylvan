@@ -284,6 +284,27 @@ mtbdd_create_single_control_gate_for_qubits_mpc(BDDVAR n, BDDVAR c, BDDVAR t, MT
     return mtbdd_plus(dd1,dd2);
 }
 
+/**
+ * The control unitary gate CCG on three qubits q0, q1 and q2 (for example in QASM "ccx q0, q1, q2;" q1 attached to X) 
+ * is defined as:
+ * 
+ *   M = I (x) I (x) |0><0| + CG (x) |1><1| with M 8:8 in size
+ *     = I (x) dd1 + dd3 = dd2 + dd3
+ * 
+ * with CG 4:4 in size, CG = I (x) |0><0| + G (x) |1><1| 
+ * 
+ * G could be unitary gate ie. {X, Y, Z, T, S, ... } size 2:2
+ * 
+ */
+MTBDD
+mtbdd_create_double_control_gate_for_qubits_mpc(BDDVAR n, BDDVAR c, BDDVAR t, MTBDD I_dd, MTBDD V00_dd, MTBDD V11_dd, MTBDD CG_dd)
+{
+    MTBDD dd1 = mtbdd_create_double_single_gates_for_qubits_mpc(n, c, t, V00_dd, I_dd);
+    MTBDD dd2 = mtbdd_create_double_single_gates_for_qubits_mpc(n, c, t, dd1, I_dd);
+    MTBDD dd3 = mtbdd_create_double_single_gates_for_qubits_mpc(n, c, t, V11_dd, CG_dd);
+    return mtbdd_plus(dd2,dd3);
+}
+
 double
 mtbdd_getnorm_mpc(MTBDD dd, size_t nvars) // L2 norm, in accordance with the satcount function in sylvan_mtbdd.c
 {

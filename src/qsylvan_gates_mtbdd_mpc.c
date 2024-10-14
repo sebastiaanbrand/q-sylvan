@@ -529,14 +529,6 @@ mtbdd_Phase(double theta) // TODO: change in mpfr!
     return dd;
 }
 
-/*
-MTBDD
-mtbdd_U2(double phi, double lambda)
-{
-// theta = pi / 2; in MPC accuracy
-}
-*/
-
 MTBDD
 mtbdd_U(double theta, double phi, double lambda)
 {
@@ -610,6 +602,20 @@ mtbdd_U(double theta, double phi, double lambda)
 
     return dd;
 }
+
+MTBDD
+mtbdd_U2(double phi, double lambda)
+{
+    double theta = mpfr_get_d(g.mpfr_pi, MPC_ROUNDING) / 2.0;
+    return mtbdd_U(theta,phi,lambda);
+}
+
+MTBDD
+mtbdd_U1(double lambda)
+{
+    return mtbdd_U(0.0, 0.0, lambda);
+};
+
 
 /*
 void
