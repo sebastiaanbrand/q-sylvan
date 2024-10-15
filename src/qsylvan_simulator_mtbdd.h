@@ -84,17 +84,18 @@ MTBDD mtbdd_create_single_control_gate_for_qubits_mpc(BDDVAR n, BDDVAR c, BDDVAR
  * Creates an MTBDD matrix which applies a control and control gate combination CG to qubit c and t and I to all others.
  * 
  * @param n Total number of qubits.
- * @param c Control qubit for given control gate
+ * @param c1 Control qubit for given control gate
+ * @param c2 Control qubit for given control gate
  * @param t Target qubit for given gate (index connected first qubit to gate G).
  * @param I_dd mtbdd of predefined single qubit identity gate I.
  * @param V00_dd mtbdd of |0><0| matrix
  * @param V11_dd mtbdd of |1><1| matrix
- * @param CG_dd mtbdd of predefined single qubit gate CG.
+ * @param G_dd mtbdd of predefined single unitary qubit gate G.
  * 
- * @return An MTBDD encoding of CCU control unitary gate U={x,y,z, ....}
+ * @return An MTBDD encoding of CCG control unitary gate G={x,y,z, ....}
  * 
  */
-MTBDD mtbdd_create_double_control_gate_for_qubits_mpc(BDDVAR n, BDDVAR c, BDDVAR t, MTBDD I_dd, MTBDD V00_dd, MTBDD V11_dd, MTBDD CG_dd);
+MTBDD mtbdd_ccg(BDDVAR n, BDDVAR c1, BDDVAR c2, BDDVAR t, MTBDD I_dd, MTBDD V00_dd, MTBDD V11_dd, MTBDD G_dd);
 
 /**
  * Calculates the L2 norm of a mtbdd with leaves with mpc type.

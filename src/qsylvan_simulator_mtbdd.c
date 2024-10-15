@@ -257,6 +257,60 @@ mtbdd_create_double_single_gates_for_qubits_mpc(BDDVAR n, BDDVAR t1, BDDVAR t2, 
 }
 
 /**
+ * The control unitary gate CCG on three qubits q0, q1 and q2 (for example in QASM "ccx q0, q1, q2;" q1 attached to X) 
+ * is defined as:
+ * 
+ *   M = I (x) I (x) |0><0| + CG (x) |1><1| with M 8:8 in size
+ *     = I (x) dd1 + dd3 = dd2 + dd3
+ * 
+ *   M = I (x) I (x) |0><0| + CG (x) |1><1|
+ *     = I (x) I (x) |0><0| + I (x) |0><0| (x) |1><1| + G (x) |1><1| (x) |1><1| 
+ *     = G (x) |1><1| (x) |1><1| + 
+ *       I (x) |0><0| (x) |1><1| + 
+ *       I (x) I      (x) |0><0| 
+ * 
+ * with CG 4:4 in size, CG = I (x) |0><0| + G (x) |1><1| 
+ * 
+ * G could be unitary gate ie. {X, Y, Z, T, S, ... } size 2:2
+ * 
+ */
+MTBDD
+mtbdd_ccg(BDDVAR n, BDDVAR c1, BDDVAR c2, BDDVAR t, MTBDD I_dd, MTBDD V00_dd, MTBDD V11_dd, MTBDD G_dd)
+{
+    MTBDD dd1 = mtbdd_makeleaf(MPC_TYPE, (uint64_t)g.mpc_re_one);
+    MTBDD dd2 = mtbdd_makeleaf(MPC_TYPE, (uint64_t)g.mpc_re_one);
+    MTBDD dd3 = mtbdd_makeleaf(MPC_TYPE, (uint64_t)g.mpc_re_one);
+
+    for(uint32_t k=0; k < n; k++)
+    {
+        if(k==t) {
+            dd1 = mtbdd_tensor_prod(G_dd, dd1, 2); // Two vars added, so third argument = 2
+            dd2 = mtbdd_tensor_prod(I_dd, dd2, 2);
+            dd3 = mtbdd_tensor_prod(I_dd, dd3, 2);
+        }
+            
+        else if(k==c1) {
+            dd1 = mtbdd_tensor_prod(V11_dd, dd1, 2); // Two vars added, so third argument = 2
+            dd2 = mtbdd_tensor_prod(V00_dd, dd2, 2);
+            dd3 = mtbdd_tensor_prod(I_dd, dd3, 2);
+        }
+        else if(k==c2) {
+            dd1 = mtbdd_tensor_prod(V11_dd, dd1, 2); // Two vars added, so third argument = 2
+            dd2 = mtbdd_tensor_prod(V11_dd, dd2, 2);
+            dd3 = mtbdd_tensor_prod(V00_dd, dd3, 2);
+        }
+        else {
+            dd1 = mtbdd_tensor_prod(I_dd, dd1, 2); // Two vars added, so third argument = 2
+            dd2 = mtbdd_tensor_prod(I_dd, dd2, 2);
+            dd3 = mtbdd_tensor_prod(I_dd, dd3, 2);
+        }
+    }
+
+    return mtbdd_plus(mtbdd_plus(dd1,dd2),dd3);
+}
+
+
+/**
  * The control unitary gate CG on two qubits q0 and q1 (for example in QASM "cx q0, q1;" q1 attached to X) 
  * is defined as:
  * 
@@ -284,27 +338,6 @@ mtbdd_create_single_control_gate_for_qubits_mpc(BDDVAR n, BDDVAR c, BDDVAR t, MT
     return mtbdd_plus(dd1,dd2);
 }
 
-/**
- * The control unitary gate CCG on three qubits q0, q1 and q2 (for example in QASM "ccx q0, q1, q2;" q1 attached to X) 
- * is defined as:
- * 
- *   M = I (x) I (x) |0><0| + CG (x) |1><1| with M 8:8 in size
- *     = I (x) dd1 + dd3 = dd2 + dd3
- * 
- * with CG 4:4 in size, CG = I (x) |0><0| + G (x) |1><1| 
- * 
- * G could be unitary gate ie. {X, Y, Z, T, S, ... } size 2:2
- * 
- */
-MTBDD
-mtbdd_create_double_control_gate_for_qubits_mpc(BDDVAR n, BDDVAR c, BDDVAR t, MTBDD I_dd, MTBDD V00_dd, MTBDD V11_dd, MTBDD CG_dd)
-{
-    MTBDD dd1 = mtbdd_create_double_single_gates_for_qubits_mpc(n, c, t, V00_dd, I_dd);
-    MTBDD dd2 = mtbdd_create_double_single_gates_for_qubits_mpc(n, c, t, dd1, I_dd);
-    MTBDD dd3 = mtbdd_create_double_single_gates_for_qubits_mpc(n, c, t, V11_dd, CG_dd);
-    return mtbdd_plus(dd2,dd3);
-}
-
 double
 mtbdd_getnorm_mpc(MTBDD dd, size_t nvars) // L2 norm, in accordance with the satcount function in sylvan_mtbdd.c
 {
@@ -314,12 +347,9 @@ mtbdd_getnorm_mpc(MTBDD dd, size_t nvars) // L2 norm, in accordance with the sat
 
     if (mtbdd_isleaf(dd)) {
 
-        mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 6, (mpc_ptr)mtbdd_getvalue(dd), MPC_ROUNDING);
+        //mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 6, (mpc_ptr)mtbdd_getvalue(dd), MPC_ROUNDING);
 
         mpc_ptr mpc_value = (mpc_ptr)mtbdd_getvalue(dd);
-        
-        //printf("%p\n", mpc_value);
-        //mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 3, (mpc_ptr)mtbdd_getvalue(dd), MPC_ROUNDING);
 
         mpfr_t mpfr_abs_value;
         mpfr_init2(mpfr_abs_value, MPC_PRECISION);
@@ -329,9 +359,8 @@ mtbdd_getnorm_mpc(MTBDD dd, size_t nvars) // L2 norm, in accordance with the sat
         mpfr_clear(mpfr_abs_value);
 
         //printf("getnorm_mpc = %f\n", double_value * double_value * pow(2.0, nvars));
-        
+
         return double_value * double_value * pow(2.0, nvars);
-        // return powl(2.0L, nvars);
     }
 
     /* Perhaps execute garbage collection */

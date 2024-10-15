@@ -40,7 +40,7 @@ extern "C" {
 #define MPC_ROUNDING MPC_RNDZZ
 
 // Number of bits for the complex number
-#define MPC_PRECISION 16
+#define MPC_PRECISION 256
 
 // Max buffer length to handle filestrings
 #define MPC_MAXLENGTH_FILESTRING 256

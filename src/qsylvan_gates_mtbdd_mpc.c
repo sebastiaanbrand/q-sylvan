@@ -181,49 +181,47 @@ mtbdd_gate_init_fixed_variables()
     mpc_init2(g.mpc_res_sqrt_2, MPC_PRECISION);
     mpc_div(g.mpc_res_sqrt_2, g.mpc_re_one, g.mpc_sqrt_2, MPC_ROUNDING);
 
-    printf("mpc_res_sqrt_2 = ");
-    mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 6, (mpc_ptr)g.mpc_res_sqrt_2, MPC_ROUNDING);
-    printf("\n");
-
     // -1/sqrt(2.0)
     mpc_init2(g.mpc_res_sqrt_2_min, MPC_PRECISION);
     mpc_div(g.mpc_res_sqrt_2_min, g.mpc_re_one_min, g.mpc_sqrt_2, MPC_ROUNDING);
-
-    printf("mpc_res_sqrt_2_min = ");
-    mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 6, (mpc_ptr)g.mpc_res_sqrt_2_min, MPC_ROUNDING);
-    printf("\n");
 
     // i 1/sqrt(2.0)
     mpc_init2(g.mpc_im_res_sqrt_2, MPC_PRECISION);
     mpc_div(g.mpc_im_res_sqrt_2, g.mpc_im_one, g.mpc_sqrt_2, MPC_ROUNDING);
 
-    printf("mpc_im_res_sqrt_2 = ");
-    mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 6, (mpc_ptr)g.mpc_im_res_sqrt_2, MPC_ROUNDING);
-    printf("\n");
-
     // -i 1/sqrt(2.0)
     mpc_init2(g.mpc_im_res_sqrt_2_min, MPC_PRECISION);
     mpc_div(g.mpc_im_res_sqrt_2_min, g.mpc_im_one_min, g.mpc_sqrt_2, MPC_ROUNDING); 
-
-    printf("mpc_im_res_sqrt_2_min = ");
-    mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 6, (mpc_ptr)g.mpc_im_res_sqrt_2_min, MPC_ROUNDING);
-    printf("\n");
 
     // 1/sqrt(2.0) + i 1/sqrt(2.0)
     mpc_init2(g.mpc_res_sqrt_2_res_sqrt_2, MPC_PRECISION);
     mpc_add(g.mpc_res_sqrt_2_res_sqrt_2, g.mpc_res_sqrt_2, g.mpc_im_res_sqrt_2, MPC_ROUNDING); 
 
-    printf("mpc_res_sqrt_2_res_sqrt_2 = ");
-    mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 6, (mpc_ptr)g.mpc_res_sqrt_2_res_sqrt_2, MPC_ROUNDING);
-    printf("\n");
-
     // 1/sqrt(2.0) - i 1/sqrt(2.0)
     mpc_init2(g.mpc_res_sqrt_2_res_sqrt_2_min, MPC_PRECISION);
     mpc_add(g.mpc_res_sqrt_2_res_sqrt_2_min, g.mpc_res_sqrt_2, g.mpc_im_res_sqrt_2_min, MPC_ROUNDING); 
 
-    printf("mpc_res_sqrt_2_res_sqrt_2_min = ");
-    mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 6, (mpc_ptr)g.mpc_res_sqrt_2_res_sqrt_2_min, MPC_ROUNDING);
-    printf("\n");
+    if(0) {
+        printf("mpc_res_sqrt_2 = ");
+        mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 6, (mpc_ptr)g.mpc_res_sqrt_2, MPC_ROUNDING);
+        printf("\n");
+        printf("mpc_res_sqrt_2_min = ");
+        mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 6, (mpc_ptr)g.mpc_res_sqrt_2_min, MPC_ROUNDING);
+        printf("\n");
+        printf("mpc_im_res_sqrt_2 = ");
+        mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 6, (mpc_ptr)g.mpc_im_res_sqrt_2, MPC_ROUNDING);
+        printf("\n");
+        printf("mpc_im_res_sqrt_2_min = ");
+        mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 6, (mpc_ptr)g.mpc_im_res_sqrt_2_min, MPC_ROUNDING);
+        printf("\n");
+        printf("mpc_res_sqrt_2_res_sqrt_2 = ");
+        mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 6, (mpc_ptr)g.mpc_res_sqrt_2_res_sqrt_2, MPC_ROUNDING);
+        printf("\n");
+        printf("mpc_res_sqrt_2_res_sqrt_2_min = ");
+        mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 6, (mpc_ptr)g.mpc_res_sqrt_2_res_sqrt_2_min, MPC_ROUNDING);
+        printf("\n");
+    }
+
 
     return;
 }

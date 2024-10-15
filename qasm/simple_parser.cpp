@@ -143,7 +143,7 @@ class QASMParser {
         quantum_circuit_t* parse(char *filepath)
         {
             std::string path = std::string(filepath);
-            std::cout << "filepath = " << filepath << std::endl;
+            //std::cout << "filepath = " << filepath << std::endl;
             std::string filename = path.substr(path.find_last_of("/\\") + 1);
             std::string circname = filename.substr(0, filename.find_last_of("."));
             std::ifstream infile(filepath);
@@ -167,7 +167,7 @@ class QASMParser {
             while (std::getline(infile, line))
             {
                 parse_line(line);
-                std::cout << line << std::endl;
+                //std::cout << line << std::endl;
             }
 
             // if circuit has no intermediate measurements, make sure creg is

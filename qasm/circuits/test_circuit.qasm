@@ -1,27 +1,38 @@
-// Benchmark was created by MQT Bench on 2024-03-18
-// For more information about MQT Bench, please visit https://www.cda.cit.tum.de/mqtbench/
-// MQT Bench version: 1.1.0
-// Qiskit version: 1.0.2
-
 OPENQASM 2.0;
 include "qelib1.inc";
-qreg q[2];
-creg meas[2];
-u2(2.0,-pi) q[0];
-u2(2.0,-pi) q[1];
-cx q[0],q[1];
-p(9.172838187819544) q[1];
-cx q[0],q[1];
-u2(2.0,-pi) q[0];
-u2(2.0,-pi) q[1];
-cx q[0],q[1];
-p(9.172838187819544) q[1];
-cx q[0],q[1];
-ry(0.7271911597342195) q[0];
-ry(0.26244291289966604) q[1];
-cx q[0],q[1];
-ry(0.9484429661729774) q[0];
-ry(0.9866257564223032) q[1];
-barrier q[0],q[1];
-measure q[0] -> meas[0];
-measure q[1] -> meas[1];
+qreg q[6];
+creg c[6];
+// This initializes 6 quantum registers and 6 classical registers.
+
+h q[0];
+h q[1];
+h q[2];
+// The first 3 qubits are put into superposition states.
+
+barrier q;
+cx q[2], q[4];
+x q[3];
+cx q[2], q[3];
+ccx q[0], q[1], q[3];
+x q[0];
+x q[1];
+ccx q[0], q[1], q[3];
+x q[0];
+x q[1];
+x q[3];
+// This applies the secret structure: s=110.
+
+barrier q;
+h q[0];
+h q[1];
+h q[2];
+
+// This measures the first 3 qubits.
+measure q[0] -> c[0];
+measure q[1] -> c[1];
+measure q[2] -> c[2];
+
+// This measures the second 3 qubits.
+measure q[3] -> c[3];
+measure q[4] -> c[4];
+measure q[5] -> c[5];
