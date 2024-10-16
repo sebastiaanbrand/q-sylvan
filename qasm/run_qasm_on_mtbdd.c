@@ -163,7 +163,16 @@ void fprint_stats(FILE *stream, quantum_circuit_t* circuit)
             bool *x = int_to_bitarray(k, circuit->qreg_size, !(circuit->reversed_qubit_order));
             MTBDD leaf = mtbdd_getvalue_of_path(stats.final_state, x); // Perhaps reverse qubit sequence on circuit->qreg_size, see gmdd_get_amplitude
             fprintf(stream, "    [\n");
-            mpc_out_str(stream, MPC_BASE_OF_FLOAT, 17, (mpc_ptr)mtbdd_getvalue(leaf), MPC_ROUNDING);
+            
+            mpfr_t real, imag;
+            mpfr_init2(real, MPC_PRECISION);
+            mpfr_init2(imag, MPC_PRECISION);
+            mpc_real(real, (mpc_ptr)mtbdd_getvalue(leaf), MPC_ROUNDING);
+            mpc_imag(imag, (mpc_ptr)mtbdd_getvalue(leaf), MPC_ROUNDING);
+            mpfr_fprintf(stream, "      %.17Rf,\n", real);
+            mpfr_fprintf(stream, "      %.17Rf\n", imag);
+            //mpc_out_str(stream, MPC_BASE_OF_FLOAT, 17, (mpc_ptr)mtbdd_getvalue(leaf), MPC_ROUNDING);
+            
             if (k == (1<<(circuit->qreg_size))-1)
                 fprintf(stream, "    ]\n");
             else
@@ -527,8 +536,8 @@ int main(int argc, char *argv[])
     argp_parse(&argp, argc, argv, 0, 0, 0);
 
     quantum_circuit_t* circuit = parse_qasm_file(qasm_inputfile);
+    
     //quantum_circuit_t* circuit = parse_qasm_file("/home/qrichard/Q-Sylvan/q-sylvan/qasm/circuits/test_circuit.qasm");
-
     //print_quantum_circuit(circuit);
 
     optimize_qubit_order(circuit, false);
@@ -556,6 +565,7 @@ int main(int argc, char *argv[])
     
     //print_quantum_circuit(circuit);
     //printf("Statistics\n");
+
     fprint_stats(stdout, circuit);
 
     if (json_outputfile != NULL) {
