@@ -143,6 +143,8 @@ def generate_time_nr_qubits_plots(df):
     plt.grid(True)
     plt.savefig('benchmark/plot/time_nr_qubits.pdf')
 
+    print("Plot for time qubits created")
+
     return
 
 #
@@ -172,9 +174,11 @@ def generate_time_time_method_plots(df):
     unequal_values = merged_df[merged_df['_merge'] != 'both']
 
     # Display the unequal values
-    print("Unequal values:")
-    print(unequal_values)
+    if not(unequal_values.empty):
+        print("Unequal amount of rows in time time method plot:")
+        print(unequal_values)
 
+    # Plots drawing
     fig, ax = plt.subplots()
 
     ax.scatter(
@@ -189,8 +193,8 @@ def generate_time_time_method_plots(df):
     ax.set_yscale('log')
 
     # Set limits for both axes
-    ax.set_xlim(0.01, 1000)
-    ax.set_ylim(0.01, 1000)
+    ax.set_xlim(0.0001, 100)
+    ax.set_ylim(0.0001, 100)
 
     # Display the plot
     plt.title('Wall time of all benchmarks, precision=64')
@@ -198,6 +202,8 @@ def generate_time_time_method_plots(df):
     plt.ylabel('MTBDD wall time (s)')
     plt.grid(True)
     plt.savefig('benchmark/plot/time_time_method.pdf')
+
+    print("Plot for time time method created")
 
     return
 
@@ -224,6 +230,18 @@ def generate_time_time_per_node_plots(df):
     )
     df_y = df_y.assign(time_per_node = df_y['statistics.simulation_time'] / df_y['statistics.final_nodes'])
 
+    # Merge the two DataFrames on the column to compare
+    merged_df = df_x.merge(df_y, on='statistics.benchmark', how='outer', indicator=True)
+
+    # Identify unequal values
+    unequal_values = merged_df[merged_df['_merge'] != 'both']
+
+    # Display the unequal values
+    if not(unequal_values.empty):
+        print("Unequal values time time method per node:")
+        print(unequal_values)
+
+    # Plots drawing
     fig, ax = plt.subplots()
 
     ax.scatter(
@@ -248,6 +266,8 @@ def generate_time_time_per_node_plots(df):
     plt.grid(True)
     plt.savefig('benchmark/plot/time_time_per_node.pdf')
 
+    print("Plot for time time methode per node created")
+
     return
 
 #
@@ -270,9 +290,6 @@ def generate_time_time_precision_plots(df):
           ]
     )
 
-    print(df_x)
-    print(df_y)
-
     # Merge the two DataFrames on the column to compare
     merged_df = df_x.merge(df_y, on='statistics.benchmark', how='outer', indicator=True)
 
@@ -280,9 +297,11 @@ def generate_time_time_precision_plots(df):
     unequal_values = merged_df[merged_df['_merge'] != 'both']
 
     # Display the unequal values
-    print("Unequal values:")
-    print(unequal_values)
+    if not(unequal_values.empty):
+        print("Unequal values time time precision:")
+        print(unequal_values)
 
+    # Plots drawing
     fig, ax = plt.subplots()
 
     ax.scatter(
@@ -297,8 +316,8 @@ def generate_time_time_precision_plots(df):
     ax.set_yscale('log')
 
     # Set limits for both axes
-    ax.set_xlim(0.01, 1000)
-    ax.set_ylim(0.01, 1000)
+    ax.set_xlim(0.001, 100)
+    ax.set_ylim(0.001, 100)
 
     # Display the plot
     plt.title('Wall time of all benchmarks, precision 64 against 256')
@@ -306,6 +325,8 @@ def generate_time_time_precision_plots(df):
     plt.ylabel('MTBDD 64 wall time (s)')
     plt.grid(True)
     plt.savefig('benchmark/plot/time_time_precision.pdf')
+
+    print("Plot for time time precision created")
 
     return
 
@@ -315,6 +336,7 @@ def generate_time_time_precision_plots(df):
 
 df = convert_all_json_files_to_dataframe()
 
+print("Conversion to flatten dataframe done")
 print(df)
 
 generate_time_nr_qubits_plots(df)
