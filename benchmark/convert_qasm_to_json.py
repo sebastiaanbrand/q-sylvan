@@ -19,6 +19,11 @@ def convert_qasm_to_json(qasm_filename : str, softwareversion : str):
     filepath_qasm = os.path.join(QASM_DIR, qasm_filename)
     print(filepath_qasm)
 
+    # Split the filename into name and extension
+    benchmarkname, ext = os.path.splitext(qasm_filename)
+    if benchmarkname.split('_')[0] == 'grover-v-chain':  # rccx currently unsupported
+        return
+
     # Start simulating in separate thread
     output = subprocess.run(
         [SIM_QASM_EXE, filepath_qasm], #, '--state-vector'],
@@ -30,14 +35,11 @@ def convert_qasm_to_json(qasm_filename : str, softwareversion : str):
     # Get the current timestamp in the desired format (e.g., YYYYMMDD_HHMMSS)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    # Split the filename into name and extension
-    name, ext = os.path.splitext(qasm_filename)
-
     # Create the new filename with the timestamp appended before the extension
-    precision = 64
+    precision = 256
     method = "MTBDD"
     ext = ".json"
-    json_filename = f"{timestamp}_{softwareversion}_{precision}_{method}_{name}{ext}"
+    json_filename = f"{timestamp}_{softwareversion}_{precision}_{method}_{benchmarkname}{ext}"
 
     filepath_json = os.path.join(JSON_DIR, json_filename)
 

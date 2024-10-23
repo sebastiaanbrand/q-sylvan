@@ -94,6 +94,221 @@ def convert_all_json_files_to_dataframe():
 # Plot functions
 #
 
+def generate_time_nr_qubits_plots(df):
+
+    # Plotting time and nr qubits
+    df_ae = (
+        df[
+            (df['statistics.benchmark'].str[0:2] == 'ae') & 
+            (df['precision'] == '64') & 
+            (df['method'] == 'MTBDD')
+          ]
+        .sort_values(by='statistics.n_qubits')
+        .plot(
+            x='statistics.n_qubits', 
+            y='statistics.simulation_time', 
+            kind='line', 
+            marker='o', 
+            color='blue')
+    )
+    df_ws = (
+        df[
+            (df['statistics.benchmark'].str[0:6] == 'wstate') & 
+            (df['precision'] == '64') & 
+            (df['method'] == 'MTBDD')
+          ]
+        .sort_values(by='statistics.n_qubits')
+        .plot(
+            x='statistics.n_qubits', 
+            y='statistics.simulation_time', 
+            kind='line', 
+            marker='o', 
+            color='red', 
+            ax=plt.gca())
+    )
+
+    # 'r' (red)
+    # 'g' (green)
+    # 'b' (blue)
+    # 'c' (cyan)
+    # 'm' (magenta)
+    # 'y' (yellow)
+    # 'k' (black)
+    # 'w' (white)
+
+    # Display the plot
+    plt.title('wstate red, ae blue')
+    plt.xlabel('qubits')
+    plt.ylabel('wall time (s)')
+    plt.grid(True)
+    plt.savefig('benchmark/plot/time_nr_qubits.pdf')
+
+    return
+
+#
+# Time against time plots
+#
+
+def generate_time_time_method_plots(df):
+
+    # Plotting time and nr qubits
+    df_x = (
+        df[
+            (df['precision'] == '64') & 
+            (df['method'] == 'QMDD')
+          ]
+    )
+    df_y = (
+        df[
+            (df['precision'] == '64') & 
+            (df['method'] == 'MTBDD')
+          ]
+    )
+
+    # Merge the two DataFrames on the column to compare
+    merged_df = df_x.merge(df_y, on='statistics.benchmark', how='outer', indicator=True)
+
+    # Identify unequal values
+    unequal_values = merged_df[merged_df['_merge'] != 'both']
+
+    # Display the unequal values
+    print("Unequal values:")
+    print(unequal_values)
+
+    fig, ax = plt.subplots()
+
+    ax.scatter(
+        df_x['statistics.simulation_time'], 
+        df_y['statistics.simulation_time'], 
+        color='blue',
+        marker='o'
+        )
+
+    # Set logarithmic scale for both axes
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+
+    # Set limits for both axes
+    ax.set_xlim(0.01, 1000)
+    ax.set_ylim(0.01, 1000)
+
+    # Display the plot
+    plt.title('Wall time of all benchmarks, precision=64')
+    plt.xlabel('QMDD wall time (s)')
+    plt.ylabel('MTBDD wall time (s)')
+    plt.grid(True)
+    plt.savefig('benchmark/plot/time_time_method.pdf')
+
+    return
+
+#
+# Time against time plots
+#
+
+def generate_time_time_per_node_plots(df):
+
+    # Plotting time and nr qubits
+    df_x = (
+        df[
+            (df['precision'] == '64') & 
+            (df['method'] == 'QMDD')
+          ]
+    )
+    df_x = df_x.assign(time_per_node = df_x['statistics.simulation_time'] / df_x['statistics.final_nodes'])
+
+    df_y = (
+        df[
+            (df['precision'] == '64') & 
+            (df['method'] == 'MTBDD')
+          ]
+    )
+    df_y = df_y.assign(time_per_node = df_y['statistics.simulation_time'] / df_y['statistics.final_nodes'])
+
+    fig, ax = plt.subplots()
+
+    ax.scatter(
+        df_x['time_per_node'], 
+        df_y['time_per_node'], 
+        color='blue',
+        marker='o'
+        )
+
+    # Set logarithmic scale for both axes
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+
+    # Set limits for both axes
+    ax.set_xlim(0.00001, 1)
+    ax.set_ylim(0.00001, 1)
+
+    # Display the plot
+    plt.title('Wall time per node of all benchmarks, precision=64')
+    plt.xlabel('QMDD wall time (s)')
+    plt.ylabel('MTBDD wall time (s)')
+    plt.grid(True)
+    plt.savefig('benchmark/plot/time_time_per_node.pdf')
+
+    return
+
+#
+# Time against time for different precisions plots
+#
+
+def generate_time_time_precision_plots(df):
+
+    # Plotting time and nr qubits
+    df_x = (
+        df[
+            (df['precision'] == '256') & 
+            (df['method'] == 'MTBDD')
+          ]
+    )
+    df_y = (
+        df[
+            (df['precision'] == '64') & 
+            (df['method'] == 'MTBDD')
+          ]
+    )
+
+    print(df_x)
+    print(df_y)
+
+    # Merge the two DataFrames on the column to compare
+    merged_df = df_x.merge(df_y, on='statistics.benchmark', how='outer', indicator=True)
+
+    # Identify unequal values
+    unequal_values = merged_df[merged_df['_merge'] != 'both']
+
+    # Display the unequal values
+    print("Unequal values:")
+    print(unequal_values)
+
+    fig, ax = plt.subplots()
+
+    ax.scatter(
+        df_x['statistics.simulation_time'], 
+        df_y['statistics.simulation_time'], 
+        color='blue',
+        marker='o'
+        )
+
+    # Set logarithmic scale for both axes
+    ax.set_xscale('log')
+    ax.set_yscale('log')
+
+    # Set limits for both axes
+    ax.set_xlim(0.01, 1000)
+    ax.set_ylim(0.01, 1000)
+
+    # Display the plot
+    plt.title('Wall time of all benchmarks, precision 64 against 256')
+    plt.xlabel('MTBDD 256 wall time (s)')
+    plt.ylabel('MTBDD 64 wall time (s)')
+    plt.grid(True)
+    plt.savefig('benchmark/plot/time_time_precision.pdf')
+
+    return
+
 #
 # Main
 #
@@ -102,12 +317,14 @@ df = convert_all_json_files_to_dataframe()
 
 print(df)
 
-#generate_time_nr_qubits_plots()                 # f(time(method), nr_qubit(circuittype)) for one method
+generate_time_nr_qubits_plots(df)
 
-#generate_time_time_plots()                      # f(time(EVDD), time(MTBDD)) for all circuits selected on softwareversion
+generate_time_time_method_plots(df)
 
-#generate_time_precision_plots()                 # f(time(MTBDD), precision) for one circuittype, one nr of qubits
+generate_time_time_per_node_plots(df)
 
-#generate_minimum_precision_nr_qubits_plots()    # f(precision, nr_qubits) for one circuittype. method = MTBDD
+generate_time_time_precision_plots(df)
+
+#generate_minimum_precision_nr_qubits_plots()     # f(precision, nr_qubits) for one circuittype. method = MTBDD
 
 #df.save()
