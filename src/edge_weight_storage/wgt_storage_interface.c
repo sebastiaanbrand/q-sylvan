@@ -5,8 +5,8 @@
 
 void * (*wgt_store_create)(uint64_t size, double tolerance);
 void (*wgt_store_free)(void *wgt_storage);
-int (*wgt_store_find_or_put)(const void *dbs, const complex_t *v, uint64_t *ret);
-complex_t (*wgt_store_get)(const void *dbs, const uint64_t ref);
+int (*wgt_store_find_or_put)(const void *dbs, const void *v, uint64_t *ret);
+void * (*wgt_store_get)(const void *dbs, const uint64_t ref);
 uint64_t (*wgt_store_num_entries)(const void *dbs);
 double (*wgt_store_get_tol)();
 

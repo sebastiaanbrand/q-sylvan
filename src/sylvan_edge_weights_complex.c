@@ -39,7 +39,7 @@ _weight_complex_value(void *wgt_store, EVBDD_WGT a, complex_t *res)
     if (a == EVBDD_ZERO)         *res = czero();
     else if (a == EVBDD_ONE)     *res = cone();
     else if (a == EVBDD_MIN_ONE) *res = cmone();
-    *res = wgt_store_get(wgt_store, a);
+    *res = *(complex_t*)(wgt_store_get(wgt_store, a));
 }
 
 EVBDD_WGT

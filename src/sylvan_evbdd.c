@@ -452,6 +452,10 @@ sylvan_init_evbdd(size_t min_wgt_tablesize, size_t max_wgt_tablesize,
     evbdd_initialized = 1;
 
     int index_size = (int) ceil(log2(max_wgt_tablesize));
+    if (index_size > 33) {
+        fprintf(stderr,"max edge weight storage size is 2^33\n");
+        exit(1);
+    }
     if (index_size > 23) larger_wgt_indices = true;
     else larger_wgt_indices = false;
 

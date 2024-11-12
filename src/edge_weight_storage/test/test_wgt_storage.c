@@ -32,7 +32,7 @@ int test_cmap()
     found = cmap_find_or_put(ctable, &val1, &index1); test_assert(found == 0);
     found = cmap_find_or_put(ctable, &val2, &index2); test_assert(found == 1);
     test_assert(index1 == index2);
-    val3 = cmap_get(ctable, index1);
+    val3 = *(complex_t*)cmap_get(ctable, index1);
     test_assert(flt_abs(val3.r - val1.r) < cmap_get_tolerance());
     test_assert(flt_abs(val3.i - val1.i) < cmap_get_tolerance());
 
@@ -41,7 +41,7 @@ int test_cmap()
     found = cmap_find_or_put(ctable, &val1, &index1); test_assert(found == 0);
     found = cmap_find_or_put(ctable, &val2, &index2); test_assert(found == 1);
     test_assert(index1 == index2);
-    val3 = cmap_get(ctable, index1);
+    val3 = *(complex_t*)cmap_get(ctable, index1);
     test_assert(val3.r == val1.r && val3.i == val1.i);
 
     val1 = cmake(0.0005000000000012, 0.0);
@@ -49,7 +49,7 @@ int test_cmap()
     found = cmap_find_or_put(ctable, &val1, &index1); test_assert(found == 0);
     found = cmap_find_or_put(ctable, &val2, &index2); test_assert(found == 1);
     test_assert(index1 == index2);
-    val3 = cmap_get(ctable, index1);
+    val3 = *(complex_t*)cmap_get(ctable, index1);
     test_assert(val3.r == val1.r && val3.i == val1.i);
 
 
@@ -68,7 +68,7 @@ int test_cmap()
     found = cmap_find_or_put(ctable, &val1, &index1); test_assert(found == 0);
     found = cmap_find_or_put(ctable, &val2, &index2); test_assert(found == 0);
     test_assert(index1 != index2);
-    val3 = cmap_get(ctable, index1);
+    val3 = *(complex_t*)cmap_get(ctable, index1);
     test_assert(val3.r == val1.r && val3.i == val1.i);
 
     cmap_free(ctable);
