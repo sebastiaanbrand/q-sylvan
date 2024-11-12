@@ -3,14 +3,10 @@
 
 #include "flt.h"
 #include "cmap.h"
-#include "rmap.h"
-#include "tree_map.h"
 
 typedef enum wgt_storage_backend {
-    COMP_HASHMAP, 
-    REAL_TUPLES_HASHMAP, 
-    REAL_TREE,
-    n_backends
+    COMP_HASHMAP,
+    n_wgt_storage_types
 } wgt_storage_backend_t;
 
 // create(uint64_t size, double tolerance)

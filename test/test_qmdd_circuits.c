@@ -789,7 +789,7 @@ int test_with(int wgt_backend, int norm_strat, int wgt_indx_bits)
 
 int runtests()
 {
-    for (int backend = 0; backend < n_backends; backend++) {
+    for (int backend = 0; backend < n_wgt_storage_types; backend++) {
         for (int norm_strat = 0; norm_strat < n_norm_strategies; norm_strat++) {
             if (test_with(backend, norm_strat, 11)) return 1;
             if (backend == COMP_HASHMAP) {
