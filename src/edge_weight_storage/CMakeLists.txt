@@ -5,6 +5,7 @@ include_directories(..)
 add_library(edge_weight_storage SHARED
         wgt_storage_interface.c wgt_storage_interface.h
         cmap.c cmap.h
+        mpc_map.c mpc_map.h
         fast_hash.h fast_hash.c
         flt.h
         MurmurHash3.h MurmurHash3.c
