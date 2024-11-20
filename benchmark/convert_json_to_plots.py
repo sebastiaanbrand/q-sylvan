@@ -236,7 +236,7 @@ def generate_time_time_per_node_plots(df):
     # Identify unequal values
     unequal_values = merged_df[merged_df['_merge'] != 'both']
 
-    # Display the unequal values
+    # Display if there are unequal values
     if not(unequal_values.empty):
         print("Unequal values time time method per node:")
         print(unequal_values)
@@ -331,21 +331,145 @@ def generate_time_time_precision_plots(df):
     return
 
 #
+# Norm of state vector against norm for different method plots
+#
+
+def generate_norm_norm_method_plots(df):
+
+    # Plotting norms
+    df_x = (
+        df[
+            (df['precision'] == '64') & 
+            (df['method'] == 'MTBDD')
+          ]
+    )
+    df_y = (
+        df[
+            (df['precision'] == '64') & 
+            (df['method'] == 'QMDD')
+          ]
+    )
+
+    # Merge the two DataFrames on the column to compare
+    merged_df = df_x.merge(df_y, on='statistics.benchmark', how='outer', indicator=True)
+
+    # Identify unequal values
+    unequal_values = merged_df[merged_df['_merge'] != 'both']
+
+    # Display the unequal values
+    if not(unequal_values.empty):
+        print("Unequal values norm norm method:")
+        print(unequal_values)
+
+    # Plots drawing
+    fig, ax = plt.subplots()
+
+    ax.scatter(
+        df_x['statistics.norm'], 
+        df_y['statistics.norm'], 
+        color='blue',
+        marker='o'
+        )
+
+    # Set logarithmic scale for both axes
+    ax.set_xscale('linear')
+    ax.set_yscale('linear')
+
+    # Set limits for both axes
+    # ax.set_xlim(0.1, 1)
+    # ax.set_ylim(0.1, 1)
+
+    # Display the plot
+    plt.title('Norm state vector of all benchmarks, precision 64')
+    plt.xlabel('MTBDD 64 norm')
+    plt.ylabel('QMDD 64 norm')
+    plt.grid(True)
+    plt.savefig('benchmark/plot/norm_norm_method.pdf')
+
+    print("Plot for norm norm method created")
+
+    return
+
+#
+# Norm of state vector against norm for different precision plots
+#
+
+def generate_norm_norm_precision_plots(df):
+
+    # Plotting norms
+    df_x = (
+        df[
+            (df['precision'] == '64') & 
+            (df['method'] == 'MTBDD')
+          ]
+    )
+    df_y = (
+        df[
+            (df['precision'] == '16') & 
+            (df['method'] == 'MTBDD')
+          ]
+    )
+
+    # Merge the two DataFrames on the column to compare
+    merged_df = df_x.merge(df_y, on='statistics.benchmark', how='outer', indicator=True)
+
+    # Identify unequal values
+    unequal_values = merged_df[merged_df['_merge'] != 'both']
+
+    # Display the unequal values
+    if not(unequal_values.empty):
+        print("Unequal values norm norm precision:")
+        print(unequal_values)
+
+    # Plots drawing
+    fig, ax = plt.subplots()
+
+    ax.scatter(
+        df_x['statistics.norm'], 
+        df_y['statistics.norm'], 
+        color='blue',
+        marker='o'
+        )
+
+    # Set logarithmic scale for both axes
+    ax.set_xscale('linear')
+    ax.set_yscale('linear')
+
+    # Set limits for both axes
+    ax.set_xlim(0.999, 1.001)
+    ax.set_ylim(0.999, 1.001)
+
+    # Display the plot
+    plt.title('Norm state vector of all benchmarks, method MTBDD')
+    plt.xlabel('MTBDD 64 norm')
+    plt.ylabel('MTBDD 16 norm')
+    plt.grid(True)
+    plt.savefig('benchmark/plot/norm_norm_precision.pdf')
+
+    print("Plot for norm norm precision created")
+
+    return
+
+#
 # Main
 #
 
 df = convert_all_json_files_to_dataframe()
 
 print("Conversion to flatten dataframe done")
-print(df)
+print(df['statistics.norm'][df['statistics.norm'] < 1.0])
 
-generate_time_nr_qubits_plots(df)
+#generate_time_nr_qubits_plots(df)
 
-generate_time_time_method_plots(df)
+#generate_time_time_method_plots(df)
 
-generate_time_time_per_node_plots(df)
+#generate_time_time_per_node_plots(df)
 
-generate_time_time_precision_plots(df)
+#generate_time_time_precision_plots(df)
+
+#generate_norm_norm_method_plots(df)
+
+generate_norm_norm_precision_plots(df)
 
 #generate_minimum_precision_nr_qubits_plots()     # f(precision, nr_qubits) for one circuittype. method = MTBDD
 

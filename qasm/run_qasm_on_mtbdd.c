@@ -399,6 +399,7 @@ MTBDD apply_gate(MTBDD state, quantum_op_t* gate, int n)
 
 /*
     else if (strcmp(gate->name, "cswap") == 0) { // cswap(c,a,b) = cx(c,a,b); cx(c,b,a); cx(c,a,b)
+
         // no native CSWAP gates in Q-Sylvan
         stats.applied_gates += 4;
         // CCNOT

@@ -21,6 +21,8 @@ def convert_qasm_to_json(qasm_filename : str, softwareversion : str):
 
     # Split the filename into name and extension
     benchmarkname, ext = os.path.splitext(qasm_filename)
+    if benchmarkname.split('_')[0] == 'grover-noancilla':  # out of memory for number 9
+        return
     if benchmarkname.split('_')[0] == 'grover-v-chain':  # rccx currently unsupported
         return
 
@@ -36,7 +38,7 @@ def convert_qasm_to_json(qasm_filename : str, softwareversion : str):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     # Create the new filename with the timestamp appended before the extension
-    precision = 256
+    precision = 16
     method = "MTBDD"
     ext = ".json"
     json_filename = f"{timestamp}_{softwareversion}_{precision}_{method}_{benchmarkname}{ext}"
@@ -62,7 +64,7 @@ def convert_all_qasm_files(softwareversion : str):
     qasm_files = [file for file in qasm_files if not file.startswith('2022', 0)]
     
     # Remove with regular expression, in this case: 
-    #pattern = r"^(a|b|c|d|e|f|[g-r]).*" # remove files starting with a or b or ...
+    #pattern = r"^(a|b|c|d|e|f|[g]).*" # remove files starting with a or b or ...
     #qasm_files = [file for file in qasm_files if not regular_expression.match(pattern, file)]
 
     #   runs into benchmark/qasm/grover-noancilla_indep_qiskit_10.qasm error
