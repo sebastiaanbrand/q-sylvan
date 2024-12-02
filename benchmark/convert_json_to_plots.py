@@ -6,7 +6,8 @@ import re as regular_expression
 import pandas as pd
 import matplotlib.pyplot as plt
 
-JSON_DIR = 'benchmark/json/'
+import globals_pipeline as g
+
 #
 # Function to flatten nested JSON
 #
@@ -32,7 +33,7 @@ def convert_json_file_to_json_data(
     precision : int, 
     method : str):
 
-    filepath_json = os.path.join(JSON_DIR, json_filename)
+    filepath_json = os.path.join(g.JSON_DIR, json_filename)
     print(filepath_json)
 
     # Convert json to dataframe
@@ -54,7 +55,7 @@ def convert_json_file_to_json_data(
 def convert_all_json_files_to_dataframe():
 
     # Capture all files in the directory
-    all_files = os.listdir(JSON_DIR)
+    all_files = os.listdir(g.JSON_DIR)
 
     # Select only the sql files
     json_files = [file for file in all_files if file.endswith('.json')]
@@ -451,26 +452,65 @@ def generate_norm_norm_precision_plots(df):
     return
 
 #
-# Main
+# Time and number of qubits plot
 #
 
-df = convert_all_json_files_to_dataframe()
+def generate_time_nr_qubits_plots(df):
 
-print("Conversion to flatten dataframe done")
-print(df['statistics.norm'][df['statistics.norm'] < 1.0])
+    # Filter x and y axes
+    df_x = (
+        df[
+            (df['precision'] == f'{g.PRECISION}') & 
+            (df['method'] == f'{g.METHOD}')
+          ]
+    )
+    df_y = (
+        df[
+            (df['precision'] == f'{g.PRECISION}') & 
+            (df['method'] == f'{g.METHOD}')
+          ]
+    )
 
-#generate_time_nr_qubits_plots(df)
+    # Merge the two DataFrames on the column to compare
+    merged_df = df_x.merge(df_y, on='statistics.benchmark', how='outer', indicator=True)
 
-#generate_time_time_method_plots(df)
+    # Identify unequal values
+    unequal_values = merged_df[merged_df['_merge'] != 'both']
 
-#generate_time_time_per_node_plots(df)
+    # Display the unequal values
+    if not(unequal_values.empty):
+        print("Unequal values time nr qubits:")
+        print(unequal_values)
 
-#generate_time_time_precision_plots(df)
+    # Plots drawing
+    fig, ax = plt.subplots()
 
-#generate_norm_norm_method_plots(df)
+    ax.scatter(
+        df_x['statistics.n_qubits'], 
+        df_y['statistics.simulation_time'], 
+        color='blue',
+        marker='o'
+        )
 
-generate_norm_norm_precision_plots(df)
+    # Set logarithmic scale for both axes
+    ax.set_xscale('linear')
+    ax.set_yscale('log')
 
-#generate_minimum_precision_nr_qubits_plots()     # f(precision, nr_qubits) for one circuittype. method = MTBDD
+    # Set limits for both axes
+    ax.set_xlim(0, g.MAX_NUM_QUBITS)
+    ax.set_ylim(0.001, 10.0)
 
-#df.save()
+    # Display the plot
+    plt.title(f'Clifford + T, {g.PERCENTAGE_T_GATES} percent random T, {g.NUM_CIRCUITS}x, {g.MIN_NUM_QUBITS}-{g.MAX_NUM_QUBITS}({g.STEPSIZE_NUM_QUBITS}), {g.MIN_NUM_GATES}-{g.MAX_NUM_GATES}({g.STEPSIZE_NUM_GATES})')
+    plt.xlabel(f'{g.METHOD} number qubits')
+    plt.ylabel(f'{g.METHOD} time(seconds)')
+    plt.grid(True)
+
+   # Ensure the output directory exists
+    os.makedirs(g.PLOTS_DIR, exist_ok=True)
+
+    plt.savefig(g.PLOTS_DIR + f'time_nr_qubits_{g.PERCENTAGE_T_GATES}_percent_{g.MIN_NUM_QUBITS}_{g.MAX_NUM_QUBITS}_{g.MIN_NUM_GATES}_{g.MAX_NUM_GATES}.pdf')
+
+    print("Plot for time nr_qubits created")
+
+    return
