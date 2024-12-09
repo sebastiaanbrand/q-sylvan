@@ -24,13 +24,13 @@ global PLOTS_DIR
 #
 
 NUM_CIRCUITS = 1             # Number of random circuits to generate per number of qubits and number of gates
-MIN_NUM_QUBITS = 10           # Min number of qubits per circuit
-MAX_NUM_QUBITS = 200          # Max number of qubits per circuit
-STEPSIZE_NUM_QUBITS = 10     # Stepsize of the number of qubits
-MIN_NUM_GATES = 100          # Min number of gates per circuit
-MAX_NUM_GATES = 1000         # Max number of gates per circuit
-STEPSIZE_NUM_GATES = 100     # Stepsize of the number of gates
-PERCENTAGE_T_GATES = 55      # Percentage T gates in quantum circuit
+MIN_NUM_QUBITS =  2          # Min number of qubits per circuit
+MAX_NUM_QUBITS = 128         # Max number of qubits per circuit
+STEPSIZE_NUM_QUBITS = 8      # Stepsize of the number of qubits
+MIN_NUM_GATES =  400         # Min number of gates per circuit
+MAX_NUM_GATES = 4800         # Max number of gates per circuit
+STEPSIZE_NUM_GATES = 400     # Stepsize of the number of gates
+PERCENTAGE_T_GATES = 85      # Percentage T gates in quantum circuit
 
 #PRECISION = 16
 #METHOD = 'MTBDD'

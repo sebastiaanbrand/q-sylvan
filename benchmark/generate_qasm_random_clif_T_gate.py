@@ -7,11 +7,11 @@ import globals_pipeline as g
 
 # Generates a random quantum circuit based on Clifford gates and T-gate.
 def generate_random_clifford_t_circuit(num_qubits, num_gates):
- 
+
     # Available gates
-    single_qubit_clifford_gates = ['h', 's', 'sdg', 'x', 'y', 'z']  
-    two_qubit_clifford_gates = ['cx', 'cz']
-    t_gate = ['t'] 
+    single_qubit_clifford_gates = ['h', 's', 'sdg', 'sx', 'sxdg', 'x', 'y', 'z'] # 'h'
+    two_qubit_clifford_gates = ['cx', 'cy', 'cz'] # 'swap'
+    t_gate = ['t'] # 'tdg'
 
     # Initialize quantum circuit
     qc = QuantumCircuit(num_qubits)
@@ -24,7 +24,11 @@ def generate_random_clifford_t_circuit(num_qubits, num_gates):
 
         gate_types = ['single', 'two', 't']
 
-        probability_gate_types = [0.5 * (1 - g.PERCENTAGE_T_GATES / 100), 0.5 * (1 - g.PERCENTAGE_T_GATES / 100), g.PERCENTAGE_T_GATES / 100]
+        probability_gate_types = [
+            0.5 * (1 - g.PERCENTAGE_T_GATES / 100), 
+            0.5 * (1 - g.PERCENTAGE_T_GATES / 100), 
+            g.PERCENTAGE_T_GATES / 100
+            ]
 
         gate_type = random.choices(gate_types, weights=probability_gate_types, k=1)
         
@@ -42,6 +46,10 @@ def generate_random_clifford_t_circuit(num_qubits, num_gates):
                 qc.s(qubit)
             elif gate == 'sdg':
                 qc.sdg(qubit)
+            elif gate == 'sx':
+                qc.sx(qubit)
+            elif gate == 'sxdg':
+                qc.sxdg(qubit)
             elif gate == 'x':
                 qc.x(qubit)
             elif gate == 'y':
@@ -57,13 +65,16 @@ def generate_random_clifford_t_circuit(num_qubits, num_gates):
             control = random.randint(0, num_qubits - 1)
             target = random.randint(0, num_qubits - 1)
 
-            # Ensure target and control are different
-            while target == control:  
+            # Ensure target and control are different and target > control
+            while target <= control:  
                 target = random.randint(0, num_qubits - 1)
+                control = random.randint(0, num_qubits - 1)
 
             gate = random.choice(two_qubit_clifford_gates)
             if gate == 'cx':
                 qc.cx(control, target)
+            elif gate == 'cy':
+                qc.cy(control, target)
             elif gate == 'cz':
                 qc.cz(control, target)
 
