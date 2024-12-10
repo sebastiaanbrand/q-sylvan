@@ -250,7 +250,7 @@ mtbdd_create_double_single_gates_for_qubits_mpc(BDDVAR n, BDDVAR t1, BDDVAR t2, 
         else if(k==t2)
             dd = mtbdd_tensor_prod(G2_dd, dd, 2); // Two vars added, so third argument = 2
         else
-            dd = mtbdd_tensor_prod(I_dd, dd, 2); // Two vars added
+            dd = mtbdd_tensor_prod(I_dd, dd, 2);  // Two vars added
     }
 
     return dd;

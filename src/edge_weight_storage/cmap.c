@@ -85,8 +85,9 @@ complex_close(complex_t *in_table, const complex_t* to_insert)
 }
 
 int
-cmap_find_or_put(const void *dbs, const complex_t *v, uint64_t *ret)
+cmap_find_or_put(const void *dbs, const void *_v, uint64_t *ret)
 {
+    complex_t *v = (complex_t *) _v;
     cmap_t *cmap = (cmap_t *) dbs;
     bucket_t *val  = (bucket_t *) v;
 
@@ -155,11 +156,11 @@ cmap_find_or_put(const void *dbs, const complex_t *v, uint64_t *ret)
     return -1;
 }
 
-complex_t
+void *
 cmap_get(const void *dbs, const uint64_t ref)
 {
     cmap_t *cmap = (cmap_t *) dbs;
-    return cmap->table[ref].c;
+    return &(cmap->table[ref].c);
 }
 
 uint64_t
@@ -178,8 +179,7 @@ void
 print_bitvalues(const void *dbs, const uint64_t ref)
 {
     cmap_t *cmap = (cmap_t *) dbs;
-    complex_t c = cmap_get(cmap, ref);
-    bucket_t *b = (bucket_t *) &c;
+    bucket_t* b = cmap_get(cmap, ref);
     printf("%016" PRIu64, b->d[0]);
     for (unsigned int k = 1; k < entry_size; k++) {
         printf(" %016" PRIu64, b->d[k]);

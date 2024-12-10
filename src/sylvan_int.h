@@ -108,17 +108,17 @@ static const uint64_t CACHE_MTBDD_TENSOR            = (61LL<<40);
 static const uint64_t CACHE_MTBDD_GETNORM_MPC       = (62LL<<40);
 
 
-// AADD operations
-static const uint64_t CACHE_AADD_PLUS               = (70LL<<40);
-static const uint64_t CACHE_AADD_MATVEC_MULT        = (71LL<<40);
-static const uint64_t CACHE_AADD_MATMAT_MULT        = (72LL<<40);
-static const uint64_t CACHE_AADD_INPROD             = (73LL<<30);
-static const uint64_t CACHE_AADD_REPLACE_TERMINAL   = (74LL<<40);
-static const uint64_t CACHE_AADD_INC_VARS           = (75LL<<40);
-static const uint64_t CACHE_AADD_CLEAN_WGT_TABLE    = (76LL<<40);
-static const uint64_t CACHE_AADD_IS_ORDERED         = (77LL<<40);
+// EVBDD operations
+static const uint64_t CACHE_EVBDD_PLUS               = (70LL<<40);
+static const uint64_t CACHE_EVBDD_MATVEC_MULT        = (71LL<<40);
+static const uint64_t CACHE_EVBDD_MATMAT_MULT        = (72LL<<40);
+static const uint64_t CACHE_EVBDD_INPROD             = (73LL<<30);
+static const uint64_t CACHE_EVBDD_REPLACE_TERMINAL   = (74LL<<40);
+static const uint64_t CACHE_EVBDD_INC_VARS           = (75LL<<40);
+static const uint64_t CACHE_EVBDD_CLEAN_WGT_TABLE    = (76LL<<40);
+static const uint64_t CACHE_EVBDD_IS_ORDERED         = (77LL<<40);
 
-// Operations on AADD edge weights
+// Operations on EVBDD edge weights
 static const uint64_t CACHE_WGT_ADD                 = (80LL<<40);
 static const uint64_t CACHE_WGT_SUB                 = (81LL<<40);
 static const uint64_t CACHE_WGT_MUL                 = (82LL<<40);
@@ -153,7 +153,7 @@ static const uint64_t CACHE_ZDD_COVER_TO_BDD        = (113LL<<40);
 }
 #endif /* __cplusplus */
 
-#include <sylvan_aadd_int.h>
+#include <sylvan_evbdd_int.h>
 #include <sylvan_mtbdd_int.h>
 #include <sylvan_ldd_int.h>
 #include <sylvan_zdd_int.h>

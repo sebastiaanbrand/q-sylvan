@@ -30,11 +30,11 @@ int test_grover()
     prob = 0;
     for (int k = 0; k < (1<<(nbits+1)); k++) {
         bool *x = int_to_bitarray(k, nbits+1, true);
-        a = aadd_getvalue(grov, x);
+        a = evbdd_getvalue(grov, x);
         if (x[0] == flag2[0] && x[1] == flag2[1])
             prob += qmdd_amp_to_prob(a);
         else
-            test_assert(a == AADD_ZERO);
+            test_assert(a == EVBDD_ZERO);
         free(x); // int_to_bitarray mallocs
     }
     test_assert(fabs(prob - 1) < TOLERANCE);
@@ -52,7 +52,7 @@ int test_grover()
     prob = 0;
     for (int k = 0; k < (1<<(nbits+1)); k++) {
         bool *x = int_to_bitarray(k, nbits+1, true);
-        a = aadd_getvalue(grov, x);
+        a = evbdd_getvalue(grov, x);
         if (x[0] == flag3[0] && x[1] == flag3[1] && x[2] == flag3[2])
             prob += qmdd_amp_to_prob(a);
         else
@@ -75,7 +75,7 @@ int test_grover()
     prob = 0;
     for (int k = 0; k < (1<<(nbits+1)); k++) {
         bool *x = int_to_bitarray(k, nbits+1, true);
-        a = aadd_getvalue(grov, x);
+        a = evbdd_getvalue(grov, x);
         if (x[0] == flag10[0] && x[1] == flag10[1] && 
             x[2] == flag10[2] && x[3] == flag10[3] &&
             x[4] == flag10[4] && x[5] == flag10[5] &&
@@ -94,7 +94,7 @@ int test_grover()
 
 int test_grover_matrix()
 {
-    aadd_set_auto_gc_wgt_table(false); // no auto gc of ctable yet for mult operations
+    evbdd_set_auto_gc_wgt_table(false); // no auto gc of ctable yet for mult operations
 
     BDDVAR nbits;
     AMP a;
@@ -111,11 +111,11 @@ int test_grover_matrix()
     prob = 0;
     for (int k = 0; k < (1<<(nbits+1)); k++) {
         bool *x = int_to_bitarray(k, nbits+1, true);
-        a = aadd_getvalue(grov, x);
+        a = evbdd_getvalue(grov, x);
         if (x[0] == flag2[0] && x[1] == flag2[1])
             prob += qmdd_amp_to_prob(a);
         else
-            test_assert(a == AADD_ZERO);
+            test_assert(a == EVBDD_ZERO);
         free(x); // int_to_bitarray mallocs
     }
     test_assert(fabs(prob - 1) < TOLERANCE);
@@ -133,7 +133,7 @@ int test_grover_matrix()
     prob = 0;
     for (int k = 0; k < (1<<(nbits+1)); k++) {
         bool *x = int_to_bitarray(k, nbits+1, true);
-        a = aadd_getvalue(grov, x);
+        a = evbdd_getvalue(grov, x);
         if (x[0] == flag3[0] && x[1] == flag3[1] && x[2] == flag3[2])
             prob += qmdd_amp_to_prob(a);
         else
@@ -157,7 +157,7 @@ int test_grover_matrix()
     prob = 0;
     for (int k = 0; k < (1<<(nbits+1)); k++) {
         bool *x = int_to_bitarray(k, nbits+1, true);
-        a = aadd_getvalue(grov, x);
+        a = evbdd_getvalue(grov, x);
         if (x[0] == flag10[0] && x[1] == flag10[1] && 
             x[2] == flag10[2] && x[3] == flag10[3] &&
             x[4] == flag10[4] && x[5] == flag10[5] &&
@@ -173,7 +173,7 @@ int test_grover_matrix()
     if(VERBOSE) printf("matrix qmdd %2d-qubit Grover: ok (Pr(flag) = %lf)\n", nbits+1, prob);
     return 0;
 
-    aadd_set_auto_gc_wgt_table(true);
+    evbdd_set_auto_gc_wgt_table(true);
     return 0;
 }
 
@@ -201,7 +201,7 @@ int test_grover_cnf()
     prob = 0;
     for (int k = 0; k < (1<<(nqubits+1+clauses)); k++) {
         bool *x = int_to_bitarray(k, nqubits+1+clauses, true);
-        a = aadd_getvalue(grov, x);
+        a = evbdd_getvalue(grov, x);
         if (x[0] == ans3[0] && x[1] == ans3[1])
             prob += qmdd_amp_to_prob(a);
         free(x); // int_to_bitarray mallocs
@@ -224,7 +224,7 @@ int test_grover_cnf()
     prob = 0;
     for (int k = 0; k < (1<<(nqubits+1+clauses)); k++) {
         bool *x = int_to_bitarray(k, nqubits+1+clauses, true);
-        a = aadd_getvalue(grov, x);
+        a = evbdd_getvalue(grov, x);
         if (x[0] == ans4[0] && x[1] == ans4[1] && x[2] == ans4[2] && x[3] == ans4[3])
             prob += qmdd_amp_to_prob(a);
         free(x); // int_to_bitarray mallocs
@@ -247,7 +247,7 @@ int test_shor()
     // <Test qmdd_phi_add>
     // Test inversion
     // (no controls)
-    BDDVAR nc = AADD_INVALID_VAR;
+    BDDVAR nc = EVBDD_INVALID_VAR;
     q = qmdd_create_basis_state(3, x3);
     q = qmdd_gate(q, GATEID_H, 0);
     q = qmdd_gate(q, GATEID_H, 1);
@@ -255,8 +255,8 @@ int test_shor()
     qref = q;
     q = qmdd_phi_add(q, 0, 2, nc, nc, as);
     q = qmdd_phi_add_inv(q, 0, 2, nc, nc, as);
-    test_assert(aadd_equivalent(q, qref, 3, false, false));
-    test_assert(aadd_equivalent(q, qref, 3, true, false));
+    test_assert(evbdd_equivalent(q, qref, 3, false, false));
+    test_assert(evbdd_equivalent(q, qref, 3, true, false));
     test_assert(q == qref);
 
     // Test addition in Fourier space (be mindful about endianness here!)
@@ -267,14 +267,14 @@ int test_shor()
     q = qmdd_circuit(q, CIRCID_QFT, 0, 2);     // QFT|x> = |phi(x)>
     q = qmdd_phi_add(q, 0, 2, nc, nc, as);     // addition in Fourier space gives |phi(x+a)>
     q = qmdd_circuit(q, CIRCID_QFT_inv, 0, 2); // expected out = |3> = |011> (MSB first)
-    x3[0]=0; x3[1]=0; x3[2]=0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[0]=0; x3[1]=0; x3[2]=1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[0]=0; x3[1]=1; x3[2]=0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[0]=0; x3[1]=1; x3[2]=1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ONE);
-    x3[0]=1; x3[1]=0; x3[2]=0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[0]=1; x3[1]=0; x3[2]=1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[0]=1; x3[1]=1; x3[2]=0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[0]=1; x3[1]=1; x3[2]=1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
+    x3[0]=0; x3[1]=0; x3[2]=0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[0]=0; x3[1]=0; x3[2]=1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[0]=0; x3[1]=1; x3[2]=0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[0]=0; x3[1]=1; x3[2]=1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ONE);
+    x3[0]=1; x3[1]=0; x3[2]=0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[0]=1; x3[1]=0; x3[2]=1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[0]=1; x3[1]=1; x3[2]=0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[0]=1; x3[1]=1; x3[2]=1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
 
     // 2 + 2 (carry, should go the the left)
     x3[0] = 0; x3[1] = 1; x3[2] = 0;          // x = 010 = 2 (MSB first)
@@ -283,14 +283,14 @@ int test_shor()
     q = qmdd_circuit(q, CIRCID_QFT, 0, 2);     // QFT|x> = |phi(x)>
     q = qmdd_phi_add(q, 0, 2, nc, nc, as);     // addition in Fourier space gives |phi(x+a)>
     q = qmdd_circuit(q, CIRCID_QFT_inv, 0, 2); // expected out = |4> = |100> (MSB first)
-    x3[0]=0; x3[1]=0; x3[2]=0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[0]=0; x3[1]=0; x3[2]=1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[0]=0; x3[1]=1; x3[2]=0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[0]=0; x3[1]=1; x3[2]=1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[0]=1; x3[1]=0; x3[2]=0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ONE);
-    x3[0]=1; x3[1]=0; x3[2]=1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[0]=1; x3[1]=1; x3[2]=0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[0]=1; x3[1]=1; x3[2]=1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
+    x3[0]=0; x3[1]=0; x3[2]=0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[0]=0; x3[1]=0; x3[2]=1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[0]=0; x3[1]=1; x3[2]=0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[0]=0; x3[1]=1; x3[2]=1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[0]=1; x3[1]=0; x3[2]=0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ONE);
+    x3[0]=1; x3[1]=0; x3[2]=1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[0]=1; x3[1]=1; x3[2]=0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[0]=1; x3[1]=1; x3[2]=1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
 
     // 2 + 3 (carry, should go the the left)
     x3[0] = 0; x3[1] = 1; x3[2] = 0;          // x = 010 = 2 (MSB first)
@@ -299,14 +299,14 @@ int test_shor()
     q = qmdd_circuit(q, CIRCID_QFT, 0, 2);     // QFT|x> = |phi(x)>
     q = qmdd_phi_add(q, 0, 2, nc, nc, as);     // addition in Fourier space gives |phi(x+a)>
     q = qmdd_circuit(q, CIRCID_QFT_inv, 0, 2); // expected out = |5> = |101> (MSB first)
-    x3[0]=0; x3[1]=0; x3[2]=0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[0]=0; x3[1]=0; x3[2]=1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[0]=0; x3[1]=1; x3[2]=0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[0]=0; x3[1]=1; x3[2]=1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[0]=1; x3[1]=0; x3[2]=0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[0]=1; x3[1]=0; x3[2]=1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ONE);
-    x3[0]=1; x3[1]=1; x3[2]=0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[0]=1; x3[1]=1; x3[2]=1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
+    x3[0]=0; x3[1]=0; x3[2]=0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[0]=0; x3[1]=0; x3[2]=1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[0]=0; x3[1]=1; x3[2]=0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[0]=0; x3[1]=1; x3[2]=1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[0]=1; x3[1]=0; x3[2]=0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[0]=1; x3[1]=0; x3[2]=1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ONE);
+    x3[0]=1; x3[1]=1; x3[2]=0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[0]=1; x3[1]=1; x3[2]=1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
 
     // 3 + 2 (carry, should go the the left)
     x3[0] = 0; x3[1] = 1; x3[2] = 1;          // x = 011 = 3 (MSB first)
@@ -315,14 +315,14 @@ int test_shor()
     q = qmdd_circuit(q, CIRCID_QFT, 0, 2);     // QFT|x> = |phi(x)>
     q = qmdd_phi_add(q, 0, 2, nc, nc, as);     // addition in Fourier space gives |phi(x+a)>
     q = qmdd_circuit(q, CIRCID_QFT_inv, 0, 2); // expected out = |5> = |101> (MSB first)
-    x3[0]=0; x3[1]=0; x3[2]=0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[0]=0; x3[1]=0; x3[2]=1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[0]=0; x3[1]=1; x3[2]=0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[0]=0; x3[1]=1; x3[2]=1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[0]=1; x3[1]=0; x3[2]=0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[0]=1; x3[1]=0; x3[2]=1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ONE);
-    x3[0]=1; x3[1]=1; x3[2]=0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[0]=1; x3[1]=1; x3[2]=1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
+    x3[0]=0; x3[1]=0; x3[2]=0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[0]=0; x3[1]=0; x3[2]=1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[0]=0; x3[1]=1; x3[2]=0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[0]=0; x3[1]=1; x3[2]=1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[0]=1; x3[1]=0; x3[2]=0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[0]=1; x3[1]=0; x3[2]=1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ONE);
+    x3[0]=1; x3[1]=1; x3[2]=0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[0]=1; x3[1]=1; x3[2]=1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
 
     // 3 + 3 (carry, should go the the left)
     x3[0] = 0; x3[1] = 1; x3[2] = 1;          // x = 011 = 3 (MSB first)
@@ -331,14 +331,14 @@ int test_shor()
     q = qmdd_circuit(q, CIRCID_QFT, 0, 2);     // QFT|x> = |phi(x)>
     q = qmdd_phi_add(q, 0, 2, nc, nc, as);     // addition in Fourier space gives |phi(x+a)>
     q = qmdd_circuit(q, CIRCID_QFT_inv, 0, 2); // expected out = |6> = |110> (MSB first)
-    x3[0]=0; x3[1]=0; x3[2]=0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[0]=0; x3[1]=0; x3[2]=1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[0]=0; x3[1]=1; x3[2]=0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[0]=0; x3[1]=1; x3[2]=1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[0]=1; x3[1]=0; x3[2]=0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[0]=1; x3[1]=0; x3[2]=1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
-    x3[0]=1; x3[1]=1; x3[2]=0; a = aadd_getvalue(q, x3); test_assert(a == AADD_ONE);
-    x3[0]=1; x3[1]=1; x3[2]=1; a = aadd_getvalue(q, x3); test_assert(a == AADD_ZERO);
+    x3[0]=0; x3[1]=0; x3[2]=0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[0]=0; x3[1]=0; x3[2]=1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[0]=0; x3[1]=1; x3[2]=0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[0]=0; x3[1]=1; x3[2]=1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[0]=1; x3[1]=0; x3[2]=0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[0]=1; x3[1]=0; x3[2]=1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
+    x3[0]=1; x3[1]=1; x3[2]=0; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ONE);
+    x3[0]=1; x3[1]=1; x3[2]=1; a = evbdd_getvalue(q, x3); test_assert(a == EVBDD_ZERO);
     // </Test qmdd_phi_add>
 
     if(VERBOSE) printf("qmdd fourier addition:       ok\n");

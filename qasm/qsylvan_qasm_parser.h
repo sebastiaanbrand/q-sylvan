@@ -73,16 +73,27 @@ quantum_circuit_t* parse_qasm_file(char *filepath);
 void optimize_qubit_order(quantum_circuit_t *circuit, bool allow_swaps);
 
 /**
- * Free all quantum elements found in quantum_op_s including 'first'. What is 'first'? 
+ * Free all quantum elements found in quantum_op_s including 'first'.
  */
-void free_quantum_circuit(quantum_circuit_t* circuit);
+void free_quantum_circuit(quantum_circuit_t *circuit);
+
+/**
+ * Return the circuit as array of quantum_op_t's instead of linked list.
+ * 'length' is used to return the length of the array (number of operations).
+ * 
+ * If return_non_empty is true, an empty circuit is returned as a single identity gate.
+ * 
+ * The returned array is malloced and should be freed with free().
+ * The quantum_circuit_t itself should be freed separately with free_quantum_circuit().
+ */
+quantum_op_t** circuit_as_array(quantum_circuit_t *circuit, bool return_non_empty, int *length);
 
 /**
  * Print operations of quantum circuit, quantum elements or control registers.
  */
 void print_quantum_op(quantum_op_t *op);
-void print_quantum_circuit(quantum_circuit_t* circuit);
-void fprint_creg(FILE *stream, quantum_circuit_t* circuit);
+void print_quantum_circuit(quantum_circuit_t *circuit);
+void fprint_creg(FILE *stream, quantum_circuit_t *circuit);
 
 
 #ifdef __cplusplus

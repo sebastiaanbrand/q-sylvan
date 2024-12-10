@@ -9,17 +9,17 @@
 void *wgt_storage; // TODO: move to source file?
 void *wgt_storage_new;
 
-AADD_WGT AADD_ZERO;
-AADD_WGT AADD_ONE;
-AADD_WGT AADD_MIN_ONE;
-AADD_WGT AADD_IMG;
-AADD_WGT AADD_MIN_IMG;
-AADD_WGT AADD_SQRT_TWO;
+EVBDD_WGT EVBDD_ZERO;
+EVBDD_WGT EVBDD_ONE;
+EVBDD_WGT EVBDD_MIN_ONE;
+EVBDD_WGT EVBDD_IMG;
+EVBDD_WGT EVBDD_MIN_IMG;
+EVBDD_WGT EVBDD_SQRT_TWO;
 
 void sylvan_init_edge_weights(size_t min_tablesize, size_t max_tablesize, double tol, edge_weight_type_t edge_weight_type, wgt_storage_backend_t backend);
 void init_edge_weight_functions(edge_weight_type_t edge_weight_type);
 void init_edge_weight_storage(size_t size, double tol, wgt_storage_backend_t backend, void **wgt_store);
-void (*init_wgt_table_entries)(); // set by sylvan_init_aadd
+void (*init_wgt_table_entries)(); // set by sylvan_init_evbdd
 uint64_t sylvan_get_edge_weight_table_size();
 double sylvan_edge_weights_tolerance();
 uint64_t sylvan_edge_weights_count_entries();
@@ -115,7 +115,7 @@ init_edge_weight_storage(size_t size, double tol, wgt_storage_backend_t backend,
     // create actual table
     *wgt_store = wgt_store_create(table_size, tolerance);
 
-    // Set AADD_WGT values for 1, 0 (and -1)
+    // Set EVBDD_WGT values for 1, 0 (and -1)
     init_one_zero(*wgt_store);
 }
 
@@ -222,13 +222,13 @@ wgt_table_gc_delete_old()
     wgt_storage = wgt_storage_new;
 }
 
-AADD_WGT
-wgt_table_gc_keep(AADD_WGT a)
+EVBDD_WGT
+wgt_table_gc_keep(EVBDD_WGT a)
 {
     // move from current (old) to new
     weight_t wa = weight_malloc();
     _weight_value(wgt_storage, a, wa);
-    AADD_WGT res = _weight_lookup_ptr(wa, wgt_storage_new);
+    EVBDD_WGT res = _weight_lookup_ptr(wa, wgt_storage_new);
     free(wa);
     return res;
 }
@@ -251,16 +251,16 @@ wgt_set_inverse_chaching(bool on)
 }
 
 static void
-order_inputs(AADD_WGT *a, AADD_WGT *b) 
+order_inputs(EVBDD_WGT *a, EVBDD_WGT *b) 
 {
-    AADD_WGT x = (*a > *b) ? *a : *b;
-    AADD_WGT y = (*a > *b) ? *b : *a;
+    EVBDD_WGT x = (*a > *b) ? *a : *b;
+    EVBDD_WGT y = (*a > *b) ? *b : *a;
     *a = x;
     *b = y;
 }
 
 static bool
-cache_get_add(AADD_WGT a, AADD_WGT b, AADD_WGT *res)
+cache_get_add(EVBDD_WGT a, EVBDD_WGT b, EVBDD_WGT *res)
 {
     order_inputs(&a, &b);
     if (cache_get3(CACHE_WGT_ADD, a, b, sylvan_false, res)) {
@@ -271,7 +271,7 @@ cache_get_add(AADD_WGT a, AADD_WGT b, AADD_WGT *res)
 }
 
 static void
-cache_put_add(AADD_WGT a, AADD_WGT b, AADD_WGT res)
+cache_put_add(EVBDD_WGT a, EVBDD_WGT b, EVBDD_WGT res)
 {
     order_inputs(&a, &b);
     if (cache_put3(CACHE_WGT_ADD, a, b, sylvan_false, res)) {
@@ -280,7 +280,7 @@ cache_put_add(AADD_WGT a, AADD_WGT b, AADD_WGT res)
 }
 
 static void
-cache_put_sub(AADD_WGT a, AADD_WGT b, AADD_WGT res)
+cache_put_sub(EVBDD_WGT a, EVBDD_WGT b, EVBDD_WGT res)
 {
     if (cache_put3(CACHE_WGT_SUB, a, b, sylvan_false, res)) {
         sylvan_stats_count(WGT_SUB_CACHEDPUT);
@@ -288,7 +288,7 @@ cache_put_sub(AADD_WGT a, AADD_WGT b, AADD_WGT res)
 }
 
 static bool
-cache_get_sub(AADD_WGT a, AADD_WGT b, AADD_WGT *res)
+cache_get_sub(EVBDD_WGT a, EVBDD_WGT b, EVBDD_WGT *res)
 {
     if (cache_get3(CACHE_WGT_SUB, a, b, sylvan_false, res)) {
         sylvan_stats_count(WGT_SUB_CACHED);
@@ -298,7 +298,7 @@ cache_get_sub(AADD_WGT a, AADD_WGT b, AADD_WGT *res)
 }
 
 static void
-cache_put_mul(AADD_WGT a, AADD_WGT b, AADD_WGT res)
+cache_put_mul(EVBDD_WGT a, EVBDD_WGT b, EVBDD_WGT res)
 {
     order_inputs(&a, &b);
     if (cache_put3(CACHE_WGT_MUL, a, b, sylvan_false, res)) {
@@ -316,7 +316,7 @@ cache_put_mul(AADD_WGT a, AADD_WGT b, AADD_WGT res)
 }
 
 static bool
-cache_get_mul(AADD_WGT a, AADD_WGT b, AADD_WGT *res)
+cache_get_mul(EVBDD_WGT a, EVBDD_WGT b, EVBDD_WGT *res)
 {
     order_inputs(&a, &b);
     if (cache_get3(CACHE_WGT_MUL, a, b, sylvan_false, res)) {
@@ -327,7 +327,7 @@ cache_get_mul(AADD_WGT a, AADD_WGT b, AADD_WGT *res)
 }
 
 static void
-cache_put_div(AADD_WGT a, AADD_WGT b, AADD_WGT res)
+cache_put_div(EVBDD_WGT a, EVBDD_WGT b, EVBDD_WGT res)
 {
     if (cache_put3(CACHE_WGT_DIV, a, b, sylvan_false, res)) {
         sylvan_stats_count(WGT_DIV_CACHEDPUT);
@@ -342,7 +342,7 @@ cache_put_div(AADD_WGT a, AADD_WGT b, AADD_WGT res)
 }
 
 static bool
-cache_get_div(AADD_WGT a, AADD_WGT b, AADD_WGT *res)
+cache_get_div(EVBDD_WGT a, EVBDD_WGT b, EVBDD_WGT *res)
 {
     if (cache_get3(CACHE_WGT_DIV, a, b, sylvan_false, res)) {
         sylvan_stats_count(WGT_DIV_CACHED);
@@ -357,16 +357,16 @@ cache_get_div(AADD_WGT a, AADD_WGT b, AADD_WGT *res)
 
 
 
-/*********************<Arithmetic functions on AADD_WGT's>*********************/
+/*********************<Arithmetic functions on EVBDD_WGT's>*********************/
 
-AADD_WGT
-wgt_abs(AADD_WGT a)
+EVBDD_WGT
+wgt_abs(EVBDD_WGT a)
 {
     // special cases
-    if (a == AADD_ZERO || a == AADD_ONE) return a;
-    if (a == AADD_MIN_ONE) return AADD_ONE;
+    if (a == EVBDD_ZERO || a == EVBDD_ONE) return a;
+    if (a == EVBDD_MIN_ONE) return EVBDD_ONE;
 
-    AADD_WGT res;
+    EVBDD_WGT res;
 
     weight_t w = weight_malloc();
     weight_value(a, w);
@@ -377,15 +377,15 @@ wgt_abs(AADD_WGT a)
     return res;
 }
 
-AADD_WGT 
-wgt_neg(AADD_WGT a)
+EVBDD_WGT 
+wgt_neg(EVBDD_WGT a)
 {
     // special cases
-    if (a == AADD_ZERO) return AADD_ZERO;
-    if (a == AADD_ONE) return AADD_MIN_ONE;
-    if (a == AADD_MIN_ONE) return AADD_ONE;
+    if (a == EVBDD_ZERO) return EVBDD_ZERO;
+    if (a == EVBDD_ONE) return EVBDD_MIN_ONE;
+    if (a == EVBDD_MIN_ONE) return EVBDD_ONE;
 
-    AADD_WGT res;
+    EVBDD_WGT res;
 
     weight_t w = weight_malloc();
     weight_value(a, w);
@@ -396,13 +396,13 @@ wgt_neg(AADD_WGT a)
     return res; 
 }
 
-AADD_WGT 
-wgt_conj(AADD_WGT a)
+EVBDD_WGT 
+wgt_conj(EVBDD_WGT a)
 {
     // special cases
-    if (a == AADD_ZERO || a == AADD_ONE || a == AADD_MIN_ONE) return a;
+    if (a == EVBDD_ZERO || a == EVBDD_ONE || a == EVBDD_MIN_ONE) return a;
 
-    AADD_WGT res;
+    EVBDD_WGT res;
 
     weight_t w = weight_malloc();
     weight_value(a, w);
@@ -413,15 +413,15 @@ wgt_conj(AADD_WGT a)
     return res; 
 }
 
-AADD_WGT
-wgt_add(AADD_WGT a, AADD_WGT b)
+EVBDD_WGT
+wgt_add(EVBDD_WGT a, EVBDD_WGT b)
 {
     // special cases
-    if (a == AADD_ZERO) return b;
-    if (b == AADD_ZERO) return a;
+    if (a == EVBDD_ZERO) return b;
+    if (b == EVBDD_ZERO) return a;
 
     // check cache
-    AADD_WGT res;
+    EVBDD_WGT res;
     if (CACHE_WGT_OPS) {
         if (cache_get_add(a, b, &res)) return res;
     }
@@ -443,15 +443,15 @@ wgt_add(AADD_WGT a, AADD_WGT b)
     return res;
 }
 
-AADD_WGT
-wgt_sub(AADD_WGT a, AADD_WGT b)
+EVBDD_WGT
+wgt_sub(EVBDD_WGT a, EVBDD_WGT b)
 {
     // special cases
-    if (b == AADD_ZERO) return a;
-    if (a == AADD_ZERO) return wgt_neg(b);
+    if (b == EVBDD_ZERO) return a;
+    if (a == EVBDD_ZERO) return wgt_neg(b);
 
     // check cache
-    AADD_WGT res;
+    EVBDD_WGT res;
     if (CACHE_WGT_OPS) {
         if (cache_get_sub(a, b, &res)) return res;
     }
@@ -473,16 +473,16 @@ wgt_sub(AADD_WGT a, AADD_WGT b)
     return res;
 }
 
-AADD_WGT
-wgt_mul(AADD_WGT a, AADD_WGT b)
+EVBDD_WGT
+wgt_mul(EVBDD_WGT a, EVBDD_WGT b)
 {
     // special cases
-    if (a == AADD_ONE) return b;
-    if (b == AADD_ONE) return a;
-    if (a == AADD_ZERO || b == AADD_ZERO) return AADD_ZERO;
+    if (a == EVBDD_ONE) return b;
+    if (b == EVBDD_ONE) return a;
+    if (a == EVBDD_ZERO || b == EVBDD_ZERO) return EVBDD_ZERO;
 
     // check cache
-    AADD_WGT res;
+    EVBDD_WGT res;
     if (CACHE_WGT_OPS) {
         if (cache_get_mul(a, b, &res)) return res;
     }
@@ -504,16 +504,16 @@ wgt_mul(AADD_WGT a, AADD_WGT b)
     return res;
 }
 
-AADD_WGT
-wgt_div(AADD_WGT a, AADD_WGT b)
+EVBDD_WGT
+wgt_div(EVBDD_WGT a, EVBDD_WGT b)
 {
     // special cases
-    if (a == b)         return AADD_ONE;
-    if (a == AADD_ZERO) return AADD_ZERO;
-    if (b == AADD_ONE)  return a;
+    if (a == b)         return EVBDD_ONE;
+    if (a == EVBDD_ZERO) return EVBDD_ZERO;
+    if (b == EVBDD_ONE)  return a;
 
     // check cache
-    AADD_WGT res;
+    EVBDD_WGT res;
     if (CACHE_WGT_OPS) {
         if (cache_get_div(a, b, &res)) return res;
     }
@@ -535,16 +535,16 @@ wgt_div(AADD_WGT a, AADD_WGT b)
     return res;
 }
 
-/********************</Arithmetic functions on AADD_WGT's>*********************/
+/********************</Arithmetic functions on EVBDD_WGT's>*********************/
 
 
 
 
 
-/*************************<Comparators on AADD_WGT's>**************************/
+/*************************<Comparators on EVBDD_WGT's>**************************/
 
 bool
-wgt_eq(AADD_WGT a, AADD_WGT b)
+wgt_eq(EVBDD_WGT a, EVBDD_WGT b)
 {
     weight_t wa = weight_malloc();
     weight_t wb = weight_malloc();
@@ -560,7 +560,7 @@ wgt_eq(AADD_WGT a, AADD_WGT b)
 }
 
 bool
-wgt_eps_close(AADD_WGT a, AADD_WGT b, double eps)
+wgt_eps_close(EVBDD_WGT a, EVBDD_WGT b, double eps)
 {
     weight_t wa = weight_malloc();
     weight_t wb = weight_malloc();
@@ -576,12 +576,12 @@ wgt_eps_close(AADD_WGT a, AADD_WGT b, double eps)
 }
 
 bool
-wgt_approx_eq(AADD_WGT a, AADD_WGT b)
+wgt_approx_eq(EVBDD_WGT a, EVBDD_WGT b)
 {
     return wgt_eps_close(a, b, wgt_store_get_tol());
 }
 
-/************************</Comparators on AADD_WGT's>**************************/
+/************************</Comparators on EVBDD_WGT's>**************************/
 
 
 
@@ -589,31 +589,31 @@ wgt_approx_eq(AADD_WGT a, AADD_WGT b)
 
 /*************************<Edge weight normalization>**************************/
 
-AADD_WGT
-wgt_norm_low(AADD_WGT *low, AADD_WGT *high)
+EVBDD_WGT
+wgt_norm_low(EVBDD_WGT *low, EVBDD_WGT *high)
 {
     // Normalize using low if low != 0
-    AADD_WGT norm;
-    if(*low != AADD_ZERO){
+    EVBDD_WGT norm;
+    if(*low != EVBDD_ZERO){
         *high = wgt_div(*high, *low);
         norm  = *low;
-        *low  = AADD_ONE;
+        *low  = EVBDD_ONE;
     }
     else {
         norm  = *high;
-        *high = AADD_ONE;
+        *high = EVBDD_ONE;
     }
     return norm;    
 }
 
-AADD_WGT
-wgt_norm_max(AADD_WGT *low, AADD_WGT *high)
+EVBDD_WGT
+wgt_norm_max(EVBDD_WGT *low, EVBDD_WGT *high)
 {
-    AADD_WGT norm;
+    EVBDD_WGT norm;
     if (*low == *high) {
         norm  = *low;
-        *low  = AADD_ONE;
-        *high = AADD_ONE;
+        *low  = EVBDD_ONE;
+        *high = EVBDD_ONE;
         return norm;
     }
 
@@ -627,13 +627,13 @@ wgt_norm_max(AADD_WGT *low, AADD_WGT *high)
         // high greater than low, divide both by high
         *low = wgt_div(*low, *high);
         norm  = *high;
-        *high = AADD_ONE;
+        *high = EVBDD_ONE;
     }
     else {
         // low greater than high (or equal magnitude), divide both by low
         *high = wgt_div(*high, *low);
         norm = *low;
-        *low  = AADD_ONE;
+        *low  = EVBDD_ONE;
     }
 
     free(wl);
@@ -641,25 +641,25 @@ wgt_norm_max(AADD_WGT *low, AADD_WGT *high)
     return norm;
 }
 
-AADD_WGT
-wgt_norm_min(AADD_WGT *low, AADD_WGT *high)
+EVBDD_WGT
+wgt_norm_min(EVBDD_WGT *low, EVBDD_WGT *high)
 {
-    AADD_WGT norm;
+    EVBDD_WGT norm;
     if (*low == *high) {
         norm  = *low;
-        *low  = AADD_ONE;
-        *high = AADD_ONE;
+        *low  = EVBDD_ONE;
+        *high = EVBDD_ONE;
         return norm;
     }
     // Since min(a, b) could be 0, norm using non-zero to avoid dividing by 0
-    if (*low == AADD_ZERO) {
+    if (*low == EVBDD_ZERO) {
         norm  = *high;
-        *high = AADD_ONE;
+        *high = EVBDD_ONE;
         return norm;
     }
-    if (*high == AADD_ZERO) {
+    if (*high == EVBDD_ZERO) {
         norm  = *low;
-        *low  = AADD_ONE;
+        *low  = EVBDD_ONE;
         return norm;
     }
 
@@ -681,19 +681,19 @@ wgt_norm_min(AADD_WGT *low, AADD_WGT *high)
         // |low| ~= |high|, divide by low
         *high = wgt_div(*high, *low);
         norm = *low;
-        *low  = AADD_ONE;
+        *low  = EVBDD_ONE;
     }
     else if (weight_greater(wl, wh)) {
         // |high| < |low|, divide both by high
         *low = wgt_div(*low, *high);
         norm  = *high;
-        *high = AADD_ONE;
+        *high = EVBDD_ONE;
     }
     else {
         // |low| < |high|, divide both by low
         *high = wgt_div(*high, *low);
         norm = *low;
-        *low  = AADD_ONE;
+        *low  = EVBDD_ONE;
     }
 
     free(wl);
@@ -711,7 +711,7 @@ wgt_norm_min(AADD_WGT *low, AADD_WGT *high)
 
 /************************<Printing & utility functions>************************/
 
-void wgt_fprint(FILE *stream, AADD_WGT a)
+void wgt_fprint(FILE *stream, EVBDD_WGT a)
 {
     weight_t w = weight_malloc();
     weight_value(a, w);

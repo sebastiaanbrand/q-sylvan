@@ -34,15 +34,15 @@ weight_complex_malloc()
 }
 
 void
-_weight_complex_value(void *wgt_store, AADD_WGT a, complex_t *res)
+_weight_complex_value(void *wgt_store, EVBDD_WGT a, complex_t *res)
 {
-    if (a == AADD_ZERO)         *res = czero();
-    else if (a == AADD_ONE)     *res = cone();
-    else if (a == AADD_MIN_ONE) *res = cmone();
-    *res = wgt_store_get(wgt_store, a);
+    if (a == EVBDD_ZERO)         *res = czero();
+    else if (a == EVBDD_ONE)     *res = cone();
+    else if (a == EVBDD_MIN_ONE) *res = cmone();
+    *res = *(complex_t*)(wgt_store_get(wgt_store, a));
 }
 
-AADD_WGT
+EVBDD_WGT
 _weight_complex_lookup_ptr(complex_t *a, void *wgt_store)
 {
     // TODO: catch czero() / cone() here?
@@ -63,10 +63,10 @@ _weight_complex_lookup_ptr(complex_t *a, void *wgt_store)
         fprintf(stderr, "Amplitude table full!\n");
         exit(1);
     }
-    return (AADD_WGT) res; 
+    return (EVBDD_WGT) res; 
 }
 
-AADD_WGT
+EVBDD_WGT
 weight_complex_lookup(complex_t *a)
 {
     return _weight_complex_lookup_ptr(a, wgt_storage);
@@ -76,9 +76,9 @@ void
 init_complex_one_zero(void *wgt_store)
 {
     complex_t a;
-    a = cone();     AADD_ONE     = _weight_complex_lookup_ptr(&a, wgt_store);
-    a = czero();    AADD_ZERO    = _weight_complex_lookup_ptr(&a, wgt_store);
-    a = cmone();    AADD_MIN_ONE = _weight_complex_lookup_ptr(&a, wgt_store);
+    a = cone();     EVBDD_ONE     = _weight_complex_lookup_ptr(&a, wgt_store);
+    a = czero();    EVBDD_ZERO    = _weight_complex_lookup_ptr(&a, wgt_store);
+    a = cmone();    EVBDD_MIN_ONE = _weight_complex_lookup_ptr(&a, wgt_store);
 }
 
 void
@@ -166,20 +166,20 @@ weight_complex_greater(complex_t *a, complex_t *b)
     return ( (a->r*a->r + a->i*a->i) > (b->r*b->r + b->i*b->i) );
 }
 
-AADD_WGT
-wgt_complex_norm_L2(AADD_WGT *low, AADD_WGT *high)
+EVBDD_WGT
+wgt_complex_norm_L2(EVBDD_WGT *low, EVBDD_WGT *high)
 {
     // normalize such that |low|^2 + |high|^2 = 1, and low in R+
 
     // Deal with cases where one weight is 0 (both 0 shouldn't end up here)
-    if (*low == AADD_ZERO) {
-        AADD_WGT res = *high;
-        *high = AADD_ONE;
+    if (*low == EVBDD_ZERO) {
+        EVBDD_WGT res = *high;
+        *high = EVBDD_ONE;
         return res;
     }
-    else if (*high == AADD_ZERO){
-        AADD_WGT res = *low;
-        *low = AADD_ONE;
+    else if (*high == EVBDD_ZERO){
+        EVBDD_WGT res = *low;
+        *low = EVBDD_ONE;
         return res;
     }
 
@@ -214,13 +214,13 @@ wgt_complex_norm_L2(AADD_WGT *low, AADD_WGT *high)
     return weight_complex_lookup(&c_norm);
 }
 
-AADD_WGT
-wgt_complex_get_low_L2normed(AADD_WGT high)
+EVBDD_WGT
+wgt_complex_get_low_L2normed(EVBDD_WGT high)
 {
     // Get low from high, assuming |low|^2 + |high|^2 = 1, and low \in R+:
     // a = sqrt(1 - |b|^2)
-    if (high == AADD_ZERO) return AADD_ONE;
-    if (high == AADD_ONE || high == AADD_MIN_ONE) return AADD_ZERO;
+    if (high == EVBDD_ZERO) return EVBDD_ONE;
+    if (high == EVBDD_ONE || high == EVBDD_MIN_ONE) return EVBDD_ZERO;
 
     complex_t b;
     weight_value(high, &b);

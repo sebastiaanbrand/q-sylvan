@@ -61,7 +61,7 @@ namespace sylvan {
 #include <sylvan_ldd.h>
 
 #ifndef __cplusplus
-#include <sylvan_aadd.h> // (need this here but issue w/ including in C++)
+#include <sylvan_evbdd.h> // (need this here but issue w/ including in C++)
 #endif
 #include <sylvan_zdd.h>
 

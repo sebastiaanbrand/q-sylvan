@@ -1,7 +1,5 @@
 # Q-Sylvan C interface functions
 
-NOTE: In the code we are refering to the QMDDs as QMDDs, but our QMDDs are really just QMDDs.
-
 ## Initialization of states vectors / matrices
 * `qmdd_create_all_zero_state(int n)` : Creates a QMDD for an n-qubit state |00...0>. 
 * `qmdd_create_basis_state(int n, bool* x)` : Creates a QMDD for an n-qubit state |x>.
@@ -19,10 +17,10 @@ NOTE: In the code we are refering to the QMDDs as QMDDs, but our QMDDs are reall
 * `qmdd_cgate2(QMDD qmdd, gate_id_t gateid, int c1, int c2, int t)` : As above but with two controls (c1 < c2 < t).
 * `qmdd_cgate3(QMDD qmdd, gate_id_t gateid, int c1, int c2, int c3, int t)` : As above but with three controls (c1 < c2 < c3 < t).
 * `qmdd_cgate_range(QMDD qmdd, gate_id_t gateid , int c_first, int c_last, int t)` : Applies controlled-`gateid` to (t)arget, with all qubits between (and including) c_first and c_last as controls (c_first < c_last < t).
-* `aadd_matvec_mult(QMDD mat, QMDD vec, int n)` : Computes mat|vec> for an 2^n vector and a 2^n x 2^n matrix.
-* `aadd_matmat_mult(QMDD a, QMDD b, int)` : Computes a*b for two 2^n x 2^n matrices.
-* `aadd_vec_tensor_prod(QMDD a, QMDD b, int nqubits_a)` : Computes a \tensor b for two vector QMDDs.
-* `aadd_mat_tensor_prod(QMDD a, QMDD b, QMDD nqubits_a)` : Computes a \tensor b for two matrix QMDDs.
+* `evbdd_matvec_mult(QMDD mat, QMDD vec, int n)` : Computes mat|vec> for an 2^n vector and a 2^n x 2^n matrix.
+* `evbdd_matmat_mult(QMDD a, QMDD b, int)` : Computes a*b for two 2^n x 2^n matrices.
+* `evbdd_vec_tensor_prod(QMDD a, QMDD b, int nqubits_a)` : Computes a \tensor b for two vector QMDDs.
+* `evbdd_mat_tensor_prod(QMDD a, QMDD b, QMDD nqubits_a)` : Computes a \tensor b for two matrix QMDDs.
 
 ## Measurements and related
 Note: For measurements, the post-measurement state is the return value of the measurement function, while the input qmdd is unaffected.
@@ -52,5 +50,5 @@ Note: For measurements, the post-measurement state is the return value of the me
 
 
 ## Other
-* `aadd_countnodes(QMDD qmdd)` Counts the number of nodes in the given QMDD.
-* `aadd_fprintdot(FILE *out, QMDD qmdd, bool draw_zeroes)` Writes a .dot representation of the given QMDD to the given file.
+* `evbdd_countnodes(QMDD qmdd)` Counts the number of nodes in the given QMDD.
+* `evbdd_fprintdot(FILE *out, QMDD qmdd, bool draw_zeroes)` Writes a .dot representation of the given QMDD to the given file.

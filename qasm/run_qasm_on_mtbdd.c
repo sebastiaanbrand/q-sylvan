@@ -24,7 +24,7 @@
 #include <qsylvan_gates_mtbdd_mpc.h>
 
 #include <sylvan_mpc.h>
-#include "simple_parser.h" // TODO: rename in qsylvan_qasm_parser.h
+#include "qsylvan_qasm_parser.h"
 
 /**
  * 

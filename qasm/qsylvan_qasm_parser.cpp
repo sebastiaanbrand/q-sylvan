@@ -23,7 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "simple_parser.h"
+#include "qsylvan_qasm_parser.h"
 #include "parse_math/eval_expr.hpp"
 
 /**
@@ -147,6 +147,10 @@ class QASMParser {
             std::string filename = path.substr(path.find_last_of("/\\") + 1);
             std::string circname = filename.substr(0, filename.find_last_of("."));
             std::ifstream infile(filepath);
+            if (!infile.is_open()) {
+                std::cerr << "Error opening file " << filepath << std::endl;
+                exit(EXIT_FAILURE);
+            }
 
             if (!infile.is_open()) {
                 parse_error("Could not open the file!");
@@ -729,8 +733,55 @@ void optimize_qubit_order(quantum_circuit_t *circuit, bool allow_swaps)
     }
 }
 
+quantum_op_t** circuit_as_array(quantum_circuit_t *circuit, bool return_non_empty, int *length)
+{
+    // loop over circuit to get lenght
+    *length = 0;
+    quantum_op_t *op = circuit->operations;
+    while (op != NULL) {
+        switch (op->type) {
+            case op_gate:
+            case op_measurement:
+                *length += 1;
+                break;
+            default:
+                break;
+        }
+        op = op->next;
+    }
 
-void print_quantum_circuit(quantum_circuit_t* circuit)
+    if (*length == 0 && return_non_empty) {
+        quantum_op_t **ops_array = (quantum_op_t**)malloc(sizeof(quantum_op_t*));
+        quantum_op_t *id0 = (quantum_op_t*)malloc(sizeof(quantum_op_t));
+        strcpy(id0->name, "id");
+        id0->targets[0] = 0;
+        ops_array[0] = id0;
+        *length = 1;
+        return ops_array;
+    }
+    
+    // loop over circuit and put into array
+    quantum_op_t **ops_array = (quantum_op_t**)malloc(sizeof(quantum_op_t*) * (*length));
+    int i = 0;
+    op = circuit->operations;
+    while (op != NULL) {
+        switch (op->type) {
+            case op_gate:
+            case op_measurement:
+                ops_array[i] = op;
+                i++;
+                break;
+            default:
+                break;
+        }
+        op = op->next;
+    }
+
+    return ops_array;
+}
+
+
+void print_quantum_circuit(quantum_circuit_t *circuit)
 {
     printf("qreg size: %d\n", circuit->qreg_size);
     printf("creg size: %d\n", circuit->creg_size);
@@ -742,7 +793,7 @@ void print_quantum_circuit(quantum_circuit_t* circuit)
     }
 }
 
-void fprint_creg(FILE *stream, quantum_circuit_t* circuit)
+void fprint_creg(FILE *stream, quantum_circuit_t *circuit)
 {
     // print in big-endian
     for (int i = circuit->creg_size-1; i >= 0 ; i--) {

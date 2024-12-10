@@ -208,8 +208,8 @@ run_grover()
 
     // Sanity checks on final state
     // 1. Check flag probability (marginalize ancilla qubit out)
-    flag[qubits] = 0; AADD_WGT amp0 = aadd_getvalue(stats.final_qmdd, flag);
-    flag[qubits] = 1; AADD_WGT amp1 = aadd_getvalue(stats.final_qmdd, flag);
+    flag[qubits] = 0; EVBDD_WGT amp0 = evbdd_getvalue(stats.final_qmdd, flag);
+    flag[qubits] = 1; EVBDD_WGT amp1 = evbdd_getvalue(stats.final_qmdd, flag);
     double flag_prob = qmdd_amp_to_prob(amp0) + qmdd_amp_to_prob(amp1);
     INFO("Measure Grover flag with prob %lf\n", flag_prob);
 
@@ -306,7 +306,7 @@ int main(int argc, char **argv)
     /* Some stats */
     stats.final_magnitude = qmdd_get_magnitude(stats.final_qmdd, stats.nqubits);
     INFO("Magnitude of final state: %.05lf\n", stats.final_magnitude);
-    stats.final_nodecount = aadd_countnodes(stats.final_qmdd);
+    stats.final_nodecount = evbdd_countnodes(stats.final_qmdd);
     INFO("Final Nodecount: %" PRIu64 "\n", stats.final_nodecount);
     if (csv_outputfile != NULL) {
         INFO("Writing csv output to %s\n", csv_outputfile);

@@ -31,7 +31,7 @@ int test_wgt_norm_L2()
     wref = cone();                      test_assert(weight_approx_eq(&wc, &wref));
     test_assert(a == _a);
     test_assert(b == _b);
-    test_assert(c == AADD_ONE);
+    test_assert(c == EVBDD_ONE);
     test_assert(weight_approx_eq(&wr, &wa));
     test_assert(a_recomputed == a);
 
@@ -52,7 +52,7 @@ int test_wgt_norm_L2()
     wref = cone();                      test_assert(weight_approx_eq(&wc, &wref));
     test_assert(a == _a);
     test_assert(b == _b);
-    test_assert(c == AADD_ONE);
+    test_assert(c == EVBDD_ONE);
     test_assert(weight_approx_eq(&wr, &wa));
     test_assert(a_recomputed == a);
 
@@ -73,7 +73,7 @@ int test_wgt_norm_L2()
     wref = cmone();                     test_assert(weight_approx_eq(&wc, &wref));
     test_assert(a == _b);
     test_assert(b == _a);
-    test_assert(c == AADD_MIN_ONE);
+    test_assert(c == EVBDD_MIN_ONE);
     test_assert(weight_approx_eq(&wr, &wa));
     test_assert(a_recomputed == a);
 
@@ -115,8 +115,8 @@ int test_wgt_norm_L2()
     wref = cone();          test_assert(weight_approx_eq(&wa, &wref));
     wref = czero();         test_assert(weight_approx_eq(&wb, &wref));
     wref = cmake(5, 0);     test_assert(weight_approx_eq(&wc, &wref));
-    test_assert(a == AADD_ONE);
-    test_assert(b == AADD_ZERO);
+    test_assert(a == EVBDD_ONE);
+    test_assert(b == EVBDD_ZERO);
     test_assert(weight_approx_eq(&wr, &wa));
     test_assert(a_recomputed == a);
 
@@ -133,14 +133,14 @@ int test_wgt_norm_L2()
     wref = czero();         test_assert(weight_approx_eq(&wa, &wref));
     wref = cone();          test_assert(weight_approx_eq(&wb, &wref));
     wref = cmake(0.3, 0);   test_assert(weight_approx_eq(&wc, &wref));
-    test_assert(a == AADD_ZERO);
-    test_assert(b == AADD_ONE);
+    test_assert(a == EVBDD_ZERO);
+    test_assert(b == EVBDD_ONE);
     test_assert(weight_approx_eq(&wr, &wa));
     test_assert(a_recomputed == a);
 
     // a = 2, b = 1
     a = complex_lookup(2, 0);
-    b = AADD_ONE;
+    b = EVBDD_ONE;
     c = wgt_norm_L2(&a, &b);
     a_recomputed = wgt_get_low_L2normed(b);
 
@@ -155,7 +155,7 @@ int test_wgt_norm_L2()
     test_assert(a_recomputed == a);
 
     // a = 1, b = i
-    a = AADD_ONE;
+    a = EVBDD_ONE;
     b = complex_lookup(0, 1);
     c = wgt_norm_L2(&a, &b);
     a_recomputed = wgt_get_low_L2normed(b);

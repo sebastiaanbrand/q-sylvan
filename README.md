@@ -3,7 +3,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![CI testing](https://github.com/sebastiaanbrand/q-sylvan/actions/workflows/cmake.yml/badge.svg)](https://github.com/sebastiaanbrand/q-sylvan/actions/workflows/cmake.yml)
 
-Q-Sylvan extends the parallel decision diagram library [Sylvan](https://github.com/trolando/sylvan) (v1.8.0) with QMDDs (i.e. multiplicative AADDs), as well as functionality to simulate quantum circuits. This is currently still a beta version.
+Q-Sylvan extends the parallel decision diagram library [Sylvan](https://github.com/trolando/sylvan) (v1.8.0) with QMDDs (i.e. factored EVBDDs with complex edge weights), as well as functionality to simulate quantum circuits. This is currently still a beta version.
 
 
 ## Installation
@@ -25,17 +25,7 @@ After downloading or cloning the repository, from the repository folder the code
 3. `cmake ..`
 4. `make`
 
-Test can be run with `make test` or `ctest`, or a specific test such as `./test/test_mtbdd`.
-
-Debugging can be activated with `gdb ./test/test_mtbdd`.
-
-The GNU GDB Debugger accepts command as `(gdb) run` or `(gdb) backtrace` or `(gdb) exit`.
-
-See also https://cs.brown.edu/courses/cs033/docs/guides/gdb.pdf.
-
-For output on failure use `ctest -output-on-failure`.
-
-Another build can be run after removal of the build folder with `rm -rdf build`.
+Test can be run with `ctest`.
 
 ## Simulations of circuits presented in qasm on QMDD and MTBDD
 
@@ -89,7 +79,7 @@ x q[0];
 measure q[0]->c[0];
 measure q[1]->c[1];
 ```
-This code can be found in [`qasm/circuits/bell_state.qasm`](qasm/circuits/bell_state.qasm) and can be run with `./build/qasm/sim_qasm qasm/circuits/bell_state.qasm`. All gates specified in [qelib1.inc](https://github.com/Qiskit/qiskit-terra/blob/main/qiskit/qasm/libs/qelib1.inc) are supported, as well as measurements. Custom definitions of gates and classical conditioning are currently not supported.
+This code can be found in [`qasm/circuits/bell_state.qasm`](qasm/circuits/bell_state.qasm) and can be run with `./build/qasm/run_qasm_on_qmdd qasm/circuits/bell_state.qasm`. All gates specified in [qelib1.inc](https://github.com/Qiskit/qiskit-terra/blob/main/qiskit/qasm/libs/qelib1.inc) are supported, as well as measurements. Custom definitions of gates and classical conditioning are currently not supported.
 
 
 ## Documentation
