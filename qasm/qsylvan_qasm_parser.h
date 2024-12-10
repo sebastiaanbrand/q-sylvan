@@ -72,7 +72,6 @@ quantum_circuit_t* parse_qasm_file(char *filepath);
  */
 void optimize_qubit_order(quantum_circuit_t *circuit, bool allow_swaps);
 
-
 /**
  * Free all quantum elements found in quantum_op_s including 'first'.
  */

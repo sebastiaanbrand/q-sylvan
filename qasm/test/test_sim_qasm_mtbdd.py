@@ -1,5 +1,5 @@
 """
-Testing running qmdd qasm simulator from command line.
+Testing running sim_qasm for MTBDD from command line.
 """
 import os
 import subprocess
@@ -9,7 +9,7 @@ import pytest
 
 
 TOLERANCE = 1e-6
-SIM_QASM = './build/qasm/run_qasm_on_qmdd'
+SIM_QASM = './build/qasm/run_qasm_on_mtbdd'
 QASM_DIR = 'qasm/circuits/'
 
 
@@ -35,11 +35,11 @@ def get_vector(qasm_file : str, args : list):
 
 
 @pytest.mark.parametrize("cl_args",
-                         [['-s', 'low'], ['-s', 'max'], ['-s', 'min'], ['-s', 'l2'],
-                          ['--reorder'], ['--reorder-swap'], ['--node-tab-size', '25']])
+                         [['-p', '256']])
+
 class TestCircuits:
     """
-    Test on all given circuits, with CL arguments given above.
+    Test sim_qasm on all given circuits, with CL arguments given above.
     """
 
     def test_adder_n4(self, cl_args : str):
@@ -300,7 +300,7 @@ class TestCircuits:
 
     def test_fredkin_n3(self, cl_args : str):
         """
-        Test ghz_n4.qasm
+        Test fredkin_n3.qasm
         """
         vector = get_vector('fredkin_n3.qasm', cl_args)
         ref = np.array([0.00000000e+00+0.j, 0.00000000e+00+0.j, 0.00000000e+00+0.j,

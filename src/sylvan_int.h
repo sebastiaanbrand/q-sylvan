@@ -105,6 +105,8 @@ static const uint64_t CACHE_MTBDD_MATMAT_MULT       = (58LL<<40);
 static const uint64_t CACHE_MTBDD_RENUMBER_VARS     = (59LL<<40);
 static const uint64_t CACHE_MTBDD_TOPVAR            = (60LL<<40);
 static const uint64_t CACHE_MTBDD_TENSOR            = (61LL<<40);
+static const uint64_t CACHE_MTBDD_GETNORM_MPC       = (62LL<<40);
+
 
 // EVBDD operations
 static const uint64_t CACHE_EVBDD_PLUS               = (70LL<<40);

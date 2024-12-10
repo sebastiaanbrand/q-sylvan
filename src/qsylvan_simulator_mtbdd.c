@@ -20,7 +20,7 @@
 #include <sylvan.h>
 #include <sylvan_int.h>
 #include <sylvan_mpc.h>
-//#include <qsylvan_gates_mtbdd_mpc.h>
+#include <qsylvan_gates_mtbdd_mpc.h>
 
 /**
  * Convert zero state vector x[] = {0.0, 0.0, ..., 0.0} to MTBDD 
@@ -152,11 +152,11 @@ mtbdd_create_basis_state_mpc(BDDVAR n, bool* x)
     uint32_t var = 2*n-2;
 
     mpc_t mpc_zero;
-    mpc_init2(mpc_zero, MPC_PRECISION);
+    //mpc_init2(mpc_zero, MPC_PRECISION);
     mpc_assign(mpc_zero, 0.0, 0.0);
 
     mpc_t mpc_one;
-    mpc_init2(mpc_one, MPC_PRECISION);
+    //mpc_init2(mpc_one, MPC_PRECISION);
     mpc_assign(mpc_one, 1.0, 0.0);
 
     MTBDD zero = mtbdd_makeleaf(MPC_TYPE, (size_t)mpc_zero);
@@ -195,29 +195,38 @@ mtbdd_create_basis_state_mpc(BDDVAR n, bool* x)
  * 
  * Create a single Qubit gate surrounded by I gates:
  * 
- *  q(n-1) ----- I(n-1) -----
- *  q(n-2) ----- I(n-2) -----
+ *  q( 0 ) ----- I( 0 ) -----
  *  q( . ) ----- I( . ) -----
  *  q( t ) ----- G( t ) -----
  *  q( . ) ----- I( . ) -----
- *  q( 0 ) ----- I( 0 ) -----
+ *  q(n-2) ----- I(n-2) -----
+ *  q(n-1) ----- I(n-1) -----
  * 
  *  q(i) = {0,1}, a qubit
  * 
  *  n is number of qubits
- *  t is index of qubit connected to the gate G
+ *  t is index of qubit connected to the G gate
  * 
- *  (I(0) x ... x G(t) x ... x I(n-1) ) | q(n-1)q(n-2)...q(t)...q0>
+ *  ( I(0) x ... x G(t) x ... x I(n-1) ) | q(n-1) q(n-2) ... q(t) ... q0 >
  *
- *  a x b is the tensor of a and b, with a and b matrices / vectors.
- *  
+ *  M_dd = (I_dd x ... x G_dd x ... I_dd) . (0,0,...,1,...0)T
+ *
+ *  a x b is the tensor of a and b, with a and b matrices or vectors.
+ * 
+ *  a . b is matrix multiplication of a and b, with a and b matrices or vectors.
+ * 
+ *  When t = 0, M-dd = G_dd . |q0> = G_dd . (1,0)T
+ * 
+ *  When t = 1, M_dd = (I_dd x G_dd) . |q1 q0>
+ * 
  */
 MTBDD
-mtbdd_create_single_gate_for_qubits_mpc(BDDVAR n, BDDVAR t, MTBDD I_dd, MTBDD G_dd) //gate_id_t gateid)
+mtbdd_create_single_gate_for_qubits_mpc(BDDVAR n, BDDVAR t, MTBDD I_dd, MTBDD G_dd)
 {
-    MTBDD dd = I_dd;
+    //MTBDD dd = I_dd;
+    MTBDD dd = mtbdd_makeleaf(MPC_TYPE, (uint64_t)g.mpc_re_one);
 
-    for(uint32_t k=0; k<n; k++)
+    for(uint32_t k=0; k < n; k++)
     {
         if(k==t)
             dd = mtbdd_tensor_prod(G_dd, dd, 2); // Two vars added, so third argument = 2
@@ -228,63 +237,150 @@ mtbdd_create_single_gate_for_qubits_mpc(BDDVAR n, BDDVAR t, MTBDD I_dd, MTBDD G_
     return dd;
 }
 
-/*    
-    int leaf_var_dd_I;
-
-    MTBDD dd_I = mtbdd_of_identity_matrix(n);  // n is number of qubits, how do we know?
-    MTBDD dd_G = mtbdd_of_gate_matrix(GATEID_X);
-    MTBDD dd_gate = mtbdd_tensor_prod(dd_I, dd_G, leaf_var_dd_I);
-
-    //MTBDD dd_state = mtbdd_create_state(state);
-
-    return mtbdd_matvec_mult(dd_gate, state, (1 << n), 0);
-
-    mpc_t mpc_zero;
-    mpc_init2(mpc_zero, MPC_PRECISION);
-    mpc_assign(mpc_zero, 0.0, 0.0);
-
-    mpc_t mpc_one;
-    mpc_init2(mpc_one, MPC_PRECISION);
-    mpc_assign(mpc_one, 1.0, 0.0);
-
-    MTBDD node = mtbdd_makeleaf(MPC_TYPE, (size_t)mpc_one);
-
-    for (int k = n-1; k >= 0; k--) {
-
-        if ((unsigned int)k == t)
-            node = mtbdd_stack_matrix(k, gateid);
-        else
-            node = mtbdd_stack_matrix(k, GATEID_I);
-    }
-    return node;
-}
-
 MTBDD
-mtbdd_stack_matrix(BDDVAR k, gate_id_t gateid)
+mtbdd_create_double_single_gates_for_qubits_mpc(BDDVAR n, BDDVAR t1, BDDVAR t2, MTBDD G1_dd, MTBDD G2_dd)
 {
-    // This function effectively does a Kronecker product gate \tensor below
-    BDDVAR s, t;
-    MTBDD u00, u01, u10, u11, low, high, res;
+    //MTBDD dd = I_dd;
+    MTBDD dd = mtbdd_makeleaf(MPC_TYPE, (uint64_t)g.mpc_re_one);
 
-    // Even + uneven variable are used to encode the 4 values
-    s = 2 * k;
-    t = s + 1;
+    for(uint32_t k=0; k < n; k++)
+    {
+        if(k==t1)
+            dd = mtbdd_tensor_prod(G1_dd, dd, 2); // Two vars added, so third argument = 2
+        else if(k==t2)
+            dd = mtbdd_tensor_prod(G2_dd, dd, 2); // Two vars added, so third argument = 2
+        else
+            dd = mtbdd_tensor_prod(I_dd, dd, 2);  // Two vars added
+    }
 
-    // Matrix U = [u00 u01
-    //             u10 u11] encoded in a small tree
-    u00 = mtbdd_makeleaf(MPC_TYPE, (size_t)gates[gateid][0]);
-    u10 = mtbdd_makeleaf(MPC_TYPE, (size_t)gates[gateid][2]);
-    u01 = mtbdd_makeleaf(MPC_TYPE, (size_t)gates[gateid][1]);
-    u11 = mtbdd_makeleaf(MPC_TYPE, (size_t)gates[gateid][3]);
-
-    low  = mtbdd_makenode(t, u00, u10);
-    high = mtbdd_makenode(t, u01, u11);
-    res  = mtbdd_makenode(s, low, high);
-
-    // Propagate common factor on previous root amp to new root amp
-    // AMP new_root_amp = wgt_mul(EVBDD_WEIGHT(below), EVBDD_WEIGHT(res));
-    // res = evbdd_bundle(EVBDD_TARGET(res), new_root_amp);
-    return res;
+    return dd;
 }
-*/
 
+/**
+ * The control unitary gate CCG on three qubits q0, q1 and q2 (for example in QASM "ccx q0, q1, q2;" q1 attached to X) 
+ * is defined as:
+ * 
+ *   M = I (x) I (x) |0><0| + CG (x) |1><1| with M 8:8 in size
+ *     = I (x) dd1 + dd3 = dd2 + dd3
+ * 
+ *   M = I (x) I (x) |0><0| + CG (x) |1><1|
+ *     = I (x) I (x) |0><0| + I (x) |0><0| (x) |1><1| + G (x) |1><1| (x) |1><1| 
+ *     = G (x) |1><1| (x) |1><1| + 
+ *       I (x) |0><0| (x) |1><1| + 
+ *       I (x) I      (x) |0><0| 
+ * 
+ * with CG 4:4 in size, CG = I (x) |0><0| + G (x) |1><1| 
+ * 
+ * G could be unitary gate ie. {X, Y, Z, T, S, ... } size 2:2
+ * 
+ */
+MTBDD
+mtbdd_ccg(BDDVAR n, BDDVAR c1, BDDVAR c2, BDDVAR t, MTBDD I_dd, MTBDD V00_dd, MTBDD V11_dd, MTBDD G_dd)
+{
+    MTBDD dd1 = mtbdd_makeleaf(MPC_TYPE, (uint64_t)g.mpc_re_one);
+    MTBDD dd2 = mtbdd_makeleaf(MPC_TYPE, (uint64_t)g.mpc_re_one);
+    MTBDD dd3 = mtbdd_makeleaf(MPC_TYPE, (uint64_t)g.mpc_re_one);
+
+    for(uint32_t k=0; k < n; k++)
+    {
+        if(k==t) {
+            dd1 = mtbdd_tensor_prod(G_dd, dd1, 2); // Two vars added, so third argument = 2
+            dd2 = mtbdd_tensor_prod(I_dd, dd2, 2);
+            dd3 = mtbdd_tensor_prod(I_dd, dd3, 2);
+        }
+            
+        else if(k==c1) {
+            dd1 = mtbdd_tensor_prod(V11_dd, dd1, 2); // Two vars added, so third argument = 2
+            dd2 = mtbdd_tensor_prod(V00_dd, dd2, 2);
+            dd3 = mtbdd_tensor_prod(I_dd, dd3, 2);
+        }
+        else if(k==c2) {
+            dd1 = mtbdd_tensor_prod(V11_dd, dd1, 2); // Two vars added, so third argument = 2
+            dd2 = mtbdd_tensor_prod(V11_dd, dd2, 2);
+            dd3 = mtbdd_tensor_prod(V00_dd, dd3, 2);
+        }
+        else {
+            dd1 = mtbdd_tensor_prod(I_dd, dd1, 2); // Two vars added, so third argument = 2
+            dd2 = mtbdd_tensor_prod(I_dd, dd2, 2);
+            dd3 = mtbdd_tensor_prod(I_dd, dd3, 2);
+        }
+    }
+
+    return mtbdd_plus(mtbdd_plus(dd1,dd2),dd3);
+}
+
+
+/**
+ * The control unitary gate CG on two qubits q0 and q1 (for example in QASM "cx q0, q1;" q1 attached to X) 
+ * is defined as:
+ * 
+ *   M_dd = I_dd x |0><0| + G_dd x |1><1| = I_dd x V00_dd + G_dd x V11_dd
+ * 
+ * In effect, with x=0 or 1: 
+ * 
+ *   M_dd . |0x> = |0x>            "No change if CNOT in zero state"
+ *   M_dd . |1x> = |1> x G_dd |x>  "Change state according to G gate"
+ * 
+ * In general:
+ * 
+ *   M = [I(0) x ... I(t) x ... x V00(c) x ... x I(n-1)] + [I(0) x ... x G(t) x ... x V11(c) x ... x I(n-1)], t < c
+ * 
+ *   M = [I(0) x ... x V00(c) x ... x I(t) x ... x I(n-1)] + [I(0) x ... x V11(c) x ... x G(t) x ... x I(n-1)], c < t
+ *
+ *   with t the index of the qubit attached to the G gate and c the index to the control.
+ * 
+ */
+MTBDD
+mtbdd_create_single_control_gate_for_qubits_mpc(BDDVAR n, BDDVAR c, BDDVAR t, MTBDD I_dd, MTBDD V00_dd, MTBDD V11_dd, MTBDD G_dd)
+{
+    MTBDD dd1 = mtbdd_create_double_single_gates_for_qubits_mpc(n, c, t, V00_dd, I_dd);
+    MTBDD dd2 = mtbdd_create_double_single_gates_for_qubits_mpc(n, c, t, V11_dd, G_dd);
+    return mtbdd_plus(dd1,dd2);
+}
+
+double
+mtbdd_getnorm_mpc(MTBDD dd, size_t nvars) // L2 norm, in accordance with the satcount function in sylvan_mtbdd.c
+{
+    /* Trivial cases */
+    //if (dd == mtbdd_false) 
+    //    return 0.0;
+
+    if (mtbdd_isleaf(dd)) {
+
+        //mpc_out_str(stdout, MPC_BASE_OF_FLOAT, 6, (mpc_ptr)mtbdd_getvalue(dd), MPC_ROUNDING);
+
+        mpc_ptr mpc_value = (mpc_ptr)mtbdd_getvalue(dd);
+
+        mpfr_t mpfr_abs_value;
+        mpfr_init2(mpfr_abs_value, MPC_PRECISION);
+        mpc_abs(mpfr_abs_value, mpc_value, MPC_ROUNDING);
+    
+        double double_value = mpfr_get_d(mpfr_abs_value, MPC_ROUNDING);
+        mpfr_clear(mpfr_abs_value);
+
+        //printf("getnorm_mpc = %f\n", double_value * double_value * pow(2.0, nvars));
+
+        return double_value * double_value * pow(2.0, nvars);
+    }
+
+    /* Perhaps execute garbage collection */
+    //sylvan_gc_test(); reads only the cache, can be removed
+
+    union {   // copy bitvalues of double into 64 bit integer for cache
+        double d;
+        uint64_t s;
+    } hack;
+
+    /* Consult cache */
+    if (cache_get3(CACHE_MTBDD_GETNORM_MPC, dd, 0, nvars, &hack.s)) {
+        return hack.d;
+    }
+
+    double high = mtbdd_getnorm_mpc(mtbdd_gethigh(dd), nvars-1);
+    double low = mtbdd_getnorm_mpc(mtbdd_getlow(dd), nvars-1);
+    hack.d = low + high;
+
+    cache_put3(CACHE_MTBDD_GETNORM_MPC, dd, 0, nvars, hack.s);
+
+    return hack.d;
+}

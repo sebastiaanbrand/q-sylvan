@@ -27,6 +27,20 @@ After downloading or cloning the repository, from the repository folder the code
 
 Test can be run with `ctest`.
 
+## Simulations of circuits presented in qasm on QMDD and MTBDD
+
+Running can be activated with `./run_qasm_on_qmdd <filename>.qasm --state-vector` in `build/qasm/` directory.
+
+For MTBDD type `./run_qasm_on_mtbdd <filename>.qasm --state-vector` in `build/qasm` directory.
+
+Debugging can be activated with `gdb ./run_qasm_on_qmdd` in `build/qasm` directory.
+
+The GNU GDB Debugger accepts commands as `(gdb) run <filename>.qasm --state-vector`.
+
+## Tests of the simulators based on QMDD and MTBDD
+
+Running tests can be activated with `pytest -v` in the root directory, `Q-Sylvan/q-sylvan/`.
+
 
 ## Example usage
 The following code snippets are a toy example for creating the [Bell state](https://en.wikipedia.org/wiki/Bell_state) `|Phi^+> = 1/sqrt(2) (|01> + |10>)`, first in the C interface, and secondly in the QASM interface.
