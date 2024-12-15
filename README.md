@@ -1,9 +1,9 @@
 # Q-Sylvan
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![CI testing](https://github.com/sebastiaanbrand/q-sylvan/actions/workflows/cmake.yml/badge.svg)](https://github.com/sebastiaanbrand/q-sylvan/actions/workflows/cmake.yml)
+[![CI testing](https://github.com/sebastiaanbrand/q-sylvan/actions/workflows/cmake.yml/badge.svg)](https://github.com/System-Verification-Lab/Q-Sylvan/actions/workflows/cmake.yml)
 
-Q-Sylvan extends the parallel decision diagram library [Sylvan](https://github.com/trolando/sylvan) (v1.8.0) with QMDDs (i.e. factored EVBDDs with complex edge weights), as well as functionality to simulate quantum circuits. This is currently still a beta version.
+Q-Sylvan extends the parallel decision diagram library [Sylvan](https://github.com/trolando/sylvan) (v1.8.0) with MTBDDs and QMDDs (i.e. factored EVBDDs with complex edge weights), as well as functionality to simulate and benchmark quantum circuits.
 
 
 ## Installation
