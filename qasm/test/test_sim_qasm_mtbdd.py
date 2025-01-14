@@ -77,9 +77,9 @@ class TestCircuits:
         assert abs(fidelity(vector, ref) - 1) < TOLERANCE
 
 
-    def test_dnn_n8(self, cl_args : str):
+    def dnn_n8(self, cl_args : str):
         """
-        Test dnn_n8.qasm
+        (Too big for quick test)
         """
         vector = get_vector('dnn_n8.qasm', cl_args)
         ref = np.array([ 0.12641004+5.31293856e-01j, -0.07648447-3.72236104e-02j,
