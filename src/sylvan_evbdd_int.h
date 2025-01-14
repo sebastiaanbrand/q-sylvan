@@ -303,6 +303,10 @@ _evbdd_makenode(BDDVAR var, EVBDD_TARG low, EVBDD_TARG high, EVBDD_WGT a, EVBDD_
 static EVBDD __attribute__((unused))
 evbdd_makenode(BDDVAR var, EVBDD low, EVBDD high)
 { 
+    if (var > 255) {
+        fprintf(stderr, "ERROR: EVBDDs currently only support up to 255 variables.\n");
+        exit(EXIT_FAILURE);
+    }
     EVBDD_TARG low_trg  = EVBDD_TARGET(low);
     EVBDD_WGT  low_wgt  = EVBDD_WEIGHT(low);
     EVBDD_TARG high_trg = EVBDD_TARGET(high);
