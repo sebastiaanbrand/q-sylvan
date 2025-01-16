@@ -39,7 +39,9 @@ The GNU GDB Debugger accepts commands as `(gdb) run <filename>.qasm --state-vect
 
 ## Tests of the simulators based on QMDD and MTBDD
 
-Running tests can be activated with `pytest -v` in the root directory, `Q-Sylvan/q-sylvan/`.
+Running tests can be activated with `pytest -v` in the root directory, `q-sylvan/`.
+
+If the tests fail on JSONDecodeError put the QASM files (listed in `q-sylvan/qasm/circuits/`) from CRLF into LF mode first.
 
 
 ## Example usage
