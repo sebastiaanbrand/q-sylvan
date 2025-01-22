@@ -37,10 +37,10 @@ extern EVBDD_WGT (*normalize_weights)(EVBDD_WGT *, EVBDD_WGT *);
  * 
  * 64 bits low:
  *       1 bit:  unused
- *       8 bits: variable/qubit number of this node
+ *      16 bits: variable/qubit number of this node
  *       1 bit:  if 0 (1) normalized WGT is on low (high)
  *       1 bit:  if 0 (1) normalized WGT is EVBDD_ZERO (EVBDD_ONE)
- *      13 bits: unused
+ *       5 bits: unused
  *      40 bits: low edge pointer to next node (EVBDD_TARG)
  * 64 bits high:
  *       1 bit:  marked/unmarked flag
@@ -59,10 +59,10 @@ extern EVBDD_WGT (*normalize_weights)(EVBDD_WGT *, EVBDD_WGT *);
  * EVBDD node structure (128 bits)
  * 64 bits low:
  *       1 bit:  unused
- *       8 bits: variable/qubit number of this node
+ *      16 bits: variable/qubit number of this node
  *       1 bit:  if 0 (1) normalized WGT is on low (high)
  *       1 bit:  if 0 (1) normalized WGT is EVBDD_ZERO (EVBDD_ONE)
- *      23 bits: unused
+ *      15 bits: unused
  *      30 bits: low edge pointer to next node (EVBDD_TARG)
  * 64 bits high:
  *       1 bit:  marked/unmarked flag
@@ -74,14 +74,14 @@ typedef struct __attribute__((packed)) evbddnode {
     EVBDD low, high;
 } *evbddnode_t; // 16 bytes
 
-static const EVBDD evbdd_marked_mask  = 0x8000000000000000LL;
-static const EVBDD evbdd_var_mask_low = 0x7f80000000000000LL;
-static const EVBDD evbdd_wgt_pos_mask = 0x0040000000000000LL;
-static const EVBDD evbdd_wgt_val_mask = 0x0020000000000000LL;
-static const EVBDD evbdd_wgt_mask_23  = 0x7fffff0000000000LL;
-static const EVBDD evbdd_wgt_mask_33  = 0x7fffffffc0000000LL;
-static const EVBDD evbdd_ptr_mask_30  = 0x000000003fffffffLL;
-static const EVBDD evbdd_ptr_mask_40  = 0x000000ffffffffffLL;
+static const EVBDD evbdd_marked_mask  = 0x8000000000000000LL; // 1000000000000000000000000000000000000000000000000000000000000000
+static const EVBDD evbdd_var_mask_low = 0x7fff800000000000LL; // 0111111111111111100000000000000000000000000000000000000000000000
+static const EVBDD evbdd_wgt_pos_mask = 0x0000400000000000LL; // 0000000000000000010000000000000000000000000000000000000000000000
+static const EVBDD evbdd_wgt_val_mask = 0x0000200000000000LL; // 0000000000000000001000000000000000000000000000000000000000000000
+static const EVBDD evbdd_wgt_mask_23  = 0x7fffff0000000000LL; // 0111111111111111111111110000000000000000000000000000000000000000
+static const EVBDD evbdd_wgt_mask_33  = 0x7fffffffc0000000LL; // 0111111111111111111111111111111111000000000000000000000000000000
+static const EVBDD evbdd_ptr_mask_30  = 0x000000003fffffffLL; // 0000000000000000000000000000000000111111111111111111111111111111
+static const EVBDD evbdd_ptr_mask_40  = 0x000000ffffffffffLL; // 0000000000000000000000001111111111111111111111111111111111111111
 
 
 /**
@@ -118,7 +118,7 @@ EVBDD_TARGET(EVBDD a)
 static inline BDDVAR
 evbddnode_getvar(evbddnode_t n)
 {
-    return (BDDVAR) ((n->low & evbdd_var_mask_low) >> 55 ); // 8 bits
+    return (BDDVAR) ((n->low & evbdd_var_mask_low) >> 47 ); // 16 bits
 }
 
 /**
@@ -190,8 +190,8 @@ evbddnode_unpack(evbddnode_t n, EVBDD_TARG *low, EVBDD_TARG *high, EVBDD_WGT *a,
 {
     *low  = evbddnode_getptrlow(n);
     *high = evbddnode_getptrhigh(n);
-    bool norm_pos = (n->low & evbdd_wgt_pos_mask) >> 54;
-    bool norm_val = (n->low & evbdd_wgt_val_mask) >> 53;
+    bool norm_pos = (n->low & evbdd_wgt_pos_mask) >> 46;
+    bool norm_val = (n->low & evbdd_wgt_val_mask) >> 45;
 
     if (weight_norm_strat == NORM_L2) {
         *b = EVBDD_WEIGHT(n->high);
@@ -258,7 +258,7 @@ evbddnode_pack(evbddnode_t n, BDDVAR var, EVBDD_TARG low, EVBDD_TARG high, EVBDD
     }
 
     // organize the bit structure of low and high
-    n->low  = ((uint64_t)var)<<55 | ((uint64_t)norm_pos)<<54 | ((uint64_t)norm_val)<<53 | low;
+    n->low  = ((uint64_t)var)<<47 | ((uint64_t)norm_pos)<<46 | ((uint64_t)norm_val)<<45 | low;
     if (larger_wgt_indices) {
         n->high = wgt_high<<30 | high;
     }
@@ -303,6 +303,10 @@ _evbdd_makenode(BDDVAR var, EVBDD_TARG low, EVBDD_TARG high, EVBDD_WGT a, EVBDD_
 static EVBDD __attribute__((unused))
 evbdd_makenode(BDDVAR var, EVBDD low, EVBDD high)
 { 
+    if (var > 1<<16) {
+        fprintf(stderr, "ERROR: EVBDDs currently only support up to %d variables.\n", 1<<16);
+        exit(EXIT_FAILURE);
+    }
     EVBDD_TARG low_trg  = EVBDD_TARGET(low);
     EVBDD_WGT  low_wgt  = EVBDD_WEIGHT(low);
     EVBDD_TARG high_trg = EVBDD_TARGET(high);
