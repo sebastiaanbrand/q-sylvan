@@ -47,6 +47,12 @@ static size_t max_cachesize = 1LL<<16;
 static char* qasm_inputfile = NULL;
 static char* json_outputfile = NULL;
 
+#define M_PI 3.14159265358979323846
+static double PI_1 = M_PI;
+static double PI_2 = M_PI / 2.0;
+static double PI_4 = M_PI / 4.0;
+static double PI_8 = M_PI / 8.0;
+
 /**
  * 
  * Command Line Interface argument help list.
@@ -306,8 +312,8 @@ MTBDD apply_gate(MTBDD state, quantum_op_t* gate, int n)
         MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, P_dd);
         return mtbdd_matvec_mult(M_dd, state, 2*n, 0);
     }
-    else if (strcmp(gate->name, "u") == 0) {
-        MTBDD U_dd = mtbdd_U(gate->angle[0], gate->angle[1], gate->angle[2]);
+    else if (strcmp(gate->name, "u1") == 0) {
+        MTBDD U_dd = mtbdd_U1(gate->angle[0]);
         MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, U_dd);
         return mtbdd_matvec_mult(M_dd, state, 2*n, 0);
     }
@@ -316,8 +322,8 @@ MTBDD apply_gate(MTBDD state, quantum_op_t* gate, int n)
         MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, U_dd);
         return mtbdd_matvec_mult(M_dd, state, 2*n, 0);
     }
-    else if (strcmp(gate->name, "u1") == 0) {
-        MTBDD U_dd = mtbdd_U1(gate->angle[0]);
+    else if (strcmp(gate->name, "u3") == 0 || strcmp(gate->name, "u") == 0) {
+        MTBDD U_dd = mtbdd_U(gate->angle[0], gate->angle[1], gate->angle[2]);
         MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, U_dd);
         return mtbdd_matvec_mult(M_dd, state, 2*n, 0);
     }
@@ -373,76 +379,455 @@ MTBDD apply_gate(MTBDD state, quantum_op_t* gate, int n)
         return mtbdd_matvec_mult(M_dd, state, 2*n, 0);
     }
 
-    // Not used yet in benchmark circuits
+    // Composed gates based on (control) unitary gates
 
     else if (strcmp(gate->name, "ccx") == 0) {
         MTBDD CCX_dd = mtbdd_ccg(n, gate->ctrls[0], gate->ctrls[1], gate->targets[0], I_dd, V00_dd, V11_dd, X_dd);
         return mtbdd_matvec_mult(CCX_dd, state, 2*n, 0);
     }
-/*
+
     else if (strcmp(gate->name, "c3x") == 0) {
-        return qmdd_cgate3(state, GATEID_X, gate->ctrls[0], gate->ctrls[1], gate->ctrls[2], gate->targets[0]);
+
+        // c3x a,b,c,d = c3x ctrls[0], ctrls[1], ctrls[2], targets[0]
+
+        // h d;
+        MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, H_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // p(pi/8) a;
+        MTBDD P_dd = mtbdd_Phase(PI_8);
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->ctrls[0], I_dd, P_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // p(pi/8) b;
+        P_dd = mtbdd_Phase(PI_8);
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->ctrls[1], I_dd, P_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // p(pi/8) c;
+        P_dd = mtbdd_Phase(PI_8);
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->ctrls[2], I_dd, P_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // p(pi/8) d;
+        P_dd = mtbdd_Phase(PI_8);
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, P_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // cx a, b;
+        M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->ctrls[0], gate->ctrls[1], I_dd, V00_dd, V11_dd, X_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // p(-pi/8) b;
+        P_dd = mtbdd_Phase(-PI_8);
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->ctrls[1], I_dd, P_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // cx a, b;
+        M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->ctrls[0], gate->ctrls[1], I_dd, V00_dd, V11_dd, X_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // cx b, c;
+        M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->ctrls[1], gate->ctrls[2], I_dd, V00_dd, V11_dd, X_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // p(-pi/8) c;
+        P_dd = mtbdd_Phase(-PI_8);
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->ctrls[2], I_dd, P_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // cx a, c;
+        M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->ctrls[0], gate->ctrls[2], I_dd, V00_dd, V11_dd, X_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // p(pi/8) c;
+        P_dd = mtbdd_Phase(PI_8);
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->ctrls[2], I_dd, P_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // cx b, c;
+        M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->ctrls[1], gate->ctrls[2], I_dd, V00_dd, V11_dd, X_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // p(-pi/8) c;
+        P_dd = mtbdd_Phase(-PI_8);
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->ctrls[2], I_dd, P_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // cx a, c;
+        M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->ctrls[0], gate->ctrls[2], I_dd, V00_dd, V11_dd, X_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // cx c, d;
+        M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->ctrls[2], gate->targets[0], I_dd, V00_dd, V11_dd, X_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // p(-pi/8) d;
+        P_dd = mtbdd_Phase(-PI_8);
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, P_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // cx b, d;
+        M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->ctrls[1], gate->targets[0], I_dd, V00_dd, V11_dd, X_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // p(pi/8) d;
+        P_dd = mtbdd_Phase(PI_8);
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, P_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // cx c, d;
+        M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->ctrls[2], gate->targets[0], I_dd, V00_dd, V11_dd, X_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // p(-pi/8) d;
+        P_dd = mtbdd_Phase(-PI_8);
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, P_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // cx a, d;
+        M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->ctrls[0], gate->targets[0], I_dd, V00_dd, V11_dd, X_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // p(pi/8) d;
+        P_dd = mtbdd_Phase(PI_8);
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, P_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // cx c, d;
+        M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->ctrls[2], gate->targets[0], I_dd, V00_dd, V11_dd, X_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // p(-pi/8) d;
+        P_dd = mtbdd_Phase(-PI_8);
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, P_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // cx b, d;
+        M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->ctrls[1], gate->targets[0], I_dd, V00_dd, V11_dd, X_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // p(pi/8) d;
+        P_dd = mtbdd_Phase(PI_8);
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, P_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // cx c, d;
+        M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->ctrls[2], gate->targets[0], I_dd, V00_dd, V11_dd, X_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // p(-pi/8) d;
+        P_dd = mtbdd_Phase(-PI_8);
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, P_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // cx a, d;
+        M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->ctrls[0], gate->targets[0], I_dd, V00_dd, V11_dd, X_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // h d;
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, H_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        stats.applied_gates += 31 -  1;
+
+        return state;
     }
     else if (strcmp(gate->name, "c3sx") == 0) {
-        return qmdd_cgate3(state, GATEID_sqrtX, gate->ctrls[0], gate->ctrls[1], gate->ctrls[2], gate->targets[0]);
+
+        // c3sx a,b,c,d = c3x ctrls[0], ctrls[1], ctrls[2], targets[0]
+
+        // h d;
+        MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, H_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // p(pi/8) a;
+        MTBDD P_dd = mtbdd_Phase(PI_8);
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->ctrls[0], I_dd, P_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // p(pi/8) b;
+        P_dd = mtbdd_Phase(PI_8);
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->ctrls[1], I_dd, P_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // p(pi/8) c;
+        P_dd = mtbdd_Phase(PI_8);
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->ctrls[2], I_dd, P_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // p(pi/8) d;
+        P_dd = mtbdd_Phase(PI_8);
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, P_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // csx a, b;
+        M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->ctrls[0], gate->ctrls[1], I_dd, V00_dd, V11_dd, sqrt_X_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // p(-pi/8) b;
+        P_dd = mtbdd_Phase(-PI_8);
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->ctrls[1], I_dd, P_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // csx a, b;
+        M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->ctrls[0], gate->ctrls[1], I_dd, V00_dd, V11_dd, sqrt_X_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // csx b, c;
+        M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->ctrls[1], gate->ctrls[2], I_dd, V00_dd, V11_dd, sqrt_X_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // p(-pi/8) c;
+        P_dd = mtbdd_Phase(-PI_8);
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->ctrls[2], I_dd, P_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // csx a, c;
+        M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->ctrls[0], gate->ctrls[2], I_dd, V00_dd, V11_dd, sqrt_X_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // p(pi/8) c;
+        P_dd = mtbdd_Phase(PI_8);
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->ctrls[2], I_dd, P_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // csx b, c;
+        M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->ctrls[1], gate->ctrls[2], I_dd, V00_dd, V11_dd, sqrt_X_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // p(-pi/8) c;
+        P_dd = mtbdd_Phase(-PI_8);
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->ctrls[2], I_dd, P_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // csx a, c;
+        M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->ctrls[0], gate->ctrls[2], I_dd, V00_dd, V11_dd, sqrt_X_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // csx c, d;
+        M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->ctrls[2], gate->targets[0], I_dd, V00_dd, V11_dd, sqrt_X_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // p(-pi/8) d;
+        P_dd = mtbdd_Phase(-PI_8);
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, P_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // csx b, d;
+        M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->ctrls[1], gate->targets[0], I_dd, V00_dd, V11_dd, sqrt_X_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // p(pi/8) d;
+        P_dd = mtbdd_Phase(PI_8);
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, P_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // csx c, d;
+        M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->ctrls[2], gate->targets[0], I_dd, V00_dd, V11_dd, sqrt_X_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // p(-pi/8) d;
+        P_dd = mtbdd_Phase(-PI_8);
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, P_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // csx a, d;
+        M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->ctrls[0], gate->targets[0], I_dd, V00_dd, V11_dd, sqrt_X_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // p(pi/8) d;
+        P_dd = mtbdd_Phase(PI_8);
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, P_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // csx c, d;
+        M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->ctrls[2], gate->targets[0], I_dd, V00_dd, V11_dd, sqrt_X_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // p(-pi/8) d;
+        P_dd = mtbdd_Phase(-PI_8);
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, P_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // csx b, d;
+        M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->ctrls[1], gate->targets[0], I_dd, V00_dd, V11_dd, sqrt_X_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // p(pi/8) d;
+        P_dd = mtbdd_Phase(PI_8);
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, P_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // csx c, d;
+        M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->ctrls[2], gate->targets[0], I_dd, V00_dd, V11_dd, sqrt_X_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // p(-pi/8) d;
+        P_dd = mtbdd_Phase(-PI_8);
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, P_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // csx a, d;
+        M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->ctrls[0], gate->targets[0], I_dd, V00_dd, V11_dd, sqrt_X_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // h d;
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, H_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        stats.applied_gates += 31 - 1;
+
+        return state;
     }
-*/    
-    else if (strcmp(gate->name, "swap") == 0) { // swap(a,b) = cx(a,b); cx(b,a); cx(a,b), swap(|q0> (x) |q1>) = |q1> (x) |q0>
-        stats.applied_gates += 4;
+    else if (strcmp(gate->name, "swap") == 0) {
+
+        // swap(a,b) = cx(a,b); cx(b,a); cx(a,b), swap(|q0> (x) |q1>) = |q1> (x) |q0>
+
         MTBDD M1_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->targets[0], gate->targets[1], I_dd, V00_dd, V11_dd, X_dd);
         state = mtbdd_matvec_mult(M1_dd, state, 2*n, 0);
+
         MTBDD M2_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->targets[1], gate->targets[0], I_dd, V00_dd, V11_dd, X_dd);
         state = mtbdd_matvec_mult(M2_dd, state, 2*n, 0);
+
         MTBDD M3_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->targets[0], gate->targets[1], I_dd, V00_dd, V11_dd, X_dd);
-        return mtbdd_matvec_mult(M3_dd, state, 2*n, 0);
-    }
 
-/*
-    else if (strcmp(gate->name, "cswap") == 0) { // cswap(c,a,b) = cx(c,a,b); cx(c,b,a); cx(c,a,b)
+        state = mtbdd_matvec_mult(M3_dd, state, 2*n, 0); 
 
-        // no native CSWAP gates in Q-Sylvan
-        stats.applied_gates += 4;
-        // CCNOT
-        state = qmdd_cgate2(state, GATEID_X, gate->ctrls[0], gate->targets[0], gate->targets[1]);
-        // upside down CCNOT (equivalent)
-        state = qmdd_cgate(state, GATEID_H, gate->ctrls[0], gate->targets[0]);
-        state = qmdd_cgate2(state, GATEID_Z, gate->ctrls[0], gate->targets[0], gate->targets[1]);
-        state = qmdd_cgate(state, GATEID_H, gate->ctrls[0], gate->targets[0]);
-        // CCNOT
-        state = qmdd_cgate2(state, GATEID_X, gate->ctrls[0], gate->targets[0], gate->targets[1]);
+        stats.applied_gates += 3 - 1;
+
         return state;
     }
-    else if (strcmp(gate->name, "rccx") == 0) { // do not implement yet
-        // no native RCCX (simplified Toffoli) gates in Q-Sylvan
-        stats.applied_gates += 3;
-        state = qmdd_cgate2(state, GATEID_X, gate->ctrls[0], gate->ctrls[1], gate->targets[0]);
-        state = qmdd_gate(state, GATEID_X, gate->ctrls[1]);
-        state = qmdd_cgate2(state, GATEID_Z, gate->ctrls[0], gate->ctrls[1], gate->targets[0]);
-        state = qmdd_gate(state, GATEID_X, gate->ctrls[1]);
+    else if (strcmp(gate->name, "cswap") == 0) { 
+
+        // cswap a,b,c = csawp ctrls[0], target[0], target[1]
+
+        // cx c,b;
+        MTBDD M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->targets[1], gate->targets[0], I_dd, V00_dd, V11_dd, X_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // ccx a,b,c;
+        MTBDD CCX_dd = mtbdd_ccg(n, gate->ctrls[0], gate->targets[0], gate->targets[1], I_dd, V00_dd, V11_dd, X_dd);
+        state = mtbdd_matvec_mult(CCX_dd, state, 2*n, 0);
+        
+        // cx c,b;
+        M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->targets[1], gate->targets[0], I_dd, V00_dd, V11_dd, X_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        stats.applied_gates += 3 - 1;
+
         return state;
     }
-    else if (strcmp(gate->name, "rzz") == 0 ) { // do not implement yet
-        // no native RZZ gates in Q-Sylvan
-        stats.applied_gates += 2;
-        state = qmdd_cgate(state, GATEID_X, gate->targets[0], gate->targets[1]);
-        state = qmdd_gate(state, GATEID_Phase(gate->angle[0]), gate->targets[1]);
-        state = qmdd_cgate(state, GATEID_X, gate->targets[0], gate->targets[1]);
+    else if (strcmp(gate->name, "rccx") == 0) {
+
+        // rccx a,b,c = rccx ctrls[0] ctrls[1] targets[0]
+
+        // u2(0,pi) c;
+        MTBDD U_dd = mtbdd_U2(0.0, PI_1);
+        MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, U_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+  
+        // u1(pi/4) c;
+        U_dd = mtbdd_U1(PI_4);
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, U_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+  
+        // cx b, c;
+        M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->ctrls[1], gate->targets[0], I_dd, V00_dd, V11_dd, X_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // u1(-pi/4) c;
+        U_dd = mtbdd_U1(-PI_4);
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, U_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+  
+        // cx a, c;
+        M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->ctrls[0], gate->targets[0], I_dd, V00_dd, V11_dd, X_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+  
+        // u1(pi/4) c;
+        U_dd = mtbdd_U1(PI_4);
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, U_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // cx b, c;
+        M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->ctrls[1], gate->targets[0], I_dd, V00_dd, V11_dd, X_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+        
+        // u1(-pi/4) c;
+        U_dd = mtbdd_U1(-PI_4);
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, U_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+        
+        // u2(0,pi) c;
+        U_dd = mtbdd_U2(0.0, PI_1);
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, U_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        stats.applied_gates += 9 - 1;
+
         return state;
     }
-    else if (strcmp(gate->name, "rxx") == 0) { // do not implement yet
-        // no native RXX gates in Q-Sylvan
-        fl_t pi = flt_acos(0.0) * 2;
-        stats.applied_gates += 6;
-        state = qmdd_gate(state, GATEID_U(pi/2.0, gate->angle[0], 0), gate->targets[0]);
-        state = qmdd_gate(state, GATEID_H, gate->targets[1]);
-        state = qmdd_cgate(state, GATEID_X, gate->targets[0], gate->targets[1]);
-        state = qmdd_gate(state, GATEID_Phase(-(gate->angle[0])), gate->targets[1]);
-        state = qmdd_cgate(state, GATEID_X, gate->targets[0], gate->targets[1]);
-        state = qmdd_gate(state, GATEID_H, gate->targets[1]);
-        state = qmdd_gate(state, GATEID_U(pi/2.0, -pi, pi-gate->angle[0]), gate->targets[0]);
+    else if (strcmp(gate->name, "rzz") == 0 ) {
+    
+        // rzz(theta) a,b = rzz(theta) targets[0] targets[1]
+
+        // cx a,b;
+        MTBDD M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->targets[0], gate->targets[1], I_dd, V00_dd, V11_dd, X_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // u1(theta) b;
+        MTBDD U_dd = mtbdd_U1(gate->angle[0]);
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[1], I_dd, U_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+        
+        // cx a,b;
+        M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->targets[0], gate->targets[1], I_dd, V00_dd, V11_dd, X_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        stats.applied_gates += 3 - 1;
+
         return state;
     }
-*/
+    else if (strcmp(gate->name, "rxx") == 0) {
+
+        // rxx(theta) a,b
+
+        // u3(pi/2, theta, 0) a;
+        MTBDD U_dd = mtbdd_U(PI_2, gate->angle[0], 0.0);
+        MTBDD M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, U_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // h b;
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[1], I_dd, H_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+        
+        // cx a,b;
+        M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->targets[0], gate->targets[1], I_dd, V00_dd, V11_dd, X_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+        
+        // u1(-theta) b;
+        U_dd = mtbdd_U1(-gate->angle[0]);
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, U_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        // cx a,b;
+        M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->targets[0], gate->targets[1], I_dd, V00_dd, V11_dd, X_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+        
+        // h b;
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[1], I_dd, H_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+        
+        // u2(-pi, pi-theta) a;
+        U_dd = mtbdd_U2(-PI_1, PI_1 - gate->angle[0]);
+        M_dd = mtbdd_create_single_gate_for_qubits_mpc(n, gate->targets[0], I_dd, U_dd);
+        state = mtbdd_matvec_mult(M_dd, state, 2*n, 0);
+
+        stats.applied_gates += 7 - 1;
+
+        return state;
+    }
 
     else {
         fprintf(stderr, "Gate '%s' currently unsupported\n", gate->name);
