@@ -10,12 +10,8 @@ Q-Sylvan extends the parallel decision diagram library [Sylvan](https://github.c
 
 ### Dependencies
 
-Q-Sylvan requires the following libraries: `popt`, `GMP`, `MPFR` and `MPC`. On Ubuntu it should be possible to install these with
-- `sudo apt-get install libpopt-dev`
-- `sudo apt-get install libgmp-dev`
-- `sudo apt-get install libmpfr-dev`
-- `sudo apt-get install libmpc-dev`
-- `sudo apt-get install cmake`
+Q-Sylvan requires the following libraries: `popt`, `GMP`, `MPFR` and `MPC`. On Ubuntu these can be installed with
+- `sudo apt install libpopt-dev libgmp-dev libmpfr-dev libmpc-dev`
 
 
 ### Compiling the code
@@ -27,27 +23,12 @@ After downloading or cloning the repository, from the repository folder the code
 
 Test can be run with `ctest`.
 
-## Simulations of circuits presented in qasm on QMDD and MTBDD
-
-Running can be activated with `./run_qasm_on_qmdd <filename>.qasm --state-vector` in `build/qasm/` directory.
-
-For MTBDD type `./run_qasm_on_mtbdd <filename>.qasm --state-vector` in `build/qasm` directory.
-
-Debugging can be activated with `gdb ./run_qasm_on_qmdd` in `build/qasm` directory.
-
-The GNU GDB Debugger accepts commands as `(gdb) run <filename>.qasm --state-vector`.
-
-## Tests of the simulators based on QMDD and MTBDD
-
-Running tests can be activated with `pytest -v` in the root directory, `q-sylvan/`.
-
-If the tests fail on JSONDecodeError put the QASM files (listed in `q-sylvan/qasm/circuits/`) from CRLF into LF mode first.
-
 
 ## Example usage
-The following code snippets are a toy example for creating the [Bell state](https://en.wikipedia.org/wiki/Bell_state) `|Phi^+> = 1/sqrt(2) (|01> + |10>)`, first in the C interface, and secondly in the QASM interface.
 
 ### C interface
+The following code snippet is a toy example for creating the [Bell state](https://en.wikipedia.org/wiki/Bell_state) `|Phi^+> = 1/sqrt(2) (|01> + |10>)` using the C interface directly.
+
 ```C
 // Create |Phi^+>
 int nqubits = 2;
@@ -61,9 +42,13 @@ bool outcome[] = {0, 0};
 double prob;
 qmdd_measure_all(state, nqubits, outcome, &prob);
 ```
-This code can be found in [`examples/bell_state.c`](examples/bell_state.c) and after compiling the code as described above can be run with `./examples/bell_state` from the `build/` directory. A more complete set of available functions can be found [here](docs/documentation/c_interface.md).
+This code can be found in [`examples/bell_state.c`](examples/bell_state.c) and after compiling the code as described above can be run with `./build/examples/bell_state`. A more complete set of available functions can be found [here](docs/documentation/c_interface.md).
 
-### QASM interface
+
+### Simulation of quantum circuits
+
+Quantum circuits in the Open QASM 2.0 format (see example below) can be simulated using EVDDS with `./build/qasm/run_qasm_on_qmdd <qasm_filename>`, or using MTBDDs using `./build/qasm/run_qasm_on_mtbdd`. For both, the full state vector can be obtained by including the argument `--state-vector`. The example circuit below can be found in [`qasm/circuits/bell_state.qasm`](qasm/circuits/bell_state.qasm). All gates specified in [qelib1.inc](https://github.com/Qiskit/qiskit-terra/blob/main/qiskit/qasm/libs/qelib1.inc) are supported, as well as measurements. Custom definitions of gates and classical conditioning are currently not supported.
+
 ```C
 OPENQASM 2.0;
 include "qelib1.inc";
@@ -81,7 +66,11 @@ x q[0];
 measure q[0]->c[0];
 measure q[1]->c[1];
 ```
-This code can be found in [`qasm/circuits/bell_state.qasm`](qasm/circuits/bell_state.qasm) and can be run with `./build/qasm/run_qasm_on_qmdd qasm/circuits/bell_state.qasm`. All gates specified in [qelib1.inc](https://github.com/Qiskit/qiskit-terra/blob/main/qiskit/qasm/libs/qelib1.inc) are supported, as well as measurements. Custom definitions of gates and classical conditioning are currently not supported.
+
+
+### Equivalence checking of quantum circuits
+
+Equivalence checking of two circuits in the QASM format can be done using `./build/examples/circuit_equivalence <qasm_file1> <qasm_file2>`. The additional argument `--algorithm alternating` or `--algorithm pauli` can be used to use a specific equivalence checking algorithm. By default the `alternating` algorithm is used.
 
 
 ## Documentation
