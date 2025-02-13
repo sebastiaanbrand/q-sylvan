@@ -922,9 +922,6 @@ int main(int argc, char *argv[])
     argp_parse(&argp, argc, argv, 0, 0, 0);
 
     quantum_circuit_t* circuit = parse_qasm_file(qasm_inputfile);
-    
-    //quantum_circuit_t* circuit = parse_qasm_file("/home/qrichard/Q-Sylvan/q-sylvan/qasm/circuits/test_circuit.qasm");
-    //print_quantum_circuit(circuit);
 
     optimize_qubit_order(circuit, false);
 
@@ -946,18 +943,14 @@ int main(int argc, char *argv[])
     // Init the dd's of the gates
     mtbdd_gates_init_mpc();
 
-    //printf("Simulate\n");
     simulate_circuit(circuit);
-    
-    //print_quantum_circuit(circuit);
-    //printf("Statistics\n");
-
-    fprint_stats(stdout, circuit);
 
     if (json_outputfile != NULL) {
         FILE *fp = fopen(json_outputfile, "w");
         fprint_stats(fp, circuit);
         fclose(fp);
+    } else {
+        fprint_stats(stdout, circuit);
     }
 
     sylvan_quit();
