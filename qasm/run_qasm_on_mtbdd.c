@@ -33,8 +33,9 @@
  */
 static int workers = 1;         // Number of threads running on separate CPU core
 static int rseed = 0;
-static int precision = MPC_PRECISION;
+static int precision = 64;
 static int rounding = 0;
+static double tolerance = 1e-14;
 
 static bool count_nodes = true;
 static bool output_vector = false;
@@ -64,6 +65,7 @@ static struct argp_option options[] =
     {"rseed", 'r', "<random-seed>", 0, "Set random seed as integer", 0},
     {"precision", 'p', "<number of bits>", 0, "Precision of mantissa multiprecision complex float in bits (default=MPC_PRECISION)", 0},
     {"rounding", 'o', "<...>", 0, "Rounding strategy", 0},
+    {"tol", 't', "<tolerance>", 0, "Tolerance for deciding edge weights equal (default=1e-14)", 0},
     {"json", 'j', "<filename>", 0, "Write statistics in json format to <filename>", 0},
     {"count-nodes", 'c', 0, 0, "Track maximum number of nodes", 0},
     {"state-vector", 'v', 0, 0, "Show the complete state vector after simulation", 0},
@@ -95,6 +97,10 @@ parse_opt(int key, char *arg, struct argp_state *state)
 
     case 'o': // Rounding
         rounding = atoi(arg);  // ASCII to integer, TODO: validate value
+        break;
+
+    case 't': // leaf merging tolerance
+        tolerance = atof(arg);
         break;
 
     case 'j':
@@ -197,7 +203,8 @@ void fprint_stats(FILE *stream, quantum_circuit_t* circuit)
     fprintf(stream, "    \"seed\": %d,\n", rseed);
     fprintf(stream, "    \"shots\": %" PRIu64 ",\n", stats.shots);
     fprintf(stream, "    \"simulation_time\": %lf,\n", stats.simulation_time);
-    fprintf(stream, "    \"precision\": %d,\n", precision);
+    fprintf(stream, "    \"tolerance\": %.5e,\n", MPC_EQUIV_TOLERANCE);
+    fprintf(stream, "    \"precision\": %ld,\n", MPC_PRECISION);
     fprintf(stream, "    \"rounding\": %d,\n", rounding);
     fprintf(stream, "    \"workers\": %d\n", workers);
     fprintf(stream, "  }\n");
@@ -937,7 +944,8 @@ int main(int argc, char *argv[])
     sylvan_init_mtbdd();
 
     // Set multi precision complex float type
-    uint32_t mpc_type = mpc_init();
+    // TODO: use mpc_init() and pass precision and tolerance
+    uint32_t mpc_type = mpc_init(precision, tolerance); 
     assert(mpc_type == MPC_TYPE);
 
     // Init the dd's of the gates

@@ -21,6 +21,9 @@
 #include <math.h>
 #include <string.h>
 
+uint64_t MPC_PRECISION;
+double MPC_EQUIV_TOLERANCE;
+
 /**
  * helper function for hash (skip)
  */
@@ -208,8 +211,11 @@ mpc_read_binary(FILE* in, uint64_t *val)
  * Initialize mpc custom leaves
  */
 uint32_t
-mpc_init()
+mpc_init(uint64_t precision, double tolerance)
 {
+    MPC_PRECISION = precision;
+    MPC_EQUIV_TOLERANCE = tolerance;
+
     // Register custom leaf type callback functions
     uint32_t mpc_type = sylvan_mt_create_type();
     assert(mpc_type == MPC_TYPE);
@@ -226,6 +232,12 @@ mpc_init()
     sylvan_mt_set_read_binary(mpc_type, NULL);    // mpc_read_binary);
 
     return mpc_type;
+}
+
+uint32_t
+mpc_init_default()
+{
+    return mpc_init(64, 1e-14);
 }
 
 /**

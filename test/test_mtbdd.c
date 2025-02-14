@@ -2577,7 +2577,7 @@ int main()
 
     printf("Mtbdd initialization complete.\n\n");
 
-    uint32_t mpc_type = mpc_init();
+    uint32_t mpc_type = mpc_init_default();
     printf("Mtbdd mpc type initialization complete, mpc_type = %d.\n\n", mpc_type);
 
     test_assert(mpc_type == MPC_TYPE);
