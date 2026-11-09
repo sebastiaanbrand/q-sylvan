@@ -410,7 +410,7 @@ class QASMParser {
                 }
             }
             // two-qubit controlled gates with three angles
-            else if (name == "cu3" || name == "cu") {
+            else if (name == "cu3") {
                 try {
                     strcpy(op->name, canonical_gate_name(name).c_str());
                     op->targets[0] = get_seq_index(qregisters, args[6], stoi(args[7]));
@@ -537,7 +537,6 @@ class QASMParser {
             if (name == "u1") return "p";
             if (name == "cu1") return "cp";
             if (name == "u3") return "u";
-            if (name == "cu3") return "cu";
             if (name == "c3sqrtx") return "c3sx";
             return name;
         }

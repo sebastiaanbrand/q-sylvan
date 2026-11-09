@@ -282,7 +282,7 @@ QMDD apply_gate(QMDD state, quantum_op_t* gate, BDDVAR nqubits)
     else if (strcmp(gate->name, "cp") == 0) {
         return qmdd_cgate(state, GATEID_Phase(gate->angle[0]), gate->ctrls[0], gate->targets[0], nqubits);
     }
-    else if (strcmp(gate->name, "cu") == 0) {
+    else if (strcmp(gate->name, "cu3") == 0) {
         return qmdd_cgate(state, GATEID_U(gate->angle[0], gate->angle[1], gate->angle[2]), gate->ctrls[0], gate->targets[0], nqubits);
     }
     else if (strcmp(gate->name, "ccx") == 0) {

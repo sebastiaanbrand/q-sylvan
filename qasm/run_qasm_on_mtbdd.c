@@ -380,7 +380,7 @@ MTBDD apply_gate(MTBDD state, quantum_op_t* gate, int n)
         MTBDD M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->ctrls[0], gate->targets[0], I_dd, V00_dd, V11_dd, P_dd);
         return mtbdd_matvec_mult(M_dd, state, 2*n, 0);
     }
-    else if (strcmp(gate->name, "cu") == 0) {
+    else if (strcmp(gate->name, "cu3") == 0) {
         MTBDD U_dd = mtbdd_U(gate->angle[0], gate->angle[1], gate->angle[2]);
         MTBDD M_dd = mtbdd_create_single_control_gate_for_qubits_mpc(n, gate->ctrls[0], gate->targets[0], I_dd, V00_dd, V11_dd, U_dd);
         return mtbdd_matvec_mult(M_dd, state, 2*n, 0);
